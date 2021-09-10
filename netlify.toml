@@ -1,0 +1,10 @@
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+[context.production.environment]
+VUE_APP_SERVER_URL = "https://ax.sentinel-holdings.com/production"
+
+[context.deploy-preview.environment]
+VUE_APP_SERVER_URL = "https://ax.sentinel-holdings.com/test"
