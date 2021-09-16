@@ -97,3 +97,10 @@ export interface FileListRequest {
   }
 }
 
+export interface QcEntryGenerationRequest {
+  params: {
+    qc_dir: string;
+    bucket_name?: string;
+  }
+}
+

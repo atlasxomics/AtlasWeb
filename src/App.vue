@@ -19,7 +19,7 @@ export default defineComponent({
   name: 'App',
   components: { GlobalSnackbar, Prompt, UploadProgressDisplay },
   setup(props, ctx) {
-    // const client = computed(() => store.state.client);
+    const client = computed(() => store.state.client);
     // const dialogOpen = computed(() => store.state.application.dialogOpen);
     // const dark = computed({
     //   get: () => store.state.application.darkTheme,

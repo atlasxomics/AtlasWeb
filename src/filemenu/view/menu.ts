@@ -20,9 +20,13 @@ export const menu = reactive({
       disabled: false,
     },
     {
-      text: 'Chip Information',
+      text: 'Chip Information - Dialog',
       click: () => { chipInformationMenu.value = true; },
       disabled: false,
+    },
+    {
+      text: 'Chip Information',
+      click: () => { store.commit.changeMainView('ChipInformationViewer'); },
     },
     {
       text: 'DBit Information',

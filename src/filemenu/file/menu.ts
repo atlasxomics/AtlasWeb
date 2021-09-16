@@ -4,7 +4,7 @@ import store from '@/store';
 import {
   loadDatasetMenu,
   uploadDatasetFileMenu,
-  uploadDirectoryMenu,
+  uploadQcDirectoryMenu,
 } from './state';
 
 export const menu = reactive({
@@ -19,7 +19,13 @@ export const menu = reactive({
     },
     {
       text: 'Upload Directory',
-      click: () => { uploadDirectoryMenu.value = true; },
+      click: () => { uploadQcDirectoryMenu.value = true; },
+      disabled: true,
+      color: 'white',
+    },
+    {
+      text: 'Upload QCed',
+      click: () => { uploadQcDirectoryMenu.value = true; },
       disabled: false,
       color: 'white',
     },

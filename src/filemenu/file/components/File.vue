@@ -7,9 +7,9 @@
       <upload-dataset-file-menu />
     </fresh-dialog>
     <fresh-dialog
-      v-model="uploadDirectoryMenu"
+      v-model="uploadQcDirectoryMenu"
     >
-      <upload-directory-menu />
+      <upload-qc-directory-menu />
     </fresh-dialog>
   </div>
 </template>
@@ -21,25 +21,25 @@ import FreshDialog from '@/components/FreshDialog.vue';
 import {
   uploadDatasetFileMenu,
   uploadDialogWidth,
-  uploadDirectoryMenu,
+  uploadQcDirectoryMenu,
   uploadDirectoryDialogWidth,
 } from '../state';
 import UploadDatasetFileMenu from './UploadDatasetFileMenu.vue';
-import UploadDirectoryMenu from './UploadDirectoryMenu.vue';
+import UploadQcDirectoryMenu from './UploadQCDirectoryMenu.vue';
 
 export default defineComponent({
   name: 'File',
   components: {
     FreshDialog,
     UploadDatasetFileMenu,
-    UploadDirectoryMenu,
+    UploadQcDirectoryMenu,
   },
 
   setup() {
     return {
       uploadDatasetFileMenu,
       uploadDialogWidth,
-      uploadDirectoryMenu,
+      uploadQcDirectoryMenu,
       uploadDirectoryDialogWidth,
     };
   },

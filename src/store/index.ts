@@ -18,6 +18,7 @@ const {
   state: {
     client: null as Client | null,
     mainComponent: 'ImageViewer' as string | null,
+    serverStatus: null as any | null,
   },
   getters: {},
   mutations: {
@@ -26,6 +27,9 @@ const {
     },
     changeMainView(state, viewname: string) {
       state.mainComponent = viewname;
+    },
+    setServerStatus(state, status: any | null) {
+      state.serverStatus = status;
     },
   },
   actions: {},

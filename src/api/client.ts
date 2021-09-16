@@ -12,6 +12,7 @@ import {
   FileListRequest,
   DatasetListingWafer,
   Upload,
+  QcEntryGenerationRequest,
 } from '@/types';
 
 // The time (10 minutes in ms) before the token expires to refresh it
@@ -69,6 +70,14 @@ export default class Client {
     this.refreshTimeoutId = window.setTimeout(this.refreshToken.bind(this), getTimeout(this.authorizationToken));
   }
 
+  async getApplicationInfo(): Promise<any> {
+    try {
+      const resp = await this.axios.get('/api/v1/app');
+      return resp.data;
+    } catch (error) {
+      return null;
+    }
+  }
   private async refreshToken() {
     const resp = await this.axios.post('/api/v1/auth/refreshtoken');
     const { access_token: accessToken } = resp.data;
@@ -164,6 +173,10 @@ export default class Client {
   async getImage(payload: ImageFileRequest): Promise<File> {
     const resp = await this.axios.get('/api/v1/storage', { params: { filename: payload.params.filename }, responseType: 'blob' });
     return new File([resp.data], payload.params.filename, { type: 'image/png' });
+  }
+  async generateQcEntry(payload: QcEntryGenerationRequest): Promise<any> {
+    const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
+    return resp.data;
   }
   // Dataset
   async getWafers(payload: DatasetRequest): Promise<any> {

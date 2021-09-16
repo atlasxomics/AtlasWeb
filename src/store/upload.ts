@@ -3,8 +3,9 @@
 import Vue from 'vue';
 import axios from 'axios';
 import { defineModule } from 'direct-vuex';
+import * as lodash from 'lodash';
 import { moduleGetterContext, moduleActionContext } from '@/store';
-import { DatasetUploadParams, Upload } from '@/types';
+import { DatasetUploadParams, Upload, QcEntryGenerationRequest } from '@/types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const uploadActionContext = ((context: any) => moduleActionContext(context, uploadModule));
@@ -104,6 +105,63 @@ const uploadModule = defineModule({
       });
 
       await Promise.all(promises);
+      commit.setInProgress(false);
+    },
+    async uploadQcDatasetFiles(context, datasetfile: DatasetUploadParams[]) {
+      const { state, commit, rootState: { client } } = uploadActionContext(context);
+      if (client === null) {
+        return;
+      }
+
+      commit.setInProgress(true);
+      function setUploadProgress(val: ProgressEvent, index: number) {
+        const progress = (val.loaded / val.total) * 100;
+        const currentUpload = state.uploads[index];
+        const upload = { ...currentUpload, progress };
+        commit.setUploadAtIndex({ upload, index });
+      }
+
+      const uploads: Upload[] = datasetfile.map((file, index) => ({
+        ...file,
+        progress: 0,
+        error: null,
+        cancelled: false,
+        finished: false,
+        cancelToken: axios.CancelToken.source(),
+        onProgress: (val: ProgressEvent) => { setUploadProgress(val, index); },
+      }));
+
+      commit.setUploads(uploads);
+      const promises = uploads.map(async (upload, index) => {
+        const error = await client.uploadDatasetFile(upload);
+
+        // Must access this way due to upload being updated async
+        const currentUpload = state.uploads[index];
+        commit.setUploadAtIndex({
+          index,
+          upload: {
+            ...currentUpload,
+            error,
+            finished: true,
+          },
+        });
+      });
+
+      await Promise.all(promises);
+      // register Qc entries
+      const root_dir = datasetfile[0].output_filename.split('/')[0];
+      const unique_ids = lodash.uniq(datasetfile.map((x: any) => x.output_filename.split('/')[1]));
+      const qc_promises = unique_ids.map((k) => {
+        const output_directory = `${root_dir}/${k}`;
+        const payload = { params: { qc_dir: output_directory } };
+        const resp = client.generateQcEntry(payload);
+        return resp;
+      });
+      await Promise.all(qc_promises).then((resps) => {
+        lodash.each(resps, (rs) => {
+          // console.log(rs);
+        });
+      });
       commit.setInProgress(false);
     },
     resetUploadState(context) {

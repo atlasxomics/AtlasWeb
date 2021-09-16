@@ -81,7 +81,7 @@
       v-if="!minimized"
       class="pa-0"
     >
-      <v-list>
+      <v-list dense>
         <v-list-item
           v-for="(upload, i) in uploads"
           :key="i"
@@ -205,8 +205,11 @@ export default defineComponent({
 
 <style scoped>
   .progress-card {
+    max-height: 50vh;
+    overflow-y: auto;
     position: fixed;
     bottom: 0;
     right: 0;
+    z-index: 999;
   }
 </style>

@@ -15,6 +15,7 @@ import Appbar from '@/components/Appbar/Appbar.vue';
 import WaferTrace from './components/WaferTrace.vue';
 import StudyViewer from './components/StudyViewer.vue';
 import ImageViewer from './components/ImageViewer.vue';
+import ChipInformationViewer from './components/ChipInformationViewer.vue';
 
 const appReadyForDataset = new Promise((resolve) => {
   const ready = computed(() => (
@@ -28,7 +29,7 @@ const appReadyForDataset = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'Home',
-  components: { Appbar, ImageViewer, WaferTrace, StudyViewer },
+  components: { Appbar, ImageViewer, WaferTrace, StudyViewer, ChipInformationViewer },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const user = computed(() => store.state.client?.user);
@@ -36,11 +37,13 @@ export default defineComponent({
     function redirectToLogin() {
       router.push('/login');
     }
+    function redirectToErrorPage() {
+      router.push('/Error');
+    }
 
     // Login Existing User
     onBeforeMount(async () => {
       await loginExisting();
-
       if (!loggedIn.value) {
         redirectToLogin();
       }

@@ -10,8 +10,8 @@ export const uploadDatasetFileMenu = ref(false);
 export const files = ref<File[]>([]);
 export const uploadDialogWidth = computed(() => (files.value.length >= 3 ? 'unset' : '35vw'));
 
-// Upload directory
-export const uploadDirectoryMenu = ref(false);
+// Upload QC directory
+export const uploadQcDirectoryMenu = ref(false);
 export const filesInDirectory = ref<File[]>([]);
 export const uploadDirectoryDialogWidth = null;
 
