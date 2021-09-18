@@ -280,7 +280,7 @@ export default defineComponent({
           [asset_data.value] = result;
           // const fl_payload = { params: { path: `data/${id}.out/Gene/raw/figure` } };
           const fl_payload = { params: { filter: JSON.stringify({ id: `${id}` }), options: null } };
-          const [study] = await client.value.getStudies(fl_payload);
+          const [study] = await client.value.getQc(fl_payload);
           if (study) {
             const fl: any[] = Object.values(study.files.images);
             const rootdir: string = study.files.root;

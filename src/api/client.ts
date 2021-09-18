@@ -171,8 +171,12 @@ export default class Client {
     }
   }
   async getImage(payload: ImageFileRequest): Promise<File> {
-    const resp = await this.axios.get('/api/v1/storage', { params: { filename: payload.params.filename }, responseType: 'blob' });
-    return new File([resp.data], payload.params.filename, { type: 'image/png' });
+    try {
+      const resp = await this.axios.get('/api/v1/storage', { params: { filename: payload.params.filename }, responseType: 'blob' });
+      return new File([resp.data], payload.params.filename, { type: 'image/png' });
+    } catch (e) {
+      return Promise.reject(e);
+    }
   }
   async generateQcEntry(payload: QcEntryGenerationRequest): Promise<any> {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
@@ -191,8 +195,8 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/dataset/dbits', payload);
     return resp.data;
   }
-  async getStudies(payload: DatasetRequest): Promise<any> {
-    const resp = await this.axios.get('/api/v1/dataset/studies', payload);
+  async getQc(payload: DatasetRequest): Promise<any> {
+    const resp = await this.axios.get('/api/v1/dataset/qc', payload);
     return resp.data;
   }
   async getWaferTrace(payload: DatasetRequest): Promise<any> {

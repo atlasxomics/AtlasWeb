@@ -52,6 +52,7 @@
                 <v-col>
                   <v-btn
                     color="primary"
+                    width="15vh"
                     :disabled="!hasChanged || !validate(detail)"
                     @click="saveAction"
                   >
@@ -61,6 +62,7 @@
                 <v-col>
                   <v-btn
                     color="primary"
+                    width="15vh"
                     :disabled="!readOnly"
                     @click="duplicateAction"
                   >
@@ -70,6 +72,7 @@
                 <v-col>
                   <v-btn
                     color="secondary"
+                    width="15vh"
                     @click="readOnly = !readOnly"
                   >
                     {{ readOnly ? 'Edit' : 'Freeze'}}

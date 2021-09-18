@@ -201,11 +201,11 @@ export default defineComponent({
       if (x.includes('dbit')) return true;
       return false;
     }
-    async function loadStudies(dbit_ids: string[], image_name: string) {
+    async function loadQc(dbit_ids: string[], image_name: string) {
       if (!client.value) return;
       const fltr = { id: { $in: dbit_ids } };
       const payload = { params: { filter: fltr } };
-      const resp = await client.value.getStudies(payload);
+      const resp = await client.value.getQc(payload);
       if (resp.length < 1) {
         images.value = [];
         image_items.value = [];
@@ -221,25 +221,31 @@ export default defineComponent({
       select_items_all.value = nv;
       select_items.value = select_items_all.value.filter(item_filter);
       const dbit_ids = select_items.value.map((x) => x.split('/')[1]);
-      await loadStudies(dbit_ids, image_selected.value);
+      await loadQc(dbit_ids, image_selected.value);
     });
-
     watch(image_selected, async (nv, ov) => {
       if (!client.value || !nv) {
         return;
       }
-      images.value = [];
       image_paths.value = _.sortBy(image_paths.value, ['id']);
+      const temp_array: any[] = [];
+      item_loading.value = true;
+      images.value = [];
       // _.each(image_paths.value, async (v) => {
       //   const fn = `${v.files.root}/${v.files.images[image_selected.value]}`;
       //   if (client.value) {
-      //     const resp = await client.value.getImage({ params: { filename: fn } });
-      //     const elm = { id: v.id, image_src: URL.createObjectURL(resp) };
-      //     images.value.push(elm);
+      //     try {
+      //       const resp = await client.value.getImage({ params: { filename: fn } });
+      //       const elm = { id: v.id, image_src: URL.createObjectURL(resp) };
+      //       temp_array.push(elm);
+      //       images.value = _.sortBy(temp_array, ['id']);
+      //     } catch (e) {
+      //       console.log(`Exception at ${v.id}`);
+      //     }
       //   }
       // });
-      item_loading.value = true;
-      const promises: any[] = [];
+      // item_loading.value = false;
+      const promises: Promise<any>[] = [];
       _.each(image_paths.value, (v) => {
         const fn = `${v.files.root}/${v.files.images[image_selected.value]}`;
         if (client.value) {
@@ -249,17 +255,29 @@ export default defineComponent({
           console.log('api client null');
         }
       });
-      const temp_array: any[] = [];
-      Promise.all(promises).then((resps) => {
+      // Promise.all(promises).then((resps: any) => {
+      //   _.each(resps, (v) => {
+      //     const elm = { id: v.name, image_src: URL.createObjectURL(v) };
+      //     temp_array.push(elm);
+      //   });
+      //   images.value = _.sortBy(temp_array, ['id']);
+      //   item_loading.value = false;
+      // });
+      Promise.allSettled(promises).then((resps: any) => {
         _.each(resps, (v) => {
-          const elm = { id: v.name, image_src: URL.createObjectURL(v) };
-          temp_array.push(elm);
+          if (v.status === 'fulfilled') {
+            const elm = { id: v.value.name, image_src: URL.createObjectURL(v.value) };
+            temp_array.push(elm);
+          } else {
+            console.log('Rejected');
+            console.log(v);
+          }
         });
+      }).finally(() => {
         images.value = _.sortBy(temp_array, ['id']);
         item_loading.value = false;
       });
     });
-
     return {
       search,
       items,

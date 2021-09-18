@@ -13,7 +13,7 @@ import { snackbar } from '@/components/GlobalSnackbar';
 import { loginExisting, loggedIn } from '@/utils/auth';
 import Appbar from '@/components/Appbar/Appbar.vue';
 import WaferTrace from './components/WaferTrace.vue';
-import StudyViewer from './components/StudyViewer.vue';
+import QcViewer from './components/QcViewer.vue';
 import ImageViewer from './components/ImageViewer.vue';
 import ChipInformationViewer from './components/ChipInformationViewer.vue';
 
@@ -29,7 +29,7 @@ const appReadyForDataset = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'Home',
-  components: { Appbar, ImageViewer, WaferTrace, StudyViewer, ChipInformationViewer },
+  components: { Appbar, ImageViewer, WaferTrace, QcViewer, ChipInformationViewer },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const user = computed(() => store.state.client?.user);

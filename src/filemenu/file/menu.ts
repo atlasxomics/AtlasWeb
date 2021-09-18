@@ -6,6 +6,7 @@ import {
   uploadDatasetFileMenu,
   uploadQcDirectoryMenu,
 } from './state';
+import { menu as metadata } from './metadata';
 
 export const menu = reactive({
   text: 'File',
@@ -14,7 +15,7 @@ export const menu = reactive({
     {
       text: 'Upload Dataset',
       click: () => { uploadDatasetFileMenu.value = true; },
-      disabled: false,
+      disabled: true,
       color: 'white',
     },
     {
@@ -23,6 +24,7 @@ export const menu = reactive({
       disabled: true,
       color: 'white',
     },
+    metadata,
     {
       text: 'Upload QCed',
       click: () => { uploadQcDirectoryMenu.value = true; },
@@ -32,7 +34,7 @@ export const menu = reactive({
     {
       text: 'Manage Dataset Files',
       click: () => { console.log('Manage dataset files clicked'); },
-      disabled: false,
+      disabled: true,
     },
   ],
 });

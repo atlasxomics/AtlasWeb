@@ -6,8 +6,18 @@ export const menu = reactive({
   menu_width: 200,
   menu: [
     {
-      text: 'Test',
-      click: () => { console.log('Edit click'); },
+      text: 'Wafer Information',
+      click: () => { store.commit.changeMainView('WaferInformationViewer'); },
+      disabled: true,
+    },
+    {
+      text: 'Chip Information',
+      click: () => { store.commit.changeMainView('ChipInformationViewer'); },
+    },
+    {
+      text: 'DBiT Information',
+      click: () => { store.commit.changeMainView('DbitInformationViewer'); },
+      disabled: true,
     },
   ],
 });

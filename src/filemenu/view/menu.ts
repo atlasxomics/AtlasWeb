@@ -14,28 +14,29 @@ export const menu = reactive({
     //   text: 'Wafer Trace',
     //   click: () => { waferTraceMenu.value = true; },
     // },
-    {
-      text: 'Wafer Information',
-      click: () => { waferInformationMenu.value = true; },
-      disabled: false,
-    },
-    {
-      text: 'Chip Information - Dialog',
-      click: () => { chipInformationMenu.value = true; },
-      disabled: false,
-    },
-    {
-      text: 'Chip Information',
-      click: () => { store.commit.changeMainView('ChipInformationViewer'); },
-    },
-    {
-      text: 'DBit Information',
-      click: () => { dbitInformationMenu.value = true; },
-      disabled: false,
-    },
+    // {
+    //   text: 'Wafer Information - Dialog',
+    //   click: () => { waferInformationMenu.value = true; },
+    //   disabled: false,
+    // },
+    // {
+    //   text: 'Chip Information - Dialog',
+    //   click: () => { chipInformationMenu.value = true; },
+    //   disabled: false,
+    // },
+    // {
+    //   text: 'Chip Information',
+    //   click: () => { store.commit.changeMainView('ChipInformationViewer'); },
+    // },
+    // {
+    //   text: 'DBit Information - Dialog',
+    //   click: () => { dbitInformationMenu.value = true; },
+    //   disabled: false,
+    // },
     {
       text: 'DBiT Runs',
       click: () => { console.log('DBiT Runs click'); },
+      disabled: true,
     },
     {
       text: 'Wafer Trace',
@@ -48,6 +49,7 @@ export const menu = reactive({
     {
       text: 'Study Viewer',
       click: () => { store.commit.changeMainView('StudyViewer'); },
+      disabled: true,
     },
     // {
     //   text: 'Image Viewer',

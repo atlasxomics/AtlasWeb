@@ -69,7 +69,7 @@ const headers = [
 ];
 
 export default defineComponent({
-  name: 'StudyViewer',
+  name: 'QcViewer',
   setup() {
     const client = computed(() => store.state.client);
     const search = ref<string>('');

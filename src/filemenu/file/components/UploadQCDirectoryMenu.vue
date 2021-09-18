@@ -165,7 +165,7 @@ export default defineComponent({
       _.each(upload_ids.value, (x) => {
         if (client.value) {
           // console.log(x);
-          const p: Promise<any> = client.value.getStudies({ params: { filter: JSON.stringify({ id: x.split('.')[0] }) } });
+          const p: Promise<any> = client.value.getQc({ params: { filter: JSON.stringify({ id: x.split('.')[0] }) } });
           promises.push(p);
         }
       });
