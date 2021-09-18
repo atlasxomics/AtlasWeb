@@ -217,34 +217,14 @@ export default defineComponent({
       image_selected.value = 'umi-1';
       image_paths.value = resp;
     }
-    watch(tree_selected, async (nv, ov) => {
-      select_items_all.value = nv;
-      select_items.value = select_items_all.value.filter(item_filter);
-      const dbit_ids = select_items.value.map((x) => x.split('/')[1]);
-      await loadQc(dbit_ids, image_selected.value);
-    });
-    watch(image_selected, async (nv, ov) => {
-      if (!client.value || !nv) {
+    async function loadImages() {
+      if (!client.value) {
         return;
       }
       image_paths.value = _.sortBy(image_paths.value, ['id']);
       const temp_array: any[] = [];
       item_loading.value = true;
       images.value = [];
-      // _.each(image_paths.value, async (v) => {
-      //   const fn = `${v.files.root}/${v.files.images[image_selected.value]}`;
-      //   if (client.value) {
-      //     try {
-      //       const resp = await client.value.getImage({ params: { filename: fn } });
-      //       const elm = { id: v.id, image_src: URL.createObjectURL(resp) };
-      //       temp_array.push(elm);
-      //       images.value = _.sortBy(temp_array, ['id']);
-      //     } catch (e) {
-      //       console.log(`Exception at ${v.id}`);
-      //     }
-      //   }
-      // });
-      // item_loading.value = false;
       const promises: Promise<any>[] = [];
       _.each(image_paths.value, (v) => {
         const fn = `${v.files.root}/${v.files.images[image_selected.value]}`;
@@ -255,14 +235,6 @@ export default defineComponent({
           console.log('api client null');
         }
       });
-      // Promise.all(promises).then((resps: any) => {
-      //   _.each(resps, (v) => {
-      //     const elm = { id: v.name, image_src: URL.createObjectURL(v) };
-      //     temp_array.push(elm);
-      //   });
-      //   images.value = _.sortBy(temp_array, ['id']);
-      //   item_loading.value = false;
-      // });
       Promise.allSettled(promises).then((resps: any) => {
         _.each(resps, (v) => {
           if (v.status === 'fulfilled') {
@@ -277,6 +249,16 @@ export default defineComponent({
         images.value = _.sortBy(temp_array, ['id']);
         item_loading.value = false;
       });
+    }
+    watch(image_selected, async (nv, ov) => {
+      await loadImages();
+    });
+    watch(tree_selected, async (nv, ov) => {
+      select_items_all.value = nv;
+      select_items.value = select_items_all.value.filter(item_filter);
+      const dbit_ids = select_items.value.map((x) => x.split('/')[1]);
+      await loadQc(dbit_ids, image_selected.value);
+      await loadImages();
     });
     return {
       search,
