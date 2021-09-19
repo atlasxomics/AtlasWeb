@@ -11,6 +11,9 @@
     >
       <upload-qc-directory-menu />
     </fresh-dialog>
+    <div>
+      <metadata-upload/>
+    </div>
   </div>
 </template>
 
@@ -26,6 +29,7 @@ import {
 } from '../state';
 import UploadDatasetFileMenu from './UploadDatasetFileMenu.vue';
 import UploadQcDirectoryMenu from './UploadQCDirectoryMenu.vue';
+import { MetadataUpload } from '../metadata';
 
 export default defineComponent({
   name: 'File',
@@ -33,6 +37,7 @@ export default defineComponent({
     FreshDialog,
     UploadDatasetFileMenu,
     UploadQcDirectoryMenu,
+    MetadataUpload,
   },
 
   setup() {

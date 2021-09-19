@@ -15,7 +15,7 @@
             <v-card-actions>
               <v-row no-gutters>
                 <v-col
-                  cols="10"
+                  cols="0"
                   class="mx-1">
                   <v-btn
                     color="success"
@@ -25,6 +25,14 @@
                   </v-btn>
                 </v-col>
                 <v-spacer />
+                <v-col>
+                  <v-btn
+                    color="primary"
+                    @click="fetchData"
+                  >
+                    Refresh
+                  </v-btn>
+                </v-col>
               </v-row>
             </v-card-actions>
             <v-data-table
@@ -61,6 +69,15 @@
                 </v-col>
                 <v-col>
                   <v-btn
+                    color="error"
+                    width="15vh"
+                    @click="deleteAction"
+                  >
+                    Delete
+                  </v-btn>
+                </v-col>
+                <v-col>
+                  <v-btn
                     color="primary"
                     width="15vh"
                     :disabled="!readOnly"
@@ -85,23 +102,26 @@
                 dense
               >
                 <tbody>
-                  <tr v-for="(val, key) in detail" v-bind:key="key">
-                    <td width="20%">{{key}}</td>
-                    <td>
-                      <v-text-field
-                        single-line
-                        :readonly="readOnly"
-                        :filled="!readOnly"
-                        hide-details
-                        dense
-                        flat
-                        :clearable="!readOnly"
-                        clear-icon="mdi-close-circle"
-                        :value="val"
-                        @change="inputChanged($event,key)"
-                      />
-                    </td>
-                  </tr>
+                  <template v-for="( val, index ) in detail">
+                    <!-- <tr v-for="(val, key) in detail" v-bind:key="key"> -->
+                    <tr v-if="val.key !== '_id'" v-bind:key="val.key">
+                      <td width="20%">{{val.key}}</td>
+                      <td>
+                        <v-text-field
+                          single-line
+                          :readonly="readOnly"
+                          :filled="!readOnly"
+                          hide-details
+                          dense
+                          flat
+                          :clearable="!readOnly"
+                          clear-icon="mdi-close-circle"
+                          :value="val.value"
+                          @change="inputChanged($event,index)"
+                        />
+                      </td>
+                    </tr>
+                  </template>
                 </tbody>
               </v-simple-table>
             </v-card-text>
@@ -114,11 +134,13 @@
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, watch } from '@vue/composition-api';
 import _ from 'lodash';
+import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import type {
   DatasetRequest,
   DatasetListingChip,
 } from '@/types';
+import { objectToArray, arrayToObject } from '@/utils';
 
 const headers = [
   { text: 'Chip ID', value: 'chip_id' },
@@ -136,6 +158,7 @@ export default defineComponent({
     const detail = ref<any>();
     const readOnly = ref<boolean>(true);
     const hasChanged = ref<boolean>(false);
+    const mainKeys = ref<string[]>(['chip_id', 'wafer_id']);
     async function fetchData() {
       if (!client.value) {
         return;
@@ -153,7 +176,10 @@ export default defineComponent({
       // console.log(item._id, item.date_acquired);
       const fltr = { _id: item._id };
       const payload = { params: { filter: JSON.stringify(fltr), options: null } };
-      [detail.value] = await client.value.getChips(payload);
+      const [data] = await client.value.getChips(payload);
+      const keys = mainKeys.value;
+      const unsorted = objectToArray(data);
+      detail.value = _.sortBy(unsorted, (x) => !keys.includes(x.key));
       loading.value = false;
       hasChanged.value = false;
       readOnly.value = true;
@@ -169,24 +195,53 @@ export default defineComponent({
       hasChanged.value = false;
     }
     async function duplicateAction(ev: any) {
-      detail.value.chip_id = null;
-      detail.value._id = null;
+      const obj = arrayToObject(detail.value);
+      obj.chip_id = null;
+      obj._id = null;
+      detail.value = objectToArray(obj);
       hasChanged.value = true;
       readOnly.value = false;
     }
     async function saveAction(ev: any) {
-      console.log(detail.value);
-      hasChanged.value = false;
+      // console.log(detail.value);
+      if (!client.value) return;
+      const obj = arrayToObject(detail.value);
+      const exist = await client.value.checkChip(obj.chip_id);
+      let hasWritten = false;
+      if (exist) {
+        // if entry exists, ask with popup dialog to overwrite
+        snackbar.dispatch({ text: `Chip id ${obj.chip_id} exists in the database`, options: { right: true, color: 'error' } });
+      } else {
+        // just upsert
+        const payload = [obj];
+        const resp = await client.value.putChips(payload);
+        hasWritten = true;
+      }
+      if (hasWritten) {
+        await fetchData();
+        hasChanged.value = false;
+        readOnly.value = true;
+        snackbar.dispatch({ text: 'Item has been successfully saved.', options: { right: true, color: 'success' } });
+      }
     }
-    async function inputChanged(val: any, key: any) {
-      detail.value[key] = Number(val) || val;
+    async function deleteAction(ev: any) {
+      if (!client.value) return;
+      const obj = arrayToObject(detail.value);
+      const resp = await client.value.deleteChip(obj.chip_id);
+      await fetchData();
+      detail.value = null;
+      snackbar.dispatch({ text: 'Item has been successfully deleted.', options: { right: true, color: 'success' } });
+    }
+    async function inputChanged(val: any, index: any) {
+      detail.value[index].value = val;
       hasChanged.value = true;
     }
     function isEmpty(str: string) {
       return (!str || str.length === 0);
     }
     function validate(data: any) {
-      return !isEmpty(data._id) && !isEmpty(data.chip_id);
+      const obj = arrayToObject(detail.value);
+      return !isEmpty(obj.chip_id);
     }
     onMounted(fetchData);
     return {
@@ -202,8 +257,11 @@ export default defineComponent({
       inputChanged,
       saveAction,
       duplicateAction,
+      deleteAction,
       addNew,
+      fetchData,
       validate,
+      mainKeys,
     };
   },
 });

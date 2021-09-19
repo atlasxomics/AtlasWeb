@@ -6,7 +6,7 @@
     <v-card-text>
       <v-file-input
         v-model="files"
-        multiple
+        :multiple="true"
         outlined
         show-size
         label="Select File(s)"
@@ -98,7 +98,7 @@
 import { defineComponent, ref, computed, watch, reactive } from '@vue/composition-api';
 import store from '@/store';
 
-import { DatasetUploadParams, DatasetUploadMetadata } from '@/types';
+import { DatasetUploadParams, DatasetUploadMetadata, UploadMeta, MetadataUploadParams } from '@/types';
 import { userHasSystemAccess } from '@/utils/auth';
 import { uploadChipInformationMenu } from '../state';
 import { files } from '../../state';
@@ -107,7 +107,7 @@ export default defineComponent({
   name: 'ChipInformationUpload',
   setup() {
     const client = computed(() => store.state.client);
-
+    const metaType = ref<string>('chips');
     const formsValidation = ref([]);
     const allFormsValid = computed(() => formsValidation.value.every((val) => val));
 
@@ -116,11 +116,7 @@ export default defineComponent({
 
     // If files change, reset metadata
     watch(files, (val) => {
-      meta.value = val.map(() => reactive({
-        subject_type: '',
-        data_source: '',
-        remarks: '',
-      }));
+      meta.value = val.map(() => reactive({ remarks: '' }));
     });
 
     function truncateFileName(filename: string): string {
@@ -141,14 +137,9 @@ export default defineComponent({
 
     // const acceptedFileTypes = 'application/zip';
 
-    const acceptedFileTypes = '*';
-
-    // const datasetTypesRule = (inputFiles: File[]) => (
-    //   inputFiles.every((file) => acceptedFileTypes.split(',').includes(file.type)) || 'Only zip files are supported.'
-    // );
-
+    const acceptedFileTypes = ref<string>('.csv');
     const datasetTypesRule = (inputFiles: File[]) => (
-      inputFiles.every((file) => true) || 'Only zip files are supported.'
+      inputFiles.every((file) => true) || 'Only CSV files are supported.'
     );
 
     function closeDialog() {
@@ -160,15 +151,16 @@ export default defineComponent({
       if (!client.value || !files.value || !datasetMeta) { return; }
 
       // Combine params
-      const datasets: DatasetUploadParams[] = files.value.map((file, i) => ({
+      const datasets: MetadataUploadParams[] = files.value.map((file, i) => ({
         user: false,
         file,
         output_filename: file.name,
         bucket: null,
         meta: datasetMeta[i],
+        meta_type: metaType.value,
       }));
 
-      store.dispatch.upload.uploadDatasetFiles(datasets);
+      store.dispatch.upload.uploadMetadataFile(datasets);
       store.commit.upload.setDialogOpen(true);
       closeDialog();
     }

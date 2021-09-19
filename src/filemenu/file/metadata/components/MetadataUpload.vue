@@ -18,7 +18,7 @@ import { uploadChipInformationMenu } from '../state';
 
 export default defineComponent({
   name: 'MetadataUpload',
-  components: { ChipInformationUpload },
+  components: { FreshDialog, ChipInformationUpload },
   setup() {
     return { uploadChipInformationMenu };
   },

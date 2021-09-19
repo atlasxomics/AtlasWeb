@@ -12,6 +12,7 @@ import {
   FileListRequest,
   DatasetListingWafer,
   Upload,
+  UploadMeta,
   QcEntryGenerationRequest,
 } from '@/types';
 
@@ -98,7 +99,34 @@ export default class Client {
     formData.append('meta', JSON.stringify(upload.meta));
     formData.append('output_filename', upload.output_filename);
 
-    const endpoint = upload.user ? 'api/v1/storage/upload' : '/api/v1/storage/upload';
+    const endpoint = 'api/v1/storage/upload';
+    try {
+      await this.axios.post(
+        endpoint,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: upload.onProgress,
+          cancelToken: upload.cancelToken.token,
+        },
+      );
+
+      return null;
+    } catch (error) {
+      if (axios.isCancel(error)) {
+        return 'Upload Cancelled.';
+      }
+
+      return 'Dataset File Already Exists.';
+    }
+  }
+  async uploadMetadataFile(upload: UploadMeta): Promise<string | null> {
+    const formData = new FormData();
+    formData.append('file', upload.file, upload.file.name);
+    formData.append('meta', JSON.stringify(upload.meta));
+    formData.append('output_filename', upload.output_filename);
+
+    const endpoint = `api/v1/dataset/${upload.meta_type}/upload`;
     try {
       await this.axios.post(
         endpoint,
@@ -183,20 +211,85 @@ export default class Client {
     return resp.data;
   }
   // Dataset
+  async checkWafer(id: string): Promise<any> {
+    const req: DatasetRequest = {
+      params: {
+        filter: JSON.stringify({ _id: id }),
+        options: JSON.stringify({ _id: 1 }),
+      },
+    };
+    const data = await this.getWafers(req);
+    if (data.length > 0) return true;
+    return false;
+  }
   async getWafers(payload: DatasetRequest): Promise<any> {
     const resp = await this.axios.get('/api/v1/dataset/wafers', payload);
     return resp.data;
+  }
+  async putWafers(payload: any): Promise<any> {
+    const resp = await this.axios.put('/api/v1/dataset/wafers', payload);
+    return resp.data;
+  }
+  async checkChip(id: string): Promise<any> {
+    const req: DatasetRequest = {
+      params: {
+        filter: JSON.stringify({ _id: id }),
+        options: JSON.stringify({ _id: 1 }),
+      },
+    };
+    const data = await this.getChips(req);
+    if (data.length > 0) return true;
+    return false;
   }
   async getChips(payload: DatasetRequest): Promise<any> {
     const resp = await this.axios.get('/api/v1/dataset/chips', payload);
     return resp.data;
   }
+  async putChips(payload: any): Promise<any> {
+    const resp = await this.axios.put('/api/v1/dataset/chips', payload);
+    return resp.data;
+  }
+  async deleteChip(id: string): Promise<any> {
+    const payload: DatasetRequest = { params: { filter: JSON.stringify({ _id: id }) } };
+    const resp = await this.axios.delete('/api/v1/dataset/chips', payload);
+    return resp.data;
+  }
+  async checkDbits(id: string): Promise<any> {
+    const req: DatasetRequest = {
+      params: {
+        filter: JSON.stringify({ _id: id }),
+        options: JSON.stringify({ _id: 1 }),
+      },
+    };
+    const data = await this.getDbits(req);
+    if (data.length > 0) return true;
+    return false;
+  }
   async getDbits(payload: DatasetRequest): Promise<any> {
     const resp = await this.axios.get('/api/v1/dataset/dbits', payload);
     return resp.data;
   }
+  async putDbits(payload: any): Promise<any> {
+    const resp = await this.axios.put('/api/v1/dataset/dbits', payload);
+    return resp.data;
+  }
+  async checkQc(id: string): Promise<any> {
+    const req: DatasetRequest = {
+      params: {
+        filter: JSON.stringify({ _id: id }),
+        options: JSON.stringify({ _id: 1 }),
+      },
+    };
+    const data = await this.getQc(req);
+    if (data.length > 0) return true;
+    return false;
+  }
   async getQc(payload: DatasetRequest): Promise<any> {
     const resp = await this.axios.get('/api/v1/dataset/qc', payload);
+    return resp.data;
+  }
+  async putQc(payload: any): Promise<any> {
+    const resp = await this.axios.put('/api/v1/dataset/qc', payload);
     return resp.data;
   }
   async getWaferTrace(payload: DatasetRequest): Promise<any> {

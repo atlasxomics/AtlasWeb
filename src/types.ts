@@ -7,8 +7,6 @@ export interface ApplicationData {
 }
 
 export interface DatasetUploadMetadata {
-  subject_type: string;
-  data_source: string;
   remarks?: string;
 }
 
@@ -21,6 +19,19 @@ export interface DatasetUploadParams {
 }
 
 export interface Upload extends DatasetUploadParams {
+  progress: number;
+  error: string | null;
+  finished: boolean;
+  cancelled: boolean;
+  cancelToken: CancelTokenSource;
+  onProgress: (val: ProgressEvent) => unknown;
+}
+
+export interface MetadataUploadParams extends DatasetUploadParams {
+  meta_type: string;
+}
+
+export interface UploadMeta extends MetadataUploadParams {
   progress: number;
   error: string | null;
   finished: boolean;

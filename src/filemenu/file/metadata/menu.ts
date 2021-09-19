@@ -11,7 +11,7 @@ const menu = {
     },
     {
       text: 'Chip Table (.csv)',
-      click: () => { uploadChipInformationMenu.value = true; },
+      click: () => { uploadChipInformationMenu.value = true; console.log('Chip meta upload clicked'); },
       disabled: false,
     },
     {

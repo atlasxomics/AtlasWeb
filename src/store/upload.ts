@@ -5,7 +5,7 @@ import axios from 'axios';
 import { defineModule } from 'direct-vuex';
 import * as lodash from 'lodash';
 import { moduleGetterContext, moduleActionContext } from '@/store';
-import { DatasetUploadParams, Upload, QcEntryGenerationRequest } from '@/types';
+import { DatasetUploadParams, Upload, QcEntryGenerationRequest, MetadataUploadParams, UploadMeta } from '@/types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const uploadActionContext = ((context: any) => moduleActionContext(context, uploadModule));
@@ -104,6 +104,48 @@ const uploadModule = defineModule({
         });
       });
 
+      await Promise.all(promises);
+      commit.setInProgress(false);
+    },
+    async uploadMetadataFile(context, datasetfile: MetadataUploadParams[]) {
+      const { state, commit, rootState: { client } } = uploadActionContext(context);
+      if (client === null) {
+        return;
+      }
+
+      commit.setInProgress(true);
+      function setUploadProgress(val: ProgressEvent, index: number) {
+        const progress = (val.loaded / val.total) * 100;
+        const currentUpload = state.uploads[index];
+        const upload = { ...currentUpload, progress };
+        commit.setUploadAtIndex({ upload, index });
+      }
+
+      const uploads: UploadMeta[] = datasetfile.map((file, index) => ({
+        ...file,
+        progress: 0,
+        error: null,
+        cancelled: false,
+        finished: false,
+        cancelToken: axios.CancelToken.source(),
+        onProgress: (val: ProgressEvent) => { setUploadProgress(val, index); },
+      }));
+
+      commit.setUploads(uploads);
+      const promises = uploads.map(async (upload, index) => {
+        const error = await client.uploadMetadataFile(upload);
+
+        // Must access this way due to upload being updated async
+        const currentUpload = state.uploads[index];
+        commit.setUploadAtIndex({
+          index,
+          upload: {
+            ...currentUpload,
+            error,
+            finished: true,
+          },
+        });
+      });
       await Promise.all(promises);
       commit.setInProgress(false);
     },
