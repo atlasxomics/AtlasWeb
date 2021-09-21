@@ -8,7 +8,7 @@ export const menu = reactive({
     {
       text: 'Wafer Information',
       click: () => { store.commit.changeMainView('WaferInformationViewer'); },
-      disabled: true,
+      disabled: false,
     },
     {
       text: 'Chip Information',
@@ -17,7 +17,7 @@ export const menu = reactive({
     {
       text: 'DBiT Information',
       click: () => { store.commit.changeMainView('DbitInformationViewer'); },
-      disabled: true,
+      disabled: false,
     },
   ],
 });

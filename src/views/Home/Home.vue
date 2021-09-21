@@ -16,6 +16,8 @@ import WaferTrace from './components/WaferTrace.vue';
 import QcViewer from './components/QcViewer.vue';
 import ImageViewer from './components/ImageViewer.vue';
 import ChipInformationViewer from './components/ChipInformationViewer.vue';
+import WaferInformationViewer from './components/WaferInformationViewer.vue';
+import DbitInformationViewer from './components/DbitInformationViewer.vue';
 
 const appReadyForDataset = new Promise((resolve) => {
   const ready = computed(() => (
@@ -29,7 +31,7 @@ const appReadyForDataset = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'Home',
-  components: { Appbar, ImageViewer, WaferTrace, QcViewer, ChipInformationViewer },
+  components: { Appbar, ImageViewer, WaferTrace, QcViewer, ChipInformationViewer, WaferInformationViewer, DbitInformationViewer },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const user = computed(() => store.state.client?.user);

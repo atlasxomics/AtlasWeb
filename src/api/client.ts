@@ -230,6 +230,11 @@ export default class Client {
     const resp = await this.axios.put('/api/v1/dataset/wafers', payload);
     return resp.data;
   }
+  async deleteWafer(id: string): Promise<any> {
+    const payload: DatasetRequest = { params: { filter: JSON.stringify({ _id: id }) } };
+    const resp = await this.axios.delete('/api/v1/dataset/wafers', payload);
+    return resp.data;
+  }
   async checkChip(id: string): Promise<any> {
     const req: DatasetRequest = {
       params: {
@@ -254,7 +259,7 @@ export default class Client {
     const resp = await this.axios.delete('/api/v1/dataset/chips', payload);
     return resp.data;
   }
-  async checkDbits(id: string): Promise<any> {
+  async checkDbit(id: string): Promise<any> {
     const req: DatasetRequest = {
       params: {
         filter: JSON.stringify({ _id: id }),
@@ -271,6 +276,11 @@ export default class Client {
   }
   async putDbits(payload: any): Promise<any> {
     const resp = await this.axios.put('/api/v1/dataset/dbits', payload);
+    return resp.data;
+  }
+  async deleteDbit(id: string): Promise<any> {
+    const payload: DatasetRequest = { params: { filter: JSON.stringify({ _id: id }) } };
+    const resp = await this.axios.delete('/api/v1/dataset/dbits', payload);
     return resp.data;
   }
   async checkQc(id: string): Promise<any> {

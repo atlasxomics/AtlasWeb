@@ -7,7 +7,7 @@ const menu = {
     {
       text: 'Wafer Table (.csv)',
       click: () => { uploadWaferInformationMenu.value = true; },
-      disabled: true,
+      disabled: false,
     },
     {
       text: 'Chip Table (.csv)',
@@ -17,7 +17,7 @@ const menu = {
     {
       text: 'DBiT Run Table (.csv)',
       click: () => { uploadDbitInformationMenu.value = true; },
-      disabled: true,
+      disabled: false,
     },
   ],
 };
