@@ -52,15 +52,15 @@
           <v-tabs
             v-model="tab"
             >
-            <v-tab v-for="item in ['Overview','Advanced']" :key="item">
+            <v-tab v-for="item in tabs" :key="item">
               {{ item }}
             </v-tab>
           </v-tabs>
           <v-tabs-items v-model="tab">
-            <v-tab-item key="Default">
+            <v-tab-item key="overview">
               <v-card class="iv_image_parent">
                 <v-card-title>
-                  Details
+                  DBiT Details - {{ currentItem._id }}
                   <v-spacer/>
                   <span v-if="item_loading">
                     <v-progress-circular
@@ -107,6 +107,13 @@
                 </v-card-text>
               </v-card>
             </v-tab-item>
+            <v-tab-item key="advanced">
+              <v-card>
+                <v-card-title>
+                  Advanced viewer
+                </v-card-title>
+              </v-card>
+            </v-tab-item>
           </v-tabs-items>
         </v-col>
       </v-row>
@@ -120,6 +127,7 @@ import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { objectToArray } from '@/utils';
 
+const tabs = ['overview', 'advanced'];
 const headers = [
   { text: 'ID', value: 'id' },
   { text: 'Species', value: 'metadata.species' },
@@ -150,10 +158,11 @@ export default defineComponent({
     const items = ref<any[]>([]);
     const details = ref<any[] | null>();
     const selected = ref<any>();
+    const currentItem = ref<any>({});
     const images = ref<any>([]);
     const loading = ref(false);
     const item_loading = ref(false);
-    const tab = ref<string>('Default');
+    const tab = ref<string>('overview');
     async function fetchQcList() {
       if (!client.value) {
         return;
@@ -212,26 +221,38 @@ export default defineComponent({
         item_loading.value = false;
       });
     }
+    function resetDetails() {
+      details.value = [];
+      images.value = [];
+    }
     async function selectAction(ev: any) {
       try {
         item_loading.value = true;
+        currentItem.value = ev;
+        resetDetails();
         await loadDbit(ev.id);
         await loadImages(ev);
         item_loading.value = false;
       } catch (e) {
         snackbar.dispatch({ text: `Failed to load the deatils of ${ev.id}`, options: { right: true, color: 'error' } });
         item_loading.value = false;
-        details.value = null;
+        details.value = [];
+      }
+      if (!details.value) return;
+      if (details.value.length < 1) {
+        snackbar.dispatch({ text: `Failed to load the deatils of ${ev.id}`, options: { right: true, color: 'error' } });
       }
     }
     onMounted(async () => {
       await appReadyForClient;
     });
     return {
+      tabs,
       tab,
       search,
       search_details,
       items,
+      currentItem,
       selected,
       headers,
       dbit_headers,
