@@ -47,9 +47,9 @@ export const menu = reactive({
       click: () => { store.commit.changeMainView('ImageViewer'); },
     },
     {
-      text: 'Study Viewer',
-      click: () => { store.commit.changeMainView('StudyViewer'); },
-      disabled: true,
+      text: 'QC Viewer',
+      click: () => { store.commit.changeMainView('QcViewer'); },
+      disabled: false,
     },
     // {
     //   text: 'Image Viewer',
