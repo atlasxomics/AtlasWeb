@@ -3,7 +3,7 @@
     app
     dense
   >
-      <vue-file-toolbar-menu
+<!--       <vue-file-toolbar-menu
         :content="filemenu"
         :style="filemenuStyle"
       />
@@ -12,7 +12,8 @@
           :is="component"
           :key="key"
         />
-      </template>
+      </template> -->
+      <v-app-bar-nav-icon @click="$emit('openDrawer')"></v-app-bar-nav-icon>
       <v-spacer />
       <template v-if="loggedIn">
         <v-menu

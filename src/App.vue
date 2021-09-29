@@ -20,26 +20,6 @@ export default defineComponent({
   components: { GlobalSnackbar, Prompt, UploadProgressDisplay },
   setup(props, ctx) {
     const client = computed(() => store.state.client);
-    // const dialogOpen = computed(() => store.state.application.dialogOpen);
-    // const dark = computed({
-    //   get: () => store.state.application.darkTheme,
-    //   set: (val) => { store.commit.application.setDarkTheme(val); },
-    // });
-
-    // watch(dialogOpen, (val) => {
-    //   // TODO: refactor with more general solution using directives
-    //   if (val) {
-    //     Mousetrap.pause();
-    //   } else {
-    //     Mousetrap.unpause();
-    //   }
-    // });
-
-    // Needed to link the theme config in ctx.root and store
-    // watchEffect(() => {
-    //   // eslint-disable-next-line no-param-reassign
-    //   ctx.root.$vuetify.theme.dark = dark.value;
-    // });
   },
 });
 </script>

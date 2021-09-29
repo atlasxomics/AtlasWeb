@@ -1,25 +1,37 @@
 <template>
   <v-main>
-    <appbar />
-    <component v-bind:is="component"/>
-    <v-footer absolute>AtlasXomics, 2021</v-footer>
+    <appbar class="appbar" v-on:openDrawer="openDrawer"/>
+    <v-sheet
+      style="position: relative">
+      <main-menu ref="mainmenu"  v-on:menuClicked="menuClicked"/>
+      <template v-if="component.component">
+        <component v-bind:is="component.component" :query="component"/>
+      </template>
+      <template v-if="!component.component">
+        <home-page/>
+      </template>
+<!--       <v-footer absolute>AtlasXomics, 2021</v-footer> -->
+    </v-sheet>
   </v-main>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onBeforeMount, watch, watchEffect, ref } from '@vue/composition-api';
+import { computed, defineComponent, onBeforeMount, watch, onMounted, watchEffect, ref } from '@vue/composition-api';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { loginExisting, loggedIn } from '@/utils/auth';
+import { generateRouteByQuery } from '@/utils';
 import Appbar from '@/components/Appbar/Appbar.vue';
-import WaferTrace from './components/WaferTrace.vue';
-import QcViewer from './components/QcViewer.vue';
-import ImageViewer from './components/ImageViewer.vue';
-import ChipInformationViewer from './components/ChipInformationViewer.vue';
-import WaferInformationViewer from './components/WaferInformationViewer.vue';
-import DbitInformationViewer from './components/DbitInformationViewer.vue';
+import MainMenu from './components/menu/MainMenu.vue';
+import HomePage from './components/welcome/HomePage.vue';
+import WaferTrace from './components/view/WaferTrace.vue';
+import QcViewer from './components/view/QcViewer.vue';
+import ImageViewer from './components/view/ImageViewer.vue';
+import ChipInformationViewer from './components/edit/ChipInformationViewer.vue';
+import WaferInformationViewer from './components/edit/WaferInformationViewer.vue';
+import DbitInformationViewer from './components/edit/DbitInformationViewer.vue';
 
-const appReadyForDataset = new Promise((resolve) => {
+const appReadyForClient = new Promise((resolve) => {
   const ready = computed(() => (
     store.state.client !== null
   ));
@@ -31,18 +43,43 @@ const appReadyForDataset = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'Home',
-  components: { Appbar, ImageViewer, WaferTrace, QcViewer, ChipInformationViewer, WaferInformationViewer, DbitInformationViewer },
+  components: {
+    Appbar,
+    MainMenu,
+    HomePage,
+    ImageViewer,
+    WaferTrace,
+    QcViewer,
+    ChipInformationViewer,
+    WaferInformationViewer,
+    DbitInformationViewer,
+  },
   setup(props, ctx) {
     const router = ctx.root.$router;
+    const client = computed(() => store.state.client);
+    const currentRoute = computed(() => ctx.root.$route);
     const user = computed(() => store.state.client?.user);
-    const component = computed(() => store.state.mainComponent);
+    const component = computed(() => store.state.currentComponent);
     function redirectToLogin() {
       router.push('/login');
     }
     function redirectToErrorPage() {
       router.push('/Error');
     }
-
+    function openDrawer() {
+      (ctx as any).refs.mainmenu.openDrawer();
+    }
+    function menuClicked(ev: any) {
+      if (!ev) {
+        if (currentRoute.value.query.component) {
+          const newRoute: any = generateRouteByQuery(currentRoute.value, null);
+          router.push(newRoute);
+        }
+      } else if (ev.component !== currentRoute.value.query.component) {
+        const newRoute: any = generateRouteByQuery(currentRoute.value, ev);
+        router.push(newRoute);
+      }
+    }
     // Login Existing User
     onBeforeMount(async () => {
       await loginExisting();
@@ -60,9 +97,20 @@ export default defineComponent({
         redirectToLogin();
       }
     });
+    watch(currentRoute, (route) => {
+      if (route.query.component) store.commit.setComponent(route.query);
+      else store.commit.setComponent({ component: null });
+    });
+    onMounted(() => {
+      const route = currentRoute.value;
+      if (route.query.component) store.commit.setComponent(route.query);
+      else store.commit.setComponent({ component: null });
+    });
     return {
       component,
       user,
+      openDrawer,
+      menuClicked,
     };
   },
 });

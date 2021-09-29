@@ -7,16 +7,16 @@ export const menu = reactive({
   menu: [
     {
       text: 'Wafer Information',
-      click: () => { store.commit.changeMainView('WaferInformationViewer'); },
+      click: () => { store.commit.setComponent({ component: 'WaferInformationViewer' }); },
       disabled: false,
     },
     {
       text: 'Chip Information',
-      click: () => { store.commit.changeMainView('ChipInformationViewer'); },
+      click: () => { store.commit.setComponent({ component: 'ChipInformationViewer' }); },
     },
     {
       text: 'DBiT Information',
-      click: () => { store.commit.changeMainView('DbitInformationViewer'); },
+      click: () => { store.commit.setComponent({ component: 'DbitInformationViewer' }); },
       disabled: false,
     },
   ],

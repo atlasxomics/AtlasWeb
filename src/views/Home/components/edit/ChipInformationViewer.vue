@@ -53,7 +53,7 @@
         <v-col>
           <v-card height="87vh" class="overflow" v-if="detail">
             <v-card-title>
-              DBiT Details - {{ detail[0].value }}
+              Chip Details - {{ detail[0].value }}
             </v-card-title>
             <v-card-actions>
               <v-row no-gutters>
@@ -138,19 +138,21 @@ import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import type {
   DatasetRequest,
-  DatasetListingDbit,
+  DatasetListingChip,
 } from '@/types';
-import { objectToArray, arrayToObject } from '@/utils';
+import { objectToArray, arrayToObject, generateRouteByQuery } from '@/utils';
 
 const headers = [
-  { text: 'RUN ID', value: 'run_id' },
-  { text: 'Chip A', value: 'chip_a_id' },
-  { text: 'Chip B', value: 'chip_b_id' },
+  { text: 'Chip ID', value: 'chip_id' },
+  { text: 'Wafer ID', value: 'wafer_id' },
 ];
 
 export default defineComponent({
-  name: 'DbitInformationViewer',
-  setup() {
+  name: 'ChipInformationViewer',
+  props: ['query'],
+  setup(props, ctx) {
+    const router = ctx.root.$router;
+    const currentRoute = computed(() => ctx.root.$route);
     const client = computed(() => store.state.client);
     const loading = ref(false);
     const search = ref<string | null>(null);
@@ -159,7 +161,7 @@ export default defineComponent({
     const detail = ref<any>();
     const readOnly = ref<boolean>(true);
     const hasChanged = ref<boolean>(false);
-    const mainKeys = ref<string[]>(['run_id']);
+    const mainKeys = ref<string[]>(['chip_id', 'wafer_id']);
     async function fetchData() {
       if (!client.value) {
         return;
@@ -168,7 +170,7 @@ export default defineComponent({
       search.value = null;
       loading.value = true;
       const payload = { params: { filter: null, options: null } };
-      const dataset = await client.value.getDbits(payload);
+      const dataset = await client.value.getChips(payload);
       loading.value = false;
       items.value = dataset;
     }
@@ -178,7 +180,7 @@ export default defineComponent({
       // console.log(item._id, item.date_acquired);
       const fltr = { _id: item._id };
       const payload = { params: { filter: JSON.stringify(fltr), options: null } };
-      const [data] = await client.value.getDbits(payload);
+      const [data] = await client.value.getChips(payload);
       const keys = mainKeys.value;
       const unsorted = objectToArray(data);
       detail.value = _.sortBy(unsorted, (x) => !keys.includes(x.key));
@@ -200,7 +202,7 @@ export default defineComponent({
     }
     async function duplicateAction(ev: any) {
       const obj = arrayToObject(detail.value);
-      obj.run_id = null;
+      obj.chip_id = null;
       obj._id = null;
       detail.value = objectToArray(obj);
       hasChanged.value = true;
@@ -210,18 +212,18 @@ export default defineComponent({
       // console.log(detail.value);
       if (!client.value) return;
       const obj = arrayToObject(detail.value);
-      const exist = await client.value.checkDbit(obj.run_id);
+      const exist = await client.value.checkChip(obj.chip_id);
       let hasWritten = false;
       if (exist) {
         const payload = [obj];
-        const resp = await client.value.putDbits(payload);
+        const resp = await client.value.putChips(payload);
         hasWritten = true;
         // if entry exists, ask with popup dialog to overwrite
-        // snackbar.dispatch({ text: `Dbit id ${obj.run_id} exists in the database`, options: { right: true, color: 'error' } });
+        // snackbar.dispatch({ text: `Chip id ${obj.chip_id} exists in the database`, options: { right: true, color: 'error' } });
       } else {
         // just upsert
         const payload = [obj];
-        const resp = await client.value.putDbits(payload);
+        const resp = await client.value.putChips(payload);
         hasWritten = true;
       }
       if (hasWritten) {
@@ -234,7 +236,7 @@ export default defineComponent({
     async function deleteAction(ev: any) {
       if (!client.value) return;
       const obj = arrayToObject(detail.value);
-      const resp = await client.value.deleteDbit(obj.run_id);
+      const resp = await client.value.deleteChip(obj.chip_id);
       await fetchData();
       detail.value = null;
       snackbar.dispatch({ text: 'Item has been successfully deleted.', options: { right: true, color: 'success' } });
@@ -248,7 +250,7 @@ export default defineComponent({
     }
     function validate(data: any) {
       const obj = arrayToObject(detail.value);
-      return !isEmpty(obj.run_id);
+      return !isEmpty(obj.chip_id);
     }
     onMounted(fetchData);
     return {

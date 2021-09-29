@@ -140,7 +140,7 @@ import type {
   DatasetRequest,
   DatasetListingWafer,
 } from '@/types';
-import { objectToArray, arrayToObject } from '@/utils';
+import { objectToArray, arrayToObject, generateRouteByQuery } from '@/utils';
 
 const headers = [
   { text: 'Wafer ID', value: 'wafer_id' },
@@ -149,7 +149,10 @@ const headers = [
 
 export default defineComponent({
   name: 'WaferInformationViewer',
-  setup() {
+  props: ['query'],
+  setup(props, ctx) {
+    const router = ctx.root.$router;
+    const currentRoute = computed(() => ctx.root.$route);
     const client = computed(() => store.state.client);
     const loading = ref(false);
     const search = ref<string | null>(null);

@@ -17,7 +17,7 @@ const {
 } = createDirectStore({
   state: {
     client: null as Client | null,
-    mainComponent: 'ImageViewer' as string | null,
+    currentComponent: { component: null } as any | null,
     serverStatus: null as any | null,
   },
   getters: {},
@@ -25,8 +25,8 @@ const {
     setClient(state, client: Client | null) {
       state.client = client;
     },
-    changeMainView(state, viewname: string) {
-      state.mainComponent = viewname;
+    setComponent(state, query: any) {
+      state.currentComponent = query;
     },
     setServerStatus(state, status: any | null) {
       state.serverStatus = status;

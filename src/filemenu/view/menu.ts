@@ -40,15 +40,15 @@ export const menu = reactive({
     },
     {
       text: 'Wafer Trace',
-      click: () => { store.commit.changeMainView('WaferTrace'); },
+      click: () => { store.commit.setComponent({ component: 'WaferTrace' }); },
     },
     {
       text: 'Image Viewer',
-      click: () => { store.commit.changeMainView('ImageViewer'); },
+      click: () => { store.commit.setComponent({ component: 'ImageViewer' }); },
     },
     {
       text: 'QC Viewer',
-      click: () => { store.commit.changeMainView('QcViewer'); },
+      click: () => { store.commit.setComponent({ component: 'QcViewer' }); },
       disabled: false,
     },
     // {

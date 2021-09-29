@@ -29,3 +29,13 @@ export function arrayToObject(arr: any[]) {
   });
   return outObject;
 }
+export function generateRouteByQuery(currentRoute: any, query: any) {
+  const route = currentRoute;
+  const newroute = {
+    name: route.name || undefined,
+    path: route.path,
+    params: route.params,
+    query,
+  };
+  return newroute;
+}

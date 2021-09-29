@@ -124,6 +124,7 @@ import _ from 'lodash';
 import { defineComponent, ref, computed, onMounted, watch } from '@vue/composition-api';
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
+import { generateRouteByQuery } from '@/utils';
 
 const headers = [
   { text: 'Field', value: 'name' },
@@ -132,7 +133,10 @@ const headers = [
 
 export default defineComponent({
   name: 'WaferTrace',
-  setup() {
+  props: ['query'],
+  setup(props, ctx) {
+    const router = ctx.root.$router;
+    const currentRoute = computed(() => ctx.root.$route);
     const client = computed(() => store.state.client);
     const search = ref<string>('');
     const items = ref<any[]>([]);
