@@ -1,5 +1,11 @@
 <template>
     <v-container fluid>
+      <fresh-dialog
+        v-model="uploadDbitInformationMenu"
+        width="50vh"
+      >
+        <dbit-information-upload/>
+      </fresh-dialog>
       <v-row no-futters>
         <v-col cols="12" sm="5">
           <v-card>
@@ -141,16 +147,27 @@ import type {
   DatasetListingDbit,
 } from '@/types';
 import { objectToArray, arrayToObject, generateRouteByQuery } from '@/utils';
+import FreshDialog from '@/components/FreshDialog.vue';
+import DbitInformationUpload from '@/filemenu/file/metadata/components/DbitInformationUpload.vue';
+import { uploadDbitInformationMenu } from '@/filemenu/file/metadata/state';
 
 const headers = [
   { text: 'RUN ID', value: 'run_id' },
   { text: 'Chip A', value: 'chip_a_id' },
   { text: 'Chip B', value: 'chip_b_id' },
 ];
-
+const submenu = [
+  {
+    text: 'Upload DBiT CSV',
+    click: () => {
+      uploadDbitInformationMenu.value = true;
+    },
+  },
+];
 export default defineComponent({
   name: 'DbitInformationViewer',
   props: ['query'],
+  components: { FreshDialog, DbitInformationUpload },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const currentRoute = computed(() => ctx.root.$route);
@@ -253,7 +270,10 @@ export default defineComponent({
       const obj = arrayToObject(detail.value);
       return !isEmpty(obj.run_id);
     }
-    onMounted(fetchData);
+    onMounted(async () => {
+      store.commit.setSubmenu(submenu);
+      await fetchData();
+    });
     return {
       headers,
       search,
@@ -272,6 +292,8 @@ export default defineComponent({
       fetchData,
       validate,
       mainKeys,
+      uploadDbitInformationMenu,
+      submenu,
     };
   },
 });

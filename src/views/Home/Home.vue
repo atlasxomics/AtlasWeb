@@ -60,6 +60,7 @@ export default defineComponent({
     const currentRoute = computed(() => ctx.root.$route);
     const user = computed(() => store.state.client?.user);
     const component = computed(() => store.state.currentComponent);
+    const subMenu = computed(() => store.state.subMenu);
     function redirectToLogin() {
       router.push('/login');
     }
@@ -111,6 +112,7 @@ export default defineComponent({
       user,
       openDrawer,
       menuClicked,
+      subMenu,
     };
   },
 });

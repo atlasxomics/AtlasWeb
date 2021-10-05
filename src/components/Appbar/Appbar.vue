@@ -14,6 +14,14 @@
         />
       </template> -->
       <v-app-bar-nav-icon @click="$emit('openDrawer')"></v-app-bar-nav-icon>
+      <v-btn
+        text
+        v-for="menu in subMenu"
+        v-bind:key="menu.text"
+        @click="menu.click"
+        >
+        {{ menu.text }}
+      </v-btn>
       <v-spacer />
       <template v-if="loggedIn">
         <v-menu
@@ -63,7 +71,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref } from '@vue/composition-api';
+import { defineComponent, computed, ref, watch } from '@vue/composition-api';
 import VueFileToolbarMenu from 'vue-file-toolbar-menu';
 import colors from 'vuetify/lib/util/colors';
 
@@ -88,7 +96,7 @@ export default defineComponent({
     const currentRoute = computed(() => ctx.root.$route);
     const userMenu = ref(false);
     const changePasswordMenu = ref(false);
-
+    const subMenu = computed(() => store.state.subMenu);
     return {
       filemenu,
       filemenuStyle,
@@ -99,6 +107,7 @@ export default defineComponent({
       currentRoute,
       userMenu,
       changePasswordMenu,
+      subMenu,
     };
   },
 });

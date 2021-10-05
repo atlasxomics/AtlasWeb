@@ -47,7 +47,7 @@ const menu = [
   {
     groupname: 'Tools',
     items: [
-      { name: 'X-SPOT', icon: 'mdi-pencil-box', color: 'cyan', query: { component: 'QcTools' } },
+      { name: 'Atlas Browser', icon: 'mdi-pencil-box', color: 'cyan', query: { component: 'AtlasBrowser' } },
     ],
   },
   {
@@ -74,6 +74,7 @@ export default defineComponent({
     function openDrawer() {
       drawer.value = true;
     }
+    store.commit.setSubmenu(null);
     return { menu, drawer, openDrawer };
   },
 });

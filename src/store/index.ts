@@ -19,6 +19,7 @@ const {
     client: null as Client | null,
     currentComponent: { component: null } as any | null,
     serverStatus: null as any | null,
+    subMenu: null as any[] | null,
   },
   getters: {},
   mutations: {
@@ -30,6 +31,9 @@ const {
     },
     setServerStatus(state, status: any | null) {
       state.serverStatus = status;
+    },
+    setSubmenu(state, submenu: any[] | null) {
+      state.subMenu = submenu;
     },
   },
   actions: {},

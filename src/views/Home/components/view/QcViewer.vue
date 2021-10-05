@@ -1,5 +1,10 @@
 <template>
     <v-container fluid>
+    <fresh-dialog
+      v-model="uploadQcDirectoryMenu"
+    >
+      <upload-qc-directory-menu />
+    </fresh-dialog>
       <v-row>
         <v-col cols="12" sm="5">
           <v-card>
@@ -126,6 +131,9 @@ import { defineComponent, ref, computed, onMounted, watch, watchEffect } from '@
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { objectToArray, generateRouteByQuery } from '@/utils';
+import FreshDialog from '@/components/FreshDialog.vue';
+import UploadQcDirectoryMenu from '@/filemenu/file/components/UploadQCDirectoryMenu.vue';
+import { uploadQcDirectoryMenu } from '@/filemenu/file/state';
 
 const tabs = ['overview', 'advanced'];
 const headers = [
@@ -148,10 +156,18 @@ const appReadyForClient = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
-
+const submenu = [
+  {
+    text: 'Upload QC Directory',
+    click: () => {
+      uploadQcDirectoryMenu.value = true;
+    },
+  },
+];
 export default defineComponent({
   name: 'QcViewer',
   props: ['query'],
+  components: { FreshDialog, UploadQcDirectoryMenu },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const currentRoute = computed(() => ctx.root.$route);
@@ -247,6 +263,7 @@ export default defineComponent({
       }
     }
     onMounted(async () => {
+      store.commit.setSubmenu(submenu);
       await appReadyForClient;
     });
     return {
@@ -266,6 +283,7 @@ export default defineComponent({
       fetchQcList,
       details,
       images,
+      uploadQcDirectoryMenu,
     };
   },
 

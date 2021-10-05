@@ -264,6 +264,9 @@ export default defineComponent({
       await loadQc(dbit_ids, image_selected.value);
       await loadImages();
     });
+    onMounted(() => {
+      store.commit.setSubmenu(null);
+    });
     return {
       search,
       items,

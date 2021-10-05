@@ -1,5 +1,11 @@
 <template>
     <v-container fluid>
+      <fresh-dialog
+        v-model="uploadWaferInformationMenu"
+        width="50vh"
+      >
+        <wafer-information-upload/>
+      </fresh-dialog>
       <v-row no-futters>
         <v-col cols="12" sm="5">
           <v-card>
@@ -141,15 +147,26 @@ import type {
   DatasetListingWafer,
 } from '@/types';
 import { objectToArray, arrayToObject, generateRouteByQuery } from '@/utils';
+import FreshDialog from '@/components/FreshDialog.vue';
+import WaferInformationUpload from '@/filemenu/file/metadata/components/WaferInformationUpload.vue';
+import { uploadWaferInformationMenu } from '@/filemenu/file/metadata/state';
 
 const headers = [
   { text: 'Wafer ID', value: 'wafer_id' },
   { text: 'Generation', value: 'generation' },
 ];
-
+const submenu = [
+  {
+    text: 'Upload Wafer CSV',
+    click: () => {
+      uploadWaferInformationMenu.value = true;
+    },
+  },
+];
 export default defineComponent({
   name: 'WaferInformationViewer',
   props: ['query'],
+  components: { FreshDialog, WaferInformationUpload },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const currentRoute = computed(() => ctx.root.$route);
@@ -252,7 +269,10 @@ export default defineComponent({
       const obj = arrayToObject(detail.value);
       return !isEmpty(obj.wafer_id);
     }
-    onMounted(fetchData);
+    onMounted(async () => {
+      store.commit.setSubmenu(submenu);
+      await fetchData();
+    });
     return {
       headers,
       search,
@@ -271,6 +291,7 @@ export default defineComponent({
       fetchData,
       validate,
       mainKeys,
+      uploadWaferInformationMenu,
     };
   },
 });

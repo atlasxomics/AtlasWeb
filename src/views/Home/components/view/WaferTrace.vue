@@ -369,7 +369,9 @@ export default defineComponent({
         image_src2.value = src;
       }
     });
-
+    onMounted(() => {
+      store.commit.setSubmenu(null);
+    });
     return {
       search,
       items,

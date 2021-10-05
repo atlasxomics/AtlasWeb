@@ -1,5 +1,11 @@
 <template>
     <v-container fluid>
+      <fresh-dialog
+        v-model="uploadChipInformationMenu"
+        width="50vh"
+      >
+        <chip-information-upload/>
+      </fresh-dialog>
       <v-row no-futters>
         <v-col cols="12" sm="5">
           <v-card>
@@ -132,7 +138,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted, watch } from '@vue/composition-api';
+import { defineComponent, ref, computed, onMounted, watch, onBeforeMount } from '@vue/composition-api';
 import _ from 'lodash';
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
@@ -140,16 +146,29 @@ import type {
   DatasetRequest,
   DatasetListingChip,
 } from '@/types';
+import FreshDialog from '@/components/FreshDialog.vue';
 import { objectToArray, arrayToObject, generateRouteByQuery } from '@/utils';
+import ChipInformationUpload from '@/filemenu/file/metadata/components/ChipInformationUpload.vue';
+import { uploadChipInformationMenu } from '@/filemenu/file/metadata/state';
 
 const headers = [
   { text: 'Chip ID', value: 'chip_id' },
   { text: 'Wafer ID', value: 'wafer_id' },
 ];
 
+const submenu = [
+  {
+    text: 'Upload Chip CSV',
+    click: () => {
+      uploadChipInformationMenu.value = true;
+    },
+  },
+];
+
 export default defineComponent({
   name: 'ChipInformationViewer',
   props: ['query'],
+  components: { FreshDialog, ChipInformationUpload },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const currentRoute = computed(() => ctx.root.$route);
@@ -252,7 +271,10 @@ export default defineComponent({
       const obj = arrayToObject(detail.value);
       return !isEmpty(obj.chip_id);
     }
-    onMounted(fetchData);
+    onMounted(async () => {
+      store.commit.setSubmenu(submenu);
+      await fetchData();
+    });
     return {
       headers,
       search,
@@ -271,6 +293,7 @@ export default defineComponent({
       fetchData,
       validate,
       mainKeys,
+      uploadChipInformationMenu,
     };
   },
 });

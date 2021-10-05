@@ -26,7 +26,7 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     onMounted(() => {
-      console.log('Mounted');
+      store.commit.setSubmenu(null);
     });
   },
 });
