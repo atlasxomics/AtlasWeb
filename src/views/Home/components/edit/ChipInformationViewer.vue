@@ -159,6 +159,9 @@ const headers = [
 const submenu = [
   {
     text: 'Upload Chip CSV',
+    icon: 'mdi-upload',
+    tooltip: 'Upload Chip CSV',
+    color: 'primary',
     click: () => {
       uploadChipInformationMenu.value = true;
     },

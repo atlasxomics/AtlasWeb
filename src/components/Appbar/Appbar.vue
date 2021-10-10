@@ -14,14 +14,28 @@
         />
       </template> -->
       <v-app-bar-nav-icon @click="$emit('openDrawer')"></v-app-bar-nav-icon>
-      <v-btn
-        text
+      <v-tooltip
         v-for="menu in subMenu"
         v-bind:key="menu.text"
-        @click="menu.click"
-        >
-        {{ menu.text }}
-      </v-btn>
+        bottom>
+        <template v-slot:activator="{ on, attrs }" >
+          <v-btn
+            text
+            @click="menu.click"
+            :icon="menu.icon ? true : false"
+            v-bind="attrs"
+            v-on="on"
+            >
+            <template v-if="menu.icon">
+              <v-icon :color="menu.color">{{ menu.icon }}</v-icon>
+            </template>
+            <template v-if="!menu.icon">
+              {{ menu.text }}
+            </template>
+          </v-btn>
+        </template>
+        <span v-bind:key="`${menu.text}-span`">{{ menu.tooltip }}</span>
+      </v-tooltip>
       <v-spacer />
       <template v-if="loggedIn">
         <v-menu

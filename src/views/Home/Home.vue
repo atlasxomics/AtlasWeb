@@ -30,6 +30,7 @@ import ImageViewer from './components/view/ImageViewer.vue';
 import ChipInformationViewer from './components/edit/ChipInformationViewer.vue';
 import WaferInformationViewer from './components/edit/WaferInformationViewer.vue';
 import DbitInformationViewer from './components/edit/DbitInformationViewer.vue';
+import AtlasBrowser from './components/tools/atlasbrowser/AtlasBrowser.vue';
 
 const appReadyForClient = new Promise((resolve) => {
   const ready = computed(() => (
@@ -53,6 +54,7 @@ export default defineComponent({
     ChipInformationViewer,
     WaferInformationViewer,
     DbitInformationViewer,
+    AtlasBrowser,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;

@@ -159,6 +159,9 @@ const headers = [
 const submenu = [
   {
     text: 'Upload DBiT CSV',
+    icon: 'mdi-upload',
+    tooltip: 'Upload DBiT CSV',
+    color: 'primary',
     click: () => {
       uploadDbitInformationMenu.value = true;
     },

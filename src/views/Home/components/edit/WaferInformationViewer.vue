@@ -158,6 +158,9 @@ const headers = [
 const submenu = [
   {
     text: 'Upload Wafer CSV',
+    icon: 'mdi-upload',
+    tooltip: 'Upload Wafer CSV',
+    color: 'primary',
     click: () => {
       uploadWaferInformationMenu.value = true;
     },

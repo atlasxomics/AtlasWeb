@@ -147,7 +147,7 @@ const dbit_headers = [
   { text: 'Value', value: 'value' },
 ];
 
-const appReadyForClient = new Promise((resolve) => {
+const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
     store.state.client !== null
   ));
@@ -159,6 +159,9 @@ const appReadyForClient = new Promise((resolve) => {
 const submenu = [
   {
     text: 'Upload QC Directory',
+    icon: 'mdi-upload',
+    tooltip: 'Upload QC Directory',
+    color: 'primary',
     click: () => {
       uploadQcDirectoryMenu.value = true;
     },
@@ -263,8 +266,8 @@ export default defineComponent({
       }
     }
     onMounted(async () => {
+      await clientReady;
       store.commit.setSubmenu(submenu);
-      await appReadyForClient;
     });
     return {
       tabs,
