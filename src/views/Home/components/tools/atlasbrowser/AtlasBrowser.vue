@@ -11,6 +11,7 @@
           </v-card-title>
           <v-data-table
             v-model="selected"
+            height="36vh"
             width="30%"
             dense
             single-select
@@ -20,34 +21,20 @@
             sort-by="id"
             @click:row="selectAction"
           />
-
+          <v-data-table
+            dense
+            :items-per-page="999"
+            :items="objectToArray(metadata)"
+            :headers="metaHeaders"
+            hide-default-footer
+            sort-by="key"
+            />
         </v-card>
         <v-card v-if="image">
-          <v-card-subtitle>
-            Image Scale
-          </v-card-subtitle>
-          <v-slider
-            v-model="scaleFactor"
-            step="0.01"
-            max="1.0"
-            min="0.0"
-            >
-            <template v-slot:append>
-              <v-text-field
-                v-model="scaleFactor"
-                class="mt-0 pt-0"
-                hide-details
-                single-line
-                read-only
-                disabled
-                style="width: 60px"
-              ></v-text-field>
-            </template>
-          </v-slider>
         </v-card>
       </v-col>
       <v-col cols="12" sm="9">
-          <atlas-browser-canvas ref="canvas" :image="image" :scaleFactor="scaleFactor" />
+          <atlas-browser-canvas ref="canvas" :image="image" :scale_factor="scaleFactor" :brush="brushMode" :eraser="eraserMode" :brushSize="brushSize" />
       </v-col>
     </v-row>
   </v-container>
@@ -57,8 +44,12 @@
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import lodash from 'lodash';
+import getPixels from 'get-pixels';
+import savePixels from 'save-pixels';
+import blobStream from 'blob-stream';
+import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
-import { generateRouteByQuery } from '@/utils';
+import { generateRouteByQuery, objectToArray } from '@/utils';
 import AtlasBrowserCanvas from './AtlasBrowserCanvas.vue';
 
 const clientReady = new Promise((resolve) => {
@@ -73,6 +64,11 @@ const clientReady = new Promise((resolve) => {
 const headers = [
   { text: 'ID', value: 'id' },
 ];
+const metaHeaders = [
+  { text: 'Field', value: 'key' },
+  { text: 'Value', value: 'value' },
+];
+
 export default defineComponent({
   name: 'AtlasBrowser',
   components: { AtlasBrowserCanvas },
@@ -86,6 +82,10 @@ export default defineComponent({
     const selected = ref<any | null>();
     const image = ref<any>();
     const scaleFactor = ref<number>(1.0);
+    const brushMode = ref(false);
+    const eraserMode = ref(false);
+    const brushSize = ref(20);
+    const metadata = ref<any>({});
     const submenu = [
       {
         text: 'Generate',
@@ -94,6 +94,7 @@ export default defineComponent({
         tooltip: 'Generate cell grids',
         click: () => {
           (ctx as any).refs.canvas.generateLattices();
+          (ctx as any).refs.canvas.setBrushMode(true);
         },
       },
       {
@@ -111,7 +112,7 @@ export default defineComponent({
         color: 'primary',
         tooltip: 'Save spatial data',
         click: () => {
-          (ctx as any).refs.canvas.generateLattices();
+          (ctx as any).refs.canvas.saveSpatial();
         },
       },
     ];
@@ -138,7 +139,7 @@ export default defineComponent({
         imgObj.onload = (ev: any) => {
           // console.log('image loaded');
           // console.log(imgObj.width);
-          (ctx as any).refs.canvas.initialize();
+          // (ctx as any).refs.canvas.initialize();
           const scalefactor = (ctx as any).refs.canvas._data.stageWidth / imgObj.width;
           image.value = {
             x: 0,
@@ -146,6 +147,9 @@ export default defineComponent({
             draggable: false,
             scale: { x: scalefactor, y: scalefactor },
             image: imgObj,
+            src: URL.createObjectURL(img),
+            original_src: URL.createObjectURL(img),
+            alternative_src: null,
           };
           scaleFactor.value = scalefactor;
         };
@@ -153,8 +157,12 @@ export default defineComponent({
     }
     async function selectAction(ev: any) {
       const { root } = ev.files;
+      metadata.value = ev.metadata;
       const fn = `${root}/${ev.files.images.tissue_hires_image}`;
+      loading.value = true;
       await loadImage(fn);
+      (ctx as any).refs.canvas.initialize();
+      loading.value = false;
     }
     onMounted(async () => {
       await clientReady;
@@ -170,6 +178,12 @@ export default defineComponent({
       selectAction,
       image,
       scaleFactor,
+      brushMode,
+      eraserMode,
+      brushSize,
+      metaHeaders,
+      objectToArray,
+      metadata,
     };
   },
 });
