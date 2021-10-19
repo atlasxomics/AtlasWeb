@@ -532,7 +532,7 @@ export default defineComponent({
     }
     function generateLattices(ev: any) {
       roi.value.polygons = roi.value.generatePolygons();
-      console.log(roi.value.getCoordinatesOnImage());
+      // console.log(roi.value.getCoordinatesOnImage());
     }
     function onResize(ev: any) {
       console.log('OnResize');
@@ -541,7 +541,7 @@ export default defineComponent({
       if (!roi.value) return;
       console.log('Save Spatial data');
       const mask = roi.value.getMask();
-      console.log(mask);
+      // console.log(mask);
     }
     function autoFill(ev: any) {
       roi.value.autoMask(atpixels.value, threshold.value);
@@ -583,10 +583,11 @@ export default defineComponent({
     });
     watch(image, (v) => {
       scaleFactor.value = stageWidth.value / v.image.width;
-      konvaConfig.value.height = v.image.height * scaleFactor.value;
+      onChangeScale(scaleFactor.value);
+      // konvaConfig.value.height = v.image.height * scaleFactor.value;
       // stageWidth.value = konvaConfig.value.width;
       // stageHeight.value = konvaConfig.value.height;
-      roi.value.setScaleFactor(scaleFactor.value);
+      // roi.value.setScaleFactor(scaleFactor.value);
     });
     onMounted(async () => {
       await clientReady;
