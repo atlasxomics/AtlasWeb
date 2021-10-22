@@ -27,6 +27,7 @@ import HomePage from './components/welcome/HomePage.vue';
 import WaferTrace from './components/view/WaferTrace.vue';
 import QcViewer from './components/view/QcViewer.vue';
 import ImageViewer from './components/view/ImageViewer.vue';
+import GeneViewer from './components/view/GeneViewer.vue';
 import ChipInformationViewer from './components/edit/ChipInformationViewer.vue';
 import WaferInformationViewer from './components/edit/WaferInformationViewer.vue';
 import DbitInformationViewer from './components/edit/DbitInformationViewer.vue';
@@ -51,6 +52,7 @@ export default defineComponent({
     ImageViewer,
     WaferTrace,
     QcViewer,
+    GeneViewer,
     ChipInformationViewer,
     WaferInformationViewer,
     DbitInformationViewer,

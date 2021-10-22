@@ -1,6 +1,6 @@
 import { computed } from '@vue/composition-api';
 import Cookies from 'js-cookie';
-
+import lodash from 'lodash';
 // eslint-disable-next-line import/no-cycle
 import store from '@/store';
 import { LOGIN_COOKIE } from '@/environment';
@@ -34,6 +34,16 @@ export function logout() {
   // Clear token refresh timeout, if it exists
   window.clearTimeout(store.state.client?.refreshTimeoutId);
   store.commit.setClient(null);
+}
+
+export function resolveAuthGroup(access_list: string[]) {
+  if (!client.value) return false;
+  if (!client.value.user) return false;
+  let resolved = false;
+  lodash.each(client.value.user.groups, (g: string) => {
+    if (access_list.includes(g)) resolved = true;
+  });
+  return resolved;
 }
 
 export async function loginExisting() {
