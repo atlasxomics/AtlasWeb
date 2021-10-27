@@ -189,6 +189,17 @@ export default class Client {
     // This endpoint doesn't return anything useful, so nothing returned
     await this.axios.put('/api/v1/auth/resetpassword', user);
   }
+  // genes
+  async getGeneExpressions(filename: string): Promise<any> {
+    const payload = { filename };
+    const resp = await this.axios.post('api/v1/genes/expressions', payload);
+    return resp.data;
+  }
+  async getGeneSpatial(filename: string, genes: string[]): Promise<any> {
+    const payload = { filename, genes };
+    const resp = await this.axios.post('api/v1/genes/spatial', payload);
+    return resp.data;
+  }
   // storage
   async getFileList(payload: FileListRequest): Promise<any> {
     try {

@@ -65,7 +65,7 @@ const menu = [
   {
     groupname: 'Settings',
     items: [
-      { name: 'User settings', icon: 'mdi-texture', access_control: ['admin', 'user'], color: 'green', query: { component: 'UserSettings' } },
+      { name: 'User settings', icon: 'mdi-settings', access_control: ['admin', 'user'], color: 'green', query: { component: 'UserSettings' } },
       { name: 'Admin Panel', icon: 'mdi-checkbox-multiple-blank', access_control: ['admin'], color: 'green', query: { component: 'AdminPanel' } },
     ],
   },
