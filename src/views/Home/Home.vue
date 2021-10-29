@@ -27,11 +27,12 @@ import HomePage from './components/welcome/HomePage.vue';
 import WaferTrace from './components/view/WaferTrace.vue';
 import QcViewer from './components/view/QcViewer.vue';
 import ImageViewer from './components/view/ImageViewer.vue';
-import GeneViewer from './components/view/GeneViewer.vue';
 import ChipInformationViewer from './components/edit/ChipInformationViewer.vue';
 import WaferInformationViewer from './components/edit/WaferInformationViewer.vue';
 import DbitInformationViewer from './components/edit/DbitInformationViewer.vue';
 import AtlasBrowser from './components/tools/atlasbrowser/AtlasBrowser.vue';
+import AtlasG from './components/tools/atlasgx/AtlasG.vue';
+import AtlasUploader from './components/tools/filetools/AtlasUploader.vue';
 
 const appReadyForClient = new Promise((resolve) => {
   const ready = computed(() => (
@@ -52,11 +53,12 @@ export default defineComponent({
     ImageViewer,
     WaferTrace,
     QcViewer,
-    GeneViewer,
     ChipInformationViewer,
     WaferInformationViewer,
     DbitInformationViewer,
     AtlasBrowser,
+    AtlasG,
+    AtlasUploader,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;

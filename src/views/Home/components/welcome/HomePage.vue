@@ -16,7 +16,24 @@
       <v-col cols="12" sm="6">
         <v-card>
           <v-card-title>
-            Gene Viewer
+            AtlasBrowser
+          </v-card-title>
+          <v-card-text>
+            Generate the tixel information using adaptive filter and interactive annotations.
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer/>
+            <v-btn
+              color="primary"
+              @click="go('AtlasBrowser')"
+              >Go</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+      <v-col cols="12" sm="6">
+        <v-card>
+          <v-card-title>
+            Atlas GX
           </v-card-title>
           <v-card-text>
             View spatial information and plots of genes
@@ -25,11 +42,13 @@
             <v-spacer/>
             <v-btn
               color="primary"
-              @click="go('GeneViewer')"
+              @click="go('AtlasG')"
               >Go</v-btn>
           </v-card-actions>
         </v-card>
       </v-col>
+    </v-row>
+    <v-row>
       <v-col cols="12" sm="6">
         <v-card>
           <v-card-title>
@@ -47,8 +66,6 @@
           </v-card-actions>
         </v-card>
       </v-col>
-    </v-row>
-    <v-row>
       <v-col cols="12" sm="6">
         <v-card>
           <v-card-title>
@@ -66,19 +83,21 @@
           </v-card-actions>
         </v-card>
       </v-col>
+    </v-row>
+    <v-row>
       <v-col cols="12" sm="6">
         <v-card>
           <v-card-title>
-            AtlasBrowser
+            Upload Files
           </v-card-title>
           <v-card-text>
-            Generate the tixel information using adaptive filter and interactive annotations.
+            Upload images, spatial data to the common respository
           </v-card-text>
           <v-card-actions>
             <v-spacer/>
             <v-btn
               color="primary"
-              @click="go('AtlasBrowser')"
+              @click="go('ImageViewer')"
               >Go</v-btn>
           </v-card-actions>
         </v-card>

@@ -45,13 +45,14 @@ const menu = [
       { name: 'Wafer Tree', icon: 'mdi-chart-pie', color: 'warning', access_control: ['admin', 'user'], query: { component: 'WaferTrace' } },
       { name: 'Image Viewer from Wafer', icon: 'mdi-image-filter', access_control: ['admin', 'user'], color: 'warning', query: { component: 'ImageViewer' } },
       { name: 'QC Viewer', icon: 'mdi-checkbox-multiple-marked', access_control: ['admin', 'user'], color: 'warning', query: { component: 'QcViewer' } },
-      { name: 'Gene Viewer', icon: 'mdi-biohazard', access_control: ['admin', 'user'], color: 'warning', query: { component: 'GeneViewer' } },
     ],
   },
   {
     groupname: 'Tools',
     items: [
       { name: 'Atlas Browser', icon: 'mdi-pencil-box', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasBrowser' } },
+      { name: 'Atlas GX', icon: 'mdi-biohazard', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasG' } },
+      // { name: 'Atlas Uploader', icon: 'mdi-cloud-upload', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasUploader' } },
     ],
   },
   {
@@ -62,13 +63,13 @@ const menu = [
       { name: 'DBiT Information', icon: 'mdi-grid', access_control: ['admin', 'user'], color: 'secondary', query: { component: 'DbitInformationViewer' } },
     ],
   },
-  {
-    groupname: 'Settings',
-    items: [
-      { name: 'User settings', icon: 'mdi-settings', access_control: ['admin', 'user'], color: 'green', query: { component: 'UserSettings' } },
-      { name: 'Admin Panel', icon: 'mdi-checkbox-multiple-blank', access_control: ['admin'], color: 'green', query: { component: 'AdminPanel' } },
-    ],
-  },
+  // {
+  //   groupname: 'Settings',
+  //   items: [
+  //     { name: 'User settings', icon: 'mdi-settings', access_control: ['admin', 'user'], color: 'green', query: { component: 'UserSettings' } },
+  //     { name: 'Admin Panel', icon: 'mdi-checkbox-multiple-blank', access_control: ['admin'], color: 'green', query: { component: 'AdminPanel' } },
+  //   ],
+  // },
 ];
 
 export default defineComponent({
