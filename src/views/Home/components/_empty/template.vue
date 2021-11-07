@@ -9,6 +9,7 @@
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import lodash from 'lodash';
 import store from '@/store';
+import { snackbar } from '@/components/GlobalSnackbar';
 import { generateRouteByQuery } from '@/utils';
 
 const clientReady = new Promise((resolve) => {

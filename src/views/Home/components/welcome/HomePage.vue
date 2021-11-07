@@ -97,7 +97,7 @@
             <v-spacer/>
             <v-btn
               color="primary"
-              @click="go('ImageViewer')"
+              @click="go('AtlasUploader')"
               >Go</v-btn>
           </v-card-actions>
         </v-card>

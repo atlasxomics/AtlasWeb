@@ -191,6 +191,7 @@ import Konva from 'konva';
 import lodash from 'lodash';
 import colormap from 'colormap';
 import store from '@/store';
+import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery } from '@/utils';
 
 const clientReady = new Promise((resolve) => {
@@ -333,15 +334,21 @@ export default defineComponent({
     }
     async function runSpatial(stype: string) {
       if (!client.value) return;
-      loading.value = true;
-      await loadExpressions();
-      const resp = await client.value.getGeneSpatial(filename.value, selectedGenes.value);
-      currentViewType.value = stype;
-      spatialData.value = resp;
-      // console.log(spatialData.value);
-      clusterItems.value = lodash.uniq(spatialData.value.clusters).map((v: any) => ({ name: v }));
-      await updateCircles();
-      loading.value = false;
+      try {
+        loading.value = true;
+        await loadExpressions();
+        const resp = await client.value.getGeneSpatial(filename.value, selectedGenes.value);
+        currentViewType.value = stype;
+        spatialData.value = resp;
+        // console.log(spatialData.value);
+        clusterItems.value = lodash.uniq(spatialData.value.clusters).map((v: any) => ({ name: v }));
+        await updateCircles();
+        loading.value = false;
+      } catch (error) {
+        console.log(error);
+        loading.value = false;
+        snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
+      }
     }
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParent');

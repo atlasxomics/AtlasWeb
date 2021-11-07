@@ -1,55 +1,86 @@
 <template>
-  <v-card class="example-drag">
-    <div class="upload">
-      <ul v-if="files.length">
-        <li v-for="file in files" :key="file.id">
-          <span>{{file.name}}</span> -
-          <span>{{file.size}}</span> -
-          <span v-if="file.error">{{file.error}}</span>
-          <span v-else-if="file.success">success</span>
-          <span v-else-if="file.active">active</span>
-          <span v-else></span>
-        </li>
-      </ul>
-      <ul v-else>
-        <td colspan="7">
-          <div class="text-center p-5">
-            <h4>Drop files anywhere to upload<br/>or</h4>
-            <label for="file" class="btn btn-lg btn-primary">Select Files</label>
-          </div>
-        </td>
-      </ul>
-
-      <v-card v-show="$refs.upload && $refs.upload.dropActive" class="drop-active">
-            <h3>Drop files to upload</h3>
-      </v-card>
-
-      <div class="example-btn">
+  <v-card :disabled="disabled || uploaded">
+    <v-card-title>
+      {{ filetype }} <span v-if="uploaded">(Uploaded)</span>
+    </v-card-title>
+    <v-card-subtitle>
+        <v-card flat>
+          <v-file-input :disabled="disabled" multiple v-model="files" label="Browse File"/>
+          <template v-if="disabled">
+            Provide Run ID first
+          </template>
+          <template v-else>
+            Drop or select file
+          </template>
+        </v-card>
         <file-upload
-          class="btn btn-primary"
-          post-action="/upload/post"
-          :multiple="true"
+          :multiple="false"
           :drop="true"
           :drop-directory="true"
-          v-model="files"
-          ref="upload">
-          <i class="fa fa-plus"></i>
-          Select files
+          v-model="files">
         </file-upload>
-        <button type="button" class="btn btn-success" v-if="!$refs.upload || !$refs.upload.active" @click.prevent="$refs.upload.active = true">
-          <i class="fa fa-arrow-up" aria-hidden="true"></i>
-          Start Upload
-        </button>
-        <button type="button" class="btn btn-danger"  v-else @click.prevent="$refs.upload.active = false">
-          <i class="fa fa-stop" aria-hidden="true"></i>
-          Stop Upload
-        </button>
-      </div>
-    </div>
-
-    <div class="pt-5 source-code">
-      Source code: <a href="https://github.com/lian-yue/vue-upload-component/blob/master/docs/views/examples/Drag.vue">/docs/views/examples/Drag.vue</a>
-    </div>
+    </v-card-subtitle>
+    <v-card-text>
+      <v-row>
+        <template v-if="files.length">
+          <template v-for="file in files">
+            <v-simple-table :key="file.id">
+              <tbody>
+                <tr>
+                  <th>File Name : {{file.name}}</th>
+                  <th v-if="file.error">{{file.error}}</th>
+                  <th v-else-if="file.success">Success</th>
+                </tr>
+                <tr>
+                  <th>Size : {{file.size}}</th>
+                </tr>
+                <tr>
+                  <th>S3 Output Path : {{ destination }}</th>
+                </tr>
+              </tbody>
+            </v-simple-table>
+          </template>
+            <v-form v-if="datatype=='image'">
+              <v-checkbox
+                v-model="metaData.vertical_flip"
+                dense
+                label="Vertically Flipped"
+              />
+              <v-checkbox
+                v-model="metaData.horizontal_flip"
+                dense
+                label="Horizontally Flipped"
+              />
+              <v-text-field
+                v-model.number="metaData.rotation_cw"
+                dense
+                label="Rotation (Clockwise)"
+                type="number"
+                :min="0"
+                :max="360"
+                :step="10"
+                clearable
+              />
+            </v-form>
+        </template>
+      </v-row>
+    </v-card-text>
+    <v-card-actions>
+      <v-btn
+        small
+        color="secondary"
+        @click="files=[]"
+        :disabled="disabled"
+        >Clear</v-btn>
+      <v-spacer/>
+      <v-btn
+        small
+        color="success"
+        :disabled="disabled || files.length < 1"
+        @click="onUpload">
+        Upload
+      </v-btn>
+    </v-card-actions>
   </v-card>
 </template>
 
@@ -59,6 +90,7 @@ import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@
 import lodash from 'lodash';
 import store from '@/store';
 import { generateRouteByQuery } from '@/utils';
+import { DatasetUploadParams } from '@/types';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -68,52 +100,49 @@ const clientReady = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
-
+interface MetaData {
+  run_id?: string;
+  horizontal_flip?: boolean;
+  vertical_flip?: boolean;
+  rotation_cw?: number;
+}
 export default defineComponent({
   name: 'FileUploadDragDrop',
   components: { FileUpload },
+  props: ['disabled', 'run_id', 'datatype', 'filetype', 'extension', 'destination'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
-    const files = ref<any[]>([]);
+    const files = ref<File[]>([]);
+    const metaData = ref<MetaData>({ run_id: props.run_id, horizontal_flip: false, vertical_flip: false, rotation_cw: 0 });
+    const uploaded = ref<boolean>(false);
+    async function onUpload() {
+      const rfiles: File[] = [];
+      lodash.each(files.value, (v: any) => {
+        if (v.file) rfiles.push(v.file as File);
+        else rfiles.push(v);
+      });
+      metaData.value.run_id = props.run_id;
+      const payload: DatasetUploadParams[] = rfiles.map((file: File) => ({ file, meta: metaData.value, bucket: 'atx-cloud-dev', output_filename: props.destination }));
+      store.dispatch.upload.uploadDatasetFiles(payload);
+      store.commit.upload.setDialogOpen(true);
+      uploaded.value = true;
+    }
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(null);
-      console.log('Mounted');
     });
-    return { files };
+    return {
+      files,
+      onUpload,
+      metaData,
+      uploaded,
+    };
   },
 });
 
 </script>
 <style>
-.example-drag label.btn {
-  margin-bottom: 0;
-  margin-right: 1rem;
-}
-.example-drag .drop-active {
-  top: 0;
-  bottom: 0;
-  right: 0;
-  left: 0;
-  position: absolute;
-  z-index: 9999;
-  opacity: .6;
-  text-align: center;
-  background: #000;
-}
-/*.example-drag .drop-active h3 {
-  margin: -.5em 0 0;
-  position: absolute;
-  top: 30%;
-  left: 0;
-  right: 0;
-  -webkit-transform: translateY(-50%);
-  -ms-transform: translateY(-50%);
-  transform: translateY(-50%);
-  font-size: 40px;
-  color: #fff;
-  padding: 0;
-}*/
+
 </style>

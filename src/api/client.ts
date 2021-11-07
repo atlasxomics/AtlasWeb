@@ -197,7 +197,7 @@ export default class Client {
   }
   async getGeneSpatial(filename: string, genes: string[]): Promise<any> {
     const payload = { filename, genes };
-    const resp = await this.axios.post('api/v1/genes/spatial', payload);
+    const resp = await this.axios.post('api/v1/genes/spatial', payload, { timeout: 1000 * 300 });
     return resp.data;
   }
   // storage

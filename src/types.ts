@@ -12,8 +12,8 @@ export interface DatasetUploadMetadata {
 
 export interface DatasetUploadParams {
   file: File;
-  meta: DatasetUploadMetadata;
-  user: boolean;
+  meta?: any;
+  user?: boolean;
   bucket: string | null;
   output_filename: string;
 }

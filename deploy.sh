@@ -10,7 +10,7 @@ export dest="${rootdir}/${output_dir}"
 export backup_dest="${rootdir}/${output_backup_dir}"
 echo $dest 
 echo $backup_dest
-rm -rf ./dist
+rm -rf $dest
 yarn build
 export return_code=$?
 if [ $return_code == 0 ]
