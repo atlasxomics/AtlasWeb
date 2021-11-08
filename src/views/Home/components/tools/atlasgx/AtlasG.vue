@@ -410,13 +410,6 @@ export default defineComponent({
     async function mouseOverClusterItem(ev: any) {
       highlightCluster(ev.name);
     }
-    // async function zoom(ev: any) {
-    //   ev.evt.preventDefault();
-    //   const scaleDelta = Math.min(0.01, Math.abs(ev.evt.deltaY) / 1000);
-    //   const direction = ev.evt.deltaY > 0 ? -1 : 1;
-    //   scale.value = Math.max(0.05, scale.value + direction * scaleDelta);
-    //   updateCircles();
-    // }
     async function acInputChanged() { // autocomplete input event handler;
       filteredGenes.value = filteredGenes.value.filter((v: any) => selectedGenes.value.includes(v.name));
       searchInput.value = null;
@@ -425,7 +418,7 @@ export default defineComponent({
       if (!v) return;
       autocompleteLoading.value = true;
       setTimeout(() => {
-        filteredGenes.value = genes.value.filter((g: any) => g.name.toLowerCase().includes(v.toLowerCase()) || selectedGenes.value.includes(g.name));
+        filteredGenes.value = genes.value.filter((g: any) => g.name.toLowerCase().startsWith(v.toLowerCase()) || selectedGenes.value.includes(g.name));
         autocompleteLoading.value = false;
       }, 500);
     }

@@ -61,6 +61,12 @@
                 :step="10"
                 clearable
               />
+              <v-select
+                v-model="metaData.microscope"
+                :items="microScopes"
+                label="Microscope"
+                dense
+              />
             </v-form>
         </template>
       </v-row>
@@ -105,7 +111,13 @@ interface MetaData {
   horizontal_flip?: boolean;
   vertical_flip?: boolean;
   rotation_cw?: number;
+  microscope?: string;
 }
+const microScopes = [
+  { text: 'Keyence 1', value: 'keyence_1' },
+  { text: 'Keyence 2', value: 'keyence_2' },
+  { text: 'Evos 1', value: 'evos_1' },
+];
 export default defineComponent({
   name: 'FileUploadDragDrop',
   components: { FileUpload },
@@ -115,7 +127,7 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const files = ref<File[]>([]);
-    const metaData = ref<MetaData>({ run_id: props.run_id, horizontal_flip: false, vertical_flip: false, rotation_cw: 0 });
+    const metaData = ref<MetaData>({ run_id: props.run_id, horizontal_flip: false, vertical_flip: false, rotation_cw: 0, microscope: '' });
     const uploaded = ref<boolean>(false);
     async function onUpload() {
       const rfiles: File[] = [];
@@ -125,6 +137,7 @@ export default defineComponent({
       });
       metaData.value.run_id = props.run_id;
       const payload: DatasetUploadParams[] = rfiles.map((file: File) => ({ file, meta: metaData.value, bucket: 'atx-cloud-dev', output_filename: props.destination }));
+      console.log(payload);
       store.dispatch.upload.uploadDatasetFiles(payload);
       store.commit.upload.setDialogOpen(true);
       uploaded.value = true;
@@ -138,6 +151,7 @@ export default defineComponent({
       onUpload,
       metaData,
       uploaded,
+      microScopes,
     };
   },
 });
