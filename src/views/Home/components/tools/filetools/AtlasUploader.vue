@@ -51,9 +51,9 @@
           </v-row>
         </v-container>
       </v-tab-item>
-      <v-tab-item key="Sequence Data" disabled>
+<!--       <v-tab-item key="Sequence Data" disabled>
         .ngs
-      </v-tab-item>
+      </v-tab-item> -->
     </v-tabs-items>
   </v-container>
 </template>

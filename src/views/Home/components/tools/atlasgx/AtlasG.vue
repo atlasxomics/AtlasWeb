@@ -7,6 +7,7 @@
               <v-text-field
                 v-model="filename"
                 :loading="loading"
+                :messages="progressMessage"
               />
             </v-card-title>
             <v-checkbox
@@ -261,6 +262,9 @@ export default defineComponent({
     const clusterColorMap = ref<string>('jet');
     const heatMap = ref<string>('jet');
     const autocompleteLoading = ref(false);
+    const taskStatus = ref<any>();
+    const taskTimeout = ref<number | null>(null);
+    const progressMessage = ref<string | null>(null);
     async function loadExpressions() {
       if (!client.value) return;
       const resp = await client.value.getGeneExpressions(filename.value);
@@ -332,12 +336,40 @@ export default defineComponent({
       }
       circlesSpatial.value = circles;
     }
+    const checkTaskStatus = async (task_id: string) => {
+      if (!client.value) return;
+      taskStatus.value = await client.value.getTaskStatus(task_id);
+    };
     async function runSpatial(stype: string) {
       if (!client.value) return;
       try {
+        progressMessage.value = null;
         loading.value = true;
         await loadExpressions();
-        const resp = await client.value.getGeneSpatial(filename.value, selectedGenes.value);
+        const task = 'gene_matrix.compute_qc';
+        const queue = 'atxcloud';
+        const args = [filename.value, selectedGenes.value];
+        const kwargs = {};
+        const taskObject = await client.value.postTask(task, args, kwargs, queue);
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          if (taskStatus.value.status === 'PROGRESS') {
+            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          }
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        /* eslint-disable no-await-in-loop */
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+          return;
+        }
+        progressMessage.value = taskStatus.value.status;
+        const resp = taskStatus.value.result;
         currentViewType.value = stype;
         spatialData.value = resp;
         // console.log(spatialData.value);
@@ -350,6 +382,24 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       }
     }
+    // async function runSpatial_old(stype: string) {
+    //   if (!client.value) return;
+    //   try {
+    //     loading.value = true;
+    //     await loadExpressions();
+    //     const resp = await client.value.getGeneSpatial(filename.value, selectedGenes.value);
+    //     currentViewType.value = stype;
+    //     spatialData.value = resp;
+    //     // console.log(spatialData.value);
+    //     clusterItems.value = lodash.uniq(spatialData.value.clusters).map((v: any) => ({ name: v }));
+    //     await updateCircles();
+    //     loading.value = false;
+    //   } catch (error) {
+    //     console.log(error);
+    //     loading.value = false;
+    //     snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
+    //   }
+    // }
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParent');
       if (!parent) return;
@@ -472,6 +522,7 @@ export default defineComponent({
       acInputChanged,
       heatMap,
       clusterColorMap,
+      progressMessage,
     };
   },
 });

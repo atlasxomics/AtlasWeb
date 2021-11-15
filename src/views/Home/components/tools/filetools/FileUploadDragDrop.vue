@@ -40,32 +40,16 @@
               </tbody>
             </v-simple-table>
           </template>
-            <v-form v-if="datatype=='image'">
-              <v-checkbox
-                v-model="metaData.vertical_flip"
-                dense
-                label="Vertically Flipped"
-              />
-              <v-checkbox
-                v-model="metaData.horizontal_flip"
-                dense
-                label="Horizontally Flipped"
-              />
-              <v-text-field
-                v-model.number="metaData.rotation_cw"
-                dense
-                label="Rotation (Clockwise)"
-                type="number"
-                :min="0"
-                :max="360"
-                :step="10"
-                clearable
-              />
+            <v-form
+              v-if="datatype=='image'"
+              v-model="valid">
               <v-select
                 v-model="metaData.microscope"
                 :items="microScopes"
                 label="Microscope"
                 dense
+                :rules="[v => microScopes.map((x) => x.value).includes(v) || 'Please select microscope']"
+                required
               />
             </v-form>
         </template>
@@ -82,7 +66,7 @@
       <v-btn
         small
         color="success"
-        :disabled="disabled || files.length < 1"
+        :disabled="disabled || files.length < 1 || (datatype == 'image' && !valid)"
         @click="onUpload">
         Upload
       </v-btn>
@@ -127,7 +111,8 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const files = ref<File[]>([]);
-    const metaData = ref<MetaData>({ run_id: props.run_id, horizontal_flip: false, vertical_flip: false, rotation_cw: 0, microscope: '' });
+    const valid = ref<boolean>(false);
+    const metaData = ref<MetaData>({ run_id: props.run_id, microscope: '' });
     const uploaded = ref<boolean>(false);
     async function onUpload() {
       const rfiles: File[] = [];
@@ -148,6 +133,7 @@ export default defineComponent({
     });
     return {
       files,
+      valid,
       onUpload,
       metaData,
       uploaded,

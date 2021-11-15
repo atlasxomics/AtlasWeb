@@ -147,7 +147,6 @@ export default class Client {
       return 'Dataset File Already Exists.';
     }
   }
-
   // User Operations
   async changePassword(payload: ResetPasswordPayload): Promise<true | false> {
     const endpoint = '/api/v1/auth/changepassword';
@@ -198,6 +197,23 @@ export default class Client {
   async getGeneSpatial(filename: string, genes: string[]): Promise<any> {
     const payload = { filename, genes };
     const resp = await this.axios.post('api/v1/genes/spatial', payload, { timeout: 1000 * 300 });
+    return resp.data;
+  }
+  // Task
+  async postTask(task: string, args: any[], kwargs: any, queue: string): Promise<any> {
+    const endpoint = '/api/v1/task';
+    const payload = {
+      queue,
+      task,
+      args,
+      kwargs,
+    };
+    const resp = await this.axios.post(endpoint, payload);
+    return resp.data;
+  }
+  async getTaskStatus(task_id: string): Promise<any> {
+    const endpoint = `/api/v1/task/${task_id}`;
+    const resp = await this.axios.get(endpoint);
     return resp.data;
   }
   // storage
