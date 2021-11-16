@@ -49,6 +49,7 @@ import savePixels from 'save-pixels';
 import blobStream from 'blob-stream';
 import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
+import { snackbar } from '@/components/GlobalSnackbar';
 import { generateRouteByQuery, objectToArray } from '@/utils';
 import AtlasBrowserCanvas from './AtlasBrowserCanvas.vue';
 
@@ -131,7 +132,7 @@ export default defineComponent({
     }
     async function loadImage(filename: string) {
       if (!client.value) return;
-      const img = await client.value.getImage({ params: { filename } });
+      const img = await client.value.getImageAsJPG({ params: { filename } });
       const imgObj = new window.Image();
       imgObj.src = URL.createObjectURL(img);
 
@@ -158,11 +159,20 @@ export default defineComponent({
     async function selectAction(ev: any) {
       const { root } = ev.files;
       metadata.value = ev.metadata;
-      const fn = `${root}/${ev.files.images.tissue_hires_image}`;
-      loading.value = true;
-      await loadImage(fn);
-      (ctx as any).refs.canvas.initialize();
-      loading.value = false;
+      console.log(ev);
+      // const fn = `${root}/${ev.files.images.tissue_hires_image}`;
+      const fn = `${root}/${ev.id}/images/postB_BSA.tif`;
+      console.log(fn);
+      try {
+        loading.value = true;
+        await loadImage(fn);
+        (ctx as any).refs.canvas.initialize();
+        loading.value = false;
+      } catch (error) {
+        console.log(error);
+        loading.value = false;
+        snackbar.dispatch({ text: 'Error while loading image', options: { color: 'red', right: true } });
+      }
     }
     onMounted(async () => {
       await clientReady;

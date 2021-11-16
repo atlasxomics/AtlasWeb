@@ -227,7 +227,7 @@ export default defineComponent({
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
-    const filename = ref<string>('data/D200.out/Gene/raw/spatial/D200.h5ad');
+    const filename = ref<string>('data/D200/out/Gene/raw/spatial/D200.h5ad');
     const search = ref<string>();
     const selected = ref<any>();
     const genes = ref<any[]>([]);
@@ -346,8 +346,8 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         await loadExpressions();
-        const task = 'gene_matrix.compute_qc';
-        const queue = 'atxcloud';
+        const task = 'gene.compute_qc';
+        const queue = 'atxcloud_gene';
         const args = [filename.value, selectedGenes.value];
         const kwargs = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -366,6 +366,7 @@ export default defineComponent({
         /* eslint-disable no-await-in-loop */
         if (taskStatus.value.status !== 'SUCCESS') {
           snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+          loading.value = false;
           return;
         }
         progressMessage.value = taskStatus.value.status;

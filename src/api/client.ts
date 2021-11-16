@@ -225,10 +225,18 @@ export default class Client {
       return false;
     }
   }
-  async getImage(payload: ImageFileRequest): Promise<File> {
+  async getImage(payload: ImageFileRequest, image_type = 'image/png'): Promise<File> {
     try {
       const resp = await this.axios.get('/api/v1/storage', { params: { filename: payload.params.filename }, responseType: 'blob' });
-      return new File([resp.data], payload.params.filename, { type: 'image/png' });
+      return new File([resp.data], payload.params.filename, { type: image_type });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+  async getImageAsJPG(payload: ImageFileRequest): Promise<File> {
+    try {
+      const resp = await this.axios.get('/api/v1/storage/image_as_jpg', { params: { filename: payload.params.filename }, responseType: 'blob' });
+      return new File([resp.data], payload.params.filename, { type: 'image/jpeg' });
     } catch (e) {
       return Promise.reject(e);
     }
