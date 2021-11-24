@@ -98,6 +98,9 @@ export interface ImageFileRequest {
   params: {
     filename: string;
     bucket?: string | null;
+    hflip?: boolean;
+    vflip?: boolean;
+    rotation?: number;
   }
 }
 
@@ -105,6 +108,7 @@ export interface FileListRequest {
   params: {
     path: string;
     bucket?: string | null;
+    filter?: string | null;
   }
 }
 

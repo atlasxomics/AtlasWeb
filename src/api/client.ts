@@ -235,7 +235,7 @@ export default class Client {
   }
   async getImageAsJPG(payload: ImageFileRequest): Promise<File> {
     try {
-      const resp = await this.axios.get('/api/v1/storage/image_as_jpg', { params: { filename: payload.params.filename }, responseType: 'blob' });
+      const resp = await this.axios.get('/api/v1/storage/image_as_jpg', { params: payload.params, responseType: 'blob' });
       return new File([resp.data], payload.params.filename, { type: 'image/jpeg' });
     } catch (e) {
       return Promise.reject(e);

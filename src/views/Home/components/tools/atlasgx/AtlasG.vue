@@ -3,6 +3,25 @@
       <v-row>
         <v-col cols="12" sm="3">
           <v-card>
+            <v-text-field
+              v-model="search"
+              :loading="loading"
+              prepend-icon="mdi-magnify"/>
+            <v-data-table
+            v-model="selected"
+            height="20vh"
+            width="30%"
+            dense
+            single-select
+            :search="search"
+            :loading="loading"
+            :items="items"
+            :headers="headers"
+            sort-by="id"
+            @click:row="selectAction"
+            />
+          </v-card>
+          <v-card>
             <v-card-title>
               <v-text-field
                 v-model="filename"
@@ -70,14 +89,9 @@
               @input="updateCircles"
               />
             <v-card-text v-if="clusterItems && isClusterView">
-              <v-text-field
-                v-model="search"
-                dense
-                prepend-icon="mdi-magnify"/>
               <v-data-table
                 height="34vh"
                 v-model="selected"
-                :search="search"
                 dense
                 :items-per-page="999"
                 hide-default-footer
@@ -204,6 +218,10 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
+const headers = [
+  { text: 'ID', value: 'id' },
+];
+
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
 ];
@@ -228,6 +246,7 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const filename = ref<string>('data/D200/out/Gene/raw/spatial/D200.h5ad');
+    const items = ref<any[]>();
     const search = ref<string>();
     const selected = ref<any>();
     const genes = ref<any[]>([]);
@@ -340,6 +359,24 @@ export default defineComponent({
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
+    async function fetchFileList() {
+      if (!client.value) {
+        return;
+      }
+      items.value = [];
+      search.value = '';
+      loading.value = true;
+      // const payload = { params: { filter: null, options: null } };
+      // const qc_data = await client.value.getQc(payload);
+      // loading.value = false;
+      // items.value = qc_data;
+      const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'spatial/genes.h5ad' } };
+      const filelist = await client.value.getFileList(fl_payload);
+      const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
+      items.value = qc_data;
+      loading.value = false;
+      // console.log(qc_data);
+    }
     async function runSpatial(stype: string) {
       if (!client.value) return;
       try {
@@ -383,24 +420,12 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       }
     }
-    // async function runSpatial_old(stype: string) {
-    //   if (!client.value) return;
-    //   try {
-    //     loading.value = true;
-    //     await loadExpressions();
-    //     const resp = await client.value.getGeneSpatial(filename.value, selectedGenes.value);
-    //     currentViewType.value = stype;
-    //     spatialData.value = resp;
-    //     // console.log(spatialData.value);
-    //     clusterItems.value = lodash.uniq(spatialData.value.clusters).map((v: any) => ({ name: v }));
-    //     await updateCircles();
-    //     loading.value = false;
-    //   } catch (error) {
-    //     console.log(error);
-    //     loading.value = false;
-    //     snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
-    //   }
-    // }
+    async function selectAction(ev: any) {
+      const root = 'data';
+      const fn = `${root}/${ev.id}/out/Gene/raw/spatial/genes.h5ad`;
+      filename.value = fn;
+      await runSpatial(currentViewType.value);
+    }
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParent');
       if (!parent) return;
@@ -487,10 +512,13 @@ export default defineComponent({
       store.commit.setSubmenu(null);
       fitStageToParent();
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
+      await fetchFileList();
     });
     return {
       scale,
       filename,
+      items,
+      headers,
       search,
       selected,
       loading,
@@ -524,6 +552,7 @@ export default defineComponent({
       heatMap,
       clusterColorMap,
       progressMessage,
+      selectAction,
     };
   },
 });

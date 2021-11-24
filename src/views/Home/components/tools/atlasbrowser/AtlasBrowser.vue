@@ -1,4 +1,5 @@
 <template>
+<!--     <v-card ref="mainCard"> -->
   <v-container fluid>
     <v-row>
       <v-col cols="12" sm="3">
@@ -21,37 +22,257 @@
             sort-by="id"
             @click:row="selectAction"
           />
-          <v-data-table
-            dense
-            :items-per-page="999"
-            :items="objectToArray(metadata)"
-            :headers="metaHeaders"
-            hide-default-footer
-            sort-by="key"
-            />
-        </v-card>
-        <v-card v-if="image">
         </v-card>
       </v-col>
       <v-col cols="12" sm="9">
-          <atlas-browser-canvas ref="canvas" :image="image" :scale_factor="scaleFactor" :brush="brushMode" :eraser="eraserMode" :brushSize="brushSize" />
+          <template v-if="loading">
+            <div class="center-progress">
+              <v-progress-circular
+                :size="100"
+                :width="10"
+                color="primary"
+                indeterminate
+                >
+              </v-progress-circular>
+            </div>
+          </template>
+          <v-container fluid>
+            <v-row>
+              <v-col cols="12" sm="2">
+                    <v-text-field
+                      v-model="scaleFactor"
+                      class="mt-0 pt-0"
+                      dense
+                      label="Scale"
+                      type="number"
+                      :min="0.1"
+                      :max="1.0"
+                      :step="0.01"
+                      :disabled="!current_image"
+                      @click="onChangeScale"
+                    />
+              </v-col>
+              <v-col cols="12" sm="2">
+                    <v-text-field
+                      v-model="brushSize"
+                      class="mt-0 pt-0"
+                      dense
+                      label="Br.Size"
+                      type="number"
+                      min="5.0"
+                      max="100.0"
+                      step="1.0"
+                      :disabled="!current_image || isCropMode"
+                    />
+              </v-col>
+              <v-col cols="12" sm="2">
+                    <v-text-field
+                      v-model="threshold"
+                      class="mt-0 pt-0"
+                      dense
+                      label="Thr"
+                      type="number"
+                      min="0"
+                      max="255"
+                      step="5"
+                      :disabled="!current_image || isCropMode"
+                    />
+              </v-col>
+              <v-col>
+                <v-checkbox class="mt-0 pt-0" dense v-model="isCropMode" :disabled="!current_image" label="Crop"/>
+              </v-col>
+              <template v-if="!isCropMode">
+                <v-col>
+                  <v-checkbox class="mt-0 pt-0" dense v-model="isBrushMode" :disabled="roi.polygons.length < 1 || isCropMode" label="Brush"/>
+                </v-col>
+                <v-col>
+                  <v-checkbox class="mt-0 pt-0" dense v-model="isEraseMode" :disabled="!isBrushMode || isCropMode" label="Erase"/>
+                </v-col>
+                <v-col>
+                  <v-checkbox class="mt-0 pt-0" dense v-model="atfilter" :disabled="!current_image || isCropMode" label="AT"/>
+                </v-col>
+                <v-col>
+                  <v-btn
+                    :disabled="!current_image || isCropMode"
+                    icon
+                    class="mt-0 pt-0"
+                    small
+                    dense
+                    color="primary"
+                    @click="onLatticeButton">
+                    <v-icon>mdi-checkerboard</v-icon>
+                  </v-btn>
+                </v-col>
+                <v-col>
+                  <v-btn
+                    :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
+                    icon
+                    class="mt-0 pt-0"
+                    small
+                    dense
+                    color="primary"
+                    @click="autoFill">
+                    <v-icon>mdi-pencil</v-icon>
+                  </v-btn>
+                </v-col>
+              </template>
+              <template v-if="isCropMode">
+                <v-col>
+                  <v-btn
+                    :disabled="!current_image || !isCropMode"
+                    icon
+                    class="mt-0 pt-0"
+                    small
+                    dense
+                    color="primary"
+                    @click="onCropButton">
+                    <v-icon>mdi-checkbox-multiple-blank</v-icon><span>Crop</span>
+                  </v-btn>
+                </v-col>
+              </template>
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-checkbox
+                  class="mt-0 pt-0"
+                  dense
+                  v-model="orientation.horizontal_flip"
+                  :disabled="!current_image"
+                  label="H.Flip"
+                  @change="loadImage()"/>
+              </v-col>
+              <v-col>
+                <v-checkbox
+                  class="mt-0 pt-0"
+                  dense
+                  v-model="orientation.vertical_flip"
+                  :disabled="!current_image"
+                  label="V.Flip"
+                  @change="loadImage()"
+                  />
+              </v-col>
+              <v-col>
+                <v-text-field
+                    v-model="orientation.rotation"
+                    class="mt-0 pt-0"
+                    dense
+                    label="Rotation"
+                    type="number"
+                    min="0"
+                    max="360"
+                    step="90"
+                    :disabled="!current_image"
+                    @input="loadImage()"
+                  />
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-card :disabled="loading">
+                <v-stage
+                  ref="konvaStage"
+                  class="mainStage"
+                  :config="konvaConfig"
+                  v-resize="onResize"
+                  @mousemove="handleMouseMoveStage">
+                  <v-layer
+                    v-if="current_image"
+                    ref="imageLayer"
+                    id="imageLayer">
+                    <v-image
+                      ref="image"
+                      :config="current_image"
+                    />
+                  </v-layer>
+                  <v-layer
+                    v-if="!isCropMode"
+                    ref="roiLayer"
+                    id="roiLayer"
+                    @mouseup="handleMouseUp">
+                    <template v-if="current_image">
+                      <v-line
+                        :config="roi.generateBoundary()"/>
+                      <v-circle v-for="p in roi.polygons"
+                        :config="p"
+                        v-bind:key="p.id"
+                        @mousedown="handleMouseDown"
+                        @mouseover="handleMouseOver"/>
+                      <template v-if="!isBrushMode">
+                        <v-circle
+                          v-for="c in roi.getAnchors()"
+                          v-bind:key="c.id"
+                          @dragstart="handleDragStart"
+                          @dragend="handleDragEnd"
+                          @dragmove="handleDragMove"
+                          :config="c"/>
+                      </template>
+                      <v-circle v-if="!isBrushMode"
+                          v-bind:key="roi.getCenterAnchor().id"
+                          @dragstart="handleDragCenterStart"
+                          @dragend="handleDragCenterEnd"
+                          @dragmove="handleDragCenterMove"
+                          :config="roi.getCenterAnchor()"/>
+                      />
+                    </template>
+                  </v-layer>
+                  <v-layer
+                    v-if="isCropMode"
+                    ref="cropLayer"
+                    id="cropLayer"
+                    @mouseup="handleMouseUp">
+                    <template v-if="current_image">
+                      <v-rect
+                        :config="crop.generateRect()"/>
+                      <template v-if="!isBrushMode">
+                        <v-circle
+                          v-for="c in crop.getAnchors()"
+                          v-bind:key="c.id"
+                          @dragstart="handleDragStart_Crop"
+                          @dragend="handleDragEnd_Crop"
+                          @dragmove="handleDragMove_Crop"
+                          :config="c"/>
+                      </template>
+                      <v-circle v-if="!isBrushMode"
+                          v-bind:key="crop.getCenterAnchor().id"
+                          @dragstart="handleDragCenterStart_Crop"
+                          @dragend="handleDragCenterEnd_Crop"
+                          @dragmove="handleDragCenterMove_Crop"
+                          :config="crop.getCenterAnchor()"/>
+                      />
+                    </template>
+                  </v-layer>
+                  <v-layer>
+                    <v-circle
+                      v-if="isBrushMode"
+                      :config="brushConfig"
+                      @mousedown="handleMouseDownBrush"
+                      @mouseup="handleMouseUpBrush"
+                    />
+                  </v-layer>
+                </v-stage>
+              </v-card>
+            </v-row>
+          </v-container>
       </v-col>
     </v-row>
   </v-container>
+<!--     </v-card> -->
 </template>
 
 <script lang='ts'>
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import lodash from 'lodash';
+import Konva from 'konva';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
 import blobStream from 'blob-stream';
 import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
-import { generateRouteByQuery, objectToArray } from '@/utils';
-import AtlasBrowserCanvas from './AtlasBrowserCanvas.vue';
+import { get_uuid, generateRouteByQuery, objectToArray } from '@/utils';
+import { ROI } from './roi';
+import { Crop } from './crop';
+// import { Circle, Point } from './types';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -61,7 +282,6 @@ const clientReady = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
-
 const headers = [
   { text: 'ID', value: 'id' },
 ];
@@ -72,128 +292,436 @@ const metaHeaders = [
 
 export default defineComponent({
   name: 'AtlasBrowser',
-  components: { AtlasBrowserCanvas },
+  props: [],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const items = ref<any[]>([]);
     const search = ref<string | null>();
-    const loading = ref(false);
     const selected = ref<any | null>();
-    const image = ref<any>();
-    const scaleFactor = ref<number>(1.0);
-    const brushMode = ref(false);
-    const eraserMode = ref(false);
+    const run_id = ref<string | null>(null);
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const konvaConfig = ref<any>({ width, height });
+    const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
+    const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
+    const isBrushMode = ref(false);
+    const isCropMode = ref(true);
+    const isEraseMode = ref(false);
     const brushSize = ref(20);
-    const metadata = ref<any>({});
-    const submenu = [
-      {
-        text: 'Generate',
-        icon: 'mdi-play',
-        color: 'primary',
-        tooltip: 'Generate cell grids',
-        click: () => {
-          (ctx as any).refs.canvas.generateLattices();
-          (ctx as any).refs.canvas.setBrushMode(true);
-        },
-      },
-      {
-        text: 'Upload image',
-        icon: 'mdi-upload',
-        color: 'primary',
-        tooltip: 'Upload new image',
-        click: () => {
-          (ctx as any).refs.canvas.generateLattices();
-        },
-      },
-      {
-        text: 'Save spatial data',
-        icon: 'mdi-content-save',
-        color: 'primary',
-        tooltip: 'Save spatial data',
-        click: () => {
-          (ctx as any).refs.canvas.saveSpatial();
-        },
-      },
-    ];
-    async function fetchQcList() {
+    const brushDown = ref(false);
+    const crop = ref<Crop>(new Crop(null));
+    const roi = ref<ROI>(new ROI(null));
+    const lines = ref<Konva.Line[]>();
+    const activePointId = ref<string | null>(null);
+    // const polygons = ref<any[] | null>([]);
+    const isMouseDown = ref(false);
+    const stageWidth = ref(window.innerWidth * 0.7);
+    const stageHeight = ref(window.innerHeight);
+    const current_image = ref<any | null>(null);
+    const scaleFactor = ref(0.15);
+    const atfilter = ref(false);
+    const atpixels = ref<any[] | null>([]);
+    const threshold = ref(210);
+    const loading = ref<boolean>(false);
+    const taskStatus = ref<any>();
+    const progressMessage = ref<string | null>(null);
+    const taskTimeout = ref<number | null>(null);
+    const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
+    function initialize() {
+      roi.value.polygons = [];
+      roi.value.setScaleFactor(scaleFactor.value);
+      crop.value.setScaleFactor(scaleFactor.value);
+      isBrushMode.value = false;
+      isEraseMode.value = false;
+      atfilter.value = false;
+      isCropMode.value = true;
+    }
+    // io
+    async function loadImage() {
+      if (!client.value) return;
+      loading.value = true;
+      const root = 'data';
+      const filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
+      try {
+        const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
+        const imgObj = new window.Image();
+        imgObj.src = URL.createObjectURL(img);
+        const scalefactor = scaleFactor.value;
+        initialize();
+        if (imgObj) {
+          imgObj.onload = (ev: any) => {
+            // const scalefactor = (ctx as any).refs.canvas._data.stageWidth / imgObj.width;
+            current_image.value = {
+              x: 0,
+              y: 0,
+              draggable: false,
+              scale: { x: scalefactor, y: scalefactor },
+              image: imgObj,
+              src: URL.createObjectURL(img),
+              original_src: URL.createObjectURL(img),
+              alternative_src: null,
+            };
+            // scaleFactor.value = scalefactor;
+            loading.value = false;
+          };
+        }
+      } catch (error) {
+        loading.value = false;
+        snackbar.dispatch({ text: 'Failed to load the image file', options: { color: 'error', right: true } });
+      }
+    }
+    // Cropping events
+    function handleDragStart_Crop(ev: any) {
+      // console.log(ev);
+      const { id } = ev.target.attrs;
+      activePointId.value = id;
+      crop.value.polygons = [];
+    }
+    function handleDragEnd_Crop(ev: any) {
+      const { id } = ev.target.attrs;
+      const pos = ev.target._lastPos;
+      activePointId.value = null;
+    }
+    function handleDragMove_Crop(ev: any) {
+      const { id } = ev.target.attrs;
+      const pos = ev.target._lastPos;
+      if (pos.x > 5 && pos.y > 5 && pos.x < stageWidth.value && pos.y < stageHeight.value) {
+        crop.value.coordinates[id].x = pos.x;
+        crop.value.coordinates[id].y = pos.y;
+        const coords = crop.value.getCoordinates();
+      } else {
+        crop.value.coordinates[id].x = Math.min(Math.max(0, pos.x), stageWidth.value);
+        crop.value.coordinates[id].y = Math.min(Math.max(0, pos.y), stageHeight.value);
+      }
+      // console.log(activePointId.value);
+    }
+    function handleDragCenterStart_Crop(ev: any) {
+      crop.value.polygons = [];
+    }
+    function handleDragCenterEnd_Crop(ev: any) {
+      // console.log(ev);
+    }
+    function handleDragCenterMove_Crop(ev: any) {
+      crop.value.moveToNewCenter(ev.target._lastPos);
+    }
+    // ROI events
+    function handleDragStart(ev: any) {
+      // console.log(ev);
+      const { id } = ev.target.attrs;
+      activePointId.value = id;
+      roi.value.polygons = [];
+    }
+    function handleDragEnd(ev: any) {
+      const { id } = ev.target.attrs;
+      const pos = ev.target._lastPos;
+      activePointId.value = null;
+    }
+    function handleDragMove(ev: any) {
+      const { id } = ev.target.attrs;
+      const pos = ev.target._lastPos;
+      if (pos.x > 5 && pos.y > 5 && pos.x < stageWidth.value && pos.y < stageHeight.value) {
+        roi.value.coordinates[id].x = pos.x;
+        roi.value.coordinates[id].y = pos.y;
+        const coords = roi.value.getCoordinates();
+      } else {
+        roi.value.coordinates[id].x = Math.min(Math.max(0, pos.x), stageWidth.value);
+        roi.value.coordinates[id].y = Math.min(Math.max(0, pos.y), stageHeight.value);
+      }
+      // console.log(activePointId.value);
+    }
+    function handleDragCenterStart(ev: any) {
+      roi.value.polygons = [];
+    }
+    function handleDragCenterEnd(ev: any) {
+      // console.log(ev);
+    }
+    function handleDragCenterMove(ev: any) {
+      roi.value.moveToNewCenter(ev.target._lastPos);
+    }
+    function handleMouseDown(ev: any) {
+      const { id } = ev.target.attrs;
+      const idx = lodash.findIndex(roi.value.polygons, { id });
+      if (roi.value.polygons) {
+        if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
+        else roi.value.polygons[idx].fill = 'red';
+      }
+      isMouseDown.value = true;
+    }
+    function handleMouseUp(ev: any) {
+      isMouseDown.value = false;
+    }
+    function handleMouseOver(ev: any) {
+      if (isMouseDown.value) {
+        const { id } = ev.target.attrs;
+        const idx = lodash.findIndex(roi.value.polygons, { id });
+        if (roi.value.polygons) {
+          roi.value.polygons[idx].fill = 'red';
+        }
+      }
+    }
+    function handleMouseMoveStage(ev: any) {
+      if (isBrushMode.value) {
+        const pos = (ctx as any).refs.konvaStage.getNode().getPointerPosition();
+        const { x, y } = pos;
+        brushConfig.value.x = x;
+        brushConfig.value.y = y;
+        if (brushDown.value) {
+          if (isEraseMode.value) {
+            roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', null);
+          } else {
+            roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', 'red');
+          }
+        }
+      }
+    }
+    function handleMouseDownBrush(ev: any) {
+      brushDown.value = true;
+      if (isEraseMode.value) {
+        roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', null);
+      } else {
+        roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', 'red');
+      }
+    }
+    function handleMouseUpBrush(ev: any) {
+      brushDown.value = false;
+    }
+    function setBrushMode(tf: boolean) {
+      isBrushMode.value = tf;
+    }
+    function generateLattices(ev: any) {
+      roi.value.polygons = roi.value.generatePolygons();
+      // console.log(roi.value.getCoordinatesOnImage());
+    }
+    function onResize(ev: any) {
+      // console.log('OnResize');
+    }
+    function onLatticeButton(ev: any) {
+      generateLattices(ev);
+      setBrushMode(true);
+    }
+    function onCropButton(ev: any) {
+      isCropMode.value = false;
+    }
+    const checkTaskStatus = async (task_id: string) => {
+      if (!client.value) return;
+      taskStatus.value = await client.value.getTaskStatus(task_id);
+    };
+    async function generateSpatial() {
+      if (!client.value) return;
+      if (!roi.value) return;
+      try {
+        progressMessage.value = null;
+        loading.value = true;
+        const task = 'atlasbrowser.generate_spatial';
+        const queue = 'atxcloud_atlasbrowser';
+        const coords = roi.value.getCoordinatesOnImage();
+        const points: number[] = [];
+        coords.forEach((v, i) => {
+          points.push(v.x);
+          points.push(v.y);
+        });
+        // console.log(points);
+        const meta = {
+          points,
+          run: run_id.value,
+          blockSize: null,
+          threshold: threshold.value,
+          type: null,
+          species: null,
+          trimming: null,
+          assay: null,
+          numChannels: null,
+          orientation: orientation.value,
+          crop_area: crop.value.getCoordinatesOnImage(),
+        };
+        const params = {
+          run_id: run_id.value,
+          root_dir: 'data',
+          crop_area: crop.value.getCoordinatesOnImage(),
+          mask: roi.value.getMask(),
+          metadata: meta,
+          scalefactors: roi.value.getQCScaleFactors(current_image.value),
+          orientation: orientation.value,
+        };
+        console.log(params);
+        const args: any[] = [params];
+        const kwargs: any = {};
+        const taskObject = await client.value.postTask(task, args, kwargs, queue);
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          if (taskStatus.value.status === 'PROGRESS') {
+            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          }
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        /* eslint-disable no-await-in-loop */
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+          loading.value = false;
+          return;
+        }
+        progressMessage.value = taskStatus.value.status;
+        const resp = taskStatus.value.result;
+        loading.value = false;
+      } catch (error) {
+        console.log(error);
+        loading.value = false;
+        snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
+      }
+    }
+    function autoFill(ev: any) {
+      roi.value.autoMask(atpixels.value, threshold.value);
+    }
+    function onChangeScale(ev: any) {
+      const v = scaleFactor.value;
+      current_image.value.scale = { x: v, y: v };
+      // console.log(current_image.value);
+      konvaConfig.value.width = v * current_image.value.image.width;
+      konvaConfig.value.height = v * current_image.value.image.height;
+      stageWidth.value = konvaConfig.value.width;
+      stageHeight.value = konvaConfig.value.height;
+      roi.value.setScaleFactor(v);
+      crop.value.setScaleFactor(v);
+    }
+    async function fetchFileList() {
       if (!client.value) {
         return;
       }
       items.value = [];
       search.value = '';
       loading.value = true;
-      const payload = { params: { filter: null, options: null } };
-      const qc_data = await client.value.getQc(payload);
-      loading.value = false;
+      const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'images/postB_BSA.tif' } };
+      const filelist = await client.value.getFileList(fl_payload);
+      const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
+      loading.value = false;
       // console.log(qc_data);
     }
-    async function loadImage(filename: string) {
-      if (!client.value) return;
-      const img = await client.value.getImageAsJPG({ params: { filename } });
-      const imgObj = new window.Image();
-      imgObj.src = URL.createObjectURL(img);
-
-      if (imgObj) {
-        imgObj.onload = (ev: any) => {
-          // console.log('image loaded');
-          // console.log(imgObj.width);
-          // (ctx as any).refs.canvas.initialize();
-          const scalefactor = (ctx as any).refs.canvas._data.stageWidth / imgObj.width;
-          image.value = {
-            x: 0,
-            y: 0,
-            draggable: false,
-            scale: { x: scalefactor, y: scalefactor },
-            image: imgObj,
-            src: URL.createObjectURL(img),
-            original_src: URL.createObjectURL(img),
-            alternative_src: null,
-          };
-          scaleFactor.value = scalefactor;
-        };
-      }
-    }
     async function selectAction(ev: any) {
-      const { root } = ev.files;
-      metadata.value = ev.metadata;
-      console.log(ev);
-      // const fn = `${root}/${ev.files.images.tissue_hires_image}`;
-      const fn = `${root}/${ev.id}/images/postB_BSA.tif`;
-      console.log(fn);
-      try {
-        loading.value = true;
-        await loadImage(fn);
-        (ctx as any).refs.canvas.initialize();
-        loading.value = false;
-      } catch (error) {
-        console.log(error);
-        loading.value = false;
-        snackbar.dispatch({ text: 'Error while loading image', options: { color: 'red', right: true } });
-      }
+      run_id.value = ev.id;
+      // console.log(run_id.value);
     }
+    watch(atfilter, async (v, ov) => {
+      if (!current_image.value) return;
+      const sv = scaleFactor.value;
+      if (v) {
+        if (current_image.value.image.alternative_src) {
+          current_image.value.image.src = current_image.value.image.alternative_src;
+          // current_image.value.scale = { x: sv, y: sv };
+          onChangeScale(sv);
+        } else {
+          loading.value = true;
+          getPixels(current_image.value.src, async (err, pixels) => {
+            const thresholded = adaptiveThreshold(pixels);
+            atpixels.value = thresholded;
+            const b = blobStream();
+            savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
+              const newsrc = b.toBlobURL('image/jpeg');
+              current_image.value.image.original_src = current_image.value.image.src;
+              current_image.value.image.src = newsrc;
+              current_image.value.image.alternative_src = newsrc;
+              // current_image.value.scale = { x: sv, y: sv };
+              onChangeScale(sv);
+              loading.value = false;
+            });
+          });
+        }
+      } else {
+        current_image.value.image.src = current_image.value.image.original_src;
+        // current_image.value.scale = { x: sv, y: sv };
+        onChangeScale(sv);
+      }
+    });
+    watch(isCropMode, (v) => {
+      if (isCropMode.value) {
+        isBrushMode.value = false;
+        atfilter.value = false;
+      }
+    });
+    watch(brushSize, (v) => {
+      brushConfig.value.radius = v;
+    });
+    watch(run_id, (v, ov) => {
+      loadImage();
+    });
+    watch(current_image, (v) => {
+      onChangeScale(scaleFactor.value);
+    });
+    const submenu = [
+      {
+        text: 'Save spatial data',
+        icon: 'mdi-content-save',
+        color: 'primary',
+        tooltip: 'Save spatial data',
+        click: () => {
+          generateSpatial();
+        },
+      },
+    ];
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(submenu);
-      await fetchQcList();
+      await fetchFileList();
     });
     return {
       items,
       headers,
-      search,
-      loading,
-      selected,
       selectAction,
-      image,
-      scaleFactor,
-      brushMode,
-      eraserMode,
-      brushSize,
-      metaHeaders,
+      search,
+      selected,
+      konvaConfig,
+      circleConfig,
+      brushConfig,
+      handleDragStart_Crop,
+      handleDragEnd_Crop,
+      handleDragMove_Crop,
+      handleDragCenterStart_Crop,
+      handleDragCenterEnd_Crop,
+      handleDragCenterMove_Crop,
+      handleDragStart,
+      handleDragEnd,
+      handleDragMove,
+      handleDragCenterStart,
+      handleDragCenterEnd,
+      handleDragCenterMove,
+      handleMouseDown,
+      handleMouseOver,
+      handleMouseMoveStage,
+      handleMouseDownBrush,
+      handleMouseUpBrush,
+      handleMouseUp,
+      crop,
+      roi,
       objectToArray,
-      metadata,
+      generateLattices,
+      current_image,
+      loadImage,
+      onResize,
+      stageWidth,
+      initialize,
+      generateSpatial,
+      isCropMode,
+      isBrushMode,
+      setBrushMode,
+      isEraseMode,
+      brushSize,
+      scaleFactor,
+      onChangeScale,
+      atfilter,
+      atpixels,
+      autoFill,
+      threshold,
+      loading,
+      orientation,
+      onLatticeButton,
+      onCropButton,
     };
   },
 });
@@ -201,7 +729,17 @@ export default defineComponent({
 </script>
 
 <style>
-.mainCard {
-  display: fixed;
+.center-progress {
+  position: absolute;
+  z-index: 999;
+  top: 50%;
+  left:50%;
+}
+.toolRow {
+  height: 5vh;
+}
+.mainStage {
+  height: 81vh;
+  overflow : auto;
 }
 </style>
