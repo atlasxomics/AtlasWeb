@@ -9,7 +9,7 @@
         <v-col cols="12" sm="3">
           <v-card>
             <v-card-title>
-              Qc Viewer
+              Atlas Viewer
               </v-card-title>
               <v-text-field
                 v-model="search"

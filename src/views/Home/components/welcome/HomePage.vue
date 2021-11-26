@@ -69,7 +69,7 @@
       <v-col cols="12" sm="6">
         <v-card>
           <v-card-title>
-            QC Viewer
+            Atlas Viewer
           </v-card-title>
           <v-card-text>
             QC file browser with metadata and output images
@@ -78,7 +78,7 @@
             <v-spacer/>
             <v-btn
               color="primary"
-              @click="go('QcViewer')"
+              @click="go('AtlasViewer')"
               >Go</v-btn>
           </v-card-actions>
         </v-card>

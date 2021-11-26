@@ -34,6 +34,8 @@ import AtlasG from './components/tools/atlasgx/AtlasG.vue';
 import AtlasAnalytics from './components/tools/atlasanalytics/AtlasAnalytics.vue';
 import AtlasViewer from './components/tools/atlasview/AtlasViewer.vue';
 import AtlasUploader from './components/tools/filetools/AtlasUploader.vue';
+import AdminPanel from './components/settings/admin/AdminPanel.vue';
+import UserSettings from './components/settings/users/UserSettings.vue';
 
 const appReadyForClient = new Promise((resolve) => {
   const ready = computed(() => (
@@ -61,6 +63,8 @@ export default defineComponent({
     AtlasG,
     AtlasAnalytics,
     AtlasUploader,
+    AdminPanel,
+    UserSettings,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;

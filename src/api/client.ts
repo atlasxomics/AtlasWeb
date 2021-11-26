@@ -201,6 +201,16 @@ export default class Client {
     return resp.data;
   }
   // Task
+  async getWorkerSummary(): Promise<any> {
+    const endpoint = '/api/v1/workers/summary';
+    const resp = await this.axios.get(endpoint);
+    return resp.data;
+  }
+  async getWorkers(): Promise<any> {
+    const endpoint = '/api/v1/workers';
+    const resp = await this.axios.get(endpoint);
+    return resp.data;
+  }
   async postTask(task: string, args: any[], kwargs: any, queue: string): Promise<any> {
     const endpoint = '/api/v1/task';
     const payload = {
