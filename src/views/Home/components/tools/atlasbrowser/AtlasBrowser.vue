@@ -338,7 +338,7 @@ interface Metadata {
 
 export default defineComponent({
   name: 'AtlasBrowser',
-  props: [],
+  props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
@@ -400,6 +400,11 @@ export default defineComponent({
       atfilter.value = false;
       isCropMode.value = true;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
+    }
+    function pushByQuery(query: any) {
+      const newRoute = generateRouteByQuery(currentRoute, query);
+      const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
+      if (shouldPush) router.push(newRoute);
     }
     // io
     async function loadMetadata() {
@@ -701,6 +706,7 @@ export default defineComponent({
     }
     async function selectAction(ev: any) {
       run_id.value = ev.id;
+      pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
       // console.log(run_id.value);
     }
     watch(atfilter, async (v, ov) => {
@@ -765,6 +771,11 @@ export default defineComponent({
       await clientReady;
       store.commit.setSubmenu(submenu);
       await fetchFileList();
+      if (props.query) {
+        if (props.query.run_id) {
+          await selectAction({ id: props.query.run_id });
+        }
+      }
     });
     return {
       run_id,

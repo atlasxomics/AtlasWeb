@@ -23,10 +23,16 @@ const clientReady = new Promise((resolve) => {
 
 export default defineComponent({
   name: '_empty',
+  props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
+    function pushByQuery(query: any) {
+      const newRoute = generateRouteByQuery(currentRoute, query);
+      const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
+      if (shouldPush) router.push(newRoute);
+    }
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(null);

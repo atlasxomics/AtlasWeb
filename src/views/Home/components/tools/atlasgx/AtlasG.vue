@@ -241,6 +241,7 @@ function colormapBounded(cmap: string[], values: number[]) {
 }
 export default defineComponent({
   name: 'AtlasG',
+  props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
@@ -284,6 +285,11 @@ export default defineComponent({
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
     const progressMessage = ref<string | null>(null);
+    function pushByQuery(query: any) {
+      const newRoute = generateRouteByQuery(currentRoute, query);
+      const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
+      if (shouldPush) router.push(newRoute);
+    }
     async function loadExpressions() {
       if (!client.value) return;
       const resp = await client.value.getGeneExpressions(filename.value);
@@ -366,10 +372,6 @@ export default defineComponent({
       items.value = [];
       search.value = '';
       loading.value = true;
-      // const payload = { params: { filter: null, options: null } };
-      // const qc_data = await client.value.getQc(payload);
-      // loading.value = false;
-      // items.value = qc_data;
       const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'spatial/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
@@ -424,6 +426,7 @@ export default defineComponent({
       const root = 'data';
       const fn = `${root}/${ev.id}/out/Gene/raw/spatial/genes.h5ad`;
       filename.value = fn;
+      pushByQuery({ component: 'AtlasG', run_id: ev.id });
       await runSpatial(currentViewType.value);
     }
     async function fitStageToParent() {
@@ -513,6 +516,11 @@ export default defineComponent({
       fitStageToParent();
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
       await fetchFileList();
+      if (props.query) {
+        if (props.query.run_id) {
+          await selectAction({ id: props.query.run_id });
+        }
+      }
     });
     return {
       scale,

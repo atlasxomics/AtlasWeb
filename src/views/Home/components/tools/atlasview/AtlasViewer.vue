@@ -158,6 +158,11 @@ export default defineComponent({
     const metadata = ref<any | null>(null);
     const loading = ref(false);
     const tab = ref<string>('Figures');
+    function pushByQuery(query: any) {
+      const newRoute = generateRouteByQuery(currentRoute, query);
+      const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
+      if (shouldPush) router.push(newRoute);
+    }
     async function fetchFileList() {
       if (!client.value) {
         return;
@@ -191,6 +196,10 @@ export default defineComponent({
       if (!client.value) {
         return;
       }
+      if (!qcEntry) {
+        snackbar.dispatch({ text: 'Failed to load', options: { right: true, color: 'error' } });
+        return;
+      }
       metadata.value = await client.value.getJsonFile({ params: { filename: qcEntry.metadatafile } });
       const image_paths = objectToArray(qcEntry.imagefiles);
       const promises = image_paths.map((x) => {
@@ -219,6 +228,7 @@ export default defineComponent({
         // console.log(ev);
         loading.value = true;
         currentItem.value = ev;
+        pushByQuery({ component: 'AtlasViewer', run_id: ev.id });
         await loadSpatial(ev);
         loading.value = false;
       } catch (e) {
@@ -235,6 +245,12 @@ export default defineComponent({
       await clientReady;
       store.commit.setSubmenu(submenu);
       await fetchFileList();
+      if (props.query) {
+        if (props.query.run_id) {
+          const [entry] = items.value.filter((v: any) => v.id === props.query.run_id);
+          await selectAction(entry);
+        }
+      }
     });
     return {
       tabs,
