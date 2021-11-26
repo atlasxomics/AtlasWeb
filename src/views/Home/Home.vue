@@ -25,7 +25,6 @@ import Appbar from '@/components/Appbar/Appbar.vue';
 import MainMenu from './components/menu/MainMenu.vue';
 import HomePage from './components/welcome/HomePage.vue';
 import WaferTrace from './components/view/WaferTrace.vue';
-import QcViewer from './components/view/QcViewer.vue';
 import ImageViewer from './components/view/ImageViewer.vue';
 import ChipInformationViewer from './components/edit/ChipInformationViewer.vue';
 import WaferInformationViewer from './components/edit/WaferInformationViewer.vue';
@@ -33,6 +32,7 @@ import DbitInformationViewer from './components/edit/DbitInformationViewer.vue';
 import AtlasBrowser from './components/tools/atlasbrowser/AtlasBrowser.vue';
 import AtlasG from './components/tools/atlasgx/AtlasG.vue';
 import AtlasAnalytics from './components/tools/atlasanalytics/AtlasAnalytics.vue';
+import AtlasViewer from './components/tools/atlasview/AtlasViewer.vue';
 import AtlasUploader from './components/tools/filetools/AtlasUploader.vue';
 
 const appReadyForClient = new Promise((resolve) => {
@@ -53,7 +53,7 @@ export default defineComponent({
     HomePage,
     ImageViewer,
     WaferTrace,
-    QcViewer,
+    AtlasViewer,
     ChipInformationViewer,
     WaferInformationViewer,
     DbitInformationViewer,

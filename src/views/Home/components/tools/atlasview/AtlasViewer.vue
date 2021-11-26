@@ -6,25 +6,10 @@
       <upload-qc-directory-menu />
     </fresh-dialog>
       <v-row>
-        <v-col cols="12" sm="5">
+        <v-col cols="12" sm="3">
           <v-card>
             <v-card-title>
               Qc Viewer
-              <v-spacer/>
-              <span v-if="loading">
-                <v-progress-circular
-                  :size="20"
-                  indeterminate
-                  color="primary"
-                ></v-progress-circular>
-              </span>
-              <v-spacer/>
-              <v-btn
-                color="primary"
-                @click="fetchQcList"
-              >
-                Reload
-              </v-btn>
               </v-card-title>
               <v-text-field
                 v-model="search"
@@ -32,6 +17,7 @@
                 :label="`Search`"
                 single-line
                 hide-details
+                :loading="loading"
                 @change="searchAction"
               />
             <v-divider></v-divider>
@@ -46,6 +32,7 @@
                 :headers="headers"
                 dense
                 :search="search"
+                :loading="loading"
                 sort-by="id"
                 hide-default-footer
                 @click:row="selectAction"
@@ -54,7 +41,12 @@
             </v-card-text>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="7">
+        <v-col cols="12" sm="9">
+          <v-card flat>
+            <v-card-title>
+              RUN <span v-if="currentItem"> - {{ currentItem.id }} </span>
+            </v-card-title>
+          </v-card>
           <v-tabs
             v-model="tab"
             >
@@ -63,41 +55,12 @@
             </v-tab>
           </v-tabs>
           <v-tabs-items v-model="tab">
-            <v-tab-item key="overview">
-              <v-card class="iv_image_parent">
+            <v-tab-item key="Figures">
+              <v-card class="iv_image_parent" v-if="currentItem">
                 <v-card-title>
-                  DBiT Details - {{ currentItem._id }}
-                  <v-spacer/>
-                  <span v-if="item_loading">
-                    <v-progress-circular
-                      :size="20"
-                      indeterminate
-                      color="primary"
-                    ></v-progress-circular>
-                  </span>
+                  Figures
                 </v-card-title>
-                <v-text-field
-                    v-model="search_details"
-                    prepend-inner-icon="mdi-magnify"
-                    :label="`Search`"
-                    single-line
-                    hide-details
-                  />
-                <v-divider></v-divider>
                 <v-card-text>
-                  <v-data-table
-                    height="20vh"
-                    :items-per-page="1000"
-                    :items="details"
-                    :headers="dbit_headers"
-                    dense
-                    :search="search_details"
-                    hide-default-footer
-                  >
-                  </v-data-table>
-                  <v-card-title>
-                    Figures
-                  </v-card-title>
                   <template v-for="image in images">
                     <div v-bind:key="image.id">
                       <br/>
@@ -113,11 +76,27 @@
                 </v-card-text>
               </v-card>
             </v-tab-item>
-            <v-tab-item key="advanced">
-              <v-card>
+            <v-tab-item key="Metadata">
+              <v-card v-if="currentItem && metadata">
                 <v-card-title>
-                  Advanced viewer
+                  Metadata
                 </v-card-title>
+                <v-simple-table>
+                  <tbody>
+                    <tr>
+                      <td>Species</td>
+                      <td>{{ metadata.species }}</td>
+                    </tr>
+                    <tr>
+                      <td>Sample Type</td>
+                      <td>{{ metadata.type }}</td>
+                    </tr>
+                    <tr>
+                      <td>Assay</td>
+                      <td>{{ metadata.assay }}</td>
+                    </tr>
+                  </tbody>
+                </v-simple-table>
               </v-card>
             </v-tab-item>
           </v-tabs-items>
@@ -136,16 +115,9 @@ import FreshDialog from '@/components/FreshDialog.vue';
 import UploadQcDirectoryMenu from '@/filemenu/file/components/UploadQCDirectoryMenu.vue';
 import { uploadQcDirectoryMenu } from '@/filemenu/file/state';
 
-const tabs = ['overview', 'advanced'];
+const tabs = ['Figures', 'Metadata'];
 const headers = [
   { text: 'ID', value: 'id' },
-  { text: 'Species', value: 'metadata.species' },
-  { text: 'Assay', value: 'metadata.assay' },
-  { text: 'Type', value: 'metadata.type' },
-];
-const dbit_headers = [
-  { text: 'Field', value: 'key' },
-  { text: 'Value', value: 'value' },
 ];
 
 const clientReady = new Promise((resolve) => {
@@ -169,7 +141,7 @@ const submenu = [
   },
 ];
 export default defineComponent({
-  name: 'QcViewer',
+  name: 'AtlasViewer',
   props: ['query'],
   components: { FreshDialog, UploadQcDirectoryMenu },
   setup(props, ctx) {
@@ -181,50 +153,48 @@ export default defineComponent({
     const items = ref<any[]>([]);
     const details = ref<any[] | null>();
     const selected = ref<any>();
-    const currentItem = ref<any>({});
+    const currentItem = ref<any | null>(null);
     const images = ref<any>([]);
+    const metadata = ref<any | null>(null);
     const loading = ref(false);
-    const item_loading = ref(false);
-    const tab = ref<string>('overview');
-    async function fetchQcList() {
+    const tab = ref<string>('Figures');
+    async function fetchFileList() {
       if (!client.value) {
         return;
       }
       items.value = [];
       search.value = '';
       loading.value = true;
-      const payload = { params: { filter: null, options: null } };
-      const qc_data = await client.value.getQc(payload);
+      const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'out/' } };
+      const filelist = await client.value.getFileList(fl_payload);
+      const runids = filelist.filter((v: string) => v.includes('metadata.json')).map((x: string) => x.split('/')[1]);
+      const qc_list: any[] = [];
+      runids.forEach((v: any) => {
+        const subfiles = filelist.filter((x: string) => x.includes(v));
+        const [metadatafile] = subfiles.filter((x: string) => x.includes('metadata.json'));
+        const imagefiles = subfiles.filter((y: string) => y.toLowerCase().includes('.png') || y.toLowerCase().includes('.jpg') || y.toLowerCase().includes('.jpeg'));
+        const temp = {
+          id: v,
+          metadatafile,
+          files: subfiles,
+          imagefiles,
+        };
+        qc_list.push(temp);
+      });
+      items.value = qc_list;
       loading.value = false;
-      items.value = qc_data;
-      // convertToTree(track);
-    }
-    async function loadDbit(dbit_id: string) {
-      if (!client.value) return;
-      const fltr = { run_id: dbit_id };
-      const payload = { params: { filter: JSON.stringify(fltr) } };
-      const resp = await client.value.getDbits(payload);
-      if (resp.length < 1) {
-        return;
-      }
-      const [first_item] = resp;
-      details.value = objectToArray(first_item);
     }
     async function searchAction() {
-      console.log(search.value);
+      // console.log(search.value);
     }
-    function item_filter(x: string) {
-      if (x.includes('dbit')) return true;
-      return false;
-    }
-    async function loadImages(qcEntry: any) {
+    async function loadSpatial(qcEntry: any) {
       if (!client.value) {
         return;
       }
-      const image_paths = objectToArray(qcEntry.files.images);
-      const root_dir = qcEntry.files.root;
+      metadata.value = await client.value.getJsonFile({ params: { filename: qcEntry.metadatafile } });
+      const image_paths = objectToArray(qcEntry.imagefiles);
       const promises = image_paths.map((x) => {
-        const fn = `${root_dir}/${x.value}`;
+        const fn = x.value;
         if (client.value) return client.value.getImage({ params: { filename: fn } });
         return null;
       });
@@ -241,24 +211,19 @@ export default defineComponent({
         });
       }).finally(() => {
         images.value = _.sortBy(temp_array, ['id']);
-        item_loading.value = false;
+        loading.value = false;
       });
-    }
-    function resetDetails() {
-      details.value = [];
-      images.value = [];
     }
     async function selectAction(ev: any) {
       try {
-        item_loading.value = true;
+        // console.log(ev);
+        loading.value = true;
         currentItem.value = ev;
-        resetDetails();
-        await loadDbit(ev.id);
-        await loadImages(ev);
-        item_loading.value = false;
+        await loadSpatial(ev);
+        loading.value = false;
       } catch (e) {
         snackbar.dispatch({ text: `Failed to load the deatils of ${ev.id}`, options: { right: true, color: 'error' } });
-        item_loading.value = false;
+        loading.value = false;
         details.value = [];
       }
       if (!details.value) return;
@@ -269,6 +234,7 @@ export default defineComponent({
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(submenu);
+      await fetchFileList();
     });
     return {
       tabs,
@@ -279,14 +245,12 @@ export default defineComponent({
       currentItem,
       selected,
       headers,
-      dbit_headers,
       loading,
-      item_loading,
       searchAction,
       selectAction,
-      fetchQcList,
       details,
       images,
+      metadata,
       uploadQcDirectoryMenu,
     };
   },

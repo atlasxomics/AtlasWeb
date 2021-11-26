@@ -5,7 +5,7 @@
           <v-card>
             <v-card-title>
               Image Viewer
-              <v-spacer/>
+<!--               <v-spacer/>
               <span v-if="loading">
                 <v-progress-circular
                   :size="20"
@@ -19,13 +19,14 @@
                 @click="fetchTreeData"
               >
                 Reload
-              </v-btn>
+              </v-btn> -->
               <v-text-field
                 v-model="search"
                 prepend-inner-icon="mdi-magnify"
                 :label="`Search`"
                 single-line
                 hide-details
+                :loading="loading"
                 @change="searchAction"
               />
             </v-card-title>
@@ -47,13 +48,13 @@
             <v-card-title>
               Images
               <v-spacer/>
-              <span v-if="item_loading">
+<!--               <span v-if="item_loading">
                 <v-progress-circular
                   :size="20"
                   indeterminate
                   color="primary"
                 ></v-progress-circular>
-              </span>
+              </span> -->
               <v-select
                 v-model="image_selected"
                 :items="image_items"
@@ -83,10 +84,19 @@
 
 <script lang="ts">
 import _ from 'lodash';
-import { defineComponent, ref, computed, onMounted, watch } from '@vue/composition-api';
+import { defineComponent, ref, computed, onMounted, watch, watchEffect } from '@vue/composition-api';
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { generateRouteByQuery } from '@/utils';
+
+const clientReady = new Promise((resolve) => {
+  const ready = computed(() => (
+    store.state.client !== null
+  ));
+  watchEffect(() => {
+    if (ready.value) { resolve(true); }
+  });
+});
 
 export default defineComponent({
   name: 'ImageViewer',
@@ -103,7 +113,6 @@ export default defineComponent({
     const currentDataName = ref<string>();
     const currentItemForTable = ref<any[]>([]);
     const loading = ref(false);
-    const item_loading = ref(false);
     const activated = ref([]);
     const tree_selected = ref([]);
     const image_selected = ref<any>();
@@ -113,7 +122,6 @@ export default defineComponent({
     const image_paths = ref<any>({});
     let children1: any[];
     let children2: any[];
-    console.log('ImageViewer Loaded');
     function convertToTree(data: any) {
       let item: any;
       _.forIn(data, (v, k) => {
@@ -227,7 +235,7 @@ export default defineComponent({
       }
       image_paths.value = _.sortBy(image_paths.value, ['id']);
       const temp_array: any[] = [];
-      item_loading.value = true;
+      loading.value = true;
       images.value = [];
       const promises: Promise<any>[] = [];
       _.each(image_paths.value, (v) => {
@@ -251,7 +259,7 @@ export default defineComponent({
         });
       }).finally(() => {
         images.value = _.sortBy(temp_array, ['id']);
-        item_loading.value = false;
+        loading.value = false;
       });
     }
     watch(image_selected, async (nv, ov) => {
@@ -264,8 +272,10 @@ export default defineComponent({
       await loadQc(dbit_ids, image_selected.value);
       await loadImages();
     });
-    onMounted(() => {
+    onMounted(async () => {
+      await clientReady;
       store.commit.setSubmenu(null);
+      await fetchTreeData();
     });
     return {
       search,
@@ -276,7 +286,6 @@ export default defineComponent({
       currentItemForTable,
       currentDataName,
       loading,
-      item_loading,
       activated,
       tree_selected,
       searchAction,

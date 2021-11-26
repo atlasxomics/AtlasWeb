@@ -44,13 +44,13 @@ const menu = [
     items: [
       { name: 'Wafer Tree', icon: 'mdi-chart-pie', color: 'warning', access_control: ['admin', 'user'], query: { component: 'WaferTrace' } },
       { name: 'Image Viewer from Wafer', icon: 'mdi-image-filter', access_control: ['admin', 'user'], color: 'warning', query: { component: 'ImageViewer' } },
-      { name: 'QC Viewer', icon: 'mdi-checkbox-multiple-marked', access_control: ['admin', 'user'], color: 'warning', query: { component: 'QcViewer' } },
     ],
   },
   {
     groupname: 'Tools',
     items: [
       { name: 'Atlas Browser', icon: 'mdi-pencil-box', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasBrowser' } },
+      { name: 'Atlas Viewer', icon: 'mdi-checkbox-multiple-marked', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasViewer' } },
       { name: 'Atlas GX', icon: 'mdi-biohazard', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasG' } },
       { name: 'Atlas Analytics', icon: 'mdi-sigma', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasAnalytics' } },
       { name: 'Atlas Uploader', icon: 'mdi-cloud-upload', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasUploader' } },

@@ -5,27 +5,13 @@
           <v-card>
             <v-card-title>
               Wafer Trace Tree
-              <v-spacer/>
-              <span v-if="loading">
-                <v-progress-circular
-                  :size="20"
-                  indeterminate
-                  color="primary"
-                ></v-progress-circular>
-              </span>
-              <v-spacer/>
-              <v-btn
-                color="primary"
-                @click="fetchData"
-              >
-                Reload
-              </v-btn>
               <v-text-field
                 v-model="search"
                 prepend-inner-icon="mdi-magnify"
                 :label="`Search`"
                 single-line
                 hide-details
+                :loading="loading"
                 @change="searchAction"
               />
             </v-card-title>
@@ -121,10 +107,19 @@
 
 <script lang="ts">
 import _ from 'lodash';
-import { defineComponent, ref, computed, onMounted, watch } from '@vue/composition-api';
+import { defineComponent, ref, computed, onMounted, watch, watchEffect } from '@vue/composition-api';
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { generateRouteByQuery } from '@/utils';
+
+const clientReady = new Promise((resolve) => {
+  const ready = computed(() => (
+    store.state.client !== null
+  ));
+  watchEffect(() => {
+    if (ready.value) { resolve(true); }
+  });
+});
 
 const headers = [
   { text: 'Field', value: 'name' },
@@ -162,7 +157,6 @@ export default defineComponent({
     const include_chip = ref<boolean>(false);
     let children1: any[];
     let children2: any[];
-    console.log('WaferTrace Loaded');
     function convertToTree(data: any) {
       let item: any;
       _.forIn(data, (v, k) => {
@@ -369,8 +363,10 @@ export default defineComponent({
         image_src2.value = src;
       }
     });
-    onMounted(() => {
+    onMounted(async () => {
+      await clientReady;
       store.commit.setSubmenu(null);
+      await fetchData();
     });
     return {
       search,
