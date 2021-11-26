@@ -94,6 +94,14 @@ export interface DatasetRequest {
   }
 } 
 
+export interface FileRequest {
+  params: {
+    filename: string;
+    bucket?: string | null;
+    type?: string | null;
+  }
+}
+
 export interface ImageFileRequest {
   params: {
     filename: string;

@@ -8,6 +8,7 @@ import {
   ResetUserPasswordPayload,
   ResetPasswordPayload,
   DatasetRequest,
+  FileRequest,
   ImageFileRequest,
   FileListRequest,
   DatasetListingWafer,
@@ -217,6 +218,22 @@ export default class Client {
     return resp.data;
   }
   // storage
+  async getJsonFile(payload: FileRequest): Promise<any> {
+    try {
+      const resp = await this.axios.get('/api/v1/storage/json', payload);
+      return resp.data;
+    } catch (e) {
+      return false;
+    }
+  }
+  async getCsvFile(payload: FileRequest): Promise<any> {
+    try {
+      const resp = await this.axios.get('/api/v1/storage/csv', payload);
+      return resp.data;
+    } catch (e) {
+      return false;
+    }
+  }
   async getFileList(payload: FileListRequest): Promise<any> {
     try {
       const resp = await this.axios.get('api/v1/storage/list', payload);

@@ -7,11 +7,8 @@ export class Crop {
 
   scalefactor: number;
 
-  polygons: any[];
-
   constructor(coord: Circle[] | null) {
     this.scalefactor = 0.15;
-    this.polygons = [];
     if (coord) this.coordinates = coord;
     else {
       const width = window.innerWidth;
@@ -94,6 +91,14 @@ export class Crop {
       out.push(p);
     });
     return out;
+  }
+
+  setCoordinates(crop_area: Point[]): any {
+    let idx = 0;
+    lodash.forIn(this.coordinates, (v, k) => {
+      this.coordinates[k] = { x: crop_area[idx].x * this.scalefactor, y: crop_area[idx].y * this.scalefactor };
+      idx += 1;
+    });
   }
 
   generateRect() {

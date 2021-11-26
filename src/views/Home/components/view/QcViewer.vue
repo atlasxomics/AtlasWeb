@@ -46,6 +46,7 @@
                 :headers="headers"
                 dense
                 :search="search"
+                sort-by="id"
                 hide-default-footer
                 @click:row="selectAction"
               >

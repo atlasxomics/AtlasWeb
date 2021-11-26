@@ -44,3 +44,11 @@ export function generateRouteByQuery(currentRoute: any, query: any) {
   };
   return newroute;
 }
+
+export function splitarray(input: any[], spacing: number): any[] {
+  const output = [];
+  for (let i = 0; i < input.length; i += spacing) {
+    output[output.length] = input.slice(i, i + spacing);
+  }
+  return output;
+}

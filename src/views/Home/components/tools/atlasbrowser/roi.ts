@@ -48,6 +48,14 @@ export class ROI {
     return out;
   }
 
+  setCoordinates(coords: Point[]): any {
+    let idx = 0;
+    lodash.forIn(this.coordinates, (v, k) => {
+      this.coordinates[k] = { x: coords[idx].x * this.scalefactor, y: coords[idx].y * this.scalefactor };
+      idx += 1;
+    });
+  }
+
   getAnchors(): any[] {
     const points = this.getCoordinates();
     const anchors = points.map((v) => {
@@ -206,10 +214,30 @@ export class ROI {
     return latticeCoords;
   }
 
+  loadTixels(tixel_array: any[]) {
+    this.polygons = [];
+    const ft = tixel_array[0];
+    const st = tixel_array[1];
+    const radius = ((Math.abs((Number(ft[4]) - Number(st[4]))) + Math.abs((Number(ft[5]) - Number(st[5])))) * this.scalefactor * 2) / 6.0;
+    tixel_array.forEach((v: any[]) => {
+      const [ge, f, r, c, x, y] = v;
+      const polyConfig = {
+        id: get_uuid(),
+        x: Number(x) * this.scalefactor,
+        y: Number(y) * this.scalefactor,
+        radius,
+        fill: (f === '1') ? 'red' : null,
+        stroke: 'gray',
+        strokeWidth: 1,
+        posit: [Number(r), Number(c)],
+      };
+      this.polygons.push(polyConfig);
+    });
+  }
+
   generatePolygons(nx = 50, ny = 50) {
     const lattices = this.generateLattices(nx, ny);
     this.polygons = [];
-    const polygons: any[] = [];
     for (let i = 0; i < nx; i += 1) {
       for (let j = 0; j < ny; j += 1) {
         const lt = lattices[i * (nx + 1) + j];

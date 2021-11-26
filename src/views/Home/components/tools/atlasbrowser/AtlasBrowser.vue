@@ -23,6 +23,34 @@
             @click:row="selectAction"
           />
         </v-card>
+        <v-card v-if="run_id">
+          <v-card-title>
+            {{ run_id }}
+          </v-card-title>
+          <v-card-text>
+            <v-select
+              v-model="metadata.species"
+              :items="metaItemLists.species"
+              dense
+              outlined
+              label="Species">
+            </v-select>
+            <v-select
+              v-model="metadata.type"
+              :items="metaItemLists.types"
+              dense
+              outlined
+              label="Type">
+            </v-select>
+            <v-select
+              v-model="metadata.assay"
+              :items="metaItemLists.assays"
+              dense
+              outlined
+              label="Assay">
+            </v-select>
+          </v-card-text>
+        </v-card>
       </v-col>
       <v-col cols="12" sm="9">
           <template v-if="loading">
@@ -100,7 +128,7 @@
                     dense
                     color="primary"
                     @click="onLatticeButton">
-                    <v-icon>mdi-checkerboard</v-icon>
+                    <v-icon>mdi-checkerboard</v-icon><span>Grid</span>
                   </v-btn>
                 </v-col>
                 <v-col>
@@ -112,7 +140,7 @@
                     dense
                     color="primary"
                     @click="autoFill">
-                    <v-icon>mdi-pencil</v-icon>
+                    <v-icon>mdi-pencil</v-icon><span>Autofill</span>
                   </v-btn>
                 </v-col>
               </template>
@@ -269,10 +297,10 @@ import blobStream from 'blob-stream';
 import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
-import { get_uuid, generateRouteByQuery, objectToArray } from '@/utils';
+import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
 import { ROI } from './roi';
 import { Crop } from './crop';
-// import { Circle, Point } from './types';
+import { Circle, Point } from './types';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -289,6 +317,24 @@ const metaHeaders = [
   { text: 'Field', value: 'key' },
   { text: 'Value', value: 'value' },
 ];
+const metaItemLists = {
+  types: ['FF', 'FFPE'],
+  species: ['Mouse', 'Human'],
+  assays: ['mRNA'],
+};
+interface Metadata {
+  points: number[] | null;
+  run: string | null;
+  blockSize: number | null;
+  threshold: number | null;
+  type: string | null;
+  species: string | null;
+  trimming: string | null;
+  assay: string | null;
+  numChannels: number | null;
+  orientation: any | null;
+  crop_area: any | null;
+}
 
 export default defineComponent({
   name: 'AtlasBrowser',
@@ -329,16 +375,66 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
+    // Metadata
+    const metadata = ref<Metadata>({
+      points: null,
+      run: null,
+      blockSize: null,
+      threshold: null,
+      type: 'FFPE',
+      species: 'Mouse',
+      trimming: null,
+      assay: 'mRNA',
+      numChannels: null,
+      orientation: null,
+      crop_area: null,
+    });
     function initialize() {
-      roi.value.polygons = [];
+      current_image.value = null;
+      roi.value = new ROI(null);
+      crop.value = new Crop(null);
       roi.value.setScaleFactor(scaleFactor.value);
       crop.value.setScaleFactor(scaleFactor.value);
       isBrushMode.value = false;
       isEraseMode.value = false;
       atfilter.value = false;
       isCropMode.value = true;
+      orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
     }
     // io
+    async function loadMetadata() {
+      if (!client.value) return;
+      loading.value = true;
+      const root = 'data';
+      const filename = `${root}/${run_id.value}/out/Gene/raw/spatial/metadata.json`;
+      const pos_filename = `${root}/${run_id.value}/out/Gene/raw/spatial/tissue_positions_list.csv`;
+      const payload = { params: { filename } };
+      const resp = await client.value.getJsonFile(payload);
+      const pos_payload = { params: { filename: pos_filename } };
+      const resp_pos = await client.value.getCsvFile(pos_payload);
+      if (resp) {
+        snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
+        metadata.value = resp;
+        if (metadata.value.points) {
+          const partitioned = splitarray(metadata.value.points, 2);
+          const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
+          roi.value.setCoordinates(roi_coords);
+        }
+        if (metadata.value.crop_area) {
+          crop.value.setCoordinates(metadata.value.crop_area);
+        }
+        if (metadata.value.orientation) {
+          orientation.value = metadata.value.orientation;
+        }
+        if (resp_pos) {
+          roi.value.loadTixels(resp_pos);
+          snackbar.dispatch({ text: 'Tixel data loaded from existing spatial directory', options: { color: 'success', right: true } });
+        }
+      } else {
+        snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
+      }
+      loading.value = false;
+    }
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
@@ -349,7 +445,6 @@ export default defineComponent({
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
         const scalefactor = scaleFactor.value;
-        initialize();
         if (imgObj) {
           imgObj.onload = (ev: any) => {
             // const scalefactor = (ctx as any).refs.canvas._data.stageWidth / imgObj.width;
@@ -372,12 +467,15 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Failed to load the image file', options: { color: 'error', right: true } });
       }
     }
+    async function loadAll() {
+      await loadMetadata();
+      await loadImage();
+    }
     // Cropping events
     function handleDragStart_Crop(ev: any) {
       // console.log(ev);
       const { id } = ev.target.attrs;
       activePointId.value = id;
-      crop.value.polygons = [];
     }
     function handleDragEnd_Crop(ev: any) {
       const { id } = ev.target.attrs;
@@ -398,7 +496,7 @@ export default defineComponent({
       // console.log(activePointId.value);
     }
     function handleDragCenterStart_Crop(ev: any) {
-      crop.value.polygons = [];
+      // crop.value.polygons = [];
     }
     function handleDragCenterEnd_Crop(ev: any) {
       // console.log(ev);
@@ -523,29 +621,26 @@ export default defineComponent({
           points.push(v.y);
         });
         // console.log(points);
-        const meta = {
+        metadata.value = Object.assign(metadata.value, {
           points,
           run: run_id.value,
           blockSize: null,
           threshold: threshold.value,
-          type: null,
-          species: null,
           trimming: null,
-          assay: null,
           numChannels: null,
           orientation: orientation.value,
           crop_area: crop.value.getCoordinatesOnImage(),
-        };
+        });
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
           crop_area: crop.value.getCoordinatesOnImage(),
           mask: roi.value.getMask(),
-          metadata: meta,
+          metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value),
           orientation: orientation.value,
         };
-        console.log(params);
+        // console.log(params);
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -648,11 +743,12 @@ export default defineComponent({
     watch(brushSize, (v) => {
       brushConfig.value.radius = v;
     });
-    watch(run_id, (v, ov) => {
-      loadImage();
+    watch(run_id, async (v, ov) => {
+      initialize();
+      await loadAll();
     });
     watch(current_image, (v) => {
-      onChangeScale(scaleFactor.value);
+      if (current_image.value) onChangeScale(scaleFactor.value);
     });
     const submenu = [
       {
@@ -671,6 +767,9 @@ export default defineComponent({
       await fetchFileList();
     });
     return {
+      run_id,
+      metadata,
+      metaItemLists,
       items,
       headers,
       selectAction,

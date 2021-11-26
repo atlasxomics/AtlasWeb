@@ -32,6 +32,7 @@ import WaferInformationViewer from './components/edit/WaferInformationViewer.vue
 import DbitInformationViewer from './components/edit/DbitInformationViewer.vue';
 import AtlasBrowser from './components/tools/atlasbrowser/AtlasBrowser.vue';
 import AtlasG from './components/tools/atlasgx/AtlasG.vue';
+import AtlasAnalytics from './components/tools/atlasanalytics/AtlasAnalytics.vue';
 import AtlasUploader from './components/tools/filetools/AtlasUploader.vue';
 
 const appReadyForClient = new Promise((resolve) => {
@@ -58,6 +59,7 @@ export default defineComponent({
     DbitInformationViewer,
     AtlasBrowser,
     AtlasG,
+    AtlasAnalytics,
     AtlasUploader,
   },
   setup(props, ctx) {
