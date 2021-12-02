@@ -219,11 +219,13 @@
                     <template v-if="current_image">
                       <v-line
                         :config="roi.generateBoundary()"/>
-                      <v-circle v-for="p in roi.polygons"
+                      <v-shape v-for="p in roi.polygons"
                         :config="p"
                         v-bind:key="p.id"
+                        @transformend="roi.setScaleFactor()"
                         @mousedown="handleMouseDown"
                         @mouseover="handleMouseOver"/>
+                        <v-transformer ref="transformer" />
                       <template v-if="!isBrushMode">
                         <v-circle
                           v-for="c in roi.getAnchors()"
