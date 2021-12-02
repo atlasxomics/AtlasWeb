@@ -21,6 +21,20 @@ export class ROI {
     }
   }
 
+  static center(tL: number[], tR: number[], bR: number[], bL: number[]): number[] {
+    const top = [(tL[0] + tR[0]) / 2, (tL[1] + tR[1]) / 2];
+    const bottom = [(bL[0] + bR[0]) / 2, (bL[1] + bR[1]) / 2];
+    const x = (top[0] + bottom[0]) / 2;
+    const y = (top[1] + bottom[1]) / 2;
+    return [x, y];
+  }
+
+  static ratio50l(xc: number, yc: number, xr: number, yr: number, num: number): number[] {
+    const txp = xc + (1 / (num)) * (xr - xc);
+    const typ = yc + (1 / (num)) * (yr - yc);
+    return [txp, typ];
+  }
+
   initializeROI(width: number, height: number) {
     const rng = [[0.1, 0.1], [0.85, 0.1], [0.85, 0.85], [0.1, 0.85]];
     rng.forEach((x: number[], idx: number) => {
@@ -116,14 +130,13 @@ export class ROI {
 
   autoMask(pixels: any, threshold: number): any[] {
     const [height, width] = pixels.shape;
-    // console.log(width, height);
     lodash.each(this.polygons, (v, i) => {
-      const x = Math.round(v.y / this.scalefactor);
-      const y = Math.round(v.x / this.scalefactor);
+      const x = Math.round(v.centerx / (v.scaleX * this.scalefactor));
+      const y = Math.round(v.centery / (v.scaleY * this.scalefactor));
       const r = Math.round(v.radius / this.scalefactor);
       let pixval = 0.0;
-      for (let row = y - r; row < y + r; row += 1) {
-        for (let col = x - r; col < x + r; col += 1) {
+      for (let row = x - r; row < x + r; row += 1) {
+        for (let col = y - r; col < y + r; col += 1) {
           pixval += pixels.data[row * width + col];
         }
       }
@@ -140,7 +153,7 @@ export class ROI {
       points.push(v.x);
       points.push(v.y);
     });
-    const lineConfig = { points, stroke: 'red', strokeWidth: 1, closed: true };
+    const lineConfig = { points, stroke: 'red', strokeWidth: 1, closed: true, visible: true };
     return lineConfig;
   }
 
@@ -164,13 +177,14 @@ export class ROI {
     const newPolygons: any[] = [];
     lodash.each(this.polygons, (v: any, idx) => {
       const elm = v;
-      elm.x = v.x * ratio;
-      elm.y = v.y * ratio;
+      elm.scaleX = v.scaleX * ratio;
+      elm.scaleY = v.scaleY * ratio;
       elm.radius = v.radius * ratio;
       elm.strokeWidth = this.scalefactor < 0.11 ? 0 : Math.min(ratio, 1.0);
       newPolygons.push(elm);
     });
     this.polygons = newPolygons;
+    console.log(this.polygons);
   }
 
   getQCScaleFactors(img: any) {
@@ -237,28 +251,85 @@ export class ROI {
 
   generatePolygons(nx = 50, ny = 50) {
     const lattices = this.generateLattices(nx, ny);
+    const [p1, p2, p3, p4] = this.getCoordinates();
+    const ratioNum = 99;
+    const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
+    const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
+    const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
+    const slopeT = [(topS[1] - p1.y), (topS[0] - p1.x)];
+    const slopeO = [slope[0] * 2, slope[1] * 2];
+    const slopeTO = [slopeT[0] * 2, slopeT[1] * 2];
+    const prev = [];
+    prev.push(p1.x);
+    prev.push(p1.y);
+    let tL: (number)[];
+    let tR: (number)[];
+    let bL: (number)[];
+    let bR: (number)[];
+    let center: (number)[];
+    const top = [0, 0];
+    const left = [0, 0];
+    let flag = false;
+    let excelC = 1;
     this.polygons = [];
-    for (let i = 0; i < nx; i += 1) {
-      for (let j = 0; j < ny; j += 1) {
-        const lt = lattices[i * (nx + 1) + j];
-        const lb = lattices[i * (nx + 1) + j + 1];
-        const rt = lattices[(i + 1) * (nx + 1) + j];
-        const rb = lattices[(i + 1) * (nx + 1) + j + 1];
-        const center = { x: (lt.x + lb.x + rt.x + rb.x) / 4, y: (lt.y + lb.y + rt.y + rb.y) / 4 };
-        const r = (Math.abs((rb.x - lt.x)) + Math.abs((rb.y - lt.y))) / 6.0;
+    console.log(slope);
+    console.log(slopeT);
+    for (let i = 0; i < 50; i += 1) {
+      top.fill(prev[0] + slopeT[1], 0);
+      top.fill(prev[1] + slopeT[0], 1);
+      flag = false;
+      for (let j = 0; j < 50; j += 1) {
+        if (flag === false) {
+          left.fill(prev[0], 0);
+          left.fill(prev[1], 1);
+          tL = [left[0], left[1]];
+          tR = [top[0], top[1]];
+          bL = [tL[0] + slope[1], tL[1] + slope[0]];
+          bR = [tR[0] + slope[1], tR[1] + slope[0]];
+          flag = true;
+        } else {
+          left[0] += slopeO[1];
+          left[1] += slopeO[0];
+          tL = [left[0], left[1]];
+          tR = [top[0], top[1]];
+          bL = [tL[0] + slope[1], tL[1] + slope[0]];
+          bR = [tR[0] + slope[1], tR[1] + slope[0]];
+        }
+        center = ROI.center(tL, tR, bR, bL);
+        const topLC = [tL[0], tL[1]];
+        const topRC = [tR[0], tR[1]];
+        const botLC = [bL[0], bL[1]];
+        const botRC = [bR[0], bR[1]];
         const polyConfig = {
+          sceneFunc: (context: any, shape: any) => {
+            context.beginPath();
+            context.moveTo(topLC[0], topLC[1]);
+            context.lineTo(topRC[0], topRC[1]);
+            context.lineTo(botRC[0], botRC[1]);
+            context.lineTo(botLC[0], botLC[1]);
+            context.closePath();
+
+            // special Konva.js method
+            context.fillStrokeShape(shape);
+          },
           id: get_uuid(),
-          x: center.x,
-          y: center.y,
-          radius: r,
           fill: null,
+          centerx: center[0],
+          centery: center[1],
+          radius: slope[0],
           stroke: 'gray',
           strokeWidth: 1,
           posit: [i, j],
+          scaleX: 1.0,
+          scaleY: 1.0,
         };
-        // const poly = new Konva.Line(polyConfig)
         this.polygons.push(polyConfig);
+        top[0] += slopeO[1];
+        top[1] += slopeO[0];
+        excelC += 1;
       }
+      prev[0] += slopeTO[1];
+      prev[1] += slopeTO[0];
     }
     return this.polygons;
   }
