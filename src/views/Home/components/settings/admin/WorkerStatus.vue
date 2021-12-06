@@ -17,7 +17,7 @@
           color="primary"
           @click="refresh"
         >
-        <v-icon>mdi-refresh</v-icon><span>Load</span>
+        <v-icon>mdi-refresh</v-icon><span>Refresh</span>
         </v-btn>
       </v-card-title>
       <v-card-text
@@ -71,15 +71,15 @@ export default defineComponent({
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
-    const workers = ref<any | null>(null);
+    const workers = computed(() => store.state.client?.workers);
     const loading = ref<boolean>(false);
     const search = ref<string>();
     const selected = ref<any>();
     async function refresh() {
       if (!client.value) return;
       loading.value = true;
-      workers.value = null;
-      workers.value = await client.value.getWorkerSummary();
+      await client.value.updateWorkers();
+      snackbar.dispatch({ text: 'Workers are loaded', options: { color: 'success', right: true } });
       loading.value = false;
     }
     async function selectAction(ev: any) {

@@ -38,6 +38,8 @@ export default class Client {
   public axios: AxiosInstance;
 
   serverURL: string;
+  urlPostfix: string;
+  workers: any[] | null;
   user: User | null;
   authorizationToken: string;
   refreshTimeoutId?: number;
@@ -63,13 +65,26 @@ export default class Client {
     });
 
     this.serverURL = serverURL;
+    this.urlPostfix = this.getUrlPostfix();
     this.authorizationToken = token;
     this.user = null;
+    this.workers = null;
   }
 
   async initAsync() {
     await this.fetchUser();
     this.refreshTimeoutId = window.setTimeout(this.refreshToken.bind(this), getTimeout(this.authorizationToken));
+    this.workers = await this.getWorkerSummary();
+  }
+
+  getUrlPostfix(): string {
+    const arr = this.serverURL.split('/');
+    const postfix = arr[arr.length - 1];
+    return postfix;
+  }
+
+  async updateWorkers() {
+    this.workers = await this.getWorkerSummary();
   }
 
   async getApplicationInfo(): Promise<any> {
@@ -211,7 +226,18 @@ export default class Client {
     const resp = await this.axios.get(endpoint);
     return resp.data;
   }
-  async postTask(task: string, args: any[], kwargs: any, queue: string): Promise<any> {
+  async postTaskSync(task: string | null, args: any[] | null, kwargs: any | null, queue: string | null): Promise<any> {
+    const endpoint = '/api/v1/task_sync';
+    const payload = {
+      queue,
+      task,
+      args,
+      kwargs,
+    };
+    const resp = await this.axios.post(endpoint, payload);
+    return resp.data;
+  }
+  async postTask(task: string | null, args: any[] | null, kwargs: any | null, queue: string | null): Promise<any> {
     const endpoint = '/api/v1/task';
     const payload = {
       queue,

@@ -13,6 +13,7 @@
         >
           <v-card
             class="pa-6"
+            :disabled="loading"
           >
             <v-card-title class="pt-0 pl-0">
               ATX-CLOUD
@@ -25,6 +26,7 @@
                 <v-text-field
                   v-model="username"
                   label="Username"
+                  :loading="loading"
                   :error="!!loginErrorMessage"
                   @input="loginErrorMessage = null"
                   @keypress.enter="loginUser"
@@ -123,6 +125,7 @@ export default defineComponent({
 
     const username = ref<string | null>(null);
     const password = ref<string | null>(null);
+    const loading = ref<boolean>(false);
     const loginErrorMessage = ref<string | null>(null);
 
     const showAdvanced = ref(false);
@@ -130,6 +133,7 @@ export default defineComponent({
 
     async function loginUser() {
       if (username.value && password.value) {
+        loading.value = true;
         const serverUrl = useTestServer.value ? TEST_SERVER_URL : PROD_SERVER_URL;
         const resp = await login(serverUrl, username.value, password.value);
 
@@ -139,7 +143,7 @@ export default defineComponent({
         } else {
           loginErrorMessage.value = resp;
         }
-
+        loading.value = true;
         username.value = null;
         password.value = null;
       }
@@ -160,6 +164,7 @@ export default defineComponent({
       password,
       showAdvanced,
       useTestServer,
+      loading,
     };
   },
 });

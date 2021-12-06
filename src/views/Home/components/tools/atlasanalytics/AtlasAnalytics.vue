@@ -36,41 +36,7 @@
           </v-card>
         </v-col>
         <v-col cols="12" sm="9">
-          <v-card flat>
-            <v-select
-                v-model="currentTask"
-                v-if="workers"
-                :items="workers"
-                item-text="task"
-                item-value="task"
-                label="Current Task"
-                return-object
-                @change="selectActionTask"/>
-            <template v-if="currentTask">
-              <v-text-field
-                  v-model="currentTask.worker"
-                  disabled
-                  label="Worker"/>
-              <v-text-field
-                  v-model="currentTask.queues"
-                  disabled
-                  label="Queue"/>
-            </template>
-          </v-card>
-          <v-card v-if="currentItem" flat>
-            <v-card-title>
-              {{ currentItem.id }}
-            </v-card-title>
-            <v-card-text>
-
-            </v-card-text>
-            <v-card-actions>
-              <v-btn color="primary">Run Task</v-btn>
-            </v-card-actions>
-          </v-card>
-          <v-card v-if="currentItem && taskPayload" flat>
-            {{ taskPayload.result }}
-          </v-card>
+          <task-execute ref="taskexecute"/>
         </v-col>
       </v-row>
   </v-container>
@@ -83,6 +49,7 @@ import lodash from 'lodash';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { generateRouteByQuery } from '@/utils';
+import TaskExecute from './TaskExecute.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -106,6 +73,8 @@ interface Task {
 
 export default defineComponent({
   name: 'AtlasAnalytics',
+  props: ['query'],
+  components: { TaskExecute },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
@@ -115,9 +84,6 @@ export default defineComponent({
     const selected = ref<any>();
     const currentItem = ref<any | null>(null);
     const loading = ref(false);
-    const taskPayload = ref<Task | null>(null);
-    const workers = ref<any[] | null>(null);
-    const currentTask = ref<string | null>(null);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -129,12 +95,7 @@ export default defineComponent({
       }
       items.value = [];
       search.value = '';
-      currentItem.value = null;
-      currentTask.value = null;
-      taskPayload.value = null;
-      workers.value = null;
       loading.value = true;
-      workers.value = await client.value.getWorkerSummary();
       const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'spatial/metadata.json' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
@@ -153,9 +114,10 @@ export default defineComponent({
       }
       loading.value = false;
     }
-    async function selectActionTask(ev: any) {
-      // console.log(ev);
-      currentTask.value = ev;
+    async function refreshWorkers() {
+      if (!client.value) return;
+      await (ctx as any).refs.taskexecute.refresh();
+      snackbar.dispatch({ text: 'Workers refreshed', options: { color: 'success', right: true } });
     }
     const submenu = [
       {
@@ -164,7 +126,7 @@ export default defineComponent({
         color: 'primary',
         tooltip: 'Refresh',
         click: async () => {
-          await fetchData();
+          await refreshWorkers();
         },
       },
     ];
@@ -181,10 +143,6 @@ export default defineComponent({
       selected,
       loading,
       selectAction,
-      taskPayload,
-      workers,
-      currentTask,
-      selectActionTask,
     };
   },
 });
