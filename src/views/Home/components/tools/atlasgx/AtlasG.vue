@@ -27,7 +27,16 @@
                 v-model="filename"
                 :loading="loading"
                 :messages="progressMessage"
+                label="Filename"
               />
+              <v-select
+                v-model="currentTask"
+                v-if="candidateWorkers"
+                :items="candidateWorkers"
+                label="Select Worker"
+                item-text="task"
+                return-object>
+              </v-select>
             </v-card-title>
             <v-checkbox
               v-model="isClusterView"
@@ -129,6 +138,7 @@
                 @input="acInputChanged"
                 :search-input.sync="searchInput"
                 :loading="autocompleteLoading"
+                :disabled="!filename"
                 small-chips>
                 <template v-slot:selection="data">
                   <v-chip
@@ -146,12 +156,14 @@
                     color="primary"
                     small
                     text
+                    :disabled="!filename"
                     @click="runSpatial('spatial')"
                     >Spatial</v-btn>
                   <v-btn
                     color="primary"
                     small
                     text
+                    :disabled="!filename"
                     @click="runSpatial('umap')"
                     >UMAP</v-btn>
 <!--                   <v-btn
@@ -246,7 +258,9 @@ export default defineComponent({
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
-    const filename = ref<string>('data/D200/out/Gene/raw/spatial/D200.h5ad');
+    const workers = computed(() => store.state.client?.workers);
+    const candidateWorkers = ref<any[]>([]);
+    const filename = ref<string | null>(null);
     const items = ref<any[]>();
     const search = ref<string>();
     const selected = ref<any>();
@@ -284,14 +298,30 @@ export default defineComponent({
     const autocompleteLoading = ref(false);
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
+    const currentTask = ref<any | null>();
     const progressMessage = ref<string | null>(null);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
+    function loadCandidateWorkers(target: string) {
+      if (!workers.value) return;
+      candidateWorkers.value = workers.value.filter((x: any) => {
+        if (x) {
+          if (x.params) {
+            if (x.params.target === target) {
+              return true;
+            }
+          }
+        }
+        return false;
+      });
+      [currentTask.value] = candidateWorkers.value;
+    }
     async function loadExpressions() {
       if (!client.value) return;
+      if (!filename.value) return;
       const resp = await client.value.getGeneExpressions(filename.value);
       genes.value = resp.map((v: string) => ({ name: v }));
     }
@@ -381,12 +411,13 @@ export default defineComponent({
     }
     async function runSpatial(stype: string) {
       if (!client.value) return;
+      if (!filename.value) return;
       try {
         progressMessage.value = null;
         loading.value = true;
         await loadExpressions();
-        const task = 'gene.compute_qc';
-        const queue = 'atxcloud_gene';
+        const { task } = currentTask.value;// 'gene.compute_qc';
+        const [queue] = currentTask.value.queues;// 'atxcloud_gene';
         const args = [filename.value, selectedGenes.value];
         const kwargs = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -501,6 +532,9 @@ export default defineComponent({
         autocompleteLoading.value = false;
       }, 500);
     }
+    watch(currentTask, (v: any) => {
+      runSpatial(currentViewType.value);
+    });
     watch(isClusterView, (v: boolean) => {
       updateCircles();
     });
@@ -515,6 +549,7 @@ export default defineComponent({
       store.commit.setSubmenu(null);
       fitStageToParent();
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
+      loadCandidateWorkers('AtlasGX');
       await fetchFileList();
       if (props.query) {
         if (props.query.run_id) {
@@ -561,6 +596,10 @@ export default defineComponent({
       clusterColorMap,
       progressMessage,
       selectAction,
+      workers,
+      candidateWorkers,
+      loadCandidateWorkers,
+      currentTask,
     };
   },
 });
