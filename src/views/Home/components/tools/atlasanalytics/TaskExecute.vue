@@ -6,7 +6,7 @@
           <v-select
               v-model="currentTask"
               v-if="workers"
-              :items="workers"
+              :items="workers.filter((x) => x.params && x.params.target == 'general')"
               item-text="task"
               item-value="task"
               label="Choose Task"
