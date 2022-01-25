@@ -63,8 +63,8 @@
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import lodash from 'lodash';
 import store from '@/store';
-import FileUploadDragDrop from './FileUploadDragDrop.vue';
 import { generateRouteByQuery } from '@/utils';
+import FileUploadDragDrop from './FileUploadDragDrop.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (

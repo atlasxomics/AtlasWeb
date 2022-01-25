@@ -2,23 +2,26 @@
 <!--     <v-card ref="mainCard"> -->
   <v-container fluid>
     <v-row>
-      <v-col cols="12" sm="3">
+      <v-col cols="12" sm="2">
         <v-card class="mainCard">
           <v-card-title>
             <v-text-field
               v-model="search"
               prepend-inner-icon="mdi-magnify"
+              :value="matta"
+              @input="matta = $event; searchRuns(matta)"
             />
           </v-card-title>
           <v-data-table
             v-model="selected"
-            height="36vh"
+            height="30vh"
             width="30%"
             dense
             single-select
             :loading="loading"
             :items="items"
             :headers="headers"
+            hide-default-footer
             sort-by="id"
             @click:row="selectAction"
           />
@@ -49,6 +52,20 @@
               outlined
               label="Assay">
             </v-select>
+            <v-select
+              v-model="metadata.trimming"
+              :items="metaItemLists.trimming"
+              dense
+              outlined
+              label="Trimming">
+            </v-select>
+            <v-select
+              v-model="metadata.numChannels"
+              :items="metaItemLists.numChannels"
+              dense
+              outlined
+              label="Num Channels">
+            </v-select>
           </v-card-text>
         </v-card>
       </v-col>
@@ -65,135 +82,6 @@
             </div>
           </template>
           <v-container fluid>
-            <v-row>
-              <v-col cols="12" sm="2">
-                    <v-text-field
-                      v-model="scaleFactor"
-                      class="mt-0 pt-0"
-                      dense
-                      label="Scale"
-                      type="number"
-                      :min="0.1"
-                      :max="1.0"
-                      :step="0.01"
-                      :disabled="!current_image"
-                      @click="onChangeScale"
-                    />
-              </v-col>
-              <v-col cols="12" sm="2">
-                    <v-text-field
-                      v-model="brushSize"
-                      class="mt-0 pt-0"
-                      dense
-                      label="Br.Size"
-                      type="number"
-                      min="5.0"
-                      max="100.0"
-                      step="1.0"
-                      :disabled="!current_image || isCropMode"
-                    />
-              </v-col>
-              <v-col cols="12" sm="2">
-                    <v-text-field
-                      v-model="threshold"
-                      class="mt-0 pt-0"
-                      dense
-                      label="Thr"
-                      type="number"
-                      min="0"
-                      max="255"
-                      step="5"
-                      :disabled="!current_image || isCropMode"
-                    />
-              </v-col>
-              <v-col>
-                <v-checkbox class="mt-0 pt-0" dense v-model="isCropMode" :disabled="!current_image" label="Crop"/>
-              </v-col>
-              <template v-if="!isCropMode">
-                <v-col>
-                  <v-checkbox class="mt-0 pt-0" dense v-model="isBrushMode" :disabled="roi.polygons.length < 1 || isCropMode" label="Brush"/>
-                </v-col>
-                <v-col>
-                  <v-checkbox class="mt-0 pt-0" dense v-model="isEraseMode" :disabled="!isBrushMode || isCropMode" label="Erase"/>
-                </v-col>
-                <v-col>
-                  <v-checkbox class="mt-0 pt-0" dense v-model="atfilter" :disabled="!current_image || isCropMode" label="AT"/>
-                </v-col>
-                <v-col>
-                  <v-btn
-                    :disabled="!current_image || isCropMode"
-                    icon
-                    class="mt-0 pt-0"
-                    small
-                    dense
-                    color="primary"
-                    @click="onLatticeButton">
-                    <v-icon>mdi-checkerboard</v-icon><span>Grid</span>
-                  </v-btn>
-                </v-col>
-                <v-col>
-                  <v-btn
-                    :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
-                    icon
-                    class="mt-0 pt-0"
-                    small
-                    dense
-                    color="primary"
-                    @click="autoFill">
-                    <v-icon>mdi-pencil</v-icon><span>Autofill</span>
-                  </v-btn>
-                </v-col>
-              </template>
-              <template v-if="isCropMode">
-                <v-col>
-                  <v-btn
-                    :disabled="!current_image || !isCropMode"
-                    icon
-                    class="mt-0 pt-0"
-                    small
-                    dense
-                    color="primary"
-                    @click="onCropButton">
-                    <v-icon>mdi-checkbox-multiple-blank</v-icon><span>Crop</span>
-                  </v-btn>
-                </v-col>
-              </template>
-            </v-row>
-            <v-row>
-              <v-col>
-                <v-checkbox
-                  class="mt-0 pt-0"
-                  dense
-                  v-model="orientation.horizontal_flip"
-                  :disabled="!current_image"
-                  label="H.Flip"
-                  @change="loadImage()"/>
-              </v-col>
-              <v-col>
-                <v-checkbox
-                  class="mt-0 pt-0"
-                  dense
-                  v-model="orientation.vertical_flip"
-                  :disabled="!current_image"
-                  label="V.Flip"
-                  @change="loadImage()"
-                  />
-              </v-col>
-              <v-col>
-                <v-text-field
-                    v-model="orientation.rotation"
-                    class="mt-0 pt-0"
-                    dense
-                    label="Rotation"
-                    type="number"
-                    min="0"
-                    max="360"
-                    step="90"
-                    :disabled="!current_image"
-                    @input="loadImage()"
-                  />
-              </v-col>
-            </v-row>
             <v-row>
               <v-card :disabled="loading">
                 <v-stage
@@ -226,59 +114,175 @@
                         @mousedown="handleMouseDown"
                         @mouseover="handleMouseOver"/>
                         <v-transformer ref="transformer" />
-                      <template v-if="!isBrushMode">
-                        <v-circle
-                          v-for="c in roi.getAnchors()"
-                          v-bind:key="c.id"
-                          @dragstart="handleDragStart"
-                          @dragend="handleDragEnd"
-                          @dragmove="handleDragMove"
-                          :config="c"/>
-                      </template>
-                      <v-circle v-if="!isBrushMode"
+                        <template v-if="!isBrushMode">
+                          <v-circle
+                            v-for="c in roi.getAnchors()"
+                            v-bind:key="c.id"
+                            @dragstart="handleDragStart"
+                            @dragend="handleDragEnd"
+                            @dragmove="handleDragMove"
+                            :config="c"/>
+                        </template>
+                        <v-circle v-if="!isBrushMode"
                           v-bind:key="roi.getCenterAnchor().id"
                           @dragstart="handleDragCenterStart"
                           @dragend="handleDragCenterEnd"
                           @dragmove="handleDragCenterMove"
                           :config="roi.getCenterAnchor()"/>
-                      />
+                        />
                     </template>
                   </v-layer>
-                  <v-layer
-                    v-if="isCropMode"
-                    ref="cropLayer"
-                    id="cropLayer"
-                    @mouseup="handleMouseUp">
-                    <template v-if="current_image">
-                      <v-rect
-                        :config="crop.generateRect()"/>
-                      <template v-if="!isBrushMode">
-                        <v-circle
-                          v-for="c in crop.getAnchors()"
-                          v-bind:key="c.id"
-                          @dragstart="handleDragStart_Crop"
-                          @dragend="handleDragEnd_Crop"
-                          @dragmove="handleDragMove_Crop"
-                          :config="c"/>
+                    <v-layer
+                      v-if="isCropMode"
+                      ref="cropLayer"
+                      id="cropLayer"
+                      @mouseup="handleMouseUp">
+                      <template v-if="current_image">
+                        <v-rect
+                          :config="crop.generateRect()"/>
+                        <template v-if="!isBrushMode">
+                          <v-circle
+                            v-for="c in crop.getAnchors()"
+                            v-bind:key="c.id"
+                            @dragstart="handleDragStart_Crop"
+                            @dragend="handleDragEnd_Crop"
+                            @dragmove="handleDragMove_Crop"
+                            :config="c"/>
+                        </template>
+                        <v-circle v-if="!isBrushMode"
+                            v-bind:key="crop.getCenterAnchor().id"
+                            @dragstart="handleDragCenterStart_Crop"
+                            @dragend="handleDragCenterEnd_Crop"
+                            @dragmove="handleDragCenterMove_Crop"
+                            :config="crop.getCenterAnchor()"/>
+                        />
                       </template>
-                      <v-circle v-if="!isBrushMode"
-                          v-bind:key="crop.getCenterAnchor().id"
-                          @dragstart="handleDragCenterStart_Crop"
-                          @dragend="handleDragCenterEnd_Crop"
-                          @dragmove="handleDragCenterMove_Crop"
-                          :config="crop.getCenterAnchor()"/>
+                    </v-layer>
+                    <v-layer>
+                      <v-circle
+                        v-if="isBrushMode"
+                        :config="brushConfig"
+                        @mousedown="handleMouseDownBrush"
+                        @mouseup="handleMouseUpBrush"
                       />
-                    </template>
-                  </v-layer>
-                  <v-layer>
-                    <v-circle
-                      v-if="isBrushMode"
-                      :config="brushConfig"
-                      @mousedown="handleMouseDownBrush"
-                      @mouseup="handleMouseUpBrush"
+                    </v-layer>
+                  </v-stage>
+                </v-card>
+                <v-spacer>
+                </v-spacer>
+                <v-card flat width="5vw">
+                  <v-card-actions>
+                    <v-text-field
+                      v-model="scaleFactor"
+                      dense
+                      label="Scale"
+                      type="number"
+                      :min="0.1"
+                      :max="1.0"
+                      :step="0.01"
+                      :disabled="!current_image"
+                      @click="onChangeScale"
                     />
-                  </v-layer>
-                </v-stage>
+                  </v-card-actions>
+                  <v-card-actions>
+                    <v-text-field
+                      v-model="brushSize"
+                      class="mt-0 pt-0"
+                      dense
+                      label="Br.Size"
+                      type="number"
+                      min="5.0"
+                      max="100.0"
+                      step="1.0"
+                      :disabled="!current_image || isCropMode"
+                    />
+                  </v-card-actions>
+                  <v-card-actions>
+                    <v-text-field
+                      v-model="threshold"
+                      class="mt-0 pt-0"
+                      dense
+                      label="Thr"
+                      type="number"
+                      min="0"
+                      max="255"
+                      step="5"
+                      :disabled="!current_image || isCropMode"
+                    />
+                  </v-card-actions>
+                  <v-card-actions>
+                    <template v-if="!isCropMode">
+                      <v-btn
+                        :disabled="!current_image || isCropMode"
+                        small
+                        dense
+                        color="primary"
+                        @click="onLatticeButton">
+                        Grid
+                      </v-btn>
+                    </template>
+                  </v-card-actions>
+                  <v-card-actions>
+                    <template v-if="isCropMode">
+                      <v-btn
+                      :disabled="!current_image || !isCropMode"
+                      small
+                      dense
+                      color="primary"
+                      @click="onCropButton">
+                      Crop
+                      </v-btn>
+                    </template>
+                    </v-card-actions>
+              </v-card>
+              <v-card flat width="5vw">
+                <v-card-actions>
+                  <v-checkbox
+                    class="mt-0 pt-0"
+                    dense
+                    v-model="orientation.horizontal_flip"
+                    :disabled="!current_image"
+                    label="H.Flip"
+                    @change="loadImage()"/>
+                </v-card-actions>
+                <v-card-actions>
+                  <v-checkbox
+                    class="mt-0 pt-0"
+                    dense
+                    v-model="orientation.vertical_flip"
+                    :disabled="!current_image"
+                    label="V.Flip"
+                    @change="loadImage()"/>
+                </v-card-actions>
+                <v-card-actions>
+                  <v-text-field
+                    v-model="orientation.rotation"
+                    class="mt-0 pt-0"
+                    dense
+                    label="Rotation"
+                    type="number"
+                    min="0"
+                    max="360"
+                    step="90"
+                    :disabled="!current_image"
+                    @input="loadImage()"/>
+                </v-card-actions>
+                <template v-if="!isCropMode">
+                  <v-card-actions><v-checkbox dense v-model="isCropMode" :disabled="!current_image" label="Crop"/></v-card-actions>
+                  <v-card-actions><v-checkbox dense v-model="isBrushMode" :disabled="roi.polygons.length < 1 || isCropMode" label="Brush"/></v-card-actions>
+                  <v-card-actions><v-checkbox dense v-model="isEraseMode" :disabled="!isBrushMode || isCropMode" label="Erase"/></v-card-actions>
+                  <v-card-actions><v-checkbox dense v-model="atfilter" :disabled="!current_image || isCropMode" label="Threshold"/></v-card-actions>
+                  <v-card-actions>
+                    <v-btn
+                    :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
+                    small
+                    dense
+                    color="primary"
+                    @click="autoFill">
+                    Autofill
+                    </v-btn>
+                  </v-card-actions>
+                </template>
               </v-card>
             </v-row>
           </v-container>
@@ -320,9 +324,11 @@ const metaHeaders = [
   { text: 'Value', value: 'value' },
 ];
 const metaItemLists = {
-  types: ['FF', 'FFPE'],
-  species: ['Mouse', 'Human'],
-  assays: ['mRNA'],
+  types: ['FF', 'FFPE', 'EFPE'],
+  species: ['Mouse', 'Human', 'Rat', 'Hamster'],
+  assays: ['mRNA', 'Protein', 'ATAC', 'H3K27me3', 'H3K4me3', 'H3K27ac'],
+  trimming: ['Yes', 'No'],
+  numChannels: [50, 100],
 };
 interface Metadata {
   points: number[] | null;
@@ -344,18 +350,22 @@ export default defineComponent({
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
+    const allFiles = ref<any[]>([]);
     const currentRoute = computed(() => ctx.root.$route);
     const items = ref<any[]>([]);
+    const matta = ref<any[]>([]);
     const search = ref<string | null>();
     const selected = ref<any | null>();
     const run_id = ref<string | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const konvaConfig = ref<any>({ width, height });
+    let imageWidth = Math.round(width - ((width / 12) * 2));
+    const konvaConfig = ref<any>({ width: Math.round(imageWidth * 0.7333), height });
     const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
     const isBrushMode = ref(false);
     const isCropMode = ref(true);
+    const cropFlag = ref(false);
     const isEraseMode = ref(false);
     const brushSize = ref(20);
     const brushDown = ref(false);
@@ -365,7 +375,7 @@ export default defineComponent({
     const activePointId = ref<string | null>(null);
     // const polygons = ref<any[] | null>([]);
     const isMouseDown = ref(false);
-    const stageWidth = ref(window.innerWidth * 0.7);
+    const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
     const current_image = ref<any | null>(null);
     const scaleFactor = ref(0.15);
@@ -385,9 +395,9 @@ export default defineComponent({
       threshold: null,
       type: 'FFPE',
       species: 'Mouse',
-      trimming: null,
+      trimming: 'Yes',
       assay: 'mRNA',
-      numChannels: null,
+      numChannels: 50,
       orientation: null,
       crop_area: null,
     });
@@ -425,10 +435,9 @@ export default defineComponent({
         if (metadata.value.points) {
           const partitioned = splitarray(metadata.value.points, 2);
           const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
+          metadata.value.trimming = 'Yes';
+          metadata.value.numChannels = 50;
           roi.value.setCoordinates(roi_coords);
-        }
-        if (metadata.value.crop_area) {
-          crop.value.setCoordinates(metadata.value.crop_area);
         }
         if (metadata.value.orientation) {
           orientation.value = metadata.value.orientation;
@@ -447,11 +456,13 @@ export default defineComponent({
       loading.value = true;
       const root = 'data';
       const filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
+      const filenameList = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: `${run_id.value}/images` } };
       try {
         const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
+        allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
-        const scalefactor = scaleFactor.value;
+        const scalefactor = 0.15;
         if (imgObj) {
           imgObj.onload = (ev: any) => {
             // const scalefactor = (ctx as any).refs.canvas._data.stageWidth / imgObj.width;
@@ -478,9 +489,22 @@ export default defineComponent({
       await loadMetadata();
       await loadImage();
     }
+
+    function searchRuns(ev: any) {
+      console.log(ev);
+      console.log(items.value);
+    }
+    function handleResize(ev: any) {
+      const v = scaleFactor.value;
+      current_image.value.scale = { x: v, y: v };
+      imageWidth = Math.round(window.innerWidth - ((window.innerWidth / 12) * 2));
+      konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.7333), v * current_image.value.image.width);
+      konvaConfig.value.height = v * current_image.value.image.height;
+      stageWidth.value = konvaConfig.value.width;
+      stageHeight.value = konvaConfig.value.height;
+    }
     // Cropping events
     function handleDragStart_Crop(ev: any) {
-      // console.log(ev);
       const { id } = ev.target.attrs;
       activePointId.value = id;
     }
@@ -488,19 +512,18 @@ export default defineComponent({
       const { id } = ev.target.attrs;
       const pos = ev.target._lastPos;
       activePointId.value = null;
+      // crop.value.generateRect();
     }
     function handleDragMove_Crop(ev: any) {
       const { id } = ev.target.attrs;
       const pos = ev.target._lastPos;
-      if (pos.x > 5 && pos.y > 5 && pos.x < stageWidth.value && pos.y < stageHeight.value) {
+      if (pos.x > 5 && pos.y > 5 && pos.x < current_image.value.image.width && pos.y < current_image.value.image.height) {
         crop.value.coordinates[id].x = pos.x;
         crop.value.coordinates[id].y = pos.y;
-        const coords = crop.value.getCoordinates();
       } else {
         crop.value.coordinates[id].x = Math.min(Math.max(0, pos.x), stageWidth.value);
         crop.value.coordinates[id].y = Math.min(Math.max(0, pos.y), stageHeight.value);
       }
-      // console.log(activePointId.value);
     }
     function handleDragCenterStart_Crop(ev: any) {
       // crop.value.polygons = [];
@@ -509,7 +532,7 @@ export default defineComponent({
       // console.log(ev);
     }
     function handleDragCenterMove_Crop(ev: any) {
-      crop.value.moveToNewCenter(ev.target._lastPos);
+      crop.value.moveToNewCenter(ev.target._lastPos, stageWidth.value, stageHeight.value);
     }
     // ROI events
     function handleDragStart(ev: any) {
@@ -608,6 +631,7 @@ export default defineComponent({
     }
     function onCropButton(ev: any) {
       isCropMode.value = false;
+      cropFlag.value = true;
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
@@ -620,14 +644,13 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'joshua_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const points: number[] = [];
         coords.forEach((v, i) => {
           points.push(v.x);
           points.push(v.y);
         });
-        // console.log(points);
         metadata.value = Object.assign(metadata.value, {
           points,
           run: run_id.value,
@@ -641,6 +664,7 @@ export default defineComponent({
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
+          files: allFiles.value,
           crop_area: crop.value.getCoordinatesOnImage(),
           mask: roi.value.getMask(),
           metadata: metadata.value,
@@ -684,8 +708,7 @@ export default defineComponent({
     function onChangeScale(ev: any) {
       const v = scaleFactor.value;
       current_image.value.scale = { x: v, y: v };
-      // console.log(current_image.value);
-      konvaConfig.value.width = v * current_image.value.image.width;
+      konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.7333), v * current_image.value.image.width);
       konvaConfig.value.height = v * current_image.value.image.height;
       stageWidth.value = konvaConfig.value.width;
       stageHeight.value = konvaConfig.value.height;
@@ -703,13 +726,12 @@ export default defineComponent({
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
+      console.log(items);
       loading.value = false;
-      // console.log(qc_data);
     }
     async function selectAction(ev: any) {
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
-      // console.log(run_id.value);
     }
     watch(atfilter, async (v, ov) => {
       if (!current_image.value) return;
@@ -743,9 +765,13 @@ export default defineComponent({
       }
     });
     watch(isCropMode, (v) => {
-      if (isCropMode.value) {
+      if (!isCropMode.value) {
         isBrushMode.value = false;
         atfilter.value = false;
+        crop.value.setCoordinates(crop.value.getCoordinatesOnImage());
+      } else {
+        // console.log(crop.value.getCoordinates());
+        // console.log(roi.value.getCoordinates());
       }
     });
     watch(brushSize, (v) => {
@@ -754,6 +780,7 @@ export default defineComponent({
     watch(run_id, async (v, ov) => {
       initialize();
       await loadAll();
+      window.addEventListener('resize', handleResize);
     });
     watch(current_image, (v) => {
       if (current_image.value) onChangeScale(scaleFactor.value);
@@ -772,6 +799,7 @@ export default defineComponent({
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(submenu);
+      window.addEventListener('resize', handleResize);
       await fetchFileList();
       if (props.query) {
         if (props.query.run_id) {
@@ -780,10 +808,12 @@ export default defineComponent({
       }
     });
     return {
+      allFiles,
       run_id,
       metadata,
       metaItemLists,
       items,
+      matta,
       headers,
       selectAction,
       search,
@@ -810,11 +840,13 @@ export default defineComponent({
       handleMouseUpBrush,
       handleMouseUp,
       crop,
+      cropFlag,
       roi,
       objectToArray,
       generateLattices,
       current_image,
       loadImage,
+      searchRuns,
       onResize,
       stageWidth,
       initialize,
@@ -844,8 +876,8 @@ export default defineComponent({
 .center-progress {
   position: absolute;
   z-index: 999;
-  top: 50%;
-  left:50%;
+  top: 36%;
+  left: 45%;
 }
 .toolRow {
   height: 5vh;
