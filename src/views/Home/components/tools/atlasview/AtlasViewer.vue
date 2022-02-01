@@ -170,7 +170,7 @@ export default defineComponent({
       items.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'out/' } };
+      const fl_payload = { params: { path: 'data', filter: 'out/' } };
       const filelist = await client.value.getFileList(fl_payload);
       const runids = filelist.filter((v: string) => v.includes('metadata.json')).map((x: string) => x.split('/')[1]);
       const qc_list: any[] = [];

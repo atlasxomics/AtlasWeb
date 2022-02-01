@@ -699,7 +699,7 @@ export default defineComponent({
       items.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'images/postB_BSA.tif' } };
+      const fl_payload = { params: { path: 'data', filter: 'images/postB_BSA.tif' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;

@@ -121,7 +121,7 @@ export default defineComponent({
         else rfiles.push(v);
       });
       metaData.value.run_id = props.run_id;
-      const payload: DatasetUploadParams[] = rfiles.map((file: File) => ({ file, meta: metaData.value, bucket: 'atx-cloud-dev', output_filename: props.destination }));
+      const payload: DatasetUploadParams[] = rfiles.map((file: File) => ({ file, meta: metaData.value, bucket: null, output_filename: props.destination }));
       console.log(payload);
       store.dispatch.upload.uploadDatasetFiles(payload);
       store.commit.upload.setDialogOpen(true);
