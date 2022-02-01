@@ -7,7 +7,7 @@ import '@mdi/font/css/materialdesignicons.css';
 // Must come first
 import '@/plugins/composition';
 import './plugins/mousetrap';
-
+import './plugins/clipboard2';
 import App from './App.vue';
 import router from './router';
 import store from './store';

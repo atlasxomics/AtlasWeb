@@ -76,6 +76,9 @@ export default defineComponent({
     function redirectToLogin() {
       router.push('/login');
     }
+    function redirectToPublic() {
+      router.push('/public');
+    }
     function redirectToErrorPage() {
       router.push('/Error');
     }

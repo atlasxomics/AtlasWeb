@@ -72,9 +72,13 @@ export default class Client {
   }
 
   async initAsync() {
-    await this.fetchUser();
-    this.refreshTimeoutId = window.setTimeout(this.refreshToken.bind(this), getTimeout(this.authorizationToken));
-    this.workers = await this.getWorkerSummary();
+    try {
+      await this.fetchUser();
+      this.refreshTimeoutId = window.setTimeout(this.refreshToken.bind(this), getTimeout(this.authorizationToken));
+      this.workers = await this.getWorkerSummary();
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   getUrlPostfix(): string {
@@ -210,9 +214,19 @@ export default class Client {
     const resp = await this.axios.post('api/v1/genes/expressions', payload);
     return resp.data;
   }
+  async getGeneExpressionsByToken(token: string): Promise<any> {
+    const payload = { };
+    const resp = await this.axios.post(`api/v1/genes/expressions/${token}`, payload);
+    return resp.data;
+  }
   async getGeneSpatial(filename: string, genes: string[]): Promise<any> {
     const payload = { filename, genes };
     const resp = await this.axios.post('api/v1/genes/spatial', payload, { timeout: 1000 * 300 });
+    return resp.data;
+  }
+  // Link Generation
+  async encodeLink(toEncode: any): Promise<any> {
+    const resp = await this.axios.post('api/v1/genes/generate_link', toEncode);
     return resp.data;
   }
   // Task
@@ -248,8 +262,27 @@ export default class Client {
     const resp = await this.axios.post(endpoint, payload);
     return resp.data;
   }
+
+  async postPublicTask(task: string | null, args: any[] | null, kwargs: any | null, queue: string | null): Promise<any> {
+    const endpoint = '/api/v1/public_task';
+    const payload = {
+      queue,
+      task,
+      args,
+      kwargs,
+    };
+    const resp = await this.axios.post(endpoint, payload);
+    return resp.data;
+  }
+
   async getTaskStatus(task_id: string): Promise<any> {
     const endpoint = `/api/v1/task/${task_id}`;
+    const resp = await this.axios.get(endpoint);
+    return resp.data;
+  }
+
+  async getPublicTaskStatus(task_id: string): Promise<any> {
+    const endpoint = `/api/v1/public_task/${task_id}`;
     const resp = await this.axios.get(endpoint);
     return resp.data;
   }

@@ -36,6 +36,10 @@ export function logout() {
   store.commit.setClient(null);
 }
 
+export async function loginAnonymous(url: string) {
+  store.commit.setClient(await Client.Create(url, ''));
+}
+
 export function resolveAuthGroup(access_list: string[]) {
   if (!client.value) return false;
   if (!client.value.user) return false;
