@@ -96,10 +96,6 @@ export default defineComponent({
       items.value = [];
       search.value = '';
       loading.value = true;
-<<<<<<< HEAD
-      workers.value = await client.value.getWorkerSummary();
-=======
->>>>>>> main
       const fl_payload = { params: { path: 'data', filter: 'spatial/metadata.json' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
