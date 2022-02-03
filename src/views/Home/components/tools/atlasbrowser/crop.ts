@@ -47,12 +47,13 @@ export class Crop {
 
   getAnchors(): any[] {
     const points = this.getCoordinates();
-    const anchors = points.map((v) => {
+    const real = this.realCoords();
+    const anchors = points.map((v, idx) => {
       const circle = {
         draggable: true,
         id: v.id,
-        x: v.x,
-        y: v.y,
+        x: real[idx].x,
+        y: real[idx].y,
         stroke: 'red',
         radius: 10,
       };
@@ -61,7 +62,7 @@ export class Crop {
     return anchors;
   }
 
-  moveToNewCenter(center: Point): any {
+  moveToNewCenter(center: Point, width: number, height: number): any {
     const currentCenter = this.getCenterAnchor();
     const diffX = center.x - currentCenter.x;
     const diffY = center.y - currentCenter.y;
@@ -103,14 +104,41 @@ export class Crop {
 
   generateRect() {
     const coords: Point[] = this.getCoordinates();
+    const length1 = Math.floor(coords[1].x - coords[0].x);
+    const length2 = Math.floor(coords[1].y - coords[0].y);
+
+    let added_on = 0;
+    if (length1 > length2) {
+      added_on = length1 - length2;
+    }
+    if (length1 < length2) {
+      added_on = length1 - length2;
+    }
     const points: number[] = [];
     const [c1, c2] = coords;
+    c2.y += added_on;
     const x = Math.min(c1.x, c2.x);
     const y = Math.min(c1.y, c2.y);
     const width = Math.abs(c1.x - c2.x);
     const height = Math.abs(c1.y - c2.y);
     const rectConfig = { x, y, width, height, stroke: 'blue', strokeWidth: 2 };
     return rectConfig;
+  }
+
+  realCoords() {
+    const coords: Point[] = this.getCoordinates();
+    const length1 = Math.floor(coords[1].x - coords[0].x);
+    const length2 = Math.floor(coords[1].y - coords[0].y);
+    let added_on = 0;
+    if (length1 > length2) {
+      added_on = length1 - length2;
+    }
+    if (length1 < length2) {
+      added_on = length1 - length2;
+    }
+    const [c1, c2] = coords;
+    c2.y += added_on;
+    return [c1, c2];
   }
 
   setScaleFactor(scale: number) {
