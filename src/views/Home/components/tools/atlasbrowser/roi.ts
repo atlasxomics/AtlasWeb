@@ -203,28 +203,6 @@ export class ROI {
     };
   }
 
-  generateLattices(nx = 50, ny = 50) {
-    const [p1, p2, p3, p4] = this.getCoordinates();
-    const latticeCoords: Point[] = [];
-    for (let i = 0; i < nx + 1; i += 1) { // row
-      const currentPoint1 = {
-        x: p1.x + ((p4.x - p1.x) / nx) * i,
-        y: p1.y + ((p4.y - p1.y) / ny) * i,
-      };
-      const currentPoint2 = {
-        x: p2.x + ((p3.x - p2.x) / nx) * i,
-        y: p2.y + ((p3.y - p2.y) / nx) * i,
-      };
-      for (let j = 0; j < ny + 1; j += 1) { // column
-        const x = currentPoint1.x + ((currentPoint2.x - currentPoint1.x) / nx) * j;
-        const y = currentPoint1.y + ((currentPoint2.y - currentPoint1.y) / ny) * j;
-        const p = { x, y };
-        latticeCoords.push(p);
-      }
-    }
-    return latticeCoords;
-  }
-
   loadTixels(tixel_array: any[]) {
     // console.log(tixel_array);
     const [p1, p2, p3, p4] = this.getCoordinates();
@@ -307,7 +285,7 @@ export class ROI {
     }
   }
 
-  generatePolygons(nx = 50, ny = 50) {
+  generatePolygons() {
     const [p1, p2, p3, p4] = this.getCoordinates();
     const ratioNum = 99;
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);

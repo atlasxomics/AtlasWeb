@@ -1,6 +1,6 @@
 <template>
 <!--     <v-card ref="mainCard"> -->
-  <v-container fluid>
+  <v-app class="main">
     <v-row>
       <v-col cols="12" sm="2">
         <v-card class="mainCard">
@@ -8,20 +8,19 @@
             <v-text-field
               v-model="search"
               prepend-inner-icon="mdi-magnify"
-              :value="matta"
-              @input="matta = $event; searchRuns(matta)"
+              :value="searchInput"
+              @input="searchInput = $event; searchRuns(searchInput)"
             />
           </v-card-title>
           <v-data-table
             v-model="selected"
-            height="30vh"
+            height="29vh"
             width="30%"
             dense
             single-select
             :loading="loading"
-            :items="items"
+            :items="itemsHolder"
             :headers="headers"
-            hide-default-footer
             sort-by="id"
             @click:row="selectAction"
           />
@@ -70,18 +69,63 @@
         </v-card>
       </v-col>
       <v-col cols="12" sm="9">
-          <template v-if="loading">
-            <div class="center-progress">
-              <v-progress-circular
-                :size="100"
-                :width="10"
-                color="primary"
-                indeterminate
-                >
-              </v-progress-circular>
-            </div>
-          </template>
           <v-container fluid>
+            <template v-if="loading && !loadingMessage">
+              <div class="center-progress">
+                <v-progress-circular
+                  :size="100"
+                  :width="10"
+                  color="primary"
+                  indeterminate>
+                </v-progress-circular>
+              </div>
+            </template>
+            <template v-if="loadingMessage">
+              <v-dialog
+                value=true
+                hide-overlay
+                persistent
+                width="600"
+                height=600>
+                <v-card
+                  color="primary"
+                  dark>
+                  <v-card-text>
+                    Confirm cropping and orientation of images
+                    <v-progress-linear
+                      v-model="one"
+                      buffer-value="0"
+                      height="10"
+                      stream
+                      color="white"
+                      class="mb-0">
+                    </v-progress-linear>
+                  </v-card-text>
+                  <v-card-text>
+                    Accessing and Retriving data from the Database
+                    <v-progress-linear
+                      v-model="two"
+                      buffer-value="0"
+                      height="10"
+                      stream
+                      color="white"
+                      class="mb-0">
+                    </v-progress-linear>
+                  </v-card-text>
+                  <v-card-text>
+                    Updating Database and uploading spatial folder
+                    <v-progress-linear
+                    v-model="three"
+                      buffer-value="0"
+                      height="10"
+                      stream
+                      color="white"
+                      class="mb-0">
+                    </v-progress-linear>
+                  </v-card-text>
+                </v-card>
+              </v-dialog>
+            </template>
             <v-row>
               <v-card :disabled="loading">
                 <v-stage
@@ -170,125 +214,105 @@
                 </v-card>
                 <v-spacer>
                 </v-spacer>
-                <v-card flat width="5vw">
-                  <v-card-actions>
-                    <v-text-field
-                      v-model="scaleFactor"
-                      dense
-                      label="Scale"
-                      type="number"
-                      :min="0.1"
-                      :max="1.0"
-                      :step="0.01"
-                      :disabled="!current_image"
-                      @click="onChangeScale"
-                    />
-                  </v-card-actions>
-                  <v-card-actions>
-                    <v-text-field
-                      v-model="brushSize"
-                      class="mt-0 pt-0"
-                      dense
-                      label="Br.Size"
-                      type="number"
-                      min="5.0"
-                      max="100.0"
-                      step="1.0"
+                <v-card flat width="12%">
+                  <v-text-field
+                    v-model="scaleFactor"
+                    dense
+                    label="Scale"
+                    type="number"
+                    :min="0.1"
+                    :max="1.0"
+                    :step="0.01"
+                    :disabled="!current_image"
+                    @click="onChangeScale"
+                  />
+                  <v-text-field
+                    v-model="brushSize"
+                    class="mt-0 pt-0"
+                    dense
+                    label="Br.Size"
+                    type="number"
+                    min="5.0"
+                    max="100.0"
+                    step="1.0"
+                    :disabled="!current_image || isCropMode"
+                  />
+                  <v-text-field
+                    v-model="threshold"
+                    class="mt-0 pt-0"
+                    dense
+                    label="Thr"
+                    type="number"
+                    min="0"
+                    max="255"
+                    step="5"
+                    :disabled="!current_image || isCropMode"
+                  />
+                  <template v-if="!isCropMode">
+                    <v-btn
                       :disabled="!current_image || isCropMode"
-                    />
-                  </v-card-actions>
-                  <v-card-actions>
-                    <v-text-field
-                      v-model="threshold"
-                      class="mt-0 pt-0"
-                      dense
-                      label="Thr"
-                      type="number"
-                      min="0"
-                      max="255"
-                      step="5"
-                      :disabled="!current_image || isCropMode"
-                    />
-                  </v-card-actions>
-                  <v-card-actions>
-                    <template v-if="!isCropMode">
-                      <v-btn
-                        :disabled="!current_image || isCropMode"
-                        small
-                        dense
-                        color="primary"
-                        @click="onLatticeButton">
-                        Grid
-                      </v-btn>
-                    </template>
-                  </v-card-actions>
-                  <v-card-actions>
-                    <template v-if="isCropMode">
-                      <v-btn
-                      :disabled="!current_image || !isCropMode"
                       small
                       dense
                       color="primary"
-                      @click="onCropButton">
-                      Crop
-                      </v-btn>
-                    </template>
-                    </v-card-actions>
-              </v-card>
-              <v-card flat width="5vw">
-                <v-card-actions>
-                  <v-checkbox
-                    class="mt-0 pt-0"
-                    dense
-                    v-model="orientation.horizontal_flip"
-                    :disabled="!current_image"
-                    label="H.Flip"
-                    @change="loadImage()"/>
-                </v-card-actions>
-                <v-card-actions>
-                  <v-checkbox
-                    class="mt-0 pt-0"
-                    dense
-                    v-model="orientation.vertical_flip"
-                    :disabled="!current_image"
-                    label="V.Flip"
-                    @change="loadImage()"/>
-                </v-card-actions>
-                <v-card-actions>
-                  <v-text-field
-                    v-model="orientation.rotation"
-                    class="mt-0 pt-0"
-                    dense
-                    label="Rotation"
-                    type="number"
-                    min="0"
-                    max="360"
-                    step="90"
-                    :disabled="!current_image"
-                    @input="loadImage()"/>
-                </v-card-actions>
-                <template v-if="!isCropMode">
-                  <v-card-actions><v-checkbox dense v-model="isCropMode" :disabled="!current_image" label="Crop"/></v-card-actions>
-                  <v-card-actions><v-checkbox dense v-model="isBrushMode" :disabled="roi.polygons.length < 1 || isCropMode" label="Brush"/></v-card-actions>
-                  <v-card-actions><v-checkbox dense v-model="isEraseMode" :disabled="!isBrushMode || isCropMode" label="Erase"/></v-card-actions>
-                  <v-card-actions><v-checkbox dense v-model="atfilter" :disabled="!current_image || isCropMode" label="Threshold"/></v-card-actions>
-                  <v-card-actions>
+                      @click="onLatticeButton">
+                      Grid
+                    </v-btn>
+                  </template>
+                  <template v-if="isCropMode">
                     <v-btn
-                    :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
+                    :disabled="!current_image || !isCropMode"
                     small
                     dense
                     color="primary"
-                    @click="autoFill">
-                    Autofill
+                    @click="onCropButton">
+                    Crop
                     </v-btn>
-                  </v-card-actions>
+                  </template>
+                <v-checkbox
+                  class="mt-0 pt-2"
+                  dense
+                  v-model="orientation.horizontal_flip"
+                  :disabled="!current_image || !isCropMode"
+                  label="H.Flip"
+                  @change="loadImage()"/>
+                <v-checkbox
+                  class="mt-0 pb-0"
+                  dense
+                  v-model="orientation.vertical_flip"
+                  :disabled="!current_image || !isCropMode"
+                  label="V.Flip"
+                  @change="loadImage()"/>
+                <v-text-field
+                  v-model="orientation.rotation"
+                  class="mt-0 pt-1"
+                  dense
+                  label="Rotation"
+                  type="number"
+                  min="0"
+                  max="360"
+                  step="90"
+                  :disabled="!current_image || !isCropMode"
+                  @input="loadImage()"/>
+                <template v-if="!isCropMode">
+                  <v-checkbox dense v-model="isCropMode" :disabled="!current_image" label="Crop"/>
+                  <v-checkbox dense v-model="isBrushMode" :disabled="roi.polygons.length < 1 || isCropMode" label="Brush"/>
+                  <v-checkbox dense v-model="isEraseMode" :disabled="!isBrushMode || isCropMode" label="Erase"/>
+                  <v-checkbox dense v-model="atfilter" :disabled="!current_image || isCropMode" label="Threshold"/>
+                  <v-btn
+                  :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
+                  small
+                  dense
+                  color="primary"
+                  @click="autoFill">
+                  Autofill
+                  </v-btn>
                 </template>
               </v-card>
             </v-row>
           </v-container>
       </v-col>
     </v-row>
-  </v-container>
+  </v-app>
 <!--     </v-card> -->
 </template>
 
@@ -353,14 +377,15 @@ export default defineComponent({
     const allFiles = ref<any[]>([]);
     const currentRoute = computed(() => ctx.root.$route);
     const items = ref<any[]>([]);
-    const matta = ref<any[]>([]);
+    const itemsHolder = ref<any[]>([]);
+    const searchInput = ref<any[]>([]);
     const search = ref<string | null>();
     const selected = ref<any | null>();
     const run_id = ref<string | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
     let imageWidth = Math.round(width - ((width / 12) * 2));
-    const konvaConfig = ref<any>({ width: Math.round(imageWidth * 0.7333), height });
+    const konvaConfig = ref<any>({ width: Math.round(imageWidth * 0.74), height });
     const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
     const isBrushMode = ref(false);
@@ -379,10 +404,14 @@ export default defineComponent({
     const stageHeight = ref(window.innerHeight);
     const current_image = ref<any | null>(null);
     const scaleFactor = ref(0.15);
+    const one = ref(0);
+    const two = ref(0);
+    const three = ref(0);
     const atfilter = ref(false);
     const atpixels = ref<any[] | null>([]);
     const threshold = ref(210);
     const loading = ref<boolean>(false);
+    const loadingMessage = ref<boolean>(false);
     const taskStatus = ref<any>();
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
@@ -422,6 +451,7 @@ export default defineComponent({
     async function loadMetadata() {
       if (!client.value) return;
       loading.value = true;
+      loadingMessage.value = false;
       const root = 'data';
       const filename = `${root}/${run_id.value}/out/Gene/raw/spatial/metadata.json`;
       const pos_filename = `${root}/${run_id.value}/out/Gene/raw/spatial/tissue_positions_list.csv`;
@@ -449,11 +479,11 @@ export default defineComponent({
       } else {
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
-      loading.value = false;
     }
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
+      loadingMessage.value = false;
       const root = 'data';
       const filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
       const filenameList = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: `${run_id.value}/images` } };
@@ -476,10 +506,9 @@ export default defineComponent({
               original_src: URL.createObjectURL(img),
               alternative_src: null,
             };
-            // scaleFactor.value = scalefactor;
-            loading.value = false;
           };
         }
+        loading.value = false;
       } catch (error) {
         loading.value = false;
         snackbar.dispatch({ text: 'Failed to load the image file', options: { color: 'error', right: true } });
@@ -488,20 +517,36 @@ export default defineComponent({
     async function loadAll() {
       await loadMetadata();
       await loadImage();
+      loading.value = false;
     }
 
     function searchRuns(ev: any) {
-      console.log(ev);
-      console.log(items.value);
+      const stringforRegex = ev;
+      const updated = [];
+      const regex = new RegExp(`${stringforRegex}[a-zA-z]*[0-9]*`);
+      for (let i = 0; i < items.value.length; i += 1) {
+        if (regex.test(items.value[i].id)) {
+          updated.push(items.value[i]);
+        }
+      }
+      itemsHolder.value = updated;
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
-      current_image.value.scale = { x: v, y: v };
-      imageWidth = Math.round(window.innerWidth - ((window.innerWidth / 12) * 2));
-      konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.7333), v * current_image.value.image.width);
-      konvaConfig.value.height = v * current_image.value.image.height;
-      stageWidth.value = konvaConfig.value.width;
-      stageHeight.value = konvaConfig.value.height;
+      if (current_image.value) {
+        current_image.value.scale = { x: v, y: v };
+        imageWidth = Math.round(window.innerWidth - ((window.innerWidth / 12) * 2));
+        konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.74), v * current_image.value.image.width);
+        konvaConfig.value.height = v * current_image.value.image.height;
+        stageWidth.value = konvaConfig.value.width;
+        stageHeight.value = konvaConfig.value.height;
+      } else {
+        imageWidth = Math.round(window.innerWidth - ((window.innerWidth / 12) * 2));
+        konvaConfig.value.width = Math.round(imageWidth * 0.74);
+        konvaConfig.value.height = v * stageHeight.value;
+        stageWidth.value = konvaConfig.value.width;
+        stageHeight.value = konvaConfig.value.height;
+      }
     }
     // Cropping events
     function handleDragStart_Crop(ev: any) {
@@ -637,10 +682,32 @@ export default defineComponent({
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
+    const updateProgress = async (value: number) => {
+      if (!client.value) return;
+      if (value > 0 && value <= 40) {
+        setInterval(() => {
+          one.value += 10;
+        }, 1000);
+      }
+      if (value > 40 && value < 80) {
+        setInterval(() => {
+          two.value += 10;
+        }, 1000);
+      }
+      if (value >= 80) {
+        setInterval(() => {
+          three.value += 5;
+        }, 2000);
+      }
+    };
     async function generateSpatial() {
       if (!client.value) return;
       if (!roi.value) return;
       try {
+        one.value = 0;
+        two.value = 0;
+        three.value = 0;
+        loadingMessage.value = true;
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
@@ -679,6 +746,7 @@ export default defineComponent({
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
           if (taskStatus.value.status === 'PROGRESS') {
+            await updateProgress(taskStatus.value.progress);
             progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
           }
           await new Promise((r) => {
@@ -693,13 +761,17 @@ export default defineComponent({
           loading.value = false;
           return;
         }
+        await updateProgress(taskStatus.value.progress);
         progressMessage.value = taskStatus.value.status;
         const resp = taskStatus.value.result;
         loading.value = false;
+        loadingMessage.value = false;
+        one.value = 0;
+        two.value = 0;
+        three.value = 0;
       } catch (error) {
-        console.log(error);
         loading.value = false;
-        snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
+        snackbar.dispatch({ text: 'Error generating spatial folder', options: { right: true, color: 'error' } });
       }
     }
     function autoFill(ev: any) {
@@ -708,7 +780,7 @@ export default defineComponent({
     function onChangeScale(ev: any) {
       const v = scaleFactor.value;
       current_image.value.scale = { x: v, y: v };
-      konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.7333), v * current_image.value.image.width);
+      konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.74), v * current_image.value.image.width);
       konvaConfig.value.height = v * current_image.value.image.height;
       stageWidth.value = konvaConfig.value.width;
       stageHeight.value = konvaConfig.value.height;
@@ -720,13 +792,14 @@ export default defineComponent({
         return;
       }
       items.value = [];
+      itemsHolder.value = [];
       search.value = '';
       loading.value = true;
       const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'images/postB_BSA.tif' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
-      console.log(items);
+      itemsHolder.value = qc_data;
       loading.value = false;
     }
     async function selectAction(ev: any) {
@@ -780,7 +853,6 @@ export default defineComponent({
     watch(run_id, async (v, ov) => {
       initialize();
       await loadAll();
-      window.addEventListener('resize', handleResize);
     });
     watch(current_image, (v) => {
       if (current_image.value) onChangeScale(scaleFactor.value);
@@ -813,7 +885,8 @@ export default defineComponent({
       metadata,
       metaItemLists,
       items,
-      matta,
+      itemsHolder,
+      searchInput,
       headers,
       selectAction,
       search,
@@ -863,9 +936,13 @@ export default defineComponent({
       autoFill,
       threshold,
       loading,
+      loadingMessage,
       orientation,
       onLatticeButton,
       onCropButton,
+      one,
+      two,
+      three,
     };
   },
 });
@@ -876,7 +953,7 @@ export default defineComponent({
 .center-progress {
   position: absolute;
   z-index: 999;
-  top: 36%;
+  top: 35%;
   left: 45%;
 }
 .toolRow {
@@ -885,5 +962,8 @@ export default defineComponent({
 .mainStage {
   height: 81vh;
   overflow : auto;
+}
+.main {
+  padding-top: 15px;
 }
 </style>
