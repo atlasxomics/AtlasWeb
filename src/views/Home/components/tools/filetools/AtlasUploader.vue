@@ -65,10 +65,7 @@ import lodash from 'lodash';
 import store from '@/store';
 import { generateRouteByQuery } from '@/utils';
 import FileUploadDragDrop from './FileUploadDragDrop.vue';
-<<<<<<< HEAD
-=======
 import NovogenTransfer from './NovogenTransfer.vue';
->>>>>>> main
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
