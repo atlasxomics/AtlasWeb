@@ -712,7 +712,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'joshua_atlasbrowser';
+        const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const points: number[] = [];
         coords.forEach((v, i) => {
