@@ -3,16 +3,6 @@
     app
     dense
   >
-<!--       <vue-file-toolbar-menu
-        :content="filemenu"
-        :style="filemenuStyle"
-      />
-      <template v-for="(component, key) in components">
-        <component
-          :is="component"
-          :key="key"
-        />
-      </template> -->
       <v-app-bar-nav-icon @click="$emit('openDrawer')"></v-app-bar-nav-icon>
       <v-tooltip
         v-for="menu in subMenu"
@@ -47,7 +37,7 @@
               text
               v-on="on"
             >
-              {{ user }}
+              {{ user }}  <span v-if="urlPostfix !== 'production'">({{ urlPostfix }})</span>
             </v-btn>
           </template>
           <v-list>
@@ -106,6 +96,7 @@ export default defineComponent({
   components: { VueFileToolbarMenu, ...components, ChangePasswordMenu },
   setup(props, ctx) {
     const user = computed(() => store.state.client?.user?.username);
+    const urlPostfix = computed(() => store.state.client?.urlPostfix);
     const filemenuStyle = computed(() => (filemenuStyleLight));
     const currentRoute = computed(() => ctx.root.$route);
     const userMenu = ref(false);
@@ -122,6 +113,7 @@ export default defineComponent({
       userMenu,
       changePasswordMenu,
       subMenu,
+      urlPostfix,
     };
   },
 });

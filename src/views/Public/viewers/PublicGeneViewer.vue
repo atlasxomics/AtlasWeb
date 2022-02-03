@@ -2,7 +2,7 @@
     <v-container fluid>
       <v-row>
         <v-col cols="12" sm="3">
-          <v-card>
+<!--           <v-card>
             <v-text-field
               v-model="search"
               :loading="loading"
@@ -20,39 +20,24 @@
             sort-by="id"
             @click:row="selectAction"
             />
-          </v-card>
+          </v-card> -->
           <v-card>
             <v-card-title>
               <v-text-field
-                v-model="filename"
+                v-model="runId"
                 :loading="loading"
                 :messages="progressMessage"
-                label="Filename"
+                label="ID"
+                :disabled="true"
               />
-              <v-text-field
-                v-model="publicLink"
-                label="Public Link"
-                :readonly='true'
-              >
-                <template v-slot:append>
-                  <v-btn
-                    icon
-                    small
-                    color="primary"
-                    v-clipboard:copy="publicLink"
-                    >
-                    <v-icon>mdi-content-copy</v-icon>
-                  </v-btn>
-                </template>
-              </v-text-field>
-              <v-select
+<!--               <v-select
                 v-model="currentTask"
                 v-if="candidateWorkers"
                 :items="candidateWorkers"
                 label="Select Worker"
                 item-text="task"
                 return-object>
-              </v-select>
+              </v-select> -->
             </v-card-title>
             <v-checkbox
               v-model="isClusterView"
@@ -268,17 +253,14 @@ function colormapBounded(cmap: string[], values: number[]) {
   return output;
 }
 export default defineComponent({
-  name: 'AtlasG',
+  name: 'PublicGeneViewer',
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
-    const workers = computed(() => store.state.client?.workers);
-    const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
-    const currentRunId = ref<string | null>(null);
-    const publicLink = ref<string | null>(null);
+    const runId = ref<string | null>(null);
     const items = ref<any[]>();
     const search = ref<string>();
     const selected = ref<any>();
@@ -323,24 +305,10 @@ export default defineComponent({
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
-    function loadCandidateWorkers(target: string) {
-      if (!workers.value) return;
-      candidateWorkers.value = workers.value.filter((x: any) => {
-        if (x) {
-          if (x.params) {
-            if (x.params.target === target) {
-              return true;
-            }
-          }
-        }
-        return false;
-      });
-      [currentTask.value] = candidateWorkers.value;
-    }
     async function loadExpressions() {
       if (!client.value) return;
       if (!filename.value) return;
-      const resp = await client.value.getGeneExpressions(filename.value);
+      const resp = await client.value.getGeneExpressionsByToken(filename.value);
       genes.value = resp.map((v: string) => ({ name: v }));
     }
     function remove(item: any) {
@@ -411,22 +379,8 @@ export default defineComponent({
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
-      taskStatus.value = await client.value.getTaskStatus(task_id);
+      taskStatus.value = await client.value.getPublicTaskStatus(task_id);
     };
-    async function fetchFileList() {
-      if (!client.value) {
-        return;
-      }
-      items.value = [];
-      search.value = '';
-      loading.value = true;
-      const fl_payload = { params: { path: 'data', filter: 'spatial/genes.h5ad' } };
-      const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
-      items.value = qc_data;
-      loading.value = false;
-      // console.log(qc_data);
-    }
     async function runSpatial(stype: string) {
       if (!client.value) return;
       if (!filename.value) return;
@@ -434,15 +388,12 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         await loadExpressions();
-        // console.log(currentRunId.value);
-        const { task } = currentTask.value;// 'gene.compute_qc';
-        const [queue] = currentTask.value.queues;// 'atxcloud_gene';
+        const task = 'gene.compute_qc';
+        const queue = 'atxcloud_gene';
         const args = [filename.value, selectedGenes.value];
-        const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
-        const { host } = window.location;
-        publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}`;
         const kwargs = {};
-        const taskObject = await client.value.postTask(task, args, kwargs, queue);
+        const taskObject = await client.value.postPublicTask(task, args, kwargs, queue);
+        runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -472,15 +423,12 @@ export default defineComponent({
       } catch (error) {
         console.log(error);
         loading.value = false;
-        snackbar.dispatch({ text: 'Error', options: { right: true, color: 'error' } });
+        snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       }
     }
     async function selectAction(ev: any) {
-      const root = 'data';
-      const fn = `${root}/${ev.id}/out/Gene/raw/spatial/genes.h5ad`;
+      const fn = ev.id;
       filename.value = fn;
-      currentRunId.value = ev.id;
-      pushByQuery({ component: 'AtlasG', run_id: ev.id });
       await runSpatial(currentViewType.value);
     }
     async function fitStageToParent() {
@@ -572,10 +520,10 @@ export default defineComponent({
       store.commit.setSubmenu(null);
       fitStageToParent();
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
-      loadCandidateWorkers('AtlasGX');
-      await fetchFileList();
+      // await fetchFileList();
       if (props.query) {
         if (props.query.run_id) {
+          // filename.value = props.query.run_id;
           await selectAction({ id: props.query.run_id });
         }
       }
@@ -583,7 +531,7 @@ export default defineComponent({
     return {
       scale,
       filename,
-      publicLink,
+      runId,
       items,
       headers,
       search,
@@ -620,9 +568,6 @@ export default defineComponent({
       clusterColorMap,
       progressMessage,
       selectAction,
-      workers,
-      candidateWorkers,
-      loadCandidateWorkers,
       currentTask,
     };
   },

@@ -52,3 +52,27 @@ export function splitarray(input: any[], spacing: number): any[] {
   }
   return output;
 }
+
+export const inputRules: any = {
+  nonEmpty: (x: string) => {
+    if (!x) return 'Must not be empty';
+    return x.trim() !== '' || 'Must not be empty';
+  },
+  isEmail: (x: string) => {
+    if (!x) return 'Email address is missing';
+    const pattern = new RegExp(/^(("[\w-\s]+")|([\w-]+(?:\.[\w-]+)*)|("[\w-\s]+")([\w-]+(?:\.[\w-]+)*))(@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$)|(@\[?((25[0-5]\.|2[0-4][0-9]\.|1[0-9]{2}\.|[0-9]{1,2}\.))((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\.){2}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\]?$)/i);
+    return pattern.test(x) || 'Not a proper email address';
+  },
+  isNumber: (x: string) => {
+    const n = Number(x);
+    return (!Number.isNaN(n)) || 'Numbers only';
+  },
+  isDate: (x: string) => {
+    const pattern = new RegExp(/^\d{4}-\d{2}-\d{2}$/);
+    return pattern.test(x) || 'Date should be in te format of YYYY-MM-DD';
+  },
+  isTime: (x: string) => {
+    const pattern = new RegExp(/^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/);
+    return pattern.test(x) || 'Time format should be HH:MM';
+  },
+};

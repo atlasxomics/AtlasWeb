@@ -51,9 +51,9 @@
           </v-row>
         </v-container>
       </v-tab-item>
-<!--       <v-tab-item key="Sequence Data" disabled>
-        .ngs
-      </v-tab-item> -->
+      <v-tab-item key="Novogen Seq Transfer" disabled>
+        <novogen-transfer/>
+      </v-tab-item>
     </v-tabs-items>
   </v-container>
 </template>
@@ -65,6 +65,10 @@ import lodash from 'lodash';
 import store from '@/store';
 import { generateRouteByQuery } from '@/utils';
 import FileUploadDragDrop from './FileUploadDragDrop.vue';
+<<<<<<< HEAD
+=======
+import NovogenTransfer from './NovogenTransfer.vue';
+>>>>>>> main
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -75,7 +79,6 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Image Upload', 'Gene Matrix Upload (H5AD)', 'Gene Sequence Upload'];
 function generateSourceImageDestination(runid: string, filename: string): string {
   const runidUpper = runid ? runid.toUpperCase() : runid;
   return `data/${runidUpper}/images/${filename}`;
@@ -85,9 +88,11 @@ function generateGeneMatrixDestination(runid: string, filename: string): string 
   return `data/${runidUpper}/out/Gene/raw/spatial/${filename}`;
 }
 
+const tabs = ['Image Upload', 'Gene Matrix Upload (H5AD)', 'Transfer Seq (Novogen)'];
+
 export default defineComponent({
   name: 'AtlasUploader',
-  components: { FileUploadDragDrop },
+  components: { FileUploadDragDrop, NovogenTransfer },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
