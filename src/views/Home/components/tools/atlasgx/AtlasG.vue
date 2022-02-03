@@ -372,7 +372,7 @@ export default defineComponent({
       items.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'spatial/genes.h5ad' } };
+      const fl_payload = { params: { path: 'data', filter: 'spatial/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
@@ -419,7 +419,7 @@ export default defineComponent({
       } catch (error) {
         console.log(error);
         loading.value = false;
-        snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
+        snackbar.dispatch({ text: 'Error', options: { right: true, color: 'error' } });
       }
     }
     async function selectAction(ev: any) {

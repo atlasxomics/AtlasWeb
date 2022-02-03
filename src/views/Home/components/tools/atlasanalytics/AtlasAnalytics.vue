@@ -135,7 +135,7 @@ export default defineComponent({
       workers.value = null;
       loading.value = true;
       workers.value = await client.value.getWorkerSummary();
-      const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'spatial/metadata.json' } };
+      const fl_payload = { params: { path: 'data', filter: 'spatial/metadata.json' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;

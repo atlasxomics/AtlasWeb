@@ -3,10 +3,11 @@
   <v-app class="main">
     <v-row>
       <v-col cols="12" sm="2">
-        <v-card class="mainCard">
+        <v-card height="41%">
           <v-card-title>
             <v-text-field
               v-model="search"
+              dense
               prepend-inner-icon="mdi-magnify"
               :value="searchInput"
               @input="searchInput = $event; searchRuns(searchInput)"
@@ -795,7 +796,7 @@ export default defineComponent({
       itemsHolder.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: 'images/postB_BSA.tif' } };
+      const fl_payload = { params: { path: 'data', filter: 'images/postB_BSA.tif' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
