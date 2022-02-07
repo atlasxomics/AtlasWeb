@@ -3,7 +3,7 @@
   <v-app class="main">
     <v-row>
       <v-col cols="12" sm="2">
-        <v-card height="41%">
+        <v-card height="48vh">
           <v-card-title>
             <v-text-field
               v-model="search"
@@ -15,7 +15,7 @@
           </v-card-title>
           <v-data-table
             v-model="selected"
-            height="29vh"
+            height="26vh"
             width="30%"
             dense
             single-select
@@ -685,20 +685,34 @@ export default defineComponent({
     };
     const updateProgress = async (value: number) => {
       if (!client.value) return;
-      if (value > 0 && value <= 40) {
-        setInterval(() => {
-          one.value += 10;
+      let valueone: any;
+      let valuetwo: any;
+      let valuethree: any;
+      if (value > 0 && value <= 40 && one.value <= 100) {
+        valueone = setTimeout(() => {
+          if (one.value === 100) {
+            clearTimeout(valueone);
+          }
+          one.value += 20;
         }, 1000);
       }
-      if (value > 40 && value < 80) {
-        setInterval(() => {
-          two.value += 10;
+
+      if (value > 40 && value < 80 && two.value <= 100) {
+        valuetwo = setTimeout(() => {
+          if (two.value === 100) {
+            clearTimeout(valuetwo);
+          }
+          two.value += 20;
         }, 1000);
       }
-      if (value >= 80) {
-        setInterval(() => {
-          three.value += 5;
-        }, 2000);
+
+      if (value >= 80 && three.value <= 100) {
+        valuethree = setTimeout(() => {
+          if (three.value === 100) {
+            clearTimeout(valuethree);
+          }
+          three.value += 50;
+        }, 1000);
       }
     };
     async function generateSpatial() {
@@ -712,7 +726,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'joshua_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const points: number[] = [];
         coords.forEach((v, i) => {
