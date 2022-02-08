@@ -57,14 +57,16 @@
               :items="metaItemLists.trimming"
               dense
               outlined
-              label="Trimming">
+              label="Trimming"
+              @change="updateTrimming">
             </v-select>
             <v-select
               v-model="metadata.numChannels"
               :items="metaItemLists.numChannels"
               dense
               outlined
-              label="Num Channels">
+              label="Num Channels"
+              @change="updateChannels">
             </v-select>
           </v-card-text>
         </v-card>
@@ -320,7 +322,7 @@
 <script lang='ts'>
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
-import lodash from 'lodash';
+import lodash, { trim } from 'lodash';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
@@ -353,7 +355,7 @@ const metaItemLists = {
   species: ['Mouse', 'Human', 'Rat', 'Hamster'],
   assays: ['mRNA', 'Protein', 'ATAC', 'H3K27me3', 'H3K4me3', 'H3K27ac'],
   trimming: ['Yes', 'No'],
-  numChannels: [50, 100],
+  numChannels: ['50', '50 v2', '100'],
 };
 interface Metadata {
   points: number[] | null;
@@ -364,9 +366,10 @@ interface Metadata {
   species: string | null;
   trimming: string | null;
   assay: string | null;
-  numChannels: number | null;
+  numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
+  barcodes: number | null;
 }
 
 export default defineComponent({
@@ -417,6 +420,9 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
+    const trimming = ref<string | null>(null);
+    const channels = ref(50);
+    const barcodes = ref(1);
     // Metadata
     const metadata = ref<Metadata>({
       points: null,
@@ -427,9 +433,10 @@ export default defineComponent({
       species: 'Mouse',
       trimming: 'Yes',
       assay: 'mRNA',
-      numChannels: 50,
+      numChannels: '50',
       orientation: null,
       crop_area: null,
+      barcodes: 1,
     });
     function initialize() {
       current_image.value = null;
@@ -467,7 +474,7 @@ export default defineComponent({
           const partitioned = splitarray(metadata.value.points, 2);
           const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
           metadata.value.trimming = 'Yes';
-          metadata.value.numChannels = 50;
+          metadata.value.numChannels = '50';
           roi.value.setCoordinates(roi_coords);
         }
         if (metadata.value.orientation) {
@@ -531,6 +538,21 @@ export default defineComponent({
         }
       }
       itemsHolder.value = updated;
+    }
+    function updateChannels(ev: any) {
+      if (/50/.test(ev)) {
+        channels.value = 50;
+        barcodes.value = 1;
+        if (/v2/.test(ev)) {
+          barcodes.value = 2;
+        }
+      } else {
+        barcodes.value = 1;
+        channels.value = 100;
+      }
+    }
+    function updateTrimming(ev: any) {
+      trimming.value = ev;
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
@@ -598,7 +620,6 @@ export default defineComponent({
       if (pos.x > 5 && pos.y > 5 && pos.x < stageWidth.value && pos.y < stageHeight.value) {
         roi.value.coordinates[id].x = pos.x;
         roi.value.coordinates[id].y = pos.y;
-        const coords = roi.value.getCoordinates();
       } else {
         roi.value.coordinates[id].x = Math.min(Math.max(0, pos.x), stageWidth.value);
         roi.value.coordinates[id].y = Math.min(Math.max(0, pos.y), stageHeight.value);
@@ -666,7 +687,6 @@ export default defineComponent({
     }
     function generateLattices(ev: any) {
       roi.value.polygons = roi.value.generatePolygons();
-      // console.log(roi.value.getCoordinatesOnImage());
     }
     function onResize(ev: any) {
       // console.log('OnResize');
@@ -678,6 +698,10 @@ export default defineComponent({
     function onCropButton(ev: any) {
       isCropMode.value = false;
       cropFlag.value = true;
+      roi.value.channels = channels.value;
+      console.log(crop.value.coordinates);
+      console.log(crop.value.getCoordinates());
+      console.log(crop.value.getAnchors());
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
@@ -726,7 +750,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'joshua_atlasbrowser';
+        const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const points: number[] = [];
         coords.forEach((v, i) => {
@@ -738,10 +762,11 @@ export default defineComponent({
           run: run_id.value,
           blockSize: null,
           threshold: threshold.value,
-          trimming: null,
-          numChannels: null,
+          trimming: trimming.value,
+          numChannels: channels.value,
           orientation: orientation.value,
           crop_area: crop.value.getCoordinatesOnImage(),
+          barcodes: barcodes.value,
         });
         const params = {
           run_id: run_id.value,
@@ -752,6 +777,7 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value),
           orientation: orientation.value,
+          barcodes: barcodes.value,
         };
         // console.log(params);
         const args: any[] = [params];
@@ -858,7 +884,6 @@ export default defineComponent({
         atfilter.value = false;
         crop.value.setCoordinates(crop.value.getCoordinatesOnImage());
       } else {
-        // console.log(crop.value.getCoordinates());
         // console.log(roi.value.getCoordinates());
       }
     });
@@ -958,6 +983,11 @@ export default defineComponent({
       one,
       two,
       three,
+      channels,
+      trimming,
+      updateChannels,
+      updateTrimming,
+      barcodes,
     };
   },
 });

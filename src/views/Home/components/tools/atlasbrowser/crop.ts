@@ -22,7 +22,7 @@ export class Crop {
     const rng = [[0.0, 0.0], [1.0, 1.0]];
     rng.forEach((x: number[], idx: number) => {
       const [xp, yp] = x;
-      const id = get_uuid();
+      const id = idx;
       const circle: any = {
         draggable: true,
         id,
@@ -138,6 +138,7 @@ export class Crop {
     }
     const [c1, c2] = coords;
     c2.y += added_on;
+    this.coordinates[1].y += added_on;
     return [c1, c2];
   }
 
