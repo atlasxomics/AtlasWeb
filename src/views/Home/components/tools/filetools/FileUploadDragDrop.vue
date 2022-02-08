@@ -40,18 +40,6 @@
               </tbody>
             </v-simple-table>
           </template>
-            <v-form
-              v-if="datatype=='image'"
-              v-model="valid">
-              <v-select
-                v-model="metaData.microscope"
-                :items="microScopes"
-                label="Microscope"
-                dense
-                :rules="[v => microScopes.map((x) => x.value).includes(v) || 'Please select microscope']"
-                required
-              />
-            </v-form>
         </template>
       </v-row>
     </v-card-text>
@@ -66,7 +54,7 @@
       <v-btn
         small
         color="success"
-        :disabled="disabled || files.length < 1 || (datatype == 'image' && !valid)"
+        :disabled="disabled || files.length < 1 || (datatype != 'image')"
         @click="onUpload">
         Upload
       </v-btn>
@@ -97,11 +85,6 @@ interface MetaData {
   rotation_cw?: number;
   microscope?: string;
 }
-const microScopes = [
-  { text: 'Keyence 1', value: 'keyence_1' },
-  { text: 'Keyence 2', value: 'keyence_2' },
-  { text: 'Evos 1', value: 'evos_1' },
-];
 export default defineComponent({
   name: 'FileUploadDragDrop',
   components: { FileUpload },
@@ -112,7 +95,7 @@ export default defineComponent({
     const currentRoute = computed(() => ctx.root.$route);
     const files = ref<File[]>([]);
     const valid = ref<boolean>(false);
-    const metaData = ref<MetaData>({ run_id: props.run_id, microscope: '' });
+    const metaData = ref<MetaData>({ run_id: props.run_id });
     const uploaded = ref<boolean>(false);
     async function onUpload() {
       const rfiles: File[] = [];
@@ -137,7 +120,6 @@ export default defineComponent({
       onUpload,
       metaData,
       uploaded,
-      microScopes,
     };
   },
 });
