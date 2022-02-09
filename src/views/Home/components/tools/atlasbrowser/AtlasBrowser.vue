@@ -487,7 +487,7 @@ export default defineComponent({
       loadingMessage.value = false;
       const root = 'data';
       const filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
-      const filenameList = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: `${run_id.value}/images` } };
+      const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
       try {
         const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
         allFiles.value = await client.value.getFileList(filenameList);
