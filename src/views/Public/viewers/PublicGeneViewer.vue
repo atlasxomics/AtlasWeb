@@ -338,7 +338,7 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
-            radius: 1 * scale.value * 10,
+            radius: 1 * scale.value * 20,
             fill: colors[Number(v)],
             stroke: colors[Number(v)],
             cluster: v,
@@ -362,7 +362,7 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
             y: y * scale.value * viewScale + paddingY,
-            radius: rd * scale.value * 10,
+            radius: rd * scale.value * 20,
             fill: clr,
             stroke: clr,
             cluster: v,
@@ -448,7 +448,7 @@ export default defineComponent({
     function highlightCluster(clusterName: string) {
       const highlighted: any[] = [];
       lodash.each(circlesSpatial.value, (c: any) => {
-        if (c.cluster === clusterName) {
+        if (c.cluster !== clusterName) {
           const nc = {
             x: c.x,
             y: c.y,
