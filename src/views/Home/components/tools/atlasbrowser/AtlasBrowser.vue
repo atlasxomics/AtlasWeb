@@ -3,7 +3,7 @@
   <v-app class="main">
     <v-row>
       <v-col cols="12" sm="2">
-        <v-card height="41%">
+        <v-card height="38vh">
           <v-card-title>
             <v-text-field
               v-model="search"
@@ -15,13 +15,14 @@
           </v-card-title>
           <v-data-table
             v-model="selected"
-            height="29vh"
+            height="30vh"
             width="30%"
             dense
             single-select
             :loading="loading"
             :items="itemsHolder"
             :headers="headers"
+            hide-default-footer
             sort-by="id"
             @click:row="selectAction"
           />
@@ -53,18 +54,12 @@
               label="Assay">
             </v-select>
             <v-select
-              v-model="metadata.trimming"
-              :items="metaItemLists.trimming"
-              dense
-              outlined
-              label="Trimming">
-            </v-select>
-            <v-select
               v-model="metadata.numChannels"
               :items="metaItemLists.numChannels"
               dense
               outlined
-              label="Num Channels">
+              label="Num Channels"
+              @change="updateChannels">
             </v-select>
           </v-card-text>
         </v-card>
@@ -295,7 +290,7 @@
                   :disabled="!current_image || !isCropMode"
                   @input="loadImage()"/>
                 <template v-if="!isCropMode">
-                  <v-checkbox dense v-model="isCropMode" :disabled="!current_image" label="Crop"/>
+                  <v-checkbox dense v-model="isCropMode" :disabled="!current_image || onOff" label="Crop"/>
                   <v-checkbox dense v-model="isBrushMode" :disabled="roi.polygons.length < 1 || isCropMode" label="Brush"/>
                   <v-checkbox dense v-model="isEraseMode" :disabled="!isBrushMode || isCropMode" label="Erase"/>
                   <v-checkbox dense v-model="atfilter" :disabled="!current_image || isCropMode" label="Threshold"/>
@@ -303,10 +298,20 @@
                   :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
                   small
                   dense
+                  class="mt-0 mb-6"
                   color="primary"
                   @click="autoFill">
                   Autofill
                   </v-btn>
+                  <template v-if="spatial && !loadingMessage">
+                    <v-btn
+                    small
+                    dense
+                    color="primary"
+                    @click="generateReport">
+                    Generate Report
+                    </v-btn>
+                  </template>
                 </template>
               </v-card>
             </v-row>
@@ -320,7 +325,7 @@
 <script lang='ts'>
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
-import lodash from 'lodash';
+import lodash, { trim } from 'lodash';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
@@ -332,6 +337,7 @@ import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/uti
 import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
+import template from '../../_empty/template.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -352,8 +358,7 @@ const metaItemLists = {
   types: ['FF', 'FFPE', 'EFPE'],
   species: ['Mouse', 'Human', 'Rat', 'Hamster'],
   assays: ['mRNA', 'Protein', 'ATAC', 'H3K27me3', 'H3K4me3', 'H3K27ac'],
-  trimming: ['Yes', 'No'],
-  numChannels: [50, 100],
+  numChannels: ['50', '50 v2'],
 };
 interface Metadata {
   points: number[] | null;
@@ -362,14 +367,15 @@ interface Metadata {
   threshold: number | null;
   type: string | null;
   species: string | null;
-  trimming: string | null;
   assay: string | null;
-  numChannels: number | null;
+  numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
+  barcodes: number | null;
 }
 
 export default defineComponent({
+  components: { template },
   name: 'AtlasBrowser',
   props: ['query'],
   setup(props, ctx) {
@@ -417,6 +423,10 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
+    const channels = ref(50);
+    const barcodes = ref(1);
+    const onOff = ref<boolean>(false);
+    const spatial = ref<boolean>(false);
     // Metadata
     const metadata = ref<Metadata>({
       points: null,
@@ -425,11 +435,11 @@ export default defineComponent({
       threshold: null,
       type: 'FFPE',
       species: 'Mouse',
-      trimming: 'Yes',
       assay: 'mRNA',
-      numChannels: 50,
+      numChannels: '50',
       orientation: null,
       crop_area: null,
+      barcodes: 1,
     });
     function initialize() {
       current_image.value = null;
@@ -466,8 +476,7 @@ export default defineComponent({
         if (metadata.value.points) {
           const partitioned = splitarray(metadata.value.points, 2);
           const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
-          metadata.value.trimming = 'Yes';
-          metadata.value.numChannels = 50;
+          metadata.value.numChannels = '50';
           roi.value.setCoordinates(roi_coords);
         }
         if (metadata.value.orientation) {
@@ -487,7 +496,7 @@ export default defineComponent({
       loadingMessage.value = false;
       const root = 'data';
       const filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
-      const filenameList = { params: { path: 'data', bucket: 'atx-cloud-dev', filter: `${run_id.value}/images` } };
+      const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
       try {
         const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
         allFiles.value = await client.value.getFileList(filenameList);
@@ -531,6 +540,18 @@ export default defineComponent({
         }
       }
       itemsHolder.value = updated;
+    }
+    function updateChannels(ev: any) {
+      if (/50/.test(ev)) {
+        channels.value = 50;
+        barcodes.value = 1;
+        if (/v2/.test(ev)) {
+          barcodes.value = 2;
+        }
+      } else {
+        barcodes.value = 1;
+        channels.value = 100;
+      }
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
@@ -598,7 +619,6 @@ export default defineComponent({
       if (pos.x > 5 && pos.y > 5 && pos.x < stageWidth.value && pos.y < stageHeight.value) {
         roi.value.coordinates[id].x = pos.x;
         roi.value.coordinates[id].y = pos.y;
-        const coords = roi.value.getCoordinates();
       } else {
         roi.value.coordinates[id].x = Math.min(Math.max(0, pos.x), stageWidth.value);
         roi.value.coordinates[id].y = Math.min(Math.max(0, pos.y), stageHeight.value);
@@ -666,7 +686,6 @@ export default defineComponent({
     }
     function generateLattices(ev: any) {
       roi.value.polygons = roi.value.generatePolygons();
-      // console.log(roi.value.getCoordinatesOnImage());
     }
     function onResize(ev: any) {
       // console.log('OnResize');
@@ -678,27 +697,45 @@ export default defineComponent({
     function onCropButton(ev: any) {
       isCropMode.value = false;
       cropFlag.value = true;
+      roi.value.channels = channels.value;
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
+    async function generateReport(ev: any) {
+      //
+    }
     const updateProgress = async (value: number) => {
       if (!client.value) return;
-      if (value > 0 && value <= 40) {
-        setInterval(() => {
-          one.value += 10;
+      let valueone: any;
+      let valuetwo: any;
+      let valuethree: any;
+      if (value > 0 && value <= 40 && one.value <= 100) {
+        valueone = setTimeout(() => {
+          if (one.value === 100) {
+            clearTimeout(valueone);
+          }
+          one.value += 20;
         }, 1000);
       }
-      if (value > 40 && value < 80) {
-        setInterval(() => {
-          two.value += 10;
+
+      if (value > 40 && value < 80 && two.value <= 100) {
+        valuetwo = setTimeout(() => {
+          if (two.value === 100) {
+            clearTimeout(valuetwo);
+          }
+          two.value += 20;
         }, 1000);
       }
-      if (value >= 80) {
-        setInterval(() => {
-          three.value += 5;
-        }, 2000);
+
+      if (value >= 80 && three.value <= 100) {
+        valuethree = setTimeout(() => {
+          if (three.value === 100) {
+            clearTimeout(valuethree);
+          }
+          three.value += 50;
+        }, 1000);
       }
     };
     async function generateSpatial() {
@@ -711,35 +748,38 @@ export default defineComponent({
         loadingMessage.value = true;
         progressMessage.value = null;
         loading.value = true;
+        spatial.value = true;
         const task = 'atlasbrowser.generate_spatial';
         const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
-        const points: number[] = [];
+        const cropCoords = crop.value.getCoordinatesOnImage();
+        const newPoints: number[] = [];
         coords.forEach((v, i) => {
-          points.push(v.x);
-          points.push(v.y);
+          newPoints.push(Math.abs(v.x - cropCoords[0].x));
+          newPoints.push(Math.abs(v.y - cropCoords[0].y));
         });
         metadata.value = Object.assign(metadata.value, {
-          points,
+          newPoints,
           run: run_id.value,
           blockSize: null,
           threshold: threshold.value,
-          trimming: null,
-          numChannels: null,
+          numChannels: channels.value,
           orientation: orientation.value,
           crop_area: crop.value.getCoordinatesOnImage(),
+          barcodes: barcodes.value,
         });
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
           files: allFiles.value,
           crop_area: crop.value.getCoordinatesOnImage(),
-          mask: roi.value.getMask(),
+          mask: roi.value.getMask(cropCoords),
           metadata: metadata.value,
-          scalefactors: roi.value.getQCScaleFactors(current_image.value),
+          scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
+          barcodes: barcodes.value,
         };
-        // console.log(params);
+        console.log(roi.value.getMask(cropCoords));
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -771,12 +811,14 @@ export default defineComponent({
         two.value = 0;
         three.value = 0;
       } catch (error) {
+        console.log(error);
         loading.value = false;
         snackbar.dispatch({ text: 'Error generating spatial folder', options: { right: true, color: 'error' } });
       }
     }
     function autoFill(ev: any) {
       roi.value.autoMask(atpixels.value, threshold.value);
+      onOff.value = true;
     }
     function onChangeScale(ev: any) {
       const v = scaleFactor.value;
@@ -844,7 +886,6 @@ export default defineComponent({
         atfilter.value = false;
         crop.value.setCoordinates(crop.value.getCoordinatesOnImage());
       } else {
-        // console.log(crop.value.getCoordinates());
         // console.log(roi.value.getCoordinates());
       }
     });
@@ -925,6 +966,7 @@ export default defineComponent({
       stageWidth,
       initialize,
       generateSpatial,
+      generateReport,
       isCropMode,
       isBrushMode,
       setBrushMode,
@@ -944,6 +986,11 @@ export default defineComponent({
       one,
       two,
       three,
+      channels,
+      updateChannels,
+      barcodes,
+      onOff,
+      spatial,
     };
   },
 });
