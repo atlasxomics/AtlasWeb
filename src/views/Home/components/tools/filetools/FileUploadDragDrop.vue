@@ -54,7 +54,11 @@
       <v-btn
         small
         color="success"
+<<<<<<< HEAD
         :disabled="disabled || files.length < 1"
+=======
+        :disabled="disabled || files.length < 1 || (datatype != 'image')"
+>>>>>>> a0391a6d83e1af0d676304bd56ec0eccc4e06af0
         @click="onUpload">
         Upload
       </v-btn>
