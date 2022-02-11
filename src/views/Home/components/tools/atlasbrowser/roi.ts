@@ -9,8 +9,11 @@ export class ROI {
 
   polygons: any[];
 
+  channels: number | any;
+
   constructor(coord: Circle[] | null) {
     this.scalefactor = 0.15;
+    this.channels = 50;
     this.polygons = [];
     if (coord) this.coordinates = coord;
     else {
@@ -117,11 +120,13 @@ export class ROI {
     return out;
   }
 
-  getMask(): any[] {
+  getMask(length: any[]): any[] {
+    console.log(this.polygons[0]);
+    console.log(length);
     return this.polygons.map((v: any) => {
       const position = v.posit;
-      const y = (v.centery * v.scaleY) / this.scalefactor;
-      const x = (v.centerx * v.scaleX) / this.scalefactor;
+      const y = Math.abs(((v.centery * v.scaleY) / this.scalefactor) - length[0].x);
+      const x = Math.abs(((v.centerx * v.scaleX) / this.scalefactor) - length[0].y);
       const value = v.fill != null;
       return { position, value, coordinates: { x, y } };
     });
@@ -185,10 +190,10 @@ export class ROI {
     this.polygons = newPolygons;
   }
 
-  getQCScaleFactors(img: any) {
+  getQCScaleFactors(img: any, length: any[]) {
     const hsf = 2000.0 / img.image.width;
     const lsf = 600.0 / img.image.width;
-    const mask = this.getMask();
+    const mask = this.getMask(length);
     let rowcount = 50;
     if (mask.length === 10000) rowcount = 100;
     const { x: x1, y: y1 } = mask[0].coordinates;
@@ -206,7 +211,7 @@ export class ROI {
   loadTixels(tixel_array: any[]) {
     // console.log(tixel_array);
     const [p1, p2, p3, p4] = this.getCoordinates();
-    const ratioNum = 99;
+    const ratioNum = (this.channels * 2) - 1;
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
     const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
     const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
@@ -225,11 +230,11 @@ export class ROI {
     const left = [0, 0];
     let flag = false;
     this.polygons = [];
-    for (let i = 0; i < 50; i += 1) {
+    for (let i = 0; i < this.channels; i += 1) {
       top.fill(prev[0] + slopeT[1], 0);
       top.fill(prev[1] + slopeT[0], 1);
       flag = false;
-      for (let j = 0; j < 50; j += 1) {
+      for (let j = 0; j < this.channels; j += 1) {
         if (flag === false) {
           left.fill(prev[0], 0);
           left.fill(prev[1], 1);
@@ -251,7 +256,7 @@ export class ROI {
         const topRC = [tR[0], tR[1]];
         const botLC = [bL[0], bL[1]];
         const botRC = [bR[0], bR[1]];
-        const value = tixel_array[(i * 50) + j];
+        const value = tixel_array[(i * this.channels) + j];
         const [ge, f, r, c, x, y] = value;
         const polyConfig = {
           sceneFunc: (context: any, shape: any) => {
@@ -287,7 +292,7 @@ export class ROI {
 
   generatePolygons() {
     const [p1, p2, p3, p4] = this.getCoordinates();
-    const ratioNum = 99;
+    const ratioNum = (this.channels * 2) - 1;
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
     const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
     const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
@@ -306,11 +311,11 @@ export class ROI {
     const left = [0, 0];
     let flag = false;
     this.polygons = [];
-    for (let i = 0; i < 50; i += 1) {
+    for (let i = 0; i < this.channels; i += 1) {
       top.fill(prev[0] + slopeT[1], 0);
       top.fill(prev[1] + slopeT[0], 1);
       flag = false;
-      for (let j = 0; j < 50; j += 1) {
+      for (let j = 0; j < this.channels; j += 1) {
         if (flag === false) {
           left.fill(prev[0], 0);
           left.fill(prev[1], 1);
