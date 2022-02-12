@@ -464,8 +464,8 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       const root = 'data';
-      const filename = `${root}/${run_id.value}/out/Gene/raw/spatial/metadata.json`;
-      const pos_filename = `${root}/${run_id.value}/out/Gene/raw/spatial/tissue_positions_list.csv`;
+      const filename = `${root}/${run_id.value}/images/spatial/metadata.json`;
+      const pos_filename = `${root}/${run_id.value}/images/spatial/tissue_positions_list.csv`;
       const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
       const pos_payload = { params: { filename: pos_filename } };
