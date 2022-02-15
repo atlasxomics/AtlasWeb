@@ -370,7 +370,7 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
-            radius: 1 * scale.value * 10,
+            radius: 1 * scale.value * 20,
             fill: colors[Number(v)],
             stroke: colors[Number(v)],
             cluster: v,
@@ -394,7 +394,7 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
             y: y * scale.value * viewScale + paddingY,
-            radius: rd * scale.value * 10,
+            radius: rd * scale.value * 20,
             fill: clr,
             stroke: clr,
             cluster: v,
@@ -420,7 +420,7 @@ export default defineComponent({
       items.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', filter: 'spatial/genes.h5ad' } };
+      const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
@@ -477,7 +477,7 @@ export default defineComponent({
     }
     async function selectAction(ev: any) {
       const root = 'data';
-      const fn = `${root}/${ev.id}/out/Gene/raw/spatial/genes.h5ad`;
+      const fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
       filename.value = fn;
       currentRunId.value = ev.id;
       pushByQuery({ component: 'AtlasG', run_id: ev.id });
@@ -500,7 +500,7 @@ export default defineComponent({
     function highlightCluster(clusterName: string) {
       const highlighted: any[] = [];
       lodash.each(circlesSpatial.value, (c: any) => {
-        if (c.cluster === clusterName) {
+        if (c.cluster !== clusterName) {
           const nc = {
             x: c.x,
             y: c.y,

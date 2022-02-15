@@ -1,24 +1,28 @@
 <template>
 <!--     <v-card ref="mainCard"> -->
-  <v-container fluid>
+  <v-app class="main">
     <v-row>
-      <v-col cols="12" sm="3">
-        <v-card class="mainCard">
+      <v-col cols="12" sm="2">
+        <v-card height="38vh">
           <v-card-title>
             <v-text-field
               v-model="search"
+              dense
               prepend-inner-icon="mdi-magnify"
+              :value="searchInput"
+              @input="searchInput = $event; searchRuns(searchInput)"
             />
           </v-card-title>
           <v-data-table
             v-model="selected"
-            height="36vh"
+            height="30vh"
             width="30%"
             dense
             single-select
             :loading="loading"
-            :items="items"
+            :items="itemsHolder"
             :headers="headers"
+            hide-default-footer
             sort-by="id"
             @click:row="selectAction"
           />
@@ -49,151 +53,75 @@
               outlined
               label="Assay">
             </v-select>
+            <v-select
+              v-model="metadata.numChannels"
+              :items="metaItemLists.numChannels"
+              dense
+              outlined
+              label="Num Channels"
+              @change="updateChannels">
+            </v-select>
           </v-card-text>
         </v-card>
       </v-col>
       <v-col cols="12" sm="9">
-          <template v-if="loading">
-            <div class="center-progress">
-              <v-progress-circular
-                :size="100"
-                :width="10"
-                color="primary"
-                indeterminate
-                >
-              </v-progress-circular>
-            </div>
-          </template>
           <v-container fluid>
-            <v-row>
-              <v-col cols="12" sm="2">
-                    <v-text-field
-                      v-model="scaleFactor"
-                      class="mt-0 pt-0"
-                      dense
-                      label="Scale"
-                      type="number"
-                      :min="0.1"
-                      :max="1.0"
-                      :step="0.01"
-                      :disabled="!current_image"
-                      @click="onChangeScale"
-                    />
-              </v-col>
-              <v-col cols="12" sm="2">
-                    <v-text-field
-                      v-model="brushSize"
-                      class="mt-0 pt-0"
-                      dense
-                      label="Br.Size"
-                      type="number"
-                      min="5.0"
-                      max="100.0"
-                      step="1.0"
-                      :disabled="!current_image || isCropMode"
-                    />
-              </v-col>
-              <v-col cols="12" sm="2">
-                    <v-text-field
-                      v-model="threshold"
-                      class="mt-0 pt-0"
-                      dense
-                      label="Thr"
-                      type="number"
-                      min="0"
-                      max="255"
-                      step="5"
-                      :disabled="!current_image || isCropMode"
-                    />
-              </v-col>
-              <v-col>
-                <v-checkbox class="mt-0 pt-0" dense v-model="isCropMode" :disabled="!current_image" label="Crop"/>
-              </v-col>
-              <template v-if="!isCropMode">
-                <v-col>
-                  <v-checkbox class="mt-0 pt-0" dense v-model="isBrushMode" :disabled="roi.polygons.length < 1 || isCropMode" label="Brush"/>
-                </v-col>
-                <v-col>
-                  <v-checkbox class="mt-0 pt-0" dense v-model="isEraseMode" :disabled="!isBrushMode || isCropMode" label="Erase"/>
-                </v-col>
-                <v-col>
-                  <v-checkbox class="mt-0 pt-0" dense v-model="atfilter" :disabled="!current_image || isCropMode" label="AT"/>
-                </v-col>
-                <v-col>
-                  <v-btn
-                    :disabled="!current_image || isCropMode"
-                    icon
-                    class="mt-0 pt-0"
-                    small
-                    dense
-                    color="primary"
-                    @click="onLatticeButton">
-                    <v-icon>mdi-checkerboard</v-icon><span>Grid</span>
-                  </v-btn>
-                </v-col>
-                <v-col>
-                  <v-btn
-                    :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
-                    icon
-                    class="mt-0 pt-0"
-                    small
-                    dense
-                    color="primary"
-                    @click="autoFill">
-                    <v-icon>mdi-pencil</v-icon><span>Autofill</span>
-                  </v-btn>
-                </v-col>
-              </template>
-              <template v-if="isCropMode">
-                <v-col>
-                  <v-btn
-                    :disabled="!current_image || !isCropMode"
-                    icon
-                    class="mt-0 pt-0"
-                    small
-                    dense
-                    color="primary"
-                    @click="onCropButton">
-                    <v-icon>mdi-checkbox-multiple-blank</v-icon><span>Crop</span>
-                  </v-btn>
-                </v-col>
-              </template>
-            </v-row>
-            <v-row>
-              <v-col>
-                <v-checkbox
-                  class="mt-0 pt-0"
-                  dense
-                  v-model="orientation.horizontal_flip"
-                  :disabled="!current_image"
-                  label="H.Flip"
-                  @change="loadImage()"/>
-              </v-col>
-              <v-col>
-                <v-checkbox
-                  class="mt-0 pt-0"
-                  dense
-                  v-model="orientation.vertical_flip"
-                  :disabled="!current_image"
-                  label="V.Flip"
-                  @change="loadImage()"
-                  />
-              </v-col>
-              <v-col>
-                <v-text-field
-                    v-model="orientation.rotation"
-                    class="mt-0 pt-0"
-                    dense
-                    label="Rotation"
-                    type="number"
-                    min="0"
-                    max="360"
-                    step="90"
-                    :disabled="!current_image"
-                    @input="loadImage()"
-                  />
-              </v-col>
-            </v-row>
+            <template v-if="loading && !loadingMessage">
+              <div class="center-progress">
+                <v-progress-circular
+                  :size="100"
+                  :width="10"
+                  color="primary"
+                  indeterminate>
+                </v-progress-circular>
+              </div>
+            </template>
+            <template v-if="loadingMessage">
+              <v-dialog
+                value=true
+                hide-overlay
+                persistent
+                width="600"
+                height=600>
+                <v-card
+                  color="primary"
+                  dark>
+                  <v-card-text>
+                    Confirm cropping and orientation of images
+                    <v-progress-linear
+                      v-model="one"
+                      buffer-value="0"
+                      height="10"
+                      stream
+                      color="white"
+                      class="mb-0">
+                    </v-progress-linear>
+                  </v-card-text>
+                  <v-card-text>
+                    Accessing and Retriving data from the Database
+                    <v-progress-linear
+                      v-model="two"
+                      buffer-value="0"
+                      height="10"
+                      stream
+                      color="white"
+                      class="mb-0">
+                    </v-progress-linear>
+                  </v-card-text>
+                  <v-card-text>
+                    Updating Database and uploading spatial folder
+                    <v-progress-linear
+                    v-model="three"
+                      buffer-value="0"
+                      height="10"
+                      stream
+                      color="white"
+                      class="mb-0">
+                    </v-progress-linear>
+                  </v-card-text>
+                </v-card>
+              </v-dialog>
+            </template>
             <v-row>
               <v-card :disabled="loading">
                 <v-stage
@@ -226,72 +154,178 @@
                         @mousedown="handleMouseDown"
                         @mouseover="handleMouseOver"/>
                         <v-transformer ref="transformer" />
-                      <template v-if="!isBrushMode">
-                        <v-circle
-                          v-for="c in roi.getAnchors()"
-                          v-bind:key="c.id"
-                          @dragstart="handleDragStart"
-                          @dragend="handleDragEnd"
-                          @dragmove="handleDragMove"
-                          :config="c"/>
-                      </template>
-                      <v-circle v-if="!isBrushMode"
+                        <template v-if="!isBrushMode">
+                          <v-circle
+                            v-for="c in roi.getAnchors()"
+                            v-bind:key="c.id"
+                            @dragstart="handleDragStart"
+                            @dragend="handleDragEnd"
+                            @dragmove="handleDragMove"
+                            :config="c"/>
+                        </template>
+                        <v-circle v-if="!isBrushMode"
                           v-bind:key="roi.getCenterAnchor().id"
                           @dragstart="handleDragCenterStart"
                           @dragend="handleDragCenterEnd"
                           @dragmove="handleDragCenterMove"
                           :config="roi.getCenterAnchor()"/>
-                      />
+                        />
                     </template>
                   </v-layer>
-                  <v-layer
-                    v-if="isCropMode"
-                    ref="cropLayer"
-                    id="cropLayer"
-                    @mouseup="handleMouseUp">
-                    <template v-if="current_image">
-                      <v-rect
-                        :config="crop.generateRect()"/>
-                      <template v-if="!isBrushMode">
-                        <v-circle
-                          v-for="c in crop.getAnchors()"
-                          v-bind:key="c.id"
-                          @dragstart="handleDragStart_Crop"
-                          @dragend="handleDragEnd_Crop"
-                          @dragmove="handleDragMove_Crop"
-                          :config="c"/>
+                    <v-layer
+                      v-if="isCropMode"
+                      ref="cropLayer"
+                      id="cropLayer"
+                      @mouseup="handleMouseUp">
+                      <template v-if="current_image">
+                        <v-rect
+                          :config="crop.generateRect()"/>
+                        <template v-if="!isBrushMode">
+                          <v-circle
+                            v-for="c in crop.getAnchors()"
+                            v-bind:key="c.id"
+                            @dragstart="handleDragStart_Crop"
+                            @dragend="handleDragEnd_Crop"
+                            @dragmove="handleDragMove_Crop"
+                            :config="c"/>
+                        </template>
+                        <v-circle v-if="!isBrushMode"
+                            v-bind:key="crop.getCenterAnchor().id"
+                            @dragstart="handleDragCenterStart_Crop"
+                            @dragend="handleDragCenterEnd_Crop"
+                            @dragmove="handleDragCenterMove_Crop"
+                            :config="crop.getCenterAnchor()"/>
+                        />
                       </template>
-                      <v-circle v-if="!isBrushMode"
-                          v-bind:key="crop.getCenterAnchor().id"
-                          @dragstart="handleDragCenterStart_Crop"
-                          @dragend="handleDragCenterEnd_Crop"
-                          @dragmove="handleDragCenterMove_Crop"
-                          :config="crop.getCenterAnchor()"/>
+                    </v-layer>
+                    <v-layer>
+                      <v-circle
+                        v-if="isBrushMode"
+                        :config="brushConfig"
+                        @mousedown="handleMouseDownBrush"
+                        @mouseup="handleMouseUpBrush"
                       />
-                    </template>
-                  </v-layer>
-                  <v-layer>
-                    <v-circle
-                      v-if="isBrushMode"
-                      :config="brushConfig"
-                      @mousedown="handleMouseDownBrush"
-                      @mouseup="handleMouseUpBrush"
-                    />
-                  </v-layer>
-                </v-stage>
+                    </v-layer>
+                  </v-stage>
+                </v-card>
+                <v-spacer>
+                </v-spacer>
+                <v-card flat width="12%">
+                  <v-text-field
+                    v-model="scaleFactor"
+                    dense
+                    label="Scale"
+                    type="number"
+                    :min="0.1"
+                    :max="1.0"
+                    :step="0.01"
+                    :disabled="!current_image"
+                    @click="onChangeScale"
+                  />
+                  <v-text-field
+                    v-model="brushSize"
+                    class="mt-0 pt-0"
+                    dense
+                    label="Br.Size"
+                    type="number"
+                    min="5.0"
+                    max="100.0"
+                    step="1.0"
+                    :disabled="!current_image || isCropMode"
+                  />
+                  <v-text-field
+                    v-model="threshold"
+                    class="mt-0 pt-0"
+                    dense
+                    label="Thr"
+                    type="number"
+                    min="0"
+                    max="255"
+                    step="5"
+                    :disabled="!current_image || isCropMode"
+                  />
+                  <template v-if="!isCropMode">
+                    <v-btn
+                      :disabled="!current_image || isCropMode"
+                      small
+                      dense
+                      color="primary"
+                      @click="onLatticeButton">
+                      Grid
+                    </v-btn>
+                  </template>
+                  <template v-if="isCropMode">
+                    <v-btn
+                    :disabled="!current_image || !isCropMode"
+                    small
+                    dense
+                    color="primary"
+                    @click="onCropButton">
+                    Crop
+                    </v-btn>
+                  </template>
+                <v-checkbox
+                  class="mt-0 pt-2"
+                  dense
+                  v-model="orientation.horizontal_flip"
+                  :disabled="!current_image || !isCropMode"
+                  label="H.Flip"
+                  @change="loadImage()"/>
+                <v-checkbox
+                  class="mt-0 pb-0"
+                  dense
+                  v-model="orientation.vertical_flip"
+                  :disabled="!current_image || !isCropMode"
+                  label="V.Flip"
+                  @change="loadImage()"/>
+                <v-text-field
+                  v-model="orientation.rotation"
+                  class="mt-0 pt-1"
+                  dense
+                  label="Rotation"
+                  type="number"
+                  min="0"
+                  max="360"
+                  step="90"
+                  :disabled="!current_image || !isCropMode"
+                  @input="loadImage()"/>
+                <template v-if="!isCropMode">
+                  <v-checkbox dense v-model="isCropMode" :disabled="!current_image || onOff" label="Crop"/>
+                  <v-checkbox dense v-model="isBrushMode" :disabled="roi.polygons.length < 1 || isCropMode" label="Brush"/>
+                  <v-checkbox dense v-model="isEraseMode" :disabled="!isBrushMode || isCropMode" label="Erase"/>
+                  <v-checkbox dense v-model="atfilter" :disabled="!current_image || isCropMode" label="Threshold"/>
+                  <v-btn
+                  :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
+                  small
+                  dense
+                  class="mt-0 mb-6"
+                  color="primary"
+                  @click="autoFill">
+                  Autofill
+                  </v-btn>
+                  <template v-if="spatial && !loadingMessage">
+                    <v-btn
+                    small
+                    dense
+                    color="primary"
+                    @click="generateReport">
+                    Generate Report
+                    </v-btn>
+                  </template>
+                </template>
               </v-card>
             </v-row>
           </v-container>
       </v-col>
     </v-row>
-  </v-container>
+  </v-app>
 <!--     </v-card> -->
 </template>
 
 <script lang='ts'>
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
-import lodash from 'lodash';
+import lodash, { trim } from 'lodash';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
@@ -303,6 +337,7 @@ import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/uti
 import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
+import template from '../../_empty/template.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -320,9 +355,10 @@ const metaHeaders = [
   { text: 'Value', value: 'value' },
 ];
 const metaItemLists = {
-  types: ['FF', 'FFPE'],
-  species: ['Mouse', 'Human'],
-  assays: ['mRNA'],
+  types: ['FF', 'FFPE', 'EFPE'],
+  species: ['Mouse', 'Human', 'Rat', 'Hamster'],
+  assays: ['mRNA', 'Protein', 'ATAC', 'H3K27me3', 'H3K4me3', 'H3K27ac'],
+  numChannels: ['50', '50 v2'],
 };
 interface Metadata {
   points: number[] | null;
@@ -331,31 +367,37 @@ interface Metadata {
   threshold: number | null;
   type: string | null;
   species: string | null;
-  trimming: string | null;
   assay: string | null;
-  numChannels: number | null;
+  numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
+  barcodes: number | null;
 }
 
 export default defineComponent({
+  components: { template },
   name: 'AtlasBrowser',
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
+    const allFiles = ref<any[]>([]);
     const currentRoute = computed(() => ctx.root.$route);
     const items = ref<any[]>([]);
+    const itemsHolder = ref<any[]>([]);
+    const searchInput = ref<any[]>([]);
     const search = ref<string | null>();
     const selected = ref<any | null>();
     const run_id = ref<string | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const konvaConfig = ref<any>({ width, height });
+    let imageWidth = Math.round(width - ((width / 12) * 2));
+    const konvaConfig = ref<any>({ width: Math.round(imageWidth * 0.74), height });
     const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
     const isBrushMode = ref(false);
     const isCropMode = ref(true);
+    const cropFlag = ref(false);
     const isEraseMode = ref(false);
     const brushSize = ref(20);
     const brushDown = ref(false);
@@ -365,18 +407,26 @@ export default defineComponent({
     const activePointId = ref<string | null>(null);
     // const polygons = ref<any[] | null>([]);
     const isMouseDown = ref(false);
-    const stageWidth = ref(window.innerWidth * 0.7);
+    const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
     const current_image = ref<any | null>(null);
     const scaleFactor = ref(0.15);
+    const one = ref(0);
+    const two = ref(0);
+    const three = ref(0);
     const atfilter = ref(false);
     const atpixels = ref<any[] | null>([]);
     const threshold = ref(210);
     const loading = ref<boolean>(false);
+    const loadingMessage = ref<boolean>(false);
     const taskStatus = ref<any>();
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
+    const channels = ref(50);
+    const barcodes = ref(1);
+    const onOff = ref<boolean>(false);
+    const spatial = ref<boolean>(false);
     // Metadata
     const metadata = ref<Metadata>({
       points: null,
@@ -385,11 +435,11 @@ export default defineComponent({
       threshold: null,
       type: 'FFPE',
       species: 'Mouse',
-      trimming: null,
       assay: 'mRNA',
-      numChannels: null,
+      numChannels: '50',
       orientation: null,
       crop_area: null,
+      barcodes: 1,
     });
     function initialize() {
       current_image.value = null;
@@ -412,9 +462,10 @@ export default defineComponent({
     async function loadMetadata() {
       if (!client.value) return;
       loading.value = true;
+      loadingMessage.value = false;
       const root = 'data';
-      const filename = `${root}/${run_id.value}/out/Gene/raw/spatial/metadata.json`;
-      const pos_filename = `${root}/${run_id.value}/out/Gene/raw/spatial/tissue_positions_list.csv`;
+      const filename = `${root}/${run_id.value}/images/spatial/metadata.json`;
+      const pos_filename = `${root}/${run_id.value}/images/spatial/tissue_positions_list.csv`;
       const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
       const pos_payload = { params: { filename: pos_filename } };
@@ -425,10 +476,8 @@ export default defineComponent({
         if (metadata.value.points) {
           const partitioned = splitarray(metadata.value.points, 2);
           const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
+          metadata.value.numChannels = '50';
           roi.value.setCoordinates(roi_coords);
-        }
-        if (metadata.value.crop_area) {
-          crop.value.setCoordinates(metadata.value.crop_area);
         }
         if (metadata.value.orientation) {
           orientation.value = metadata.value.orientation;
@@ -440,18 +489,20 @@ export default defineComponent({
       } else {
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
-      loading.value = false;
     }
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
+      loadingMessage.value = false;
       const root = 'data';
       const filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
+      const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
       try {
         const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
+        allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
-        const scalefactor = scaleFactor.value;
+        const scalefactor = 0.15;
         if (imgObj) {
           imgObj.onload = (ev: any) => {
             // const scalefactor = (ctx as any).refs.canvas._data.stageWidth / imgObj.width;
@@ -465,10 +516,9 @@ export default defineComponent({
               original_src: URL.createObjectURL(img),
               alternative_src: null,
             };
-            // scaleFactor.value = scalefactor;
-            loading.value = false;
           };
         }
+        loading.value = false;
       } catch (error) {
         loading.value = false;
         snackbar.dispatch({ text: 'Failed to load the image file', options: { color: 'error', right: true } });
@@ -477,10 +527,51 @@ export default defineComponent({
     async function loadAll() {
       await loadMetadata();
       await loadImage();
+      loading.value = false;
+    }
+
+    function searchRuns(ev: any) {
+      const stringforRegex = ev;
+      const updated = [];
+      const regex = new RegExp(`${stringforRegex}[a-zA-z]*[0-9]*`);
+      for (let i = 0; i < items.value.length; i += 1) {
+        if (regex.test(items.value[i].id)) {
+          updated.push(items.value[i]);
+        }
+      }
+      itemsHolder.value = updated;
+    }
+    function updateChannels(ev: any) {
+      if (/50/.test(ev)) {
+        channels.value = 50;
+        barcodes.value = 1;
+        if (/v2/.test(ev)) {
+          barcodes.value = 2;
+        }
+      } else {
+        barcodes.value = 1;
+        channels.value = 100;
+      }
+    }
+    function handleResize(ev: any) {
+      const v = scaleFactor.value;
+      if (current_image.value) {
+        current_image.value.scale = { x: v, y: v };
+        imageWidth = Math.round(window.innerWidth - ((window.innerWidth / 12) * 2));
+        konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.74), v * current_image.value.image.width);
+        konvaConfig.value.height = v * current_image.value.image.height;
+        stageWidth.value = konvaConfig.value.width;
+        stageHeight.value = konvaConfig.value.height;
+      } else {
+        imageWidth = Math.round(window.innerWidth - ((window.innerWidth / 12) * 2));
+        konvaConfig.value.width = Math.round(imageWidth * 0.74);
+        konvaConfig.value.height = v * stageHeight.value;
+        stageWidth.value = konvaConfig.value.width;
+        stageHeight.value = konvaConfig.value.height;
+      }
     }
     // Cropping events
     function handleDragStart_Crop(ev: any) {
-      // console.log(ev);
       const { id } = ev.target.attrs;
       activePointId.value = id;
     }
@@ -488,19 +579,18 @@ export default defineComponent({
       const { id } = ev.target.attrs;
       const pos = ev.target._lastPos;
       activePointId.value = null;
+      // crop.value.generateRect();
     }
     function handleDragMove_Crop(ev: any) {
       const { id } = ev.target.attrs;
       const pos = ev.target._lastPos;
-      if (pos.x > 5 && pos.y > 5 && pos.x < stageWidth.value && pos.y < stageHeight.value) {
+      if (pos.x > 5 && pos.y > 5 && pos.x < current_image.value.image.width && pos.y < current_image.value.image.height) {
         crop.value.coordinates[id].x = pos.x;
         crop.value.coordinates[id].y = pos.y;
-        const coords = crop.value.getCoordinates();
       } else {
         crop.value.coordinates[id].x = Math.min(Math.max(0, pos.x), stageWidth.value);
         crop.value.coordinates[id].y = Math.min(Math.max(0, pos.y), stageHeight.value);
       }
-      // console.log(activePointId.value);
     }
     function handleDragCenterStart_Crop(ev: any) {
       // crop.value.polygons = [];
@@ -509,7 +599,7 @@ export default defineComponent({
       // console.log(ev);
     }
     function handleDragCenterMove_Crop(ev: any) {
-      crop.value.moveToNewCenter(ev.target._lastPos);
+      crop.value.moveToNewCenter(ev.target._lastPos, stageWidth.value, stageHeight.value);
     }
     // ROI events
     function handleDragStart(ev: any) {
@@ -529,7 +619,6 @@ export default defineComponent({
       if (pos.x > 5 && pos.y > 5 && pos.x < stageWidth.value && pos.y < stageHeight.value) {
         roi.value.coordinates[id].x = pos.x;
         roi.value.coordinates[id].y = pos.y;
-        const coords = roi.value.getCoordinates();
       } else {
         roi.value.coordinates[id].x = Math.min(Math.max(0, pos.x), stageWidth.value);
         roi.value.coordinates[id].y = Math.min(Math.max(0, pos.y), stageHeight.value);
@@ -597,7 +686,6 @@ export default defineComponent({
     }
     function generateLattices(ev: any) {
       roi.value.polygons = roi.value.generatePolygons();
-      // console.log(roi.value.getCoordinatesOnImage());
     }
     function onResize(ev: any) {
       // console.log('OnResize');
@@ -608,46 +696,90 @@ export default defineComponent({
     }
     function onCropButton(ev: any) {
       isCropMode.value = false;
+      cropFlag.value = true;
+      roi.value.channels = channels.value;
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
+    async function generateReport(ev: any) {
+      //
+    }
+    const updateProgress = async (value: number) => {
+      if (!client.value) return;
+      let valueone: any;
+      let valuetwo: any;
+      let valuethree: any;
+      if (value > 0 && value <= 40 && one.value <= 100) {
+        valueone = setTimeout(() => {
+          if (one.value === 100) {
+            clearTimeout(valueone);
+          }
+          one.value += 20;
+        }, 1000);
+      }
+
+      if (value > 40 && value < 80 && two.value <= 100) {
+        valuetwo = setTimeout(() => {
+          if (two.value === 100) {
+            clearTimeout(valuetwo);
+          }
+          two.value += 20;
+        }, 1000);
+      }
+
+      if (value >= 80 && three.value <= 100) {
+        valuethree = setTimeout(() => {
+          if (three.value === 100) {
+            clearTimeout(valuethree);
+          }
+          three.value += 50;
+        }, 1000);
+      }
+    };
     async function generateSpatial() {
       if (!client.value) return;
       if (!roi.value) return;
       try {
+        one.value = 0;
+        two.value = 0;
+        three.value = 0;
+        loadingMessage.value = true;
         progressMessage.value = null;
         loading.value = true;
+        spatial.value = true;
         const task = 'atlasbrowser.generate_spatial';
         const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
-        const points: number[] = [];
+        const cropCoords = crop.value.getCoordinatesOnImage();
+        const newPoints: number[] = [];
         coords.forEach((v, i) => {
-          points.push(v.x);
-          points.push(v.y);
+          newPoints.push(Math.abs(v.x - cropCoords[0].x));
+          newPoints.push(Math.abs(v.y - cropCoords[0].y));
         });
-        // console.log(points);
         metadata.value = Object.assign(metadata.value, {
-          points,
+          newPoints,
           run: run_id.value,
           blockSize: null,
           threshold: threshold.value,
-          trimming: null,
-          numChannels: null,
+          numChannels: channels.value,
           orientation: orientation.value,
           crop_area: crop.value.getCoordinatesOnImage(),
+          barcodes: barcodes.value,
         });
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
+          files: allFiles.value,
           crop_area: crop.value.getCoordinatesOnImage(),
-          mask: roi.value.getMask(),
+          mask: roi.value.getMask(cropCoords),
           metadata: metadata.value,
-          scalefactors: roi.value.getQCScaleFactors(current_image.value),
+          scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
+          barcodes: barcodes.value,
         };
-        // console.log(params);
+        console.log(roi.value.getMask(cropCoords));
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -655,6 +787,7 @@ export default defineComponent({
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
           if (taskStatus.value.status === 'PROGRESS') {
+            await updateProgress(taskStatus.value.progress);
             progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
           }
           await new Promise((r) => {
@@ -669,23 +802,28 @@ export default defineComponent({
           loading.value = false;
           return;
         }
+        await updateProgress(taskStatus.value.progress);
         progressMessage.value = taskStatus.value.status;
         const resp = taskStatus.value.result;
         loading.value = false;
+        loadingMessage.value = false;
+        one.value = 0;
+        two.value = 0;
+        three.value = 0;
       } catch (error) {
         console.log(error);
         loading.value = false;
-        snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
+        snackbar.dispatch({ text: 'Error generating spatial folder', options: { right: true, color: 'error' } });
       }
     }
     function autoFill(ev: any) {
       roi.value.autoMask(atpixels.value, threshold.value);
+      onOff.value = true;
     }
     function onChangeScale(ev: any) {
       const v = scaleFactor.value;
       current_image.value.scale = { x: v, y: v };
-      // console.log(current_image.value);
-      konvaConfig.value.width = v * current_image.value.image.width;
+      konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.74), v * current_image.value.image.width);
       konvaConfig.value.height = v * current_image.value.image.height;
       stageWidth.value = konvaConfig.value.width;
       stageHeight.value = konvaConfig.value.height;
@@ -697,19 +835,19 @@ export default defineComponent({
         return;
       }
       items.value = [];
+      itemsHolder.value = [];
       search.value = '';
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'images/postB_BSA.tif' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
+      itemsHolder.value = qc_data;
       loading.value = false;
-      // console.log(qc_data);
     }
     async function selectAction(ev: any) {
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
-      // console.log(run_id.value);
     }
     watch(atfilter, async (v, ov) => {
       if (!current_image.value) return;
@@ -743,9 +881,12 @@ export default defineComponent({
       }
     });
     watch(isCropMode, (v) => {
-      if (isCropMode.value) {
+      if (!isCropMode.value) {
         isBrushMode.value = false;
         atfilter.value = false;
+        crop.value.setCoordinates(crop.value.getCoordinatesOnImage());
+      } else {
+        // console.log(roi.value.getCoordinates());
       }
     });
     watch(brushSize, (v) => {
@@ -772,6 +913,7 @@ export default defineComponent({
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(submenu);
+      window.addEventListener('resize', handleResize);
       await fetchFileList();
       if (props.query) {
         if (props.query.run_id) {
@@ -780,10 +922,13 @@ export default defineComponent({
       }
     });
     return {
+      allFiles,
       run_id,
       metadata,
       metaItemLists,
       items,
+      itemsHolder,
+      searchInput,
       headers,
       selectAction,
       search,
@@ -810,15 +955,18 @@ export default defineComponent({
       handleMouseUpBrush,
       handleMouseUp,
       crop,
+      cropFlag,
       roi,
       objectToArray,
       generateLattices,
       current_image,
       loadImage,
+      searchRuns,
       onResize,
       stageWidth,
       initialize,
       generateSpatial,
+      generateReport,
       isCropMode,
       isBrushMode,
       setBrushMode,
@@ -831,9 +979,18 @@ export default defineComponent({
       autoFill,
       threshold,
       loading,
+      loadingMessage,
       orientation,
       onLatticeButton,
       onCropButton,
+      one,
+      two,
+      three,
+      channels,
+      updateChannels,
+      barcodes,
+      onOff,
+      spatial,
     };
   },
 });
@@ -844,8 +1001,8 @@ export default defineComponent({
 .center-progress {
   position: absolute;
   z-index: 999;
-  top: 50%;
-  left:50%;
+  top: 35%;
+  left: 45%;
 }
 .toolRow {
   height: 5vh;
@@ -853,5 +1010,8 @@ export default defineComponent({
 .mainStage {
   height: 81vh;
   overflow : auto;
+}
+.main {
+  padding-top: 15px;
 }
 </style>

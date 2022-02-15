@@ -86,7 +86,7 @@ function generateSourceImageDestination(runid: string, filename: string): string
 }
 function generateGeneMatrixDestination(runid: string, filename: string): string {
   const runidUpper = runid ? runid.toUpperCase() : runid;
-  return `data/${runidUpper}/out/Gene/raw/spatial/${filename}`;
+  return `data/${runidUpper}/h5/obj/${filename}`;
 }
 
 const tabs = ['Image Upload', 'Gene Matrix Upload (H5AD)', 'Transfer Seq (Novogen)', 'Transfer Seq (Illumina)'];

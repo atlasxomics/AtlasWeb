@@ -9,8 +9,11 @@ export class ROI {
 
   polygons: any[];
 
+  channels: number | any;
+
   constructor(coord: Circle[] | null) {
     this.scalefactor = 0.15;
+    this.channels = 50;
     this.polygons = [];
     if (coord) this.coordinates = coord;
     else {
@@ -55,7 +58,6 @@ export class ROI {
   getCoordinates(): Point[] {
     const out: Point[] = [];
     lodash.forIn(this.coordinates, (v, k) => {
-      // console.log(v.attrs.id, v.attrs.x, v.attrs.y);
       const p = { x: v.x, y: v.y, id: k };
       out.push(p);
     });
@@ -118,11 +120,13 @@ export class ROI {
     return out;
   }
 
-  getMask(): any[] {
+  getMask(length: any[]): any[] {
+    console.log(this.polygons[0]);
+    console.log(length);
     return this.polygons.map((v: any) => {
       const position = v.posit;
-      const x = v.x / this.scalefactor;
-      const y = v.y / this.scalefactor;
+      const y = Math.abs(((v.centery * v.scaleY) / this.scalefactor) - length[0].x);
+      const x = Math.abs(((v.centerx * v.scaleX) / this.scalefactor) - length[0].y);
       const value = v.fill != null;
       return { position, value, coordinates: { x, y } };
     });
@@ -131,8 +135,8 @@ export class ROI {
   autoMask(pixels: any, threshold: number): any[] {
     const [height, width] = pixels.shape;
     lodash.each(this.polygons, (v, i) => {
-      const x = Math.round(v.centerx / (v.scaleX * this.scalefactor));
-      const y = Math.round(v.centery / (v.scaleY * this.scalefactor));
+      const y = Math.round((v.centerx * v.scaleX) / this.scalefactor);
+      const x = Math.round((v.centery * v.scaleY) / this.scalefactor);
       const r = Math.round(v.radius / this.scalefactor);
       let pixval = 0.0;
       for (let row = x - r; row < x + r; row += 1) {
@@ -159,7 +163,7 @@ export class ROI {
 
   setPolygonsInCircle(x: number, y: number, radius: number, key: string, value: any) {
     lodash.each(this.polygons, (v: any, i: number) => {
-      const tf = (((v.centerx * v.scaleX) - x) ** 2 + ((v.centery * v.scaleY) - y) ** 2) < (radius ** 2);
+      const tf = (((v.centery * v.scaleX) - x) ** 2 + ((v.centerx * v.scaleY) - y) ** 2) < (radius ** 2);
       if (tf) this.polygons[i][key] = value;
     });
   }
@@ -184,16 +188,14 @@ export class ROI {
       newPolygons.push(elm);
     });
     this.polygons = newPolygons;
-    console.log(this.polygons);
   }
 
-  getQCScaleFactors(img: any) {
+  getQCScaleFactors(img: any, length: any[]) {
     const hsf = 2000.0 / img.image.width;
     const lsf = 600.0 / img.image.width;
-    const mask = this.getMask();
+    const mask = this.getMask(length);
     let rowcount = 50;
     if (mask.length === 10000) rowcount = 100;
-    // console.log(mask);
     const { x: x1, y: y1 } = mask[0].coordinates;
     const { x: x2, y: y2 } = mask[rowcount].coordinates;
     const spot_fiduciary_ratio = 1.6153846;
@@ -206,53 +208,10 @@ export class ROI {
     };
   }
 
-  generateLattices(nx = 50, ny = 50) {
-    const [p1, p2, p3, p4] = this.getCoordinates();
-    const latticeCoords: Point[] = [];
-    for (let i = 0; i < nx + 1; i += 1) { // row
-      const currentPoint1 = {
-        x: p1.x + ((p4.x - p1.x) / nx) * i,
-        y: p1.y + ((p4.y - p1.y) / ny) * i,
-      };
-      const currentPoint2 = {
-        x: p2.x + ((p3.x - p2.x) / nx) * i,
-        y: p2.y + ((p3.y - p2.y) / nx) * i,
-      };
-      for (let j = 0; j < ny + 1; j += 1) { // column
-        const x = currentPoint1.x + ((currentPoint2.x - currentPoint1.x) / nx) * j;
-        const y = currentPoint1.y + ((currentPoint2.y - currentPoint1.y) / ny) * j;
-        const p = { x, y };
-        latticeCoords.push(p);
-      }
-    }
-    return latticeCoords;
-  }
-
   loadTixels(tixel_array: any[]) {
-    this.polygons = [];
-    const ft = tixel_array[0];
-    const st = tixel_array[1];
-    const radius = ((Math.abs((Number(ft[4]) - Number(st[4]))) + Math.abs((Number(ft[5]) - Number(st[5])))) * this.scalefactor * 2) / 6.0;
-    tixel_array.forEach((v: any[]) => {
-      const [ge, f, r, c, x, y] = v;
-      const polyConfig = {
-        id: get_uuid(),
-        x: Number(x) * this.scalefactor,
-        y: Number(y) * this.scalefactor,
-        radius,
-        fill: (f === '1') ? 'red' : null,
-        stroke: 'gray',
-        strokeWidth: 1,
-        posit: [Number(r), Number(c)],
-      };
-      this.polygons.push(polyConfig);
-    });
-  }
-
-  generatePolygons(nx = 50, ny = 50) {
-    const lattices = this.generateLattices(nx, ny);
+    // console.log(tixel_array);
     const [p1, p2, p3, p4] = this.getCoordinates();
-    const ratioNum = 99;
+    const ratioNum = (this.channels * 2) - 1;
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
     const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
     const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
@@ -270,15 +229,93 @@ export class ROI {
     const top = [0, 0];
     const left = [0, 0];
     let flag = false;
-    let excelC = 1;
     this.polygons = [];
-    console.log(slope);
-    console.log(slopeT);
-    for (let i = 0; i < 50; i += 1) {
+    for (let i = 0; i < this.channels; i += 1) {
       top.fill(prev[0] + slopeT[1], 0);
       top.fill(prev[1] + slopeT[0], 1);
       flag = false;
-      for (let j = 0; j < 50; j += 1) {
+      for (let j = 0; j < this.channels; j += 1) {
+        if (flag === false) {
+          left.fill(prev[0], 0);
+          left.fill(prev[1], 1);
+          tL = [left[0], left[1]];
+          tR = [top[0], top[1]];
+          bL = [tL[0] + slope[1], tL[1] + slope[0]];
+          bR = [tR[0] + slope[1], tR[1] + slope[0]];
+          flag = true;
+        } else {
+          left[0] += slopeO[1];
+          left[1] += slopeO[0];
+          tL = [left[0], left[1]];
+          tR = [top[0], top[1]];
+          bL = [tL[0] + slope[1], tL[1] + slope[0]];
+          bR = [tR[0] + slope[1], tR[1] + slope[0]];
+        }
+        center = ROI.center(tL, tR, bR, bL);
+        const topLC = [tL[0], tL[1]];
+        const topRC = [tR[0], tR[1]];
+        const botLC = [bL[0], bL[1]];
+        const botRC = [bR[0], bR[1]];
+        const value = tixel_array[(i * this.channels) + j];
+        const [ge, f, r, c, x, y] = value;
+        const polyConfig = {
+          sceneFunc: (context: any, shape: any) => {
+            context.beginPath();
+            context.moveTo(topLC[0], topLC[1]);
+            context.lineTo(topRC[0], topRC[1]);
+            context.lineTo(botRC[0], botRC[1]);
+            context.lineTo(botLC[0], botLC[1]);
+            context.closePath();
+
+            // special Konva.js method
+            context.fillStrokeShape(shape);
+          },
+          id: get_uuid(),
+          fill: (f === '1') ? 'red' : null,
+          centerx: center[1],
+          centery: center[0],
+          radius: slope[0],
+          stroke: 'gray',
+          strokeWidth: 1,
+          posit: [i, j],
+          scaleX: 1.0,
+          scaleY: 1.0,
+        };
+        this.polygons.push(polyConfig);
+        top[0] += slopeO[1];
+        top[1] += slopeO[0];
+      }
+      prev[0] += slopeTO[1];
+      prev[1] += slopeTO[0];
+    }
+  }
+
+  generatePolygons() {
+    const [p1, p2, p3, p4] = this.getCoordinates();
+    const ratioNum = (this.channels * 2) - 1;
+    const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
+    const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
+    const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
+    const slopeT = [(topS[1] - p1.y), (topS[0] - p1.x)];
+    const slopeO = [slope[0] * 2, slope[1] * 2];
+    const slopeTO = [slopeT[0] * 2, slopeT[1] * 2];
+    const prev = [];
+    prev.push(p1.x);
+    prev.push(p1.y);
+    let tL: (number)[];
+    let tR: (number)[];
+    let bL: (number)[];
+    let bR: (number)[];
+    let center: (number)[];
+    const top = [0, 0];
+    const left = [0, 0];
+    let flag = false;
+    this.polygons = [];
+    for (let i = 0; i < this.channels; i += 1) {
+      top.fill(prev[0] + slopeT[1], 0);
+      top.fill(prev[1] + slopeT[0], 1);
+      flag = false;
+      for (let j = 0; j < this.channels; j += 1) {
         if (flag === false) {
           left.fill(prev[0], 0);
           left.fill(prev[1], 1);
@@ -314,8 +351,8 @@ export class ROI {
           },
           id: get_uuid(),
           fill: null,
-          centerx: center[0],
-          centery: center[1],
+          centerx: center[1],
+          centery: center[0],
           radius: slope[0],
           stroke: 'gray',
           strokeWidth: 1,
@@ -326,7 +363,6 @@ export class ROI {
         this.polygons.push(polyConfig);
         top[0] += slopeO[1];
         top[1] += slopeO[0];
-        excelC += 1;
       }
       prev[0] += slopeTO[1];
       prev[1] += slopeTO[0];
