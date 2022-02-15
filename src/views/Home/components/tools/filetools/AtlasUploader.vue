@@ -54,6 +54,9 @@
       <v-tab-item key="Novogen Seq Transfer" disabled>
         <novogen-transfer/>
       </v-tab-item>
+      <v-tab-item key="Illumina Seq Transfer" disabled>
+        <illumina-transfer/>
+      </v-tab-item>
     </v-tabs-items>
   </v-container>
 </template>
@@ -66,6 +69,7 @@ import store from '@/store';
 import { generateRouteByQuery } from '@/utils';
 import FileUploadDragDrop from './FileUploadDragDrop.vue';
 import NovogenTransfer from './NovogenTransfer.vue';
+import IlluminaTransfer from './IlluminaTransfer.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -85,11 +89,11 @@ function generateGeneMatrixDestination(runid: string, filename: string): string 
   return `data/${runidUpper}/out/Gene/raw/spatial/${filename}`;
 }
 
-const tabs = ['Image Upload', 'Gene Matrix Upload (H5AD)', 'Transfer Seq (Novogen)'];
+const tabs = ['Image Upload', 'Gene Matrix Upload (H5AD)', 'Transfer Seq (Novogen)', 'Transfer Seq (Illumina)'];
 
 export default defineComponent({
   name: 'AtlasUploader',
-  components: { FileUploadDragDrop, NovogenTransfer },
+  components: { FileUploadDragDrop, NovogenTransfer, IlluminaTransfer },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
