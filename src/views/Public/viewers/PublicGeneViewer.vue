@@ -114,7 +114,7 @@
               <template v-slot:item.name="{ item }">
                 <span>{{ item.name }} :</span>
                 <v-chip
-                  :color="clusterColors[Number(item.name)]"
+                  :color="clusterColors[Number(item.name.replace('C',''))]"
                   small>{{ item.name }}</v-chip>
               </template>
               </v-data-table>
@@ -339,8 +339,8 @@ export default defineComponent({
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
             radius: 1 * scale.value * 20,
-            fill: colors[Number(v)],
-            stroke: colors[Number(v)],
+            fill: colors[Number(v.replace("C", ""))],
+            stroke: colors[Number(v.replace("C", ""))],
             cluster: v,
             total: geneSum[i],
             genes: { },
