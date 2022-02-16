@@ -563,9 +563,16 @@ export default defineComponent({
     });
     watch(selectedGenes, (v: any[]) => {
       runSpatial(currentViewType.value);
+      if (selectedGenes.value.length>0) {
+        isClusterView.value = false;
+      } else {
+        isClusterView.value = true;
+      }
     });
     watch(searchInput, (v: any) => {
-      if (v) querySelections(v);
+      if (v) {
+	querySelections(v);
+      }
     });
     onMounted(async () => {
       await clientReady;
