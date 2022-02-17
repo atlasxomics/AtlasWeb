@@ -40,15 +40,6 @@
               </v-select> -->
             </v-card-title>
             <v-combobox
-              v-model="inactiveColor"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['darkgray',  'transparent', 'black', 'white']"
-              label="Inactive Color"
-              @change="updateCircles()"
-              />
-            <v-combobox
               v-model="backgroundColor"
               dense
               no-details
@@ -57,12 +48,21 @@
               label="Background Color"
               />
             <v-combobox
+              v-model="inactiveColor"
+              dense
+              no-details
+              :disabled="!spatialData"
+              :items="['darkgray',  'transparent', 'black', 'white']"
+              label="Inactive Color (gene)"
+              @change="updateCircles()"
+              />
+            <v-combobox
               v-model="heatMap"
               dense
               no-details
               :disabled="!spatialData"
               :items="['jet',  'hot', 'inferno', 'picnic', 'bone']"
-              label="Heatmap"
+              label="Heatmap (gene)"
               @change="updateCircles()"
               />
             <v-combobox
@@ -70,8 +70,8 @@
               dense
               no-details
               :disabled="!spatialData"
-              :items="['jet',  'hot', 'inferno', 'picnic']"
-              label="Cluster Color Map"
+              :items="['jet',  'hot']"
+              label="Heatmap (cluster)"
               @change="updateCircles()"
               />
             <v-text-field
