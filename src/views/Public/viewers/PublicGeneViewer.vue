@@ -39,18 +39,6 @@
                 return-object>
               </v-select> -->
             </v-card-title>
-            <v-checkbox
-              v-model="isClusterView"
-              label="Cluster"
-              dense
-              :disabled="!spatialData"
-            />
-            <v-checkbox
-              v-model="isSummation"
-              label="Summation"
-              dense
-              :disabled="true"
-            />
             <v-combobox
               v-model="inactiveColor"
               dense

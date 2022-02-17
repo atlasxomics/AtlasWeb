@@ -24,12 +24,6 @@
           <v-card>
             <v-card-title>
               <v-text-field
-                v-model="filename"
-                :loading="loading"
-                :messages="progressMessage"
-                label="Filename"
-              />
-              <v-text-field
                 v-model="publicLink"
                 label="Public Link"
                 :readonly='true'
@@ -54,18 +48,6 @@
                 return-object>
               </v-select>
             </v-card-title>
-            <v-checkbox
-              v-model="isClusterView"
-              label="Cluster"
-              dense
-              :disabled="!spatialData"
-            />
-            <v-checkbox
-              v-model="isSummation"
-              label="Summation"
-              dense
-              :disabled="true"
-            />
             <v-combobox
               v-model="inactiveColor"
               dense
