@@ -24,12 +24,6 @@
           <v-card>
             <v-card-title>
               <v-text-field
-                v-model="filename"
-                :loading="loading"
-                :messages="progressMessage"
-                label="Filename"
-              />
-              <v-text-field
                 v-model="publicLink"
                 label="Public Link"
                 :readonly='true'
@@ -54,27 +48,6 @@
                 return-object>
               </v-select>
             </v-card-title>
-            <v-checkbox
-              v-model="isClusterView"
-              label="Cluster"
-              dense
-              :disabled="!spatialData"
-            />
-            <v-checkbox
-              v-model="isSummation"
-              label="Summation"
-              dense
-              :disabled="true"
-            />
-            <v-combobox
-              v-model="inactiveColor"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['darkgray',  'transparent', 'black', 'white']"
-              label="Inactive Color"
-              @change="updateCircles()"
-              />
             <v-combobox
               v-model="backgroundColor"
               dense
@@ -84,12 +57,21 @@
               label="Background Color"
               />
             <v-combobox
+              v-model="inactiveColor"
+              dense
+              no-details
+              :disabled="!spatialData"
+              :items="['darkgray',  'transparent', 'black', 'white']"
+              label="Inactive Color (gene)"
+              @change="updateCircles()"
+              />
+            <v-combobox
               v-model="heatMap"
               dense
               no-details
               :disabled="!spatialData"
               :items="['jet',  'hot', 'inferno', 'picnic', 'bone']"
-              label="Heatmap"
+              label="Heatmap (gene)"
               @change="updateCircles()"
               />
             <v-combobox
@@ -97,8 +79,8 @@
               dense
               no-details
               :disabled="!spatialData"
-              :items="['jet',  'hot', 'inferno', 'picnic']"
-              label="Cluster Color Map"
+              :items="['jet',  'hot']"
+              label="Heatmap (cluster)"
               @change="updateCircles()"
               />
             <v-text-field
@@ -129,7 +111,7 @@
               <template v-slot:item.name="{ item }">
                 <span>{{ item.name }} :</span>
                 <v-chip
-                  :color="clusterColors[Number(item.name)]"
+                  :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 1]"
                   small>{{ item.name }}</v-chip>
               </template>
               </v-data-table>
@@ -371,8 +353,8 @@ export default defineComponent({
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
             radius: 1 * scale.value * 20,
-            fill: colors[Number(v)],
-            stroke: colors[Number(v)],
+            fill: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
+            stroke: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
             cluster: v,
             total: geneSum[i],
             genes: { },
@@ -389,6 +371,7 @@ export default defineComponent({
           const x = ax - minX;
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
+          console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
           const c = {
             id: get_uuid(),
@@ -563,9 +546,16 @@ export default defineComponent({
     });
     watch(selectedGenes, (v: any[]) => {
       runSpatial(currentViewType.value);
+      if (selectedGenes.value.length>0) {
+        isClusterView.value = false;
+      } else {
+        isClusterView.value = true;
+      }
     });
     watch(searchInput, (v: any) => {
-      if (v) querySelections(v);
+      if (v) {
+	querySelections(v);
+      }
     });
     onMounted(async () => {
       await clientReady;
