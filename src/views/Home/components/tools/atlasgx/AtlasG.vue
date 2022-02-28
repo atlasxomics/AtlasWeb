@@ -30,17 +30,7 @@
                 :messages="progressMessage"
                 label="Filename"
               />
-              <v-checkbox
-                v-model="useCached"
-                dense
-                label="Cached">
-              </v-checkbox>
-              <v-checkbox
-                v-model="noCompute"
-                dense
-                :disabled="useCached"
-                label="No Compute">
-              </v-checkbox>
+
               <v-text-field
                 v-model="publicLink"
                 label="Public Link"
@@ -66,6 +56,7 @@
                 return-object>
               </v-select>
             </v-card-title>
+
             <v-checkbox
               v-model="isDrawing"
               label="Draw Region"
@@ -73,34 +64,23 @@
               :disabled="!spatialData"
             >
             </v-checkbox>
-            <v-checkbox
-              v-model="isClusterView"
-              label="Cluster"
+
+            <v-combobox
+              v-model="backgroundColor"
               dense
+              no-details
               :disabled="!spatialData"
-            />
-            <v-checkbox
-              v-model="isSummation"
-              label="Summation"
-              dense
-              :disabled="true"
-            />
+              :items="['black',  'white', 'darkgray']"
+              label="Background Color"
+              />
             <v-combobox
               v-model="inactiveColor"
               dense
               no-details
               :disabled="!spatialData"
               :items="['darkgray',  'transparent', 'black', 'white']"
-              label="Inactive Color"
+              label="Inactive Color (gene)"
               @change="updateCircles()"
-              />
-            <v-combobox
-              v-model="backgroundColor"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['black',  'white', 'gray']"
-              label="Background Color"
               />
             <v-combobox
               v-model="heatMap"
@@ -108,7 +88,7 @@
               no-details
               :disabled="!spatialData"
               :items="['jet',  'hot', 'inferno', 'picnic', 'bone']"
-              label="Heatmap"
+              label="Heatmap (gene)"
               @change="updateCircles()"
               />
             <v-combobox
@@ -116,8 +96,8 @@
               dense
               no-details
               :disabled="!spatialData"
-              :items="['jet',  'hot', 'inferno', 'picnic']"
-              label="Cluster Color Map"
+              :items="['jet',  'hot']"
+              label="Heatmap (cluster)"
               @change="updateCircles()"
               />
             <v-text-field
@@ -146,7 +126,7 @@
               <template v-slot:item.name="{ item }">
                 <span>{{ item.name }} :</span>
                 <v-chip
-                  :color="clusterColors[Number(item.name)]"
+                  :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 1]"
                   small>{{ item.name }}</v-chip>
               </template>
               </v-data-table>
@@ -533,11 +513,9 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
-            radius: 1 * scale.value * radius,
-            originalColor: colors[Number(v)],
-            fill: colors[Number(v)],
-            stroke: colors[Number(v)],
-            strokeWidth: 1.0,
+            radius: 1 * scale.value * 20,
+            fill: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
+            stroke: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
             cluster: v,
             total: geneSum[i],
             inactive: false,
@@ -578,6 +556,7 @@ export default defineComponent({
           const x = ax - minX;
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
+          console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
           const c = {
             id: get_uuid(),
@@ -832,8 +811,18 @@ export default defineComponent({
       else inactiveColor.value = 'darkgray';
       updateCircles();
     });
+    watch(selectedGenes, (v: any[]) => {
+      runSpatial(currentViewType.value);
+      if (selectedGenes.value.length>0) {
+        isClusterView.value = false;
+      } else {
+        isClusterView.value = true;
+      }
+    });
     watch(searchInput, (v: any) => {
-      if (v) querySelections(v);
+      if (v) {
+	querySelections(v);
+      }
     });
     onMounted(async () => {
       await clientReady;
