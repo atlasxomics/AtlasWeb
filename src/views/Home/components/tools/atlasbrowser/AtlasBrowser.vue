@@ -18,7 +18,7 @@
               :disabled="!current_image"
               @change="onChangeScale"></v-slider>
             <v-list dense class="mt-n3 pt-0 pl-2">
-              <v-subheader>Orientation</v-subheader>
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Orientation</v-subheader>
               <v-btn
               x-small
               dense
@@ -39,7 +39,7 @@
                 v-model="orientation.rotation"
                 dense
                 style="width:100px"
-                class="mt-4 pt-0"
+                class="mt-5 pt-0"
                 label="Rotation"
                 type="number"
                 min="0"
@@ -49,7 +49,7 @@
                 @input="loadImage()"/>
             </v-list>
             <v-list dense class="mt-n4 pt-0 pl-2">
-              <v-subheader>Cropping</v-subheader>
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Cropping</v-subheader>
               <v-btn
                 dense
                 color="primary"
@@ -69,7 +69,7 @@
               </v-btn>
             </v-list>
             <v-list dense class="mt-n1 pt-0 pl-2">
-              <v-subheader>ROI</v-subheader>
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
               <v-btn
                 dense
                 color="primary"
@@ -79,7 +79,7 @@
                 Activate
               </v-btn>
               <v-btn
-                :disabled="!current_image || !grid"
+                :disabled="!current_image || !grid || spatial"
                 x-small
                 dense
                 color="primary"
@@ -88,54 +88,54 @@
               </v-btn>
             </v-list>
               <v-list dense class="mt-n1 pt-0 pl-2">
-                <v-subheader>Thresholding</v-subheader>
-              <v-checkbox dense v-model="atfilter" :disabled="!current_image || !grid" label="Threshold"/>
-              <v-text-field
-                v-model="threshold"
-                class="mt-0 pt-0"
-                style="width:100px"
-                dense
-                label="Thr"
-                type="number"
-                min="0"
-                max="255"
-                step="5"
-                :disabled="!current_image || !grid"
-              />
+                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
+                <v-checkbox dense v-model="atfilter" :disabled="!current_image || !grid || spatial" label="Threshold"/>
+                <v-text-field
+                  v-model="threshold"
+                  class="mt-0 pt-0"
+                  style="width:100px"
+                  dense
+                  label="Thr"
+                  type="number"
+                  min="0"
+                  max="255"
+                  step="5"
+                  :disabled="!current_image || !grid || spatial"
+                />
               </v-list>
-            <v-btn
-            :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
-            small
-            dense
-            class="ml-2"
-            color="primary"
-            @click="autoFill">
-            Autofill
-            </v-btn>
             <v-list dense class="pt-0 pl-2">
-            <v-checkbox dense v-model="isBrushMode" :value="isBrushMode" :disabled="roi.polygons.length < 1 || !onOff" label="Fill"/>
-            <v-checkbox dense v-model="isEraseMode" :value="isEraseMode" :disabled="roi.polygons.length < 1 || !onOff" label="Erase"/>
-            <v-text-field
-              v-model="brushSize"
-              style="width:100px"
-              dense
-              label="Br.Size"
-              type="number"
-              min="5.0"
-              max="100.0"
-              step="3.0"
-              :disabled="!current_image || !grid"
-            />
-            </v-list>
-            <template v-if="spatial && !loadingMessage && grid">
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
               <v-btn
-              small
+              :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src || spatial"
+              x-small
               dense
               color="primary"
-              @click="generateReport">
-              Generate Report
+              @click="autoFill">
+              Autofill
               </v-btn>
-            </template>
+              <v-checkbox dense v-model="isBrushMode" :value="isBrushMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Fill"/>
+              <v-checkbox dense v-model="isEraseMode" :value="isEraseMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Erase"/>
+              <v-text-field
+                v-model="brushSize"
+                style="width:100px"
+                dense
+                label="Br.Size"
+                type="number"
+                min="5.0"
+                max="100.0"
+                step="3.0"
+                :disabled="!current_image || !grid || spatial"
+              />
+              <template v-if="spatial && !loadingMessage && grid">
+                <v-btn
+                x-small
+                dense
+                color="primary"
+                @click="generateh5ad()">
+                Generate h5ad file
+                </v-btn>
+              </template>
+            </v-list>
           </v-card>
         </template>
         <v-card height="38vh">
@@ -449,6 +449,7 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const loadingMessage = ref<boolean>(false);
     const taskStatus = ref<any>();
+    const taskStatush5 = ref<any>();
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
@@ -750,6 +751,7 @@ export default defineComponent({
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
+      taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
     async function generateReport(ev: any) {
       //
@@ -788,6 +790,7 @@ export default defineComponent({
     };
     async function generateh5ad() {
       if (!client.value) return;
+      if (!spatial.value) return;
       try {
         const task = 'atlasbrowser.generate_h5ad';
         const queue = 'joshua_atlasbrowser';
@@ -799,13 +802,19 @@ export default defineComponent({
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
         await checkTaskStatus(taskObject._id);
-        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-          if (taskStatus.value.status === 'PROGRESS') {
-            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+        /* eslint-disable no-await-in-loop */
+        while (taskStatush5.value.status !== 'SUCCESS' && taskStatush5.value.status !== 'FAILURE') {
+          if (taskStatush5.value.status === 'PROGRESS') {
+            progressMessage.value = `${taskStatush5.value.progress}% - ${taskStatush5.value.position}`;
           }
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
         }
         /* eslint-disable no-await-in-loop */
-        if (taskStatus.value.status !== 'SUCCESS') {
+        if (taskStatush5.value.status !== 'SUCCESS') {
           snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
           loading.value = false;
           return;
@@ -831,13 +840,13 @@ export default defineComponent({
         const queue = 'joshua_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const cropCoords = crop.value.getCoordinatesOnImage();
-        const newPoints: number[] = [];
+        const points: number[] = [];
         coords.forEach((v, i) => {
-          newPoints.push(Math.abs(v.x - cropCoords[0].x));
-          newPoints.push(Math.abs(v.y - cropCoords[0].y));
+          points.push(Math.abs(v.x - cropCoords[0]));
+          points.push(Math.abs(v.y - cropCoords[1]));
         });
         metadata.value = Object.assign(metadata.value, {
-          newPoints,
+          points,
           run: run_id.value,
           blockSize: null,
           threshold: threshold.value,
@@ -890,6 +899,11 @@ export default defineComponent({
       } catch (error) {
         console.log(error);
         loading.value = false;
+        loadingMessage.value = false;
+        one.value = 0;
+        two.value = 0;
+        three.value = 0;
+        spatial.value = false;
         snackbar.dispatch({ text: 'Error generating spatial folder', options: { right: true, color: 'error' } });
       }
     }
