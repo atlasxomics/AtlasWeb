@@ -88,8 +88,8 @@ export class Crop {
   getCoordinatesOnImage(): number[] {
     const out: number[] = [];
     lodash.forIn(this.coordinates, (v, k) => {
-      out.push(Math.round(v.x) / this.scalefactor);
-      out.push(Math.round(v.y) / this.scalefactor);
+      out.push(Math.round(v.x / this.scalefactor));
+      out.push(Math.round(v.y / this.scalefactor));
     });
     const length1 = Math.round(out[1] - out[0]);
     const length2 = Math.round(out[3] - out[2]);

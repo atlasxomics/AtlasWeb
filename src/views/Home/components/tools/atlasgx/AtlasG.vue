@@ -24,12 +24,6 @@
           <v-card>
             <v-card-title>
               <v-text-field
-                v-model="filename"
-                :loading="loading"
-                :messages="progressMessage"
-                label="Filename"
-              />
-              <v-text-field
                 v-model="publicLink"
                 label="Public Link"
                 :readonly='true'
@@ -54,27 +48,6 @@
                 return-object>
               </v-select>
             </v-card-title>
-            <v-checkbox
-              v-model="isClusterView"
-              label="Cluster"
-              dense
-              :disabled="!spatialData"
-            />
-            <v-checkbox
-              v-model="isSummation"
-              label="Summation"
-              dense
-              :disabled="true"
-            />
-            <v-combobox
-              v-model="inactiveColor"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['darkgray',  'transparent', 'black', 'white']"
-              label="Inactive Color"
-              @change="updateCircles()"
-              />
             <v-combobox
               v-model="backgroundColor"
               dense
@@ -84,12 +57,21 @@
               label="Background Color"
               />
             <v-combobox
+              v-model="inactiveColor"
+              dense
+              no-details
+              :disabled="!spatialData"
+              :items="['darkgray',  'transparent', 'black', 'white']"
+              label="Inactive Color (gene)"
+              @change="updateCircles()"
+              />
+            <v-combobox
               v-model="heatMap"
               dense
               no-details
               :disabled="!spatialData"
               :items="['jet',  'hot', 'inferno', 'picnic', 'bone']"
-              label="Heatmap"
+              label="Heatmap (gene)"
               @change="updateCircles()"
               />
             <v-combobox
@@ -97,8 +79,8 @@
               dense
               no-details
               :disabled="!spatialData"
-              :items="['jet',  'hot', 'inferno', 'picnic']"
-              label="Cluster Color Map"
+              :items="['jet',  'hot']"
+              label="Heatmap (cluster)"
               @change="updateCircles()"
               />
             <v-text-field
@@ -129,7 +111,7 @@
               <template v-slot:item.name="{ item }">
                 <span>{{ item.name }} :</span>
                 <v-chip
-                  :color="clusterColors[Number(item.name)]"
+                  :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 1]"
                   small>{{ item.name }}</v-chip>
               </template>
               </v-data-table>
@@ -228,7 +210,6 @@
 </template>
 
 <script lang='ts'>
-
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import Konva from 'konva';
 import lodash from 'lodash';
@@ -245,15 +226,12 @@ const clientReady = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
-
 const headers = [
   { text: 'ID', value: 'id' },
 ];
-
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
 ];
-
 function colormapBounded(cmap: string[], values: number[]) {
   const min_v = Math.min(...values);
   const max_v = Math.max(...values);
@@ -370,9 +348,9 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
-            radius: 1 * scale.value * 10,
-            fill: colors[Number(v)],
-            stroke: colors[Number(v)],
+            radius: 1 * scale.value * 20,
+            fill: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
+            stroke: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
             cluster: v,
             total: geneSum[i],
             genes: { },
@@ -389,12 +367,13 @@ export default defineComponent({
           const x = ax - minX;
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
+          console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
             y: y * scale.value * viewScale + paddingY,
-            radius: rd * scale.value * 10,
+            radius: rd * scale.value * 20,
             fill: clr,
             stroke: clr,
             cluster: v,
@@ -420,7 +399,7 @@ export default defineComponent({
       items.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', filter: 'spatial/genes.h5ad' } };
+      const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
@@ -472,12 +451,12 @@ export default defineComponent({
       } catch (error) {
         console.log(error);
         loading.value = false;
-        snackbar.dispatch({ text: 'Error', options: { right: true, color: 'error' } });
+        snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       }
     }
     async function selectAction(ev: any) {
       const root = 'data';
-      const fn = `${root}/${ev.id}/out/Gene/raw/spatial/genes.h5ad`;
+      const fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
       filename.value = fn;
       currentRunId.value = ev.id;
       pushByQuery({ component: 'AtlasG', run_id: ev.id });
@@ -500,7 +479,7 @@ export default defineComponent({
     function highlightCluster(clusterName: string) {
       const highlighted: any[] = [];
       lodash.each(circlesSpatial.value, (c: any) => {
-        if (c.cluster === clusterName) {
+        if (c.cluster !== clusterName) {
           const nc = {
             x: c.x,
             y: c.y,
@@ -563,9 +542,16 @@ export default defineComponent({
     });
     watch(selectedGenes, (v: any[]) => {
       runSpatial(currentViewType.value);
+      if (selectedGenes.value.length > 0) {
+        isClusterView.value = false;
+      } else {
+        isClusterView.value = true;
+      }
     });
     watch(searchInput, (v: any) => {
-      if (v) querySelections(v);
+      if (v) {
+        querySelections(v);
+      }
     });
     onMounted(async () => {
       await clientReady;
@@ -627,9 +613,7 @@ export default defineComponent({
     };
   },
 });
-
 </script>
 
 <style>
-
 </style>

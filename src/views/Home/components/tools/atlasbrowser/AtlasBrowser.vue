@@ -860,9 +860,9 @@ export default defineComponent({
           root_dir: 'data',
           files: allFiles.value,
           crop_area: crop.value.getCoordinatesOnImage(),
-          mask: roi.value.getMask(cropCoords),
+          mask: roi.value.getMask(current_image.value.image.width, current_image.value.image.height, cropCoords[3] - cropCoords[0]),
           metadata: metadata.value,
-          scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
+          scalefactors: roi.value.getQCScaleFactors(current_image.value, current_image.value.image.width, current_image.value.image.height, cropCoords[3] - cropCoords[0]),
           orientation: orientation.value,
           barcodes: barcodes.value,
         };

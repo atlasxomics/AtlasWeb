@@ -54,7 +54,7 @@
       <v-btn
         small
         color="success"
-        :disabled="disabled || files.length < 1 || (datatype != 'image')"
+        :disabled="disabled || files.length < 1"
         @click="onUpload">
         Upload
       </v-btn>
@@ -123,8 +123,6 @@ export default defineComponent({
     };
   },
 });
-
 </script>
 <style>
-
 </style>
