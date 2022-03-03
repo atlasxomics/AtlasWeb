@@ -358,7 +358,7 @@ export default defineComponent({
     const circlesSpatial = ref<any[]>([]);
     const circlesSpatialUMAP = ref<any[]>([]);
     const clusterColors = ref<string[]>([]);
-    const inactiveColor = ref<string>('transparent');
+    const inactiveColor = ref<string>('darkgray');
     const backgroundColor = ref<string>('black');
     const clusterColorMap = ref<string>('jet');
     const heatMap = ref<string>('jet');
@@ -434,6 +434,7 @@ export default defineComponent({
       lodash.each(circlesSpatial.value, (c: any, i: number) => {
         if (c.cluster !== Number(clusterName)) {
           circlesSpatial.value[i].fill = inactiveColor.value;
+          circlesSpatial.value[i].stroke = inactiveColor.value;
         } else {
           circlesSpatial.value[i].fill = c.originalColor;
           circlesSpatial.value[i].stroke = c.originalColor;
@@ -442,6 +443,7 @@ export default defineComponent({
       lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
         if (c.cluster !== Number(clusterName)) {
           circlesSpatialUMAP.value[i].fill = inactiveColor.value;
+          circlesSpatialUMAP.value[i].stroke = inactiveColor.value;
         } else {
           circlesSpatialUMAP.value[i].fill = c.originalColor;
           circlesSpatialUMAP.value[i].stroke = c.originalColor;
