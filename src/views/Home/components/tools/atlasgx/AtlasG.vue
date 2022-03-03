@@ -242,9 +242,8 @@
             </v-col>
           </v-row>
           <v-row>
-            <v-card>
+            <v-card flat>
               <v-card-title>
-                Statistics
               </v-card-title>
             </v-card>
           </v-row>
@@ -368,8 +367,8 @@ export default defineComponent({
     const taskTimeout = ref<number | null>(null);
     const currentTask = ref<any | null>();
     const progressMessage = ref<string | null>(null);
-    const useCached = ref<boolean>(true);
-    const noCompute = ref<boolean>(false);
+    const useCached = ref<boolean>(false);
+    const noCompute = ref<boolean>(true);
     const isDrawing = ref<boolean>(false);
     const isClicked = ref<boolean>(false);
     const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
@@ -500,10 +499,10 @@ export default defineComponent({
       const maxX_UMAP = Math.max(...spatialCoordUMAP.map((a: number[]) => a[0]));
       const maxY_UMAP = Math.max(...spatialCoordUMAP.map((a: number[]) => a[1]));
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
-      const viewScale = stageWidth / (maxX - minX);
-      const viewScaleUMAP = stageWidth / (maxX_UMAP - minX_UMAP);
+      const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
+      const viewScaleUMAP = Math.min(stageWidth / (maxX_UMAP - minX_UMAP), stageHeight / (maxY_UMAP - minY_UMAP));
       const [paddingX, paddingY] = [10, 10];
-      const radius = 5;
+      const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
       if (isClusterView.value) {
         lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
           const [ax, ay] = spatialCoord[i];
@@ -513,9 +512,11 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
-            radius: 1 * scale.value * 20,
-            fill: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
-            stroke: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
+            radius,
+            originalColor: colors[Number(v)],
+            fill: colors[Number(v)],
+            stroke: colors[Number(v)],
+            strokeWidth: 1.0,
             cluster: v,
             total: geneSum[i],
             inactive: false,
@@ -534,7 +535,7 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScaleUMAP + paddingX,
             y: y * scale.value * viewScaleUMAP + paddingY,
-            radius: 1 * scale.value * radius,
+            radius,
             originalColor: colors[Number(v)],
             fill: colors[Number(v)],
             stroke: colors[Number(v)],
@@ -556,13 +557,12 @@ export default defineComponent({
           const x = ax - minX;
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
-          console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
             y: y * scale.value * viewScale + paddingY,
-            radius: rd * scale.value * radius,
+            radius,
             originalColor: clr,
             fill: clr,
             stroke: clr,
@@ -587,7 +587,7 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScaleUMAP + paddingY,
             y: y * scale.value * viewScaleUMAP + paddingY,
-            radius: rd * scale.value * radius,
+            radius,
             originalColor: clr,
             fill: clr,
             stroke: clr,
@@ -813,7 +813,7 @@ export default defineComponent({
     });
     watch(selectedGenes, (v: any[]) => {
       runSpatial(currentViewType.value);
-      if (selectedGenes.value.length>0) {
+      if (selectedGenes.value.length > 0) {
         isClusterView.value = false;
       } else {
         isClusterView.value = true;
@@ -821,7 +821,7 @@ export default defineComponent({
     });
     watch(searchInput, (v: any) => {
       if (v) {
-	querySelections(v);
+        querySelections(v);
       }
     });
     onMounted(async () => {
