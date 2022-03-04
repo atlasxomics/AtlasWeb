@@ -116,6 +116,7 @@
 </template>
 
 <script lang='ts'>
+
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import lodash from 'lodash';
 import store from '@/store';
@@ -130,6 +131,7 @@ const clientReady = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
+
 export default defineComponent({
   name: 'IlluminaTransfer',
   props: ['query', 'disabled'],
@@ -217,6 +219,7 @@ export default defineComponent({
       }
       downloadStatus.value[payload.Id].running = false;
     }
+
     async function reset() {
       batchList.value = [];
     }
@@ -240,7 +243,9 @@ export default defineComponent({
     };
   },
 });
+
 </script>
 
 <style>
+
 </style>

@@ -39,27 +39,6 @@
                 return-object>
               </v-select> -->
             </v-card-title>
-            <v-checkbox
-              v-model="isClusterView"
-              label="Cluster"
-              dense
-              :disabled="!spatialData"
-            />
-            <v-checkbox
-              v-model="isSummation"
-              label="Summation"
-              dense
-              :disabled="true"
-            />
-            <v-combobox
-              v-model="inactiveColor"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['darkgray',  'transparent', 'black', 'white']"
-              label="Inactive Color"
-              @change="updateCircles()"
-              />
             <v-combobox
               v-model="backgroundColor"
               dense
@@ -69,12 +48,21 @@
               label="Background Color"
               />
             <v-combobox
+              v-model="inactiveColor"
+              dense
+              no-details
+              :disabled="!spatialData"
+              :items="['darkgray',  'transparent', 'black', 'white']"
+              label="Inactive Color (gene)"
+              @change="updateCircles()"
+              />
+            <v-combobox
               v-model="heatMap"
               dense
               no-details
               :disabled="!spatialData"
               :items="['jet',  'hot', 'inferno', 'picnic', 'bone']"
-              label="Heatmap"
+              label="Heatmap (gene)"
               @change="updateCircles()"
               />
             <v-combobox
@@ -82,8 +70,8 @@
               dense
               no-details
               :disabled="!spatialData"
-              :items="['jet',  'hot', 'inferno', 'picnic']"
-              label="Cluster Color Map"
+              :items="['jet',  'hot']"
+              label="Heatmap (cluster)"
               @change="updateCircles()"
               />
             <v-text-field
@@ -114,7 +102,7 @@
               <template v-slot:item.name="{ item }">
                 <span>{{ item.name }} :</span>
                 <v-chip
-                  :color="clusterColors[Number(item.name)]"
+                  :color="clusterColors[Number(item.name.toString().replace('C','')) - item.name.toString().split('C').length + 1]"
                   small>{{ item.name }}</v-chip>
               </template>
               </v-data-table>
@@ -338,9 +326,9 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
-            radius: 1 * scale.value * 10,
-            fill: colors[Number(v)],
-            stroke: colors[Number(v)],
+            radius: 1 * scale.value * 20,
+            fill: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
+            stroke: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
             cluster: v,
             total: geneSum[i],
             genes: { },
@@ -362,7 +350,7 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
             y: y * scale.value * viewScale + paddingY,
-            radius: rd * scale.value * 10,
+            radius: rd * scale.value * 20,
             fill: clr,
             stroke: clr,
             cluster: v,
@@ -448,7 +436,7 @@ export default defineComponent({
     function highlightCluster(clusterName: string) {
       const highlighted: any[] = [];
       lodash.each(circlesSpatial.value, (c: any) => {
-        if (c.cluster === clusterName) {
+        if (c.cluster !== clusterName) {
           const nc = {
             x: c.x,
             y: c.y,
@@ -511,6 +499,11 @@ export default defineComponent({
     });
     watch(selectedGenes, (v: any[]) => {
       runSpatial(currentViewType.value);
+      if (selectedGenes.value.length>0) {
+        isClusterView.value = false;
+      } else {
+        isClusterView.value = true;
+      }
     });
     watch(searchInput, (v: any) => {
       if (v) querySelections(v);

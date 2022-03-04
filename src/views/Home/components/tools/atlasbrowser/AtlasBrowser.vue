@@ -807,7 +807,6 @@ export default defineComponent({
     function onCropButton(ev: any) {
       cropFlag.value = true;
       isCropMode.value = true;
-      roi.value.channels = channels.value;
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
@@ -933,7 +932,7 @@ export default defineComponent({
           points.push(Math.abs(v.y - cropCoords[1]));
         });
         metadata.value = Object.assign(metadata.value, {
-          points,
+          newPoints,
           run: run_id.value,
           blockSize: null,
           threshold: threshold.value,

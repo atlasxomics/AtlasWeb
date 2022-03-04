@@ -2,7 +2,8 @@
     <v-container fluid>
       <v-row>
         <v-col cols="12" sm="3">
-          <v-card>
+          <v-card
+            :disabled="loading">
             <v-text-field
               v-model="search"
               :loading="loading"
@@ -21,8 +22,15 @@
             @click:row="selectAction"
             />
           </v-card>
-          <v-card>
+          <v-card :disabled="loading">
             <v-card-title>
+              <v-text-field
+                v-model="filename"
+                :loading="loading"
+                :messages="progressMessage"
+                label="Filename"
+              />
+
               <v-text-field
                 v-model="publicLink"
                 label="Public Link"
@@ -48,6 +56,13 @@
                 return-object>
               </v-select>
             </v-card-title>
+            <v-checkbox
+              v-model="isDrawing"
+              label="Draw Region"
+              dense
+              :disabled="!spatialData"
+            >
+            </v-checkbox>
             <v-combobox
               v-model="backgroundColor"
               dense
@@ -90,10 +105,9 @@
               :disabled="!spatialData"
               dense
               :readonly="false"
-              :step="0.02"
-              :min="0.05"
-              :max="1.0"
-              @input="updateCircles"
+              :step="0.05"
+              :min="0.2"
+              :max="1.2"
               />
             <v-card-text v-if="clusterItems && isClusterView">
               <v-data-table
@@ -102,7 +116,6 @@
                 dense
                 :items-per-page="999"
                 hide-default-footer
-                :loading="loading"
                 :items="clusterItems"
                 :headers="clusterHeaders"
                 sort-by="name"
@@ -119,7 +132,7 @@
           </v-card>
         </v-col>
         <v-col cols="12" sm="9">
-          <v-card flat>
+          <v-card flat :disabled="loading">
             <v-card-title>
               <v-autocomplete
                 v-model="selectedGenes"
@@ -137,6 +150,7 @@
                 :search-input.sync="searchInput"
                 :loading="autocompleteLoading"
                 :disabled="!filename"
+                @change="onGenelistChanged"
                 small-chips>
                 <template v-slot:selection="data">
                   <v-chip
@@ -156,54 +170,81 @@
                     text
                     :disabled="!filename"
                     @click="runSpatial('spatial')"
-                    >Spatial</v-btn>
-                  <v-btn
-                    color="primary"
-                    small
-                    text
-                    :disabled="!filename"
-                    @click="runSpatial('umap')"
-                    >UMAP</v-btn>
-<!--                   <v-btn
-                    color="secondary"
-                    small
-                    text
-                    @click="selectedGenes=[]"
-                    >Clear</v-btn> -->
+                    >Load</v-btn>
                 </template>
               </v-autocomplete>
             </v-card-title>
           </v-card>
-          <v-card id="stageParent" v-resize="onResize" :style="{ 'background-color': backgroundColor }">
-            <v-stage
-              ref="konvaStage"
-              class="mainStage"
-              :config="konvaConfig"
-              >
-              <v-layer
-                ref="spatialLayer"
-                id="spatialLayer">
-                <v-circle v-for="p in circlesSpatial"
-                  :config="p"
-                  v-bind:key="p.id"
-                  @mousemove="mouseMoveOnSpatial"
-                  @mouseout="mouseOutOnSpatial"/>
-              </v-layer>
-              <v-layer
-                ref="highlightLayer"
-                v-if="isHighlighted"
-                >
-                <v-circle v-for="p in highlightedSpatial"
-                  :config="p"
-                  v-bind:key="p.id"
-                  @mousemove="mouseMoveOnSpatial"
-                  @mouseout="mouseOutOnSpatial"/>
-              </v-layer>
-              <v-layer
-                ref="annotationLayer"
-                />
-            </v-stage>
-          </v-card>
+          <v-row>
+            <v-col cols="12" sm="6">
+              <v-card id="stageParent"
+                      v-resize="onResize"
+                      :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
+                      height="45vh">
+                <v-stage
+                  ref="konvaStage"
+                  class="mainStage"
+                  :config="konvaConfigLeft"
+                  :style="{ 'overflow': 'hidden' }"
+                  @mousedown="mouseDownOnStageLeft"
+                  @mousemove="mouseMoveOnStageLeft"
+                  @mouseup="mouseUpOnStageLeft"
+                  >
+                  <v-layer
+                    ref="spatialLayer"
+                    id="spatialLayer">
+                    <v-circle v-for="p in circlesSpatial"
+                      :config="p"
+                      v-bind:key="p.id"
+                      @mouseover="mouseMoveOnSpatial"
+                      @mouseout="mouseOutOnSpatial"/>
+                  </v-layer>
+                  <v-layer
+                    ref="annotationLayer"
+                    />
+                  <v-layer
+                    ref="drawingLayer"
+                    id="drawingLayer"
+                    v-if="isDrawing">
+                    <v-line
+                      :config="polygon"/>
+                  </v-layer>
+                </v-stage>
+              </v-card>
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-card id="stageParentRight"
+                  v-resize="onResize"
+                  :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
+                  height="45vh">
+                <v-stage
+                  ref="konvaStageRight"
+                  class="mainStage"
+                  :config="konvaConfigRight"
+                  :style="{ 'overflow': 'hidden' }"
+                  >
+                  <v-layer
+                    ref="spatialLayerRight"
+                    id="spatialLayerRight">
+                    <v-circle v-for="p in circlesSpatialUMAP"
+                      :config="p"
+                      v-bind:key="p.id"
+                      @mousemove="mouseMoveOnSpatialRight"
+                      @mouseout="mouseOutOnSpatialRight"/>
+                  </v-layer>
+                  <v-layer
+                    ref="annotationLayerRight"
+                    />
+                </v-stage>
+              </v-card>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-card flat>
+              <v-card-title>
+              </v-card-title>
+            </v-card>
+          </v-row>
         </v-col>
       </v-row>
     </v-container>
@@ -216,7 +257,7 @@ import lodash from 'lodash';
 import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
-import { get_uuid, generateRouteByQuery } from '@/utils';
+import { get_uuid, generateRouteByQuery, splitarray } from '@/utils';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -245,6 +286,19 @@ function colormapBounded(cmap: string[], values: number[]) {
   });
   return output;
 }
+
+function pointInPolygon(point: number[], vs: any[]) { // point is like [5,5], vs is like [[1,2],[10,20],[100,200]]
+  const [x, y] = point;
+  let inside = false;
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i + 0, i += 1) {
+    const [xi, yi] = vs[i];
+    const [xj, yj] = vs[j];
+    const intersect = ((yi > y) !== (yj > y)) && (x < ((((xj - xi) * (y - yi)) / (yj - yi)) + xi));
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 export default defineComponent({
   name: 'AtlasG',
   props: ['query'],
@@ -269,13 +323,14 @@ export default defineComponent({
     const clusterItems = ref<any[] | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const konvaConfig = ref<any>({ x: 0, y: 0, width, height });
-    const scale = ref<number>(0.15);
+    const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true });
+    const konvaConfigRight = ref<any>({ x: 0, y: 0, width, height, draggable: true });
+    const scale = ref<number>(0.95);
     const currentViewType = ref<string>('spatial');
     const isClusterView = ref(true);
     const isSummation = ref(true);
     const isHighlighted = ref(false);
-    const highlightedSpatial = ref<any[]>([]);
+    const highlightedCluster = ref<any>();
     const tooltip = new Konva.Text({
       text: '',
       fontFamily: 'Calibri',
@@ -285,7 +340,17 @@ export default defineComponent({
       visible: false,
       fill: 'white',
     });
+    const tooltipRight = new Konva.Text({
+      text: '',
+      fontFamily: 'Calibri',
+      fontSize: 15,
+      fontStyle: 'bold',
+      padding: 5,
+      visible: false,
+      fill: 'white',
+    });
     const circlesSpatial = ref<any[]>([]);
+    const circlesSpatialUMAP = ref<any[]>([]);
     const clusterColors = ref<string[]>([]);
     const inactiveColor = ref<string>('darkgray');
     const backgroundColor = ref<string>('black');
@@ -296,10 +361,33 @@ export default defineComponent({
     const taskTimeout = ref<number | null>(null);
     const currentTask = ref<any | null>();
     const progressMessage = ref<string | null>(null);
+    const useCached = ref<boolean>(false);
+    const noCompute = ref<boolean>(true);
+    const isDrawing = ref<boolean>(false);
+    const isClicked = ref<boolean>(false);
+    const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
+    // const polygon = ref<any>({ x: 10, y: 10, points: [10, 10, 100, 100, 100, 200], stroke: 'blue' });
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
+    }
+    function resetPolygon() {
+      polygon.value.points = [];
+    }
+    function setDraggable(flag: boolean) {
+      konvaConfigLeft.value.draggable = flag;
+      konvaConfigRight.value.draggable = flag;
+    }
+    async function fitStageToParent() {
+      const parent = document.querySelector('#stageParent');
+      if (!parent) return;
+      const parentWidth = (parent as any).offsetWidth;
+      const parentHeight = (parent as any).offsetHeight;
+      konvaConfigLeft.value.width = parentWidth;
+      konvaConfigLeft.value.height = parentHeight;
+      konvaConfigRight.value.width = parentWidth;
+      konvaConfigRight.value.height = parentHeight;
     }
     function loadCandidateWorkers(target: string) {
       if (!workers.value) return;
@@ -325,22 +413,94 @@ export default defineComponent({
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
       selectedGenes.value = newArr;
     }
+    function unHighlighCluster() {
+      lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
+        circlesSpatialUMAP.value[i].fill = c.originalColor;
+        circlesSpatialUMAP.value[i].stroke = c.originalColor;
+      });
+      lodash.each(circlesSpatial.value, (c: any, i: number) => {
+        circlesSpatial.value[i].fill = c.originalColor;
+        circlesSpatial.value[i].stroke = c.originalColor;
+      });
+      highlightedCluster.value = '';
+    }
+    function highlightCluster(clusterName: string) {
+      lodash.each(circlesSpatial.value, (c: any, i: number) => {
+        if (c.cluster !== Number(clusterName)) {
+          circlesSpatial.value[i].fill = inactiveColor.value;
+          circlesSpatial.value[i].stroke = inactiveColor.value;
+        } else {
+          circlesSpatial.value[i].fill = c.originalColor;
+          circlesSpatial.value[i].stroke = c.originalColor;
+        }
+      });
+      lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
+        if (c.cluster !== Number(clusterName)) {
+          circlesSpatialUMAP.value[i].fill = inactiveColor.value;
+          circlesSpatialUMAP.value[i].stroke = inactiveColor.value;
+        } else {
+          circlesSpatialUMAP.value[i].fill = c.originalColor;
+          circlesSpatialUMAP.value[i].stroke = c.originalColor;
+        }
+      });
+      highlightedCluster.value = clusterName;
+      isHighlighted.value = true;
+    }
+    function highlightRegion() {
+      const funcInside = (pt: number[]) => pointInPolygon(pt, splitarray(polygon.value.points, 2));
+      const filteredIndex = circlesSpatial.value.map((v: any) => funcInside([v.x, v.y]));
+      const hitCount = filteredIndex.filter((x: boolean) => x).length;
+      if (hitCount < 1) {
+        unHighlighCluster();
+        return;
+      }
+      // console.log(filteredIndex);
+      lodash.each(filteredIndex, (v: boolean, idx: number) => {
+        if (!v) {
+          circlesSpatial.value[idx].fill = inactiveColor.value;
+          // circlesSpatial.value[idx].stroke = inactiveColor.value;
+          circlesSpatialUMAP.value[idx].fill = 'transparent';
+          // circlesSpatialUMAP.value[idx].stroke = inactiveColor.value;
+          circlesSpatialUMAP.value[idx].stroke = 'darkgray';
+        } else {
+          circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;
+          circlesSpatial.value[idx].stroke = circlesSpatial.value[idx].originalColor;
+          if (circlesSpatialUMAP.value[idx].originalColor === inactiveColor.value) {
+            circlesSpatialUMAP.value[idx].fill = 'transparent';
+            circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
+          } else {
+            circlesSpatialUMAP.value[idx].fill = circlesSpatialUMAP.value[idx].originalColor;
+            circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
+          }
+        }
+      });
+    }
     async function updateCircles() {
       isHighlighted.value = false;
       const geneSum = spatialData.value.genes_summation;
       const circles: any[] = [];
+      const circlesUMAP: any[] = [];
       const numClusters = lodash.uniq(spatialData.value.clusters).length;
-      const colors = colormap({ colormap: clusterColorMap.value, nshades: numClusters, format: 'hex', alpha: 1 });
+      const colors = colormap({ colormap: clusterColorMap.value, nshades: numClusters + 1, format: 'hex', alpha: 1 });
       clusterColors.value = colors;
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
-      const t = currentViewType.value;
-      const spatialCoord = (t === 'spatial') ? spatialData.value.coordinates : spatialData.value.coordinates_umap;
-      const viewScale = (t === 'spatial') ? 1.0 : 200;
-      const [paddingX, paddingY] = [100, 100];
+      const spatialCoord = spatialData.value.coordinates;
+      const spatialCoordUMAP = spatialData.value.coordinates_umap.map((v: number[]) => ([v[0], -v[1]]));
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
       const minY = Math.min(...spatialCoord.map((a: number[]) => a[1]));
+      const maxX = Math.max(...spatialCoord.map((a: number[]) => a[0]));
+      const maxY = Math.max(...spatialCoord.map((a: number[]) => a[1]));
+      const minX_UMAP = Math.min(...spatialCoordUMAP.map((a: number[]) => a[0]));
+      const minY_UMAP = Math.min(...spatialCoordUMAP.map((a: number[]) => a[1]));
+      const maxX_UMAP = Math.max(...spatialCoordUMAP.map((a: number[]) => a[0]));
+      const maxY_UMAP = Math.max(...spatialCoordUMAP.map((a: number[]) => a[1]));
+      const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
+      const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
+      const viewScaleUMAP = Math.min(stageWidth / (maxX_UMAP - minX_UMAP), stageHeight / (maxY_UMAP - minY_UMAP));
+      const [paddingX, paddingY] = [10, 10];
+      const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
       if (isClusterView.value) {
-        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
+        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
@@ -348,11 +508,14 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
-            radius: 1 * scale.value * 20,
-            fill: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
-            stroke: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
+            radius,
+            originalColor: colors[Number(v)],
+            fill: colors[Number(v)],
+            stroke: colors[Number(v)],
+            strokeWidth: 1.0,
             cluster: v,
             total: geneSum[i],
+            inactive: false,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
@@ -360,9 +523,32 @@ export default defineComponent({
           });
           circles.push(c);
         });
+        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+          const [ax, ay] = spatialCoordUMAP[i];
+          const x = ax - minX_UMAP;
+          const y = ay - minY_UMAP;
+          const c = {
+            id: get_uuid(),
+            x: x * scale.value * viewScaleUMAP + paddingX,
+            y: y * scale.value * viewScaleUMAP + paddingY,
+            radius,
+            originalColor: colors[Number(v)],
+            fill: colors[Number(v)],
+            stroke: colors[Number(v)],
+            strokeWidth: 1.0,
+            cluster: v,
+            total: geneSum[i],
+            inactive: false,
+            genes: { },
+          };
+          lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
+            (c.genes as any)[k] = val[i];
+          });
+          circlesUMAP.push(c);
+        });
       } else {
         const geneColors = colormapBounded(colors_intensity, geneSum);
-        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
+        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
@@ -373,11 +559,14 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
             y: y * scale.value * viewScale + paddingY,
-            radius: rd * scale.value * 20,
+            radius,
+            originalColor: clr,
             fill: clr,
             stroke: clr,
+            strokeWidth: 1.0,
             cluster: v,
             total: geneSum[i],
+            inactive: false,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
@@ -385,8 +574,35 @@ export default defineComponent({
           });
           circles.push(c);
         });
+        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+          const [ax, ay] = spatialCoordUMAP[i];
+          const x = ax - minX_UMAP;
+          const y = ay - minY_UMAP;
+          const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
+          const rd = (geneSum[i] > 0) ? 1 : 1;
+          const c = {
+            id: get_uuid(),
+            x: x * scale.value * viewScaleUMAP + paddingY,
+            y: y * scale.value * viewScaleUMAP + paddingY,
+            radius,
+            originalColor: clr,
+            fill: clr,
+            stroke: clr,
+            strokeWidth: 1.0,
+            cluster: v,
+            total: geneSum[i],
+            inactive: false,
+            genes: { },
+          };
+          lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
+            (c.genes as any)[k] = val[i];
+          });
+          circlesUMAP.push(c);
+        });
       }
       circlesSpatial.value = circles;
+      circlesSpatialUMAP.value = circlesUMAP;
+      highlightRegion();
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
@@ -416,7 +632,7 @@ export default defineComponent({
         // console.log(currentRunId.value);
         const { task } = currentTask.value;// 'gene.compute_qc';
         const [queue] = currentTask.value.queues;// 'atxcloud_gene';
-        const args = [filename.value, selectedGenes.value];
+        const args = [filename.value, selectedGenes.value, useCached.value, noCompute.value];
         const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
         const { host } = window.location;
         publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}`;
@@ -444,9 +660,10 @@ export default defineComponent({
         const resp = taskStatus.value.result;
         currentViewType.value = stype;
         spatialData.value = resp;
-        // console.log(spatialData.value);
-        clusterItems.value = lodash.uniq(spatialData.value.clusters).map((v: any) => ({ name: v }));
+        clusterItems.value = lodash.uniq(spatialData.value.clusters_number).map((v: any) => ({ name: v.toString() }));
+        // console.log(clusterItems.value);
         await updateCircles();
+        await fitStageToParent();
         loading.value = false;
       } catch (error) {
         console.log(error);
@@ -460,40 +677,13 @@ export default defineComponent({
       filename.value = fn;
       currentRunId.value = ev.id;
       pushByQuery({ component: 'AtlasG', run_id: ev.id });
+      selectedGenes.value = [];
       await runSpatial(currentViewType.value);
-    }
-    async function fitStageToParent() {
-      const parent = document.querySelector('#stageParent');
-      if (!parent) return;
-      const parentWidth = (parent as any).offsetWidth;
-      const parentHeight = (parent as any).offsetHeight;
-      konvaConfig.value = {
-        draggable: true,
-        width: parentWidth,
-        height: parentHeight,
-      };
+      isClusterView.value = true;
+      isDrawing.value = false;
     }
     function onResize() {
       fitStageToParent();
-    }
-    function highlightCluster(clusterName: string) {
-      const highlighted: any[] = [];
-      lodash.each(circlesSpatial.value, (c: any) => {
-        if (c.cluster !== clusterName) {
-          const nc = {
-            x: c.x,
-            y: c.y,
-            radius: c.radius,
-            fill: 'gray',
-            stroke: 'gray',
-            cluster: c.cluster,
-            total: c.total,
-          };
-          highlighted.push(nc);
-        }
-      });
-      highlightedSpatial.value = highlighted;
-      isHighlighted.value = true;
     }
     async function mouseMoveOnSpatial(ev: any) {
       const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
@@ -509,16 +699,69 @@ export default defineComponent({
       });
       tooltip.text(text);
       tooltip.show();
-      if (isClusterView.value) {
+      if (isClusterView.value && item.cluster !== highlightedCluster.value && !isDrawing.value) {
         const { cluster } = item;
         highlightCluster(cluster);
       }
     }
     async function mouseOutOnSpatial(ev: any) {
       isHighlighted.value = false;
-      highlightedSpatial.value = [];
       tooltip.hide();
+      tooltipRight.hide();
+      if (!isDrawing.value) unHighlighCluster();
     }
+    async function mouseMoveOnSpatialRight(ev: any) {
+      const mousePosRight = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
+      tooltipRight.position({
+        x: mousePosRight.x + 5,
+        y: mousePosRight.y + 5,
+      });
+      const item = ev.target.attrs;
+      let text = `Cluster: ${item.cluster}`;
+      if (item.total > 0) text = `${text}\nSum: ${item.total}`;
+      lodash.forIn(item.genes, (v: number, k: string) => {
+        if (v > 0) text = `${text}\n${k}: ${v}`;
+      });
+      tooltipRight.text(text);
+      tooltipRight.show();
+      if (isClusterView.value && item.cluster !== highlightedCluster.value && !isDrawing.value) {
+        const { cluster } = item;
+        highlightCluster(cluster);
+      }
+    }
+    async function mouseOutOnSpatialRight(ev: any) {
+      isHighlighted.value = false;
+      tooltip.hide();
+      tooltipRight.hide();
+      if (!isDrawing.value) unHighlighCluster();
+    }
+    // Drawing Region
+    function mouseDownOnStageLeft(ev: any) {
+      if (isDrawing.value) {
+        isClicked.value = true;
+        const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
+        // polygon.value.x = Math.round(mousePos.x);
+        // polygon.value.y = Math.round(mousePos.y);
+        polygon.value.points = [];
+      }
+    }
+    function mouseMoveOnStageLeft(ev: any) {
+      if (isDrawing.value) {
+        if (isClicked.value) {
+          const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
+          polygon.value.points.push(Math.round(mousePos.x));
+          polygon.value.points.push(Math.round(mousePos.y));
+          (ctx as any).refs.drawingLayer.getNode().batchDraw(); // forced update since due to pointer issue
+        }
+      }
+    }
+    function mouseUpOnStageLeft(ev: any) {
+      if (isDrawing.value) {
+        isClicked.value = false;
+        highlightRegion();
+      }
+    }
+    // Drawing Region ends
     async function mouseOverClusterItem(ev: any) {
       highlightCluster(ev.name);
     }
@@ -534,10 +777,35 @@ export default defineComponent({
         autocompleteLoading.value = false;
       }, 500);
     }
+    function reScale(scaleRatio: number) {
+      updateCircles();
+      polygon.value.points = polygon.value.points.map((c: number) => c * scaleRatio);
+    }
+    async function onGenelistChanged(ev: any) {
+      isClusterView.value = false;
+      await runSpatial(currentViewType.value);
+    }
+    watch(noCompute, (v: boolean) => {
+      if (v) useCached.value = false;
+    });
+    watch(useCached, (v: boolean) => {
+      if (v) noCompute.value = false;
+    });
+    watch(scale, (v: number, ov: number) => {
+      const scaleRatio = v / ov;
+      reScale(scaleRatio);
+    });
     watch(currentTask, (v: any) => {
       runSpatial(currentViewType.value);
     });
+    watch(isDrawing, (v: boolean) => {
+      setDraggable(!v);
+      if (!isDrawing.value) unHighlighCluster();
+      polygon.value.points = [];
+    });
     watch(isClusterView, (v: boolean) => {
+      if (isClusterView.value) inactiveColor.value = 'transparent';
+      else inactiveColor.value = 'darkgray';
       updateCircles();
     });
     watch(selectedGenes, (v: any[]) => {
@@ -558,6 +826,7 @@ export default defineComponent({
       store.commit.setSubmenu(null);
       fitStageToParent();
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
+      (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
       loadCandidateWorkers('AtlasGX');
       await fetchFileList();
       if (props.query) {
@@ -583,13 +852,18 @@ export default defineComponent({
       remove,
       runSpatial,
       spatialData,
-      konvaConfig,
+      konvaConfigLeft,
+      konvaConfigRight,
       circlesSpatial,
-      highlightedSpatial,
+      circlesSpatialUMAP,
+      // highlightedSpatial,
+      // highlightedSpatialUMAP,
       isHighlighted,
       onResize,
       mouseMoveOnSpatial,
       mouseOutOnSpatial,
+      mouseMoveOnSpatialRight,
+      mouseOutOnSpatialRight,
       currentViewType,
       isClusterView,
       isSummation,
@@ -602,6 +876,7 @@ export default defineComponent({
       autocompleteLoading,
       filteredGenes,
       acInputChanged,
+      onGenelistChanged,
       heatMap,
       clusterColorMap,
       progressMessage,
@@ -610,6 +885,14 @@ export default defineComponent({
       candidateWorkers,
       loadCandidateWorkers,
       currentTask,
+      useCached,
+      noCompute,
+      isDrawing,
+      mouseDownOnStageLeft,
+      mouseMoveOnStageLeft,
+      mouseUpOnStageLeft,
+      polygon,
+      reScale,
     };
   },
 });

@@ -86,7 +86,9 @@ function generateGeneMatrixDestination(runid: string, filename: string): string 
   const runidUpper = runid ? runid.toUpperCase() : runid;
   return `data/${runidUpper}/h5/obj/${filename}`;
 }
+
 const tabs = ['Image Upload', 'Gene Matrix Upload (H5AD)', 'Transfer Seq (Novogen)', 'Transfer Seq (Illumina)'];
+
 export default defineComponent({
   name: 'AtlasUploader',
   components: { FileUploadDragDrop, NovogenTransfer, IlluminaTransfer },
