@@ -62,7 +62,6 @@
 </template>
 
 <script lang='ts'>
-
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import lodash from 'lodash';
 import store from '@/store';
@@ -79,7 +78,6 @@ const clientReady = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
-
 function generateSourceImageDestination(runid: string, filename: string): string {
   const runidUpper = runid ? runid.toUpperCase() : runid;
   return `data/${runidUpper}/images/${filename}`;
@@ -117,9 +115,7 @@ export default defineComponent({
     };
   },
 });
-
 </script>
 
 <style>
-
 </style>

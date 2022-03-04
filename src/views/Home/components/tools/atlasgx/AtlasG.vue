@@ -56,7 +56,6 @@
                 return-object>
               </v-select>
             </v-card-title>
-
             <v-checkbox
               v-model="isDrawing"
               label="Draw Region"
@@ -64,7 +63,6 @@
               :disabled="!spatialData"
             >
             </v-checkbox>
-
             <v-combobox
               v-model="backgroundColor"
               dense
@@ -253,7 +251,6 @@
 </template>
 
 <script lang='ts'>
-
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import Konva from 'konva';
 import lodash from 'lodash';
@@ -270,15 +267,12 @@ const clientReady = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
-
 const headers = [
   { text: 'ID', value: 'id' },
 ];
-
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
 ];
-
 function colormapBounded(cmap: string[], values: number[]) {
   const min_v = Math.min(...values);
   const max_v = Math.max(...values);
@@ -559,6 +553,7 @@ export default defineComponent({
           const x = ax - minX;
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
+          console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
           const c = {
             id: get_uuid(),
@@ -901,9 +896,7 @@ export default defineComponent({
     };
   },
 });
-
 </script>
 
 <style>
-
 </style>
