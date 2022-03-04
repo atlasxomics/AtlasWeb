@@ -3,7 +3,7 @@
   <v-app class="main">
     <v-row>
       <v-col cols="12" sm="2" class="pl-6 pt-3">
-        <template v-if="run_id">
+        <template v-if="run_id && optionFlag">
           <v-card>
             <v-slider
               v-model="scaleFactor"
@@ -74,12 +74,12 @@
                 dense
                 color="primary"
                 x-small
-                @click="checkMeta"
+                @click="grid=true"
                 :disabled="!current_image || grid || !cropFlag">
                 Activate
               </v-btn>
               <v-btn
-                :disabled="!current_image || !grid || spatial"
+                :disabled="!current_image || !grid || spatial || optionUpdate"
                 x-small
                 dense
                 color="primary"
@@ -100,13 +100,13 @@
                   min="0"
                   max="255"
                   step="5"
-                  :disabled="!current_image || !grid || spatial"
+                  :disabled="!current_image || !grid || spatial || optionUpdate"
                 />
               </v-list>
             <v-list dense class="pt-0 pl-2">
               <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
               <v-btn
-              :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src || spatial"
+              :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src || spatial || optionUpdate"
               x-small
               dense
               color="primary"
@@ -162,7 +162,27 @@
             @click:row="selectAction"
           />
         </v-card>
-        <v-card v-if="run_id">
+        <v-card v-if="run_id && !loading && !optionFlag && csvHolder">
+          <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
+          <v-card-actions>
+            <v-btn
+              dense
+              color="primary"
+              @click="optionFlag=true;optionCreate=true;"
+              class="ml-7"
+              x-small>
+              Reprocess
+            </v-btn>
+            <v-btn
+              dense
+              color="primary"
+              @click="optionFlag=true;optionUpdate=true;loadImage();uploadingTixels()"
+              x-small>
+              Update
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+        <v-card v-if="!csvHolder || optionFlag">
           <v-card-title>
             {{ run_id }}
           </v-card-title>
@@ -257,6 +277,30 @@
                 </v-card>
               </v-dialog>
             </template>
+             <template v-if="generating">
+              <v-dialog
+                value=true
+                hide-overlay
+                persistent
+                width="600"
+                height=200>
+                <v-card
+                  color="primary"
+                  dark>
+                  <v-card-text>
+                    Generating h5ad file
+                    <v-progress-linear
+                      v-model="four"
+                      buffer-value="0"
+                      height="10"
+                      stream
+                      color="white"
+                      class="mb-0">
+                    </v-progress-linear>
+                  </v-card-text>
+                </v-card>
+              </v-dialog>
+            </template>
             <v-row>
               <v-card :disabled="loading">
                 <v-stage
@@ -279,9 +323,11 @@
                     ref="roiLayer"
                     id="roiLayer"
                     @mouseup="handleMouseUp">
-                    <template v-if="current_image">
-                      <v-line
-                        :config="roi.generateBoundary()"/>
+                    <template v-if="current_image && !loading">
+                      <template v-if="!optionUpdate">
+                        <v-line
+                          :config="roi.generateBoundary()"/>
+                      </template>
                       <v-shape v-for="p in roi.polygons"
                         :config="p"
                         v-bind:key="p.id"
@@ -289,7 +335,7 @@
                         @mousedown="handleMouseDown"
                         @mouseover="handleMouseOver"/>
                         <v-transformer ref="transformer" />
-                        <template v-if="!isBrushMode && !isEraseMode">
+                        <template v-if="!isBrushMode && !isEraseMode && !optionUpdate">
                           <v-circle
                             v-for="c in roi.getAnchors()"
                             v-bind:key="c.id"
@@ -298,7 +344,7 @@
                             @dragmove="handleDragMove"
                             :config="c"/>
                         </template>
-                        <v-circle v-if="!isBrushMode && !isEraseMode"
+                        <v-circle v-if="!isBrushMode && !isEraseMode && !optionUpdate"
                           v-bind:key="roi.getCenterAnchor().id"
                           @dragstart="handleDragCenterStart"
                           @dragend="handleDragCenterEnd"
@@ -392,7 +438,7 @@ const metaItemLists = {
   numChannels: ['50', '50 v2'],
 };
 interface Metadata {
-  points: number[] | null;
+  points: number[] | any;
   run: string | null;
   blockSize: number | null;
   threshold: number | null;
@@ -443,6 +489,7 @@ export default defineComponent({
     const one = ref(0);
     const two = ref(0);
     const three = ref(0);
+    const four = ref(0);
     const atfilter = ref(false);
     const atpixels = ref<any[] | null>([]);
     const threshold = ref(210);
@@ -461,9 +508,19 @@ export default defineComponent({
     const thresh = ref<boolean>(false);
     const spatial = ref<boolean>(false);
     const csvHolder = ref<any>();
+    const optionCreate = ref<boolean>(false);
+    const optionUpdate = ref<boolean>(false);
+    const optionFlag = ref<boolean>(false);
+    const generating = ref<boolean>(false);
+    const scaleFactor_json = ref<any>({
+      fiducial_diameter_fullres: null,
+      spot_diameter_fullres: null,
+      tissue_hires_scalef: null,
+      tissue_lowres_scalef: null,
+    });
     // Metadata
     const metadata = ref<Metadata>({
-      points: null,
+      points: [],
       run: null,
       blockSize: null,
       threshold: null,
@@ -504,27 +561,21 @@ export default defineComponent({
       loadingMessage.value = false;
       const root = 'data';
       const filename = `${root}/${run_id.value}/images/spatial/metadata.json`;
+      const scale_filename = `${root}/${run_id.value}/images/spatial/scalefactors_json.json`;
       const pos_filename = `${root}/${run_id.value}/images/spatial/tissue_positions_list.csv`;
       const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
       const pos_payload = { params: { filename: pos_filename } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
+      const scale_payload = { params: { filename: scale_filename } };
+      const scale_pos = await client.value.getJsonFile(scale_payload);
+      scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
+      metadata.value = resp;
+      console.log(scaleFactor_json.value);
+      metadata.value.numChannels = '50';
       if (resp) {
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
-        metadata.value = resp;
-        metadata.value.numChannels = '50';
-        if (metadata.value.points) {
-          const partitioned = splitarray(metadata.value.points, 2);
-          const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
-          roi.value.setCoordinates(roi_coords);
-        }
-        if (metadata.value.orientation) {
-          orientation.value = metadata.value.orientation;
-        }
-        if (resp_pos) {
-          snackbar.dispatch({ text: 'Tixel data loaded from existing spatial directory', options: { color: 'success', right: true } });
-        }
       } else {
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
@@ -534,7 +585,13 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       const root = 'data';
-      const filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
+      let filename: any;
+      if (optionUpdate.value) {
+        // filename = `${root}/${run_id.value}/images/spatial/tissue_hires_image.png`;
+        filename = `${root}/${run_id.value}/images/spatial/figure/postB_BSA.tif`;
+      } else {
+        filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
+      }
       const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
       try {
         const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
@@ -586,11 +643,15 @@ export default defineComponent({
     function verticalFlip(ev: any) {
       orientation.value.vertical_flip = !orientation.value.vertical_flip;
     }
-    function checkMeta(ev: any) {
+    function uploadingTixels(ev: any) {
       grid.value = true;
-      if (csvHolder.value) {
-        roi.value.loadTixels(csvHolder.value);
-      }
+      cropFlag.value = true;
+      onOff.value = true;
+      const partitioned = splitarray(metadata.value.points, 2);
+      const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
+      roi.value.setCoordinates(roi_coords);
+      orientation.value = metadata.value.orientation;
+      roi.value.loadTixels(csvHolder.value);
     }
     function updateChannels(ev: any) {
       if (/50/.test(ev)) {
@@ -788,6 +849,24 @@ export default defineComponent({
         }, 1000);
       }
     };
+    const updateH5ad = async (value: number) => {
+      if (!client.value) return;
+      if (value === 20) {
+        four.value = 20;
+      }
+      if (value === 40) {
+        four.value = 40;
+      }
+      if (value === 60) {
+        four.value = 60;
+      }
+      if (value === 80) {
+        four.value = 80;
+      }
+      if (value === 100) {
+        four.value = 100;
+      }
+    };
     async function generateh5ad() {
       if (!client.value) return;
       if (!spatial.value) return;
@@ -801,10 +880,12 @@ export default defineComponent({
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
+        generating.value = true;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatush5.value.status !== 'SUCCESS' && taskStatush5.value.status !== 'FAILURE') {
           if (taskStatush5.value.status === 'PROGRESS') {
+            await updateH5ad(taskStatus.value.progress);
             progressMessage.value = `${taskStatush5.value.progress}% - ${taskStatush5.value.position}`;
           }
           await new Promise((r) => {
@@ -815,13 +896,19 @@ export default defineComponent({
         }
         /* eslint-disable no-await-in-loop */
         if (taskStatush5.value.status !== 'SUCCESS') {
+          generating.value = false;
+          four.value = 0;
           snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
           loading.value = false;
           return;
         }
+        await updateH5ad(taskStatus.value.progress);
+        four.value = 0;
+        generating.value = false;
       } catch (error) {
         console.log(error);
-        loading.value = false;
+        generating.value = false;
+        four.value = 0;
         snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
       }
     }
@@ -860,9 +947,9 @@ export default defineComponent({
           root_dir: 'data',
           files: allFiles.value,
           crop_area: crop.value.getCoordinatesOnImage(),
-          mask: roi.value.getMask(current_image.value.image.width, current_image.value.image.height, cropCoords[3] - cropCoords[0]),
+          mask: roi.value.getMask(cropCoords),
           metadata: metadata.value,
-          scalefactors: roi.value.getQCScaleFactors(current_image.value, current_image.value.image.width, current_image.value.image.height, cropCoords[3] - cropCoords[0]),
+          scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
           barcodes: barcodes.value,
         };
@@ -886,6 +973,7 @@ export default defineComponent({
         if (taskStatus.value.status !== 'SUCCESS') {
           snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
           loading.value = false;
+          loadingMessage.value = false;
           return;
         }
         await updateProgress(taskStatus.value.progress);
@@ -1080,16 +1168,22 @@ export default defineComponent({
       one,
       two,
       three,
+      four,
       channels,
       updateChannels,
       barcodes,
       onOff,
       spatial,
+      scaleFactor_json,
       grid,
       thresh,
       cropFlag,
       csvHolder,
-      checkMeta,
+      uploadingTixels,
+      optionCreate,
+      optionUpdate,
+      optionFlag,
+      generating,
     };
   },
 });

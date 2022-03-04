@@ -120,18 +120,13 @@ export class ROI {
     return out;
   }
 
-  getMask(width: number, height: number, crop: number): any[] {
-    console.log(width);
-    console.log(height);
-    console.log(crop);
+  getMask(length: any[]): any[] {
     return this.polygons.map((v: any) => {
       const position = v.posit;
-      const ogy = ((v.centery * v.scaleY) / this.scalefactor);
-      const ogx = ((v.centerx * v.scaleX) / this.scalefactor);
-      const x = (ogx / width) * crop;
-      const y = (ogy / height) * crop;
+      const y = Math.abs(((v.centery * v.scaleY) / this.scalefactor) - length[0]);
+      const x = Math.abs(((v.centerx * v.scaleX) / this.scalefactor) - length[1]);
       const value = v.fill != null;
-      return { position, value, coordinates: { ogx, ogy } };
+      return { position, value, coordinates: { y, x } };
     });
   }
 
@@ -193,16 +188,16 @@ export class ROI {
     this.polygons = newPolygons;
   }
 
-  getQCScaleFactors(img: any, width: number, height: number, crop: number) {
+  getQCScaleFactors(img: any, length: any[]) {
     const hsf = 2000.0 / img.image.width;
     const lsf = 600.0 / img.image.width;
-    const mask = this.getMask(width, height, crop);
+    const mask = this.getMask(length);
     let rowcount = 50;
     if (mask.length === 10000) rowcount = 100;
     const { x: x1, y: y1 } = mask[0].coordinates;
     const { x: x2, y: y2 } = mask[1].coordinates;
     const spot_fiduciary_ratio = 1.6153846;
-    const sdf = Math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2)) / 1.5;
+    const sdf = Math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2)) / 3;
     return {
       spot_diameter_fullres: sdf,
       fiducial_diameter_fullres: sdf * spot_fiduciary_ratio,
