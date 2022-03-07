@@ -118,7 +118,7 @@
             </v-card-text>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="9">
+        <v-col cols="11" sm="7">
           <v-card flat>
             <v-card-title>
               <v-autocomplete
@@ -128,6 +128,7 @@
                 multiple
                 dense
                 clearable
+                allow-overflow=false
                 chips
                 :cache-items="false"
                 color="blue-grey lighten-2"
@@ -205,6 +206,22 @@
             </v-stage>
           </v-card>
         </v-col>
+        <v-template v-if="!isClusterView">
+          <v-card flat>
+            <div style="padding:5px;">
+              <div style="background-image:linear-gradient(rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red);width:70px;height:600px;margin-top:100px;float:left;">
+              </div>
+              <div style="width:80px;float:left;margin-top:100px;height:600px;">
+                <p style="position:absolute;top:100px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
+                <p style="position:absolute;top:205px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
+                <p style="position:absolute;top:325px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
+                <p style="position:absolute;top:445px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
+                <p style="position:absolute;top:565px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
+                <p style="position:absolute;top:670px;transform:rotate(-45deg);padding:5px;"> {{stepArray[5]}} </p>
+              </div>
+            </div>
+          </v-card>
+        </v-template>
       </v-row>
     </v-container>
 </template>
@@ -280,6 +297,8 @@ export default defineComponent({
     const isSummation = ref(true);
     const isHighlighted = ref(false);
     const highlightedSpatial = ref<any[]>([]);
+    const highestCount = ref<number>(0);
+    const stepArray = ref<any[]>([0, 0, 0, 0, 0, 0, 0]);
     const tooltip = new Konva.Text({
       text: '',
       fontFamily: 'Calibri',
@@ -319,6 +338,17 @@ export default defineComponent({
       });
       [currentTask.value] = candidateWorkers.value;
     }
+    function makearray(stopValue: number) {
+      if (highestCount.value === 0) return;
+      const arr = [];
+      const startValue = 1;
+      const steps = 6;
+      const step = (stopValue - startValue) / (steps - 1);
+      for (let i = 0; i < steps; i += 1) {
+        arr.push(Math.round(startValue + (step * i)));
+      }
+      stepArray.value = arr;
+    }
     async function loadExpressions() {
       if (!client.value) return;
       if (!filename.value) return;
@@ -344,6 +374,8 @@ export default defineComponent({
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
       const minY = Math.min(...spatialCoord.map((a: number[]) => a[1]));
       if (isClusterView.value) {
+        stepArray.value = [0, 0, 0, 0, 0, 0];
+        highestCount.value = 0;
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
@@ -353,8 +385,8 @@ export default defineComponent({
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
             radius: 1 * scale.value * 20,
-            fill: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
-            stroke: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
+            fill: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
+            stroke: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
             cluster: v,
             total: geneSum[i],
             genes: { },
@@ -373,6 +405,7 @@ export default defineComponent({
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
           console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
+          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
@@ -390,6 +423,7 @@ export default defineComponent({
           circles.push(c);
         });
       }
+      makearray(highestCount.value);
       circlesSpatial.value = circles;
     }
     const checkTaskStatus = async (task_id: string) => {
@@ -614,6 +648,9 @@ export default defineComponent({
       candidateWorkers,
       loadCandidateWorkers,
       currentTask,
+      highestCount,
+      makearray,
+      stepArray,
     };
   },
 });
