@@ -932,7 +932,7 @@ export default defineComponent({
           points.push(Math.abs(v.y - cropCoords[1]));
         });
         metadata.value = Object.assign(metadata.value, {
-          newPoints,
+          points,
           run: run_id.value,
           blockSize: null,
           threshold: threshold.value,
