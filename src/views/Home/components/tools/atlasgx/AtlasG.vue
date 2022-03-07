@@ -97,7 +97,7 @@
               />
             <v-card-text v-if="clusterItems && isClusterView">
               <v-data-table
-                height="34vh"
+                height="37vh"
                 v-model="selected"
                 dense
                 :items-per-page="999"
@@ -546,7 +546,7 @@ export default defineComponent({
     });
     watch(selectedGenes, (v: any[]) => {
       runSpatial(currentViewType.value);
-      if (selectedGenes.value.length>0) {
+      if (selectedGenes.value.length > 0) {
         isClusterView.value = false;
       } else {
         isClusterView.value = true;
@@ -554,7 +554,7 @@ export default defineComponent({
     });
     watch(searchInput, (v: any) => {
       if (v) {
-	querySelections(v);
+        querySelections(v);
       }
     });
     onMounted(async () => {

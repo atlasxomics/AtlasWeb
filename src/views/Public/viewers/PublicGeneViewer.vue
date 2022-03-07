@@ -27,7 +27,7 @@
                 v-model="runId"
                 :loading="loading"
                 :messages="progressMessage"
-                label="ID"
+                label="IDeee"
                 :disabled="true"
               />
 <!--               <v-select
@@ -88,7 +88,7 @@
               />
             <v-card-text v-if="clusterItems && isClusterView">
               <v-data-table
-                height="34vh"
+                height="37vh"
                 v-model="selected"
                 dense
                 :items-per-page="999"
@@ -327,8 +327,8 @@ export default defineComponent({
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
             radius: 1 * scale.value * 20,
-            fill: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
-            stroke: colors[Number(v.toString().replace("C", "")) - v.toString().split("C").length + 1],
+            fill: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
+            stroke: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
             cluster: v,
             total: geneSum[i],
             genes: { },
@@ -499,7 +499,7 @@ export default defineComponent({
     });
     watch(selectedGenes, (v: any[]) => {
       runSpatial(currentViewType.value);
-      if (selectedGenes.value.length>0) {
+      if (selectedGenes.value.length > 0) {
         isClusterView.value = false;
       } else {
         isClusterView.value = true;

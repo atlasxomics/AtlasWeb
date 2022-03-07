@@ -58,7 +58,7 @@
               :items="metaItemLists.numChannels"
               dense
               outlined
-              label="Num Channels"
+              label="Barcode"
               @change="updateChannels">
             </v-select>
           </v-card-text>
