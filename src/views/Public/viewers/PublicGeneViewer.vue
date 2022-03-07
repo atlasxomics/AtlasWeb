@@ -521,17 +521,11 @@ export default defineComponent({
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
-<<<<<<< HEAD
             radius,
             originalColor: colors[Number(v)],
             fill: colors[Number(v)],
             stroke: colors[Number(v)],
             strokeWidth: 1.0,
-=======
-            radius: 1 * scale.value * 20,
-            fill: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
-            stroke: colors[Number(v.toString().replace('C', '')) - v.toString().split('C').length + 1],
->>>>>>> 285146d0f7d6e44724a4e8b247eccf4df41a4875
             cluster: v,
             total: geneSum[i],
             inactive: false,
