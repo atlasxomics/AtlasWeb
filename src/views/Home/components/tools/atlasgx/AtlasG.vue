@@ -458,7 +458,7 @@ export default defineComponent({
       lodash.each(filteredIndex, (v: boolean, idx: number) => {
         if (!v) {
           circlesSpatial.value[idx].fill = inactiveColor.value;
-          // circlesSpatial.value[idx].stroke = inactiveColor.value;
+          circlesSpatial.value[idx].stroke = inactiveColor.value;
           circlesSpatialUMAP.value[idx].fill = 'darkgray';
           // circlesSpatialUMAP.value[idx].stroke = inactiveColor.value;
           circlesSpatialUMAP.value[idx].stroke = 'darkgray';
