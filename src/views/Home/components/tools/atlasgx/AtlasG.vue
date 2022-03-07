@@ -459,14 +459,14 @@ export default defineComponent({
         if (!v) {
           circlesSpatial.value[idx].fill = inactiveColor.value;
           // circlesSpatial.value[idx].stroke = inactiveColor.value;
-          circlesSpatialUMAP.value[idx].fill = 'transparent';
+          circlesSpatialUMAP.value[idx].fill = 'darkgray';
           // circlesSpatialUMAP.value[idx].stroke = inactiveColor.value;
           circlesSpatialUMAP.value[idx].stroke = 'darkgray';
         } else {
           circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;
           circlesSpatial.value[idx].stroke = circlesSpatial.value[idx].originalColor;
           if (circlesSpatialUMAP.value[idx].originalColor === inactiveColor.value) {
-            circlesSpatialUMAP.value[idx].fill = 'transparent';
+            circlesSpatialUMAP.value[idx].fill = 'darkgray';
             circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
           } else {
             circlesSpatialUMAP.value[idx].fill = circlesSpatialUMAP.value[idx].originalColor;
@@ -553,7 +553,7 @@ export default defineComponent({
           const x = ax - minX;
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
-          console.log(clr);
+          // console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
           const c = {
             id: get_uuid(),
@@ -804,7 +804,7 @@ export default defineComponent({
       polygon.value.points = [];
     });
     watch(isClusterView, (v: boolean) => {
-      if (isClusterView.value) inactiveColor.value = 'transparent';
+      if (isClusterView.value) inactiveColor.value = 'darkgray';
       else inactiveColor.value = 'darkgray';
       updateCircles();
     });
