@@ -128,7 +128,7 @@
                 multiple
                 dense
                 clearable
-                allow-overflow=false
+                :allow-overflow="false"
                 chips
                 :cache-items="false"
                 color="blue-grey lighten-2"
@@ -396,14 +396,16 @@ export default defineComponent({
           });
           circles.push(c);
         });
+        makearray(highestCount.value);
       } else {
+        stepArray.value = [0, 0, 0, 0, 0, 0];
+        highestCount.value = 0;
         const geneColors = colormapBounded(colors_intensity, geneSum);
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
-          console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
           highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
           const c = {
