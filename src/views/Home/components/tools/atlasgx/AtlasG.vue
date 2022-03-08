@@ -209,9 +209,9 @@
         <v-template v-if="!isClusterView">
           <v-card flat>
             <div style="padding:5px;">
-              <div style="background-image:linear-gradient(rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red);width:70px;height:600px;margin-top:100px;float:left;">
+              <div style="background-image:linear-gradient(rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red);width:40px;height:590px;margin-top:100px;float:left;">
               </div>
-              <div style="width:80px;float:left;margin-top:100px;height:600px;">
+              <div style="width:50px;float:left;margin-top:100px;height:600px;">
                 <p style="position:absolute;top:100px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
                 <p style="position:absolute;top:205px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
                 <p style="position:absolute;top:325px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
@@ -298,6 +298,7 @@ export default defineComponent({
     const isHighlighted = ref(false);
     const highlightedSpatial = ref<any[]>([]);
     const highestCount = ref<number>(0);
+    const lowestCount = ref<number>(10000);
     const stepArray = ref<any[]>([0, 0, 0, 0, 0, 0, 0]);
     const tooltip = new Konva.Text({
       text: '',
@@ -338,14 +339,13 @@ export default defineComponent({
       });
       [currentTask.value] = candidateWorkers.value;
     }
-    function makearray(stopValue: number) {
+    function makearray(stopValue: number, startValue: number) {
       if (highestCount.value === 0) return;
       const arr = [];
-      const startValue = 1;
       const steps = 6;
       const step = (stopValue - startValue) / (steps - 1);
       for (let i = 0; i < steps; i += 1) {
-        arr.push(Math.round(startValue + (step * i)));
+        arr.push(Math.round((startValue + (step * i)) * 100) / 100);
       }
       stepArray.value = arr;
     }
@@ -374,8 +374,6 @@ export default defineComponent({
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
       const minY = Math.min(...spatialCoord.map((a: number[]) => a[1]));
       if (isClusterView.value) {
-        stepArray.value = [0, 0, 0, 0, 0, 0];
-        highestCount.value = 0;
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
@@ -396,10 +394,10 @@ export default defineComponent({
           });
           circles.push(c);
         });
-        makearray(highestCount.value);
       } else {
         stepArray.value = [0, 0, 0, 0, 0, 0];
         highestCount.value = 0;
+        lowestCount.value = 10000;
         const geneColors = colormapBounded(colors_intensity, geneSum);
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
@@ -408,6 +406,7 @@ export default defineComponent({
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
           const rd = (geneSum[i] > 0) ? 1 : 1;
           highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
+          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
@@ -425,7 +424,7 @@ export default defineComponent({
           circles.push(c);
         });
       }
-      makearray(highestCount.value);
+      makearray(highestCount.value, lowestCount.value);
       circlesSpatial.value = circles;
     }
     const checkTaskStatus = async (task_id: string) => {
