@@ -25,7 +25,6 @@
             <v-card-title>
               <v-text-field
                 v-model="runId"
-                :loading="loading"
                 :messages="progressMessage"
                 label="ID:"
                 :disabled="true"
