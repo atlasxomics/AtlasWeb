@@ -209,15 +209,15 @@
         <v-template v-if="!isClusterView">
           <v-card flat>
             <div style="padding:5px;">
-              <div style="background-image:linear-gradient(rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red);width:40px;height:590px;margin-top:100px;float:left;">
+              <div style="background-image:linear-gradient(to top, rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red);width:30px;height:340px;margin-top:100px;float:left;">
               </div>
-              <div style="width:50px;float:left;margin-top:100px;height:600px;">
-                <p style="position:absolute;top:100px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
-                <p style="position:absolute;top:205px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
-                <p style="position:absolute;top:325px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
-                <p style="position:absolute;top:445px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
-                <p style="position:absolute;top:565px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
-                <p style="position:absolute;top:670px;transform:rotate(-45deg);padding:5px;"> {{stepArray[5]}} </p>
+              <div style="width:40px;float:left;margin-top:100px;height:450px;">
+                <p style="position:absolute;top:80px;transform:rotate(-45deg);padding:5px;"> {{stepArray[5]}} </p>
+                <p style="position:absolute;top:148px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
+                <p style="position:absolute;top:216px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
+                <p style="position:absolute;top:284px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
+                <p style="position:absolute;top:352px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
+                <p style="position:absolute;top:420px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
               </div>
             </div>
           </v-card>
@@ -299,7 +299,7 @@ export default defineComponent({
     const highlightedSpatial = ref<any[]>([]);
     const highestCount = ref<number>(0);
     const lowestCount = ref<number>(10000);
-    const stepArray = ref<any[]>([0, 0, 0, 0, 0, 0, 0]);
+    const stepArray = ref<any[]>([]);
     const tooltip = new Konva.Text({
       text: '',
       fontFamily: 'Calibri',
@@ -345,7 +345,7 @@ export default defineComponent({
       const steps = 6;
       const step = (stopValue - startValue) / (steps - 1);
       for (let i = 0; i < steps; i += 1) {
-        arr.push(Math.round((startValue + (step * i)) * 100) / 100);
+        arr.push(Math.round((startValue + (step * i)) * 10) / 10);
       }
       stepArray.value = arr;
     }
@@ -395,7 +395,7 @@ export default defineComponent({
           circles.push(c);
         });
       } else {
-        stepArray.value = [0, 0, 0, 0, 0, 0];
+        stepArray.value = [];
         highestCount.value = 0;
         lowestCount.value = 10000;
         const geneColors = colormapBounded(colors_intensity, geneSum);
@@ -423,8 +423,8 @@ export default defineComponent({
           });
           circles.push(c);
         });
+        makearray(highestCount.value, lowestCount.value);
       }
-      makearray(highestCount.value, lowestCount.value);
       circlesSpatial.value = circles;
     }
     const checkTaskStatus = async (task_id: string) => {
@@ -650,6 +650,7 @@ export default defineComponent({
       loadCandidateWorkers,
       currentTask,
       highestCount,
+      lowestCount,
       makearray,
       stepArray,
     };

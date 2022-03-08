@@ -27,7 +27,7 @@
                 v-model="runId"
                 :loading="loading"
                 :messages="progressMessage"
-                label="IDeee"
+                label="ID:"
                 :disabled="true"
               />
 <!--               <v-select
@@ -109,7 +109,7 @@
             </v-card-text>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="9">
+        <v-col cols="11" sm="7">
           <v-card flat>
             <v-card-title>
               <v-autocomplete
@@ -119,6 +119,7 @@
                 multiple
                 dense
                 clearable
+                :allow-overflow="false"
                 chips
                 :cache-items="false"
                 color="blue-grey lighten-2"
@@ -196,6 +197,22 @@
             </v-stage>
           </v-card>
         </v-col>
+        <v-template v-if="!isClusterView">
+          <v-card flat>
+            <div style="padding:5px;">
+              <div style="background-image:linear-gradient(to top, rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red);width:30px;height:340px;margin-top:100px;float:left;">
+              </div>
+              <div style="width:40px;float:left;margin-top:100px;height:450px;">
+                <p style="position:absolute;top:80px;transform:rotate(-45deg);padding:5px;"> {{stepArray[5]}} </p>
+                <p style="position:absolute;top:148px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
+                <p style="position:absolute;top:216px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
+                <p style="position:absolute;top:284px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
+                <p style="position:absolute;top:352px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
+                <p style="position:absolute;top:420px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
+              </div>
+            </div>
+          </v-card>
+        </v-template>
       </v-row>
     </v-container>
 </template>
@@ -268,6 +285,9 @@ export default defineComponent({
     const isSummation = ref(true);
     const isHighlighted = ref(false);
     const highlightedSpatial = ref<any[]>([]);
+    const highestCount = ref<number>(0);
+    const lowestCount = ref<number>(10000);
+    const stepArray = ref<any[]>([]);
     const tooltip = new Konva.Text({
       text: '',
       fontFamily: 'Calibri',
@@ -292,6 +312,16 @@ export default defineComponent({
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
+    }
+    function makearray(stopValue: number, startValue: number) {
+      if (highestCount.value === 0) return;
+      const arr = [];
+      const steps = 6;
+      const step = (stopValue - startValue) / (steps - 1);
+      for (let i = 0; i < steps; i += 1) {
+        arr.push(Math.round((startValue + (step * i)) * 10) / 10);
+      }
+      stepArray.value = arr;
     }
     async function loadExpressions() {
       if (!client.value) return;
@@ -339,6 +369,9 @@ export default defineComponent({
           circles.push(c);
         });
       } else {
+        stepArray.value = [];
+        highestCount.value = 0;
+        lowestCount.value = 10000;
         const geneColors = colormapBounded(colors_intensity, geneSum);
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
@@ -346,6 +379,8 @@ export default defineComponent({
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
           const rd = (geneSum[i] > 0) ? 1 : 1;
+          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
+          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
@@ -362,6 +397,7 @@ export default defineComponent({
           });
           circles.push(c);
         });
+        makearray(highestCount.value, lowestCount.value);
       }
       circlesSpatial.value = circles;
     }
@@ -562,6 +598,10 @@ export default defineComponent({
       progressMessage,
       selectAction,
       currentTask,
+      highestCount,
+      lowestCount,
+      makearray,
+      stepArray,
     };
   },
 });
