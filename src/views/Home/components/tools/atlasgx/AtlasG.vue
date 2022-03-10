@@ -205,6 +205,18 @@
                 />
             </v-stage>
           </v-card>
+          <v-card v-if="clusterItems">
+              <v-data-table
+                height="37vh"
+                dense
+                :items-per-page="999"
+                hide-default-footer
+                :loading="loading"
+                :items="geneNames"
+                :headers="topHeaders"
+              >
+              </v-data-table>
+          </v-card>
         </v-col>
         <v-template v-if="!isClusterView">
           <v-card flat>
@@ -320,6 +332,8 @@ export default defineComponent({
     const taskTimeout = ref<number | null>(null);
     const currentTask = ref<any | null>();
     const progressMessage = ref<string | null>(null);
+    const geneNames = ref<any[]>([]);
+    const topHeaders = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -455,7 +469,7 @@ export default defineComponent({
         // console.log(currentRunId.value);
         const { task } = currentTask.value;// 'gene.compute_qc';
         const [queue] = currentTask.value.queues;// 'atxcloud_gene';
-        const args = [filename.value, selectedGenes.value];
+        const args = [filename.value, selectedGenes.value, genes.value];
         const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
         const { host } = window.location;
         publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}`;
@@ -484,7 +498,30 @@ export default defineComponent({
         currentViewType.value = stype;
         spatialData.value = resp;
         // console.log(spatialData.value);
-        clusterItems.value = lodash.uniq(spatialData.value.clusters).map((v: any) => ({ name: v }));
+        const geneRank: any[] = [];
+        const tableHeaders: any[] = [];
+        clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
+        tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
+        for (let i = 0; i < clusterItems.value.length; i += 1) {
+          tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
+        }
+        topHeaders.value = tableHeaders;
+        lodash.each(spatialData.value.top_ten, (v: string[], i: number) => {
+          const tenGenes: {[k: string]: any} = {};
+          const key = [];
+          const value = [];
+          key.push('id');
+          value.push(i);
+          for (let x = 0; x < clusterItems.value!.length; x += 1) {
+            key.push(clusterItems.value![x].name);
+            value.push(v[x]);
+          }
+          for (let j = 0; j < key.length; j += 1) {
+            tenGenes[key[j]] = value[j];
+          }
+          geneRank.push(tenGenes);
+        });
+        geneNames.value = geneRank;
         await updateCircles();
         loading.value = false;
       } catch (error) {
@@ -653,6 +690,8 @@ export default defineComponent({
       lowestCount,
       makearray,
       stepArray,
+      topHeaders,
+      geneNames,
     };
   },
 });
