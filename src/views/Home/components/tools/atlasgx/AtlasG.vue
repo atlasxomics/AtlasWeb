@@ -3,6 +3,7 @@
       <v-row>
         <v-col cols="12" sm="3">
           <v-card
+            v-if="!query.public"
             :disabled="loading">
             <v-text-field
               v-model="search"
@@ -26,12 +27,21 @@
             <v-card-title>
               <v-text-field
                 v-model="filename"
+                v-if="!query.public"
                 :loading="loading"
                 :messages="progressMessage"
                 label="Filename"
               />
-
               <v-text-field
+                v-model="runId"
+                v-if="query.public"
+                :loading="loading"
+                :messages="progressMessage"
+                label="ID"
+                :disabled="true"
+              />
+              <v-text-field
+                v-if="!query.public"
                 v-model="publicLink"
                 label="Public Link"
                 :readonly='true'
@@ -49,7 +59,7 @@
               </v-text-field>
               <v-select
                 v-model="currentTask"
-                v-if="candidateWorkers"
+                v-if="candidateWorkers && !query.public"
                 :items="candidateWorkers"
                 label="Select Worker"
                 item-text="task"
@@ -310,6 +320,7 @@ export default defineComponent({
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
     const currentRunId = ref<string | null>(null);
+    const runId = ref<string | null>(null);
     const publicLink = ref<string | null>(null);
     const items = ref<any[]>();
     const search = ref<string>();
@@ -406,7 +417,7 @@ export default defineComponent({
     async function loadExpressions() {
       if (!client.value) return;
       if (!filename.value) return;
-      const resp = await client.value.getGeneExpressions(filename.value);
+      const resp = props.query.public ? await client.value.getGeneExpressionsByToken(filename.value) : await client.value.getGeneExpressions(filename.value);
       genes.value = resp.map((v: string) => ({ name: v }));
     }
     function remove(item: any) {
@@ -481,7 +492,11 @@ export default defineComponent({
       const circles: any[] = [];
       const circlesUMAP: any[] = [];
       const numClusters = lodash.uniq(spatialData.value.clusters).length;
-      const colors = colormap({ colormap: clusterColorMap.value, nshades: numClusters + 1, format: 'hex', alpha: 1 });
+      const colors_raw = colormap({ colormap: clusterColorMap.value, nshades: (numClusters + 1) * 3, format: 'hex', alpha: 1 });
+      const colors: any[] = [];
+      colors_raw.forEach((v: any, i: number) => {
+        if ((i % 3) === 0) colors.push(v);
+      });
       clusterColors.value = colors;
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
       const spatialCoord = spatialData.value.coordinates;
@@ -606,7 +621,7 @@ export default defineComponent({
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
-      taskStatus.value = await client.value.getTaskStatus(task_id);
+      taskStatus.value = props.query.public ? await client.value.getPublicTaskStatus(task_id) : await client.value.getTaskStatus(task_id);
     };
     async function fetchFileList() {
       if (!client.value) {
@@ -633,11 +648,14 @@ export default defineComponent({
         const { task } = currentTask.value;// 'gene.compute_qc';
         const [queue] = currentTask.value.queues;// 'atxcloud_gene';
         const args = [filename.value, selectedGenes.value, useCached.value, noCompute.value];
-        const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
-        const { host } = window.location;
-        publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}`;
+        if (!props.query.public) {
+          const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
+          const { host } = window.location;
+          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
+        }
         const kwargs = {};
-        const taskObject = await client.value.postTask(task, args, kwargs, queue);
+        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
+        if (props.query.public) runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -672,12 +690,17 @@ export default defineComponent({
       }
     }
     async function selectAction(ev: any) {
-      const root = 'data';
-      const fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
-      filename.value = fn;
-      currentRunId.value = ev.id;
-      pushByQuery({ component: 'AtlasG', run_id: ev.id });
-      selectedGenes.value = [];
+      if (props.query.public) {
+        const fn = ev.id;
+        filename.value = fn;
+      } else {
+        const root = 'data';
+        const fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
+        filename.value = fn;
+        currentRunId.value = ev.id;
+        pushByQuery({ component: 'AtlasG', run_id: ev.id });
+        selectedGenes.value = [];
+      }
       await runSpatial(currentViewType.value);
       isClusterView.value = true;
       isDrawing.value = false;
@@ -827,8 +850,14 @@ export default defineComponent({
       fitStageToParent();
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
-      loadCandidateWorkers('AtlasGX');
-      await fetchFileList();
+      if (props.query) {
+        if (!props.query.public) {
+          loadCandidateWorkers('AtlasGX');
+          await fetchFileList();
+        } else {
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+        }
+      }
       if (props.query) {
         if (props.query.run_id) {
           await selectAction({ id: props.query.run_id });
@@ -893,6 +922,7 @@ export default defineComponent({
       mouseUpOnStageLeft,
       polygon,
       reScale,
+      runId,
     };
   },
 });
