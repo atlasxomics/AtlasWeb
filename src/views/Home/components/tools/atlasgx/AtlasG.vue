@@ -72,6 +72,17 @@
               dense
               :disabled="!spatialData"
             >
+              <template v-slot:append>
+                <v-btn
+                  label="Reset Regions"
+                  small
+                  icon
+                  color="error"
+                  dense
+                  @click="removeRegions">
+                  <v-icon small>mdi-delete</v-icon>
+                </v-btn>
+              </template>
             </v-checkbox>
             <v-combobox
               v-model="backgroundColor"
@@ -216,6 +227,12 @@
                     ref="drawingLayer"
                     id="drawingLayer"
                     v-if="isDrawing">
+                    <template
+                      v-for="poly in regions">
+                      <v-line
+                        v-bind:key="poly.id"
+                        :config="poly"/>
+                    </template>
                     <v-line
                       :config="polygon"/>
                   </v-layer>
@@ -267,7 +284,7 @@ import lodash from 'lodash';
 import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
-import { get_uuid, generateRouteByQuery, splitarray } from '@/utils';
+import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -377,7 +394,7 @@ export default defineComponent({
     const isDrawing = ref<boolean>(false);
     const isClicked = ref<boolean>(false);
     const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
-    // const polygon = ref<any>({ x: 10, y: 10, points: [10, 10, 100, 100, 100, 200], stroke: 'blue' });
+    const regions = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -458,8 +475,15 @@ export default defineComponent({
       isHighlighted.value = true;
     }
     function highlightRegion() {
-      const funcInside = (pt: number[]) => pointInPolygon(pt, splitarray(polygon.value.points, 2));
-      const filteredIndex = circlesSpatial.value.map((v: any) => funcInside([v.x, v.y]));
+      // const funcInside = (pt: number[]) => pointInPolygon(pt, splitarray(polygon.value.points, 2));
+      const funcInsideRegions = (pt: number[]) => {
+        let res = false;
+        regions.value.forEach((poly: any, idx: number) => {
+          if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+        });
+        return res;
+      };
+      const filteredIndex = circlesSpatial.value.map((v: any) => funcInsideRegions([v.x, v.y]));
       const hitCount = filteredIndex.filter((x: boolean) => x).length;
       if (hitCount < 1) {
         unHighlighCluster();
@@ -632,7 +656,7 @@ export default defineComponent({
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
+      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}/${v.split('/')[2]}` }));
       items.value = qc_data;
       loading.value = false;
       // console.log(qc_data);
@@ -762,6 +786,7 @@ export default defineComponent({
     function mouseDownOnStageLeft(ev: any) {
       if (isDrawing.value) {
         isClicked.value = true;
+        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.5, listening: true, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 };
         const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
         // polygon.value.x = Math.round(mousePos.x);
         // polygon.value.y = Math.round(mousePos.y);
@@ -781,12 +806,19 @@ export default defineComponent({
     function mouseUpOnStageLeft(ev: any) {
       if (isDrawing.value) {
         isClicked.value = false;
+        regions.value.push(deepCopy(polygon.value));
+        polygon.value.points = [];
         highlightRegion();
       }
     }
     // Drawing Region ends
     async function mouseOverClusterItem(ev: any) {
       highlightCluster(ev.name);
+    }
+    function removeRegions(ev: any) {
+      regions.value = [];
+      polygon.value.points = [];
+      highlightRegion();
     }
     async function acInputChanged() { // autocomplete input event handler;
       filteredGenes.value = filteredGenes.value.filter((v: any) => selectedGenes.value.includes(v.name));
@@ -921,6 +953,8 @@ export default defineComponent({
       mouseMoveOnStageLeft,
       mouseUpOnStageLeft,
       polygon,
+      regions,
+      removeRegions,
       reScale,
       runId,
     };
