@@ -475,7 +475,6 @@ export default defineComponent({
       isHighlighted.value = true;
     }
     function highlightRegion() {
-      // const funcInside = (pt: number[]) => pointInPolygon(pt, splitarray(polygon.value.points, 2));
       const funcInsideRegions = (pt: number[]) => {
         let res = false;
         regions.value.forEach((poly: any, idx: number) => {
@@ -489,24 +488,17 @@ export default defineComponent({
         unHighlighCluster();
         return;
       }
-      // console.log(filteredIndex);
       lodash.each(filteredIndex, (v: boolean, idx: number) => {
         if (!v) {
-          circlesSpatial.value[idx].fill = inactiveColor.value;
-          circlesSpatial.value[idx].stroke = inactiveColor.value;
-          circlesSpatialUMAP.value[idx].fill = 'darkgray';
-          // circlesSpatialUMAP.value[idx].stroke = inactiveColor.value;
-          circlesSpatialUMAP.value[idx].stroke = 'darkgray';
-        } else {
           circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;
           circlesSpatial.value[idx].stroke = circlesSpatial.value[idx].originalColor;
-          if (circlesSpatialUMAP.value[idx].originalColor === inactiveColor.value) {
-            circlesSpatialUMAP.value[idx].fill = 'darkgray';
-            circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
-          } else {
-            circlesSpatialUMAP.value[idx].fill = circlesSpatialUMAP.value[idx].originalColor;
-            circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
-          }
+          circlesSpatialUMAP.value[idx].fill = circlesSpatialUMAP.value[idx].originalColor;
+          circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
+        } else {
+          circlesSpatial.value[idx].fill = 'white';
+          circlesSpatial.value[idx].stroke = 'white';
+          circlesSpatialUMAP.value[idx].fill = 'white';
+          circlesSpatialUMAP.value[idx].stroke = 'white';
         }
       });
     }
