@@ -132,7 +132,7 @@
               />
             <v-card-text v-if="clusterItems && isClusterView">
               <v-data-table
-                height="34vh"
+                height="37vh"
                 v-model="selected"
                 dense
                 :items-per-page="999"
@@ -152,8 +152,8 @@
             </v-card-text>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="9">
-          <v-card flat :disabled="loading">
+        <v-col cols="11" sm="7">
+          <v-card flat>
             <v-card-title>
               <v-autocomplete
                 v-model="selectedGenes"
@@ -162,6 +162,7 @@
                 multiple
                 dense
                 clearable
+                :allow-overflow="false"
                 chips
                 :cache-items="false"
                 color="blue-grey lighten-2"
@@ -197,7 +198,7 @@
             </v-card-title>
           </v-card>
           <v-row>
-            <v-col cols="12" sm="6">
+            <v-col cols="11" sm="6">
               <v-card id="stageParent"
                       v-resize="onResize"
                       :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
@@ -239,7 +240,7 @@
                 </v-stage>
               </v-card>
             </v-col>
-            <v-col cols="12" sm="6">
+            <v-col cols="11" sm="6">
               <v-card id="stageParentRight"
                   v-resize="onResize"
                   :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
@@ -272,7 +273,35 @@
               </v-card-title>
             </v-card>
           </v-row>
+          <v-card v-if="clusterItems">
+              <v-data-table
+                height="37vh"
+                dense
+                :items-per-page="999"
+                hide-default-footer
+                :loading="loading"
+                :items="geneNames"
+                :headers="topHeaders"
+              >
+              </v-data-table>
+          </v-card>
         </v-col>
+        <v-template v-if="!isClusterView">
+          <v-card flat>
+            <div style="padding:5px;">
+              <div style="background-image:linear-gradient(to top, rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red);width:30px;height:340px;margin-top:100px;float:left;">
+              </div>
+              <div style="width:40px;float:left;margin-top:100px;height:450px;">
+                <p style="position:absolute;top:80px;transform:rotate(-45deg);padding:5px;"> {{stepArray[5]}} </p>
+                <p style="position:absolute;top:148px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
+                <p style="position:absolute;top:216px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
+                <p style="position:absolute;top:284px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
+                <p style="position:absolute;top:352px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
+                <p style="position:absolute;top:420px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
+              </div>
+            </div>
+          </v-card>
+        </v-template>
       </v-row>
     </v-container>
 </template>
@@ -358,6 +387,10 @@ export default defineComponent({
     const isClusterView = ref(true);
     const isSummation = ref(true);
     const isHighlighted = ref(false);
+    const highlightedSpatial = ref<any[]>([]);
+    const highestCount = ref<number>(0);
+    const lowestCount = ref<number>(10000);
+    const stepArray = ref<any[]>([]);
     const highlightedCluster = ref<any>();
     const tooltip = new Konva.Text({
       text: '',
@@ -389,6 +422,8 @@ export default defineComponent({
     const taskTimeout = ref<number | null>(null);
     const currentTask = ref<any | null>();
     const progressMessage = ref<string | null>(null);
+    const geneNames = ref<any[]>([]);
+    const topHeaders = ref<any[]>([]);
     const useCached = ref<boolean>(false);
     const noCompute = ref<boolean>(true);
     const isDrawing = ref<boolean>(false);
@@ -430,6 +465,16 @@ export default defineComponent({
         return false;
       });
       [currentTask.value] = candidateWorkers.value;
+    }
+    function makearray(stopValue: number, startValue: number) {
+      if (highestCount.value === 0) return;
+      const arr = [];
+      const steps = 6;
+      const step = (stopValue - startValue) / (steps - 1);
+      for (let i = 0; i < steps; i += 1) {
+        arr.push(Math.round((startValue + (step * i)) * 10) / 10);
+      }
+      stepArray.value = arr;
     }
     async function loadExpressions() {
       if (!client.value) return;
@@ -586,14 +631,18 @@ export default defineComponent({
           circlesUMAP.push(c);
         });
       } else {
+        stepArray.value = [];
+        highestCount.value = 0;
+        lowestCount.value = 10000;
         const geneColors = colormapBounded(colors_intensity, geneSum);
         lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
-          // console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
+          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
+          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
@@ -613,6 +662,7 @@ export default defineComponent({
           });
           circles.push(c);
         });
+        makearray(highestCount.value, lowestCount.value);
         lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
@@ -702,8 +752,30 @@ export default defineComponent({
         const resp = taskStatus.value.result;
         currentViewType.value = stype;
         spatialData.value = resp;
-        clusterItems.value = lodash.uniq(spatialData.value.clusters_number).map((v: any) => ({ name: v.toString() }));
-        // console.log(clusterItems.value);
+        const geneRank: any[] = [];
+        const tableHeaders: any[] = [];
+        clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v.toString() }));
+        tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
+        for (let i = 0; i < clusterItems.value.length; i += 1) {
+          tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
+        }
+        topHeaders.value = tableHeaders;
+        lodash.each(spatialData.value.top_ten, (v: string[], i: number) => {
+          const tenGenes: {[k: string]: any} = {};
+          const key = [];
+          const value = [];
+          key.push('id');
+          value.push(i);
+          for (let x = 0; x < clusterItems.value!.length; x += 1) {
+            key.push(clusterItems.value![x].name);
+            value.push(v[x]);
+          }
+          for (let j = 0; j < key.length; j += 1) {
+            tenGenes[key[j]] = value[j];
+          }
+          geneRank.push(tenGenes);
+        });
+        geneNames.value = geneRank;
         await updateCircles();
         await fitStageToParent();
         loading.value = false;
@@ -946,6 +1018,12 @@ export default defineComponent({
       candidateWorkers,
       loadCandidateWorkers,
       currentTask,
+      highestCount,
+      lowestCount,
+      makearray,
+      stepArray,
+      topHeaders,
+      geneNames,
       useCached,
       noCompute,
       isDrawing,
