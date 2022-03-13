@@ -2,7 +2,142 @@
 <!--     <v-card ref="mainCard"> -->
   <v-app class="main">
     <v-row>
-      <v-col cols="12" sm="2">
+      <v-col cols="12" sm="2" class="pl-6 pt-3">
+        <template v-if="run_id && optionFlag">
+          <v-card>
+            <v-slider
+              v-model="scaleFactor"
+              class="pl-2"
+              dense
+              height="20"
+              label="Scale"
+              type="number"
+              min="0.1"
+              max=".7"
+              step="0.005"
+              :disabled="!current_image"
+              @change="onChangeScale"></v-slider>
+            <v-list dense class="mt-n3 pt-0 pl-2">
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Orientation</v-subheader>
+              <v-btn
+              x-small
+              dense
+              color="primary"
+              :disabled="isCropMode || grid"
+              @click="horizontalFlip();loadImage()">
+              H.Flip
+              </v-btn>
+              <v-btn
+              x-small
+              color="primary"
+              dense
+              :disabled="isCropMode || grid"
+              @click="verticalFlip();loadImage()">
+              V.Flip
+              </v-btn>
+              <v-text-field
+                v-model="orientation.rotation"
+                dense
+                style="width:100px"
+                class="mt-5 pt-0"
+                label="Rotation"
+                type="number"
+                min="0"
+                max="360"
+                step="90"
+                :disabled="!current_image || isCropMode || grid"
+                @input="loadImage()"/>
+            </v-list>
+            <v-list dense class="mt-n4 pt-0 pl-2">
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Cropping</v-subheader>
+              <v-btn
+                dense
+                color="primary"
+                x-small
+                @click="isCropMode=true"
+                :disabled="isCropMode || grid">
+                Activate
+              </v-btn>
+              <v-btn
+                :disabled="!current_image || !isCropMode || cropFlag"
+                x-small
+                dense
+                class="mt-0 pt-0"
+                color="primary"
+                @click="onCropButton">
+                Crop
+              </v-btn>
+            </v-list>
+            <v-list dense class="mt-n1 pt-0 pl-2">
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
+              <v-btn
+                dense
+                color="primary"
+                x-small
+                @click="grid=true"
+                :disabled="!current_image || grid || !cropFlag">
+                Activate
+              </v-btn>
+              <v-btn
+                :disabled="!current_image || !grid || spatial || optionUpdate"
+                x-small
+                dense
+                color="primary"
+                @click="onLatticeButton">
+                Grid
+              </v-btn>
+            </v-list>
+              <v-list dense class="mt-n1 pt-0 pl-2">
+                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
+                <v-checkbox dense v-model="atfilter" :disabled="!current_image || !grid || spatial" label="Threshold"/>
+                <v-text-field
+                  v-model="threshold"
+                  class="mt-0 pt-0"
+                  style="width:100px"
+                  dense
+                  label="Thr"
+                  type="number"
+                  min="0"
+                  max="255"
+                  step="5"
+                  :disabled="!current_image || !grid || spatial || optionUpdate"
+                />
+              </v-list>
+            <v-list dense class="pt-0 pl-2">
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
+              <v-btn
+              :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src || spatial || optionUpdate"
+              x-small
+              dense
+              color="primary"
+              @click="autoFill">
+              Autofill
+              </v-btn>
+              <v-checkbox dense v-model="isBrushMode" :value="isBrushMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Fill"/>
+              <v-checkbox dense v-model="isEraseMode" :value="isEraseMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Erase"/>
+              <v-text-field
+                v-model="brushSize"
+                style="width:100px"
+                dense
+                label="Br.Size"
+                type="number"
+                min="5.0"
+                max="100.0"
+                step="3.0"
+                :disabled="!current_image || !grid || spatial"
+              />
+              <template v-if="spatial && !loadingMessage && grid">
+                <v-btn
+                x-small
+                dense
+                color="primary"
+                @click="generateh5ad()">
+                Generate h5ad file
+                </v-btn>
+              </template>
+            </v-list>
+          </v-card>
+        </template>
         <v-card height="38vh">
           <v-card-title>
             <v-text-field
@@ -27,7 +162,27 @@
             @click:row="selectAction"
           />
         </v-card>
-        <v-card v-if="run_id">
+        <v-card v-if="run_id && !loading && !optionFlag && csvHolder">
+          <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
+          <v-card-actions>
+            <v-btn
+              dense
+              color="primary"
+              @click="optionFlag=true;optionCreate=true;"
+              class="ml-7"
+              x-small>
+              Reprocess
+            </v-btn>
+            <v-btn
+              dense
+              color="primary"
+              @click="optionFlag=true;optionUpdate=true;loadImage();uploadingTixels()"
+              x-small>
+              Update
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+        <v-card v-if="!csvHolder || optionFlag">
           <v-card-title>
             {{ run_id }}
           </v-card-title>
@@ -122,6 +277,30 @@
                 </v-card>
               </v-dialog>
             </template>
+             <template v-if="generating">
+              <v-dialog
+                value=true
+                hide-overlay
+                persistent
+                width="600"
+                height=200>
+                <v-card
+                  color="primary"
+                  dark>
+                  <v-card-text>
+                    Generating h5ad file
+                    <v-progress-linear
+                      v-model="four"
+                      buffer-value="0"
+                      height="10"
+                      stream
+                      color="white"
+                      class="mb-0">
+                    </v-progress-linear>
+                  </v-card-text>
+                </v-card>
+              </v-dialog>
+            </template>
             <v-row>
               <v-card :disabled="loading">
                 <v-stage
@@ -140,13 +319,15 @@
                     />
                   </v-layer>
                   <v-layer
-                    v-if="!isCropMode"
+                    v-if="grid"
                     ref="roiLayer"
                     id="roiLayer"
                     @mouseup="handleMouseUp">
-                    <template v-if="current_image">
-                      <v-line
-                        :config="roi.generateBoundary()"/>
+                    <template v-if="current_image && !loading">
+                      <template v-if="!optionUpdate">
+                        <v-line
+                          :config="roi.generateBoundary()"/>
+                      </template>
                       <v-shape v-for="p in roi.polygons"
                         :config="p"
                         v-bind:key="p.id"
@@ -154,7 +335,7 @@
                         @mousedown="handleMouseDown"
                         @mouseover="handleMouseOver"/>
                         <v-transformer ref="transformer" />
-                        <template v-if="!isBrushMode">
+                        <template v-if="!isBrushMode && !isEraseMode && !optionUpdate">
                           <v-circle
                             v-for="c in roi.getAnchors()"
                             v-bind:key="c.id"
@@ -163,7 +344,7 @@
                             @dragmove="handleDragMove"
                             :config="c"/>
                         </template>
-                        <v-circle v-if="!isBrushMode"
+                        <v-circle v-if="!isBrushMode && !isEraseMode && !optionUpdate"
                           v-bind:key="roi.getCenterAnchor().id"
                           @dragstart="handleDragCenterStart"
                           @dragend="handleDragCenterEnd"
@@ -173,7 +354,7 @@
                     </template>
                   </v-layer>
                     <v-layer
-                      v-if="isCropMode"
+                      v-if="isCropMode && !grid && !cropFlag"
                       ref="cropLayer"
                       id="cropLayer"
                       @mouseup="handleMouseUp">
@@ -200,7 +381,7 @@
                     </v-layer>
                     <v-layer>
                       <v-circle
-                        v-if="isBrushMode"
+                        v-if="isBrushMode || isEraseMode"
                         :config="brushConfig"
                         @mousedown="handleMouseDownBrush"
                         @mouseup="handleMouseUpBrush"
@@ -210,110 +391,6 @@
                 </v-card>
                 <v-spacer>
                 </v-spacer>
-                <v-card flat width="12%">
-                  <v-text-field
-                    v-model="scaleFactor"
-                    dense
-                    label="Scale"
-                    type="number"
-                    :min="0.1"
-                    :max="1.0"
-                    :step="0.01"
-                    :disabled="!current_image"
-                    @click="onChangeScale"
-                  />
-                  <v-text-field
-                    v-model="brushSize"
-                    class="mt-0 pt-0"
-                    dense
-                    label="Br.Size"
-                    type="number"
-                    min="5.0"
-                    max="100.0"
-                    step="1.0"
-                    :disabled="!current_image || isCropMode"
-                  />
-                  <v-text-field
-                    v-model="threshold"
-                    class="mt-0 pt-0"
-                    dense
-                    label="Thr"
-                    type="number"
-                    min="0"
-                    max="255"
-                    step="5"
-                    :disabled="!current_image || isCropMode"
-                  />
-                  <template v-if="!isCropMode">
-                    <v-btn
-                      :disabled="!current_image || isCropMode"
-                      small
-                      dense
-                      color="primary"
-                      @click="onLatticeButton">
-                      Grid
-                    </v-btn>
-                  </template>
-                  <template v-if="isCropMode">
-                    <v-btn
-                    :disabled="!current_image || !isCropMode"
-                    small
-                    dense
-                    color="primary"
-                    @click="onCropButton">
-                    Crop
-                    </v-btn>
-                  </template>
-                <v-checkbox
-                  class="mt-0 pt-2"
-                  dense
-                  v-model="orientation.horizontal_flip"
-                  :disabled="!current_image || !isCropMode"
-                  label="H.Flip"
-                  @change="loadImage()"/>
-                <v-checkbox
-                  class="mt-0 pb-0"
-                  dense
-                  v-model="orientation.vertical_flip"
-                  :disabled="!current_image || !isCropMode"
-                  label="V.Flip"
-                  @change="loadImage()"/>
-                <v-text-field
-                  v-model="orientation.rotation"
-                  class="mt-0 pt-1"
-                  dense
-                  label="Rotation"
-                  type="number"
-                  min="0"
-                  max="360"
-                  step="90"
-                  :disabled="!current_image || !isCropMode"
-                  @input="loadImage()"/>
-                <template v-if="!isCropMode">
-                  <v-checkbox dense v-model="isCropMode" :disabled="!current_image || onOff" label="Crop"/>
-                  <v-checkbox dense v-model="isBrushMode" :disabled="roi.polygons.length < 1 || isCropMode" label="Brush"/>
-                  <v-checkbox dense v-model="isEraseMode" :disabled="!isBrushMode || isCropMode" label="Erase"/>
-                  <v-checkbox dense v-model="atfilter" :disabled="!current_image || isCropMode" label="Threshold"/>
-                  <v-btn
-                  :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src"
-                  small
-                  dense
-                  class="mt-0 mb-6"
-                  color="primary"
-                  @click="autoFill">
-                  Autofill
-                  </v-btn>
-                  <template v-if="spatial && !loadingMessage">
-                    <v-btn
-                    small
-                    dense
-                    color="primary"
-                    @click="generateReport">
-                    Generate Report
-                    </v-btn>
-                  </template>
-                </template>
-              </v-card>
             </v-row>
           </v-container>
       </v-col>
@@ -325,7 +402,7 @@
 <script lang='ts'>
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
-import lodash, { trim } from 'lodash';
+import lodash, { pad, trim } from 'lodash';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
@@ -361,7 +438,7 @@ const metaItemLists = {
   numChannels: ['50', '50 v2'],
 };
 interface Metadata {
-  points: number[] | null;
+  points: number[] | any;
   run: string | null;
   blockSize: number | null;
   threshold: number | null;
@@ -391,13 +468,11 @@ export default defineComponent({
     const run_id = ref<string | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
-    let imageWidth = Math.round(width - ((width / 12) * 2));
-    const konvaConfig = ref<any>({ width: Math.round(imageWidth * 0.74), height });
+    const konvaConfig = ref<any>({ width, height });
     const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
     const isBrushMode = ref(false);
-    const isCropMode = ref(true);
-    const cropFlag = ref(false);
+    const isCropMode = ref(false);
     const isEraseMode = ref(false);
     const brushSize = ref(20);
     const brushDown = ref(false);
@@ -414,22 +489,38 @@ export default defineComponent({
     const one = ref(0);
     const two = ref(0);
     const three = ref(0);
+    const four = ref(0);
     const atfilter = ref(false);
     const atpixels = ref<any[] | null>([]);
     const threshold = ref(210);
     const loading = ref<boolean>(false);
     const loadingMessage = ref<boolean>(false);
     const taskStatus = ref<any>();
+    const taskStatush5 = ref<any>();
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
     const channels = ref(50);
     const barcodes = ref(1);
     const onOff = ref<boolean>(false);
+    const grid = ref<boolean>(false);
+    const cropFlag = ref<boolean>(false);
+    const thresh = ref<boolean>(false);
     const spatial = ref<boolean>(false);
+    const csvHolder = ref<any>();
+    const optionCreate = ref<boolean>(false);
+    const optionUpdate = ref<boolean>(false);
+    const optionFlag = ref<boolean>(false);
+    const generating = ref<boolean>(false);
+    const scaleFactor_json = ref<any>({
+      fiducial_diameter_fullres: null,
+      spot_diameter_fullres: null,
+      tissue_hires_scalef: null,
+      tissue_lowres_scalef: null,
+    });
     // Metadata
     const metadata = ref<Metadata>({
-      points: null,
+      points: [],
       run: null,
       blockSize: null,
       threshold: null,
@@ -450,7 +541,12 @@ export default defineComponent({
       isBrushMode.value = false;
       isEraseMode.value = false;
       atfilter.value = false;
-      isCropMode.value = true;
+      isCropMode.value = false;
+      grid.value = false;
+      cropFlag.value = false;
+      thresh.value = false;
+      spatial.value = false;
+      onOff.value = false;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
     }
     function pushByQuery(query: any) {
@@ -465,27 +561,21 @@ export default defineComponent({
       loadingMessage.value = false;
       const root = 'data';
       const filename = `${root}/${run_id.value}/images/spatial/metadata.json`;
+      const scale_filename = `${root}/${run_id.value}/images/spatial/scalefactors_json.json`;
       const pos_filename = `${root}/${run_id.value}/images/spatial/tissue_positions_list.csv`;
       const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
       const pos_payload = { params: { filename: pos_filename } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
+      const scale_payload = { params: { filename: scale_filename } };
+      const scale_pos = await client.value.getJsonFile(scale_payload);
+      scaleFactor_json.value = scale_pos;
+      csvHolder.value = resp_pos;
+      metadata.value = resp;
+      console.log(scaleFactor_json.value);
+      metadata.value.numChannels = '50';
       if (resp) {
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
-        metadata.value = resp;
-        if (metadata.value.points) {
-          const partitioned = splitarray(metadata.value.points, 2);
-          const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
-          metadata.value.numChannels = '50';
-          roi.value.setCoordinates(roi_coords);
-        }
-        if (metadata.value.orientation) {
-          orientation.value = metadata.value.orientation;
-        }
-        if (resp_pos) {
-          roi.value.loadTixels(resp_pos);
-          snackbar.dispatch({ text: 'Tixel data loaded from existing spatial directory', options: { color: 'success', right: true } });
-        }
       } else {
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
@@ -495,14 +585,20 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       const root = 'data';
-      const filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
+      let filename: any;
+      if (optionUpdate.value) {
+        // filename = `${root}/${run_id.value}/images/spatial/tissue_hires_image.png`;
+        filename = `${root}/${run_id.value}/images/spatial/figure/postB_BSA.tif`;
+      } else {
+        filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
+      }
       const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
       try {
         const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
-        const scalefactor = 0.15;
+        const scalefactor = 0.1;
         if (imgObj) {
           imgObj.onload = (ev: any) => {
             // const scalefactor = (ctx as any).refs.canvas._data.stageWidth / imgObj.width;
@@ -541,6 +637,22 @@ export default defineComponent({
       }
       itemsHolder.value = updated;
     }
+    function horizontalFlip(ev: any) {
+      orientation.value.horizontal_flip = !orientation.value.horizontal_flip;
+    }
+    function verticalFlip(ev: any) {
+      orientation.value.vertical_flip = !orientation.value.vertical_flip;
+    }
+    function uploadingTixels(ev: any) {
+      grid.value = true;
+      cropFlag.value = true;
+      onOff.value = true;
+      const partitioned = splitarray(metadata.value.points, 2);
+      const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
+      roi.value.setCoordinates(roi_coords);
+      orientation.value = metadata.value.orientation;
+      roi.value.loadTixels(csvHolder.value);
+    }
     function updateChannels(ev: any) {
       if (/50/.test(ev)) {
         channels.value = 50;
@@ -557,14 +669,12 @@ export default defineComponent({
       const v = scaleFactor.value;
       if (current_image.value) {
         current_image.value.scale = { x: v, y: v };
-        imageWidth = Math.round(window.innerWidth - ((window.innerWidth / 12) * 2));
-        konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.74), v * current_image.value.image.width);
+        konvaConfig.value.width = v * current_image.value.image.width;
         konvaConfig.value.height = v * current_image.value.image.height;
         stageWidth.value = konvaConfig.value.width;
         stageHeight.value = konvaConfig.value.height;
       } else {
-        imageWidth = Math.round(window.innerWidth - ((window.innerWidth / 12) * 2));
-        konvaConfig.value.width = Math.round(imageWidth * 0.74);
+        konvaConfig.value.width = v * stageWidth.value;
         konvaConfig.value.height = v * stageHeight.value;
         stageWidth.value = konvaConfig.value.width;
         stageHeight.value = konvaConfig.value.height;
@@ -656,7 +766,7 @@ export default defineComponent({
       }
     }
     function handleMouseMoveStage(ev: any) {
-      if (isBrushMode.value) {
+      if (isBrushMode.value || isEraseMode.value) {
         const pos = (ctx as any).refs.konvaStage.getNode().getPointerPosition();
         const { x, y } = pos;
         brushConfig.value.x = x;
@@ -674,7 +784,8 @@ export default defineComponent({
       brushDown.value = true;
       if (isEraseMode.value) {
         roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', null);
-      } else {
+      }
+      if (isBrushMode.value) {
         roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', 'red');
       }
     }
@@ -692,16 +803,15 @@ export default defineComponent({
     }
     function onLatticeButton(ev: any) {
       generateLattices(ev);
-      setBrushMode(true);
     }
     function onCropButton(ev: any) {
-      isCropMode.value = false;
       cropFlag.value = true;
-      roi.value.channels = channels.value;
+      isCropMode.value = true;
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
+      taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
     async function generateReport(ev: any) {
       //
@@ -738,6 +848,69 @@ export default defineComponent({
         }, 1000);
       }
     };
+    const updateH5ad = async (value: number) => {
+      if (!client.value) return;
+      if (value === 20) {
+        four.value = 20;
+      }
+      if (value === 40) {
+        four.value = 40;
+      }
+      if (value === 60) {
+        four.value = 60;
+      }
+      if (value === 80) {
+        four.value = 80;
+      }
+      if (value === 100) {
+        four.value = 100;
+      }
+    };
+    async function generateh5ad() {
+      if (!client.value) return;
+      if (!spatial.value) return;
+      try {
+        const task = 'atlasbrowser.generate_h5ad';
+        const queue = 'atxcloud_atlasbrowser';
+        const params = {
+          run_id: run_id.value,
+          root_dir: 'data',
+        };
+        const args: any[] = [params];
+        const kwargs: any = {};
+        const taskObject = await client.value.postTask(task, args, kwargs, queue);
+        generating.value = true;
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatush5.value.status !== 'SUCCESS' && taskStatush5.value.status !== 'FAILURE') {
+          if (taskStatush5.value.status === 'PROGRESS') {
+            await updateH5ad(taskStatus.value.progress);
+            progressMessage.value = `${taskStatush5.value.progress}% - ${taskStatush5.value.position}`;
+          }
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        /* eslint-disable no-await-in-loop */
+        if (taskStatush5.value.status !== 'SUCCESS') {
+          generating.value = false;
+          four.value = 0;
+          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+          loading.value = false;
+          return;
+        }
+        await updateH5ad(taskStatus.value.progress);
+        four.value = 0;
+        generating.value = false;
+      } catch (error) {
+        console.log(error);
+        generating.value = false;
+        four.value = 0;
+        snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
+      }
+    }
     async function generateSpatial() {
       if (!client.value) return;
       if (!roi.value) return;
@@ -753,13 +926,13 @@ export default defineComponent({
         const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const cropCoords = crop.value.getCoordinatesOnImage();
-        const newPoints: number[] = [];
+        const points: number[] = [];
         coords.forEach((v, i) => {
-          newPoints.push(Math.abs(v.x - cropCoords[0].x));
-          newPoints.push(Math.abs(v.y - cropCoords[0].y));
+          points.push(Math.abs(v.x - cropCoords[0]));
+          points.push(Math.abs(v.y - cropCoords[1]));
         });
         metadata.value = Object.assign(metadata.value, {
-          newPoints,
+          points,
           run: run_id.value,
           blockSize: null,
           threshold: threshold.value,
@@ -779,7 +952,6 @@ export default defineComponent({
           orientation: orientation.value,
           barcodes: barcodes.value,
         };
-        console.log(roi.value.getMask(cropCoords));
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -800,6 +972,7 @@ export default defineComponent({
         if (taskStatus.value.status !== 'SUCCESS') {
           snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
           loading.value = false;
+          loadingMessage.value = false;
           return;
         }
         await updateProgress(taskStatus.value.progress);
@@ -813,6 +986,11 @@ export default defineComponent({
       } catch (error) {
         console.log(error);
         loading.value = false;
+        loadingMessage.value = false;
+        one.value = 0;
+        two.value = 0;
+        three.value = 0;
+        spatial.value = false;
         snackbar.dispatch({ text: 'Error generating spatial folder', options: { right: true, color: 'error' } });
       }
     }
@@ -823,7 +1001,7 @@ export default defineComponent({
     function onChangeScale(ev: any) {
       const v = scaleFactor.value;
       current_image.value.scale = { x: v, y: v };
-      konvaConfig.value.width = Math.min(Math.round(imageWidth * 0.74), v * current_image.value.image.width);
+      konvaConfig.value.width = v * current_image.value.image.width;
       konvaConfig.value.height = v * current_image.value.image.height;
       stageWidth.value = konvaConfig.value.width;
       stageHeight.value = konvaConfig.value.height;
@@ -880,17 +1058,18 @@ export default defineComponent({
         onChangeScale(sv);
       }
     });
-    watch(isCropMode, (v) => {
-      if (!isCropMode.value) {
-        isBrushMode.value = false;
-        atfilter.value = false;
-        crop.value.setCoordinates(crop.value.getCoordinatesOnImage());
-      } else {
-        // console.log(roi.value.getCoordinates());
-      }
-    });
     watch(brushSize, (v) => {
       brushConfig.value.radius = v;
+    });
+    watch(isEraseMode, (v) => {
+      if (v) {
+        isBrushMode.value = false;
+      }
+    });
+    watch(isBrushMode, (v) => {
+      if (v) {
+        isEraseMode.value = false;
+      }
     });
     watch(run_id, async (v, ov) => {
       initialize();
@@ -954,8 +1133,9 @@ export default defineComponent({
       handleMouseDownBrush,
       handleMouseUpBrush,
       handleMouseUp,
+      horizontalFlip,
+      verticalFlip,
       crop,
-      cropFlag,
       roi,
       objectToArray,
       generateLattices,
@@ -966,6 +1146,7 @@ export default defineComponent({
       stageWidth,
       initialize,
       generateSpatial,
+      generateh5ad,
       generateReport,
       isCropMode,
       isBrushMode,
@@ -986,11 +1167,22 @@ export default defineComponent({
       one,
       two,
       three,
+      four,
       channels,
       updateChannels,
       barcodes,
       onOff,
       spatial,
+      scaleFactor_json,
+      grid,
+      thresh,
+      cropFlag,
+      csvHolder,
+      uploadingTixels,
+      optionCreate,
+      optionUpdate,
+      optionFlag,
+      generating,
     };
   },
 });
@@ -1008,7 +1200,7 @@ export default defineComponent({
   height: 5vh;
 }
 .mainStage {
-  height: 81vh;
+  height: 90vh;
   overflow : auto;
 }
 .main {

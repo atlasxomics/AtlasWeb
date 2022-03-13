@@ -85,12 +85,22 @@ export class Crop {
     return circle;
   }
 
-  getCoordinatesOnImage(): Point[] {
-    const out: Point[] = [];
+  getCoordinatesOnImage(): number[] {
+    const out: number[] = [];
     lodash.forIn(this.coordinates, (v, k) => {
-      const p = { x: v.x / this.scalefactor, y: v.y / this.scalefactor };
-      out.push(p);
+      out.push(Math.round(v.x / this.scalefactor));
+      out.push(Math.round(v.y / this.scalefactor));
     });
+    const length1 = Math.round(out[1] - out[0]);
+    const length2 = Math.round(out[3] - out[2]);
+    let added_on = 0;
+    if (length1 > length2) {
+      added_on = length1 - length2;
+    }
+    if (length1 < length2) {
+      added_on = length1 - length2;
+    }
+    out[3] += added_on;
     return out;
   }
 

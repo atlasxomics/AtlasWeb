@@ -15,6 +15,10 @@
           <v-text-field
             label="Run ID (DXXX)"
             v-model="runId"/>
+          <v-text-field
+            v-if="tab == 1"
+            label="NG ID (NGXXX)"
+            v-model="NgId"/>
         </v-card>
       </v-col>
     </v-row>
@@ -46,7 +50,7 @@
         <v-container fluid>
           <v-row>
             <v-col cols=12 sm="4">
-              <file-upload-drag-drop :disabled="!runId" :run_id="runId" filetype="Gene Matrix (.h5ad)"  :destination="generateGeneMatrixDestination(runId, 'genes.h5ad')"/>
+              <file-upload-drag-drop :disabled="!runId" :run_id="runId" :ng_id="NgId" filetype="Gene Matrix (.h5ad)"  :destination="generateGeneMatrixDestination(runId, NgId, 'genes.h5ad')"/>
             </v-col>
           </v-row>
         </v-container>
@@ -54,18 +58,21 @@
       <v-tab-item key="Novogen Seq Transfer" disabled>
         <novogen-transfer/>
       </v-tab-item>
+      <v-tab-item key="Illumina Seq Transfer" disabled>
+        <illumina-transfer/>
+      </v-tab-item>
     </v-tabs-items>
   </v-container>
 </template>
 
 <script lang='ts'>
-
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import lodash from 'lodash';
 import store from '@/store';
 import { generateRouteByQuery } from '@/utils';
 import FileUploadDragDrop from './FileUploadDragDrop.vue';
 import NovogenTransfer from './NovogenTransfer.vue';
+import IlluminaTransfer from './IlluminaTransfer.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -75,26 +82,27 @@ const clientReady = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
-
 function generateSourceImageDestination(runid: string, filename: string): string {
   const runidUpper = runid ? runid.toUpperCase() : runid;
   return `data/${runidUpper}/images/${filename}`;
 }
-function generateGeneMatrixDestination(runid: string, filename: string): string {
+function generateGeneMatrixDestination(runid: string, ngid: string, filename: string): string {
   const runidUpper = runid ? runid.toUpperCase() : runid;
-  return `data/${runidUpper}/h5/obj/${filename}`;
+  const ngidUpper = ngid ? ngid.toUpperCase() : ngid;
+  return `data/${runidUpper}/${ngidUpper}/h5/obj/${filename}`;
 }
 
-const tabs = ['Image Upload', 'Gene Matrix Upload (H5AD)', 'Transfer Seq (Novogen)'];
+const tabs = ['Image Upload', 'Gene Matrix Upload (H5AD)', 'Transfer Seq (Novogen)', 'Transfer Seq (Illumina)'];
 
 export default defineComponent({
   name: 'AtlasUploader',
-  components: { FileUploadDragDrop, NovogenTransfer },
+  components: { FileUploadDragDrop, NovogenTransfer, IlluminaTransfer },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const runId = ref<string | null>();
+    const NgId = ref<string | null>();
     const tab = ref<any>(0);
     watch(runId, (v: any) => {
       if (!runId.value) return;
@@ -108,14 +116,13 @@ export default defineComponent({
       tab,
       tabs,
       runId,
+      NgId,
       generateSourceImageDestination,
       generateGeneMatrixDestination,
     };
   },
 });
-
 </script>
 
 <style>
-
 </style>

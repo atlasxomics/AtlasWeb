@@ -121,14 +121,12 @@ export class ROI {
   }
 
   getMask(length: any[]): any[] {
-    console.log(this.polygons[0]);
-    console.log(length);
     return this.polygons.map((v: any) => {
       const position = v.posit;
-      const y = Math.abs(((v.centery * v.scaleY) / this.scalefactor) - length[0].x);
-      const x = Math.abs(((v.centerx * v.scaleX) / this.scalefactor) - length[0].y);
+      const y = Math.abs(((v.centery * v.scaleY) / this.scalefactor) - length[0]);
+      const x = Math.abs(((v.centerx * v.scaleX) / this.scalefactor) - length[1]);
       const value = v.fill != null;
-      return { position, value, coordinates: { x, y } };
+      return { position, value, coordinates: { y, x } };
     });
   }
 
@@ -197,9 +195,9 @@ export class ROI {
     let rowcount = 50;
     if (mask.length === 10000) rowcount = 100;
     const { x: x1, y: y1 } = mask[0].coordinates;
-    const { x: x2, y: y2 } = mask[rowcount].coordinates;
+    const { x: x2, y: y2 } = mask[1].coordinates;
     const spot_fiduciary_ratio = 1.6153846;
-    const sdf = Math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2));
+    const sdf = Math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2)) / 3;
     return {
       spot_diameter_fullres: sdf,
       fiducial_diameter_fullres: sdf * spot_fiduciary_ratio,
