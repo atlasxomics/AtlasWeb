@@ -573,10 +573,11 @@ export default defineComponent({
       csvHolder.value = resp_pos;
       metadata.value = resp;
       console.log(scaleFactor_json.value);
-      metadata.value.numChannels = '50';
+      // metadata.value.numChannels = '50';
       if (resp) {
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
       } else {
+        optionFlag.value = true;
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
     }
@@ -871,7 +872,7 @@ export default defineComponent({
       if (!spatial.value) return;
       try {
         const task = 'atlasbrowser.generate_h5ad';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'joshua_atlasbrowser';
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
@@ -923,7 +924,7 @@ export default defineComponent({
         loading.value = true;
         spatial.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'joshua_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const cropCoords = crop.value.getCoordinatesOnImage();
         const points: number[] = [];
