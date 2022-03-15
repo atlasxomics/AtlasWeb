@@ -127,7 +127,7 @@
               <template v-slot:item.name="{ item }">
                 <span>{{ item.name }} :</span>
                 <v-chip
-                  :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 1]"
+                  :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 2]"
                   small>{{ item.name }}</v-chip>
               </template>
               </v-data-table>
@@ -559,7 +559,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
-          const vv = Number(v.replace('C', '')) - v.split('C').length + 1;
+          const vv = Number(v.replace('C', '')) - v.split('C').length + 2;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
@@ -583,7 +583,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
-          const vv = Number(v.replace('C', '')) - v.split('C').length + 1;
+          const vv = Number(v.replace('C', '')) - v.split('C').length + 2;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScaleUMAP + paddingX,
