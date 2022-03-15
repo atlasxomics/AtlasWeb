@@ -93,30 +93,12 @@
               label="Background Color"
               />
             <v-combobox
-              v-model="inactiveColor"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['darkgray',  'transparent', 'black', 'white']"
-              label="Inactive Color (gene)"
-              @change="updateCircles()"
-              />
-            <v-combobox
               v-model="heatMap"
               dense
               no-details
               :disabled="!spatialData"
               :items="['jet',  'hot', 'inferno', 'picnic', 'bone']"
-              label="Heatmap (gene)"
-              @change="updateCircles()"
-              />
-            <v-combobox
-              v-model="clusterColorMap"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['jet',  'hot']"
-              label="Heatmap (cluster)"
+              label="Heatmap"
               @change="updateCircles()"
               />
             <v-text-field
@@ -415,7 +397,6 @@ export default defineComponent({
     const clusterColors = ref<string[]>([]);
     const inactiveColor = ref<string>('darkgray');
     const backgroundColor = ref<string>('black');
-    const clusterColorMap = ref<string>('jet');
     const heatMap = ref<string>('jet');
     const autocompleteLoading = ref(false);
     const taskStatus = ref<any>();
@@ -551,7 +532,7 @@ export default defineComponent({
       const circles: any[] = [];
       const circlesUMAP: any[] = [];
       const numClusters = lodash.uniq(spatialData.value.clusters).length;
-      const colors_raw = colormap({ colormap: clusterColorMap.value, nshades: (numClusters + 1) * 3, format: 'hex', alpha: 1 });
+      const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters + 1) * 3, format: 'hex', alpha: 1 });
       const colors: any[] = [];
       colors_raw.forEach((v: any, i: number) => {
         if ((i % 3) === 0) colors.push(v);
@@ -914,11 +895,6 @@ export default defineComponent({
       if (!isDrawing.value) unHighlighCluster();
       polygon.value.points = [];
     });
-    watch(isClusterView, (v: boolean) => {
-      if (isClusterView.value) inactiveColor.value = 'darkgray';
-      else inactiveColor.value = 'darkgray';
-      updateCircles();
-    });
     watch(selectedGenes, (v: any[]) => {
       runSpatial(currentViewType.value);
       if (selectedGenes.value.length > 0) {
@@ -995,7 +971,6 @@ export default defineComponent({
       acInputChanged,
       onGenelistChanged,
       heatMap,
-      clusterColorMap,
       progressMessage,
       selectAction,
       workers,
