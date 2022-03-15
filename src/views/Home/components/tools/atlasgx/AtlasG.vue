@@ -127,7 +127,7 @@
               <template v-slot:item.name="{ item }">
                 <span>{{ item.name }} :</span>
                 <v-chip
-                  :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 1]"
+                  :color="clusterColors[Number(item.name.toString().replace('C', ''))]"
                   small>{{ item.name }}</v-chip>
               </template>
               </v-data-table>
