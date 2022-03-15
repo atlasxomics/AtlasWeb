@@ -872,7 +872,7 @@ export default defineComponent({
       if (!spatial.value) return;
       try {
         const task = 'atlasbrowser.generate_h5ad';
-        const queue = 'joshua_atlasbrowser';
+        const queue = 'atxcloud_atlasbrowser';
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
@@ -924,7 +924,7 @@ export default defineComponent({
         loading.value = true;
         spatial.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'joshua_atlasbrowser';
+        const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const cropCoords = crop.value.getCoordinatesOnImage();
         const points: number[] = [];
