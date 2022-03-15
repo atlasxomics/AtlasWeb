@@ -559,7 +559,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
-          const vv = Number(v.replace('C', '')) - v.split('C').length + 1;
+          const vv = Number(v.replace('C', ''));
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
@@ -583,7 +583,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
-          const vv = Number(v.replace('C', '')) - v.split('C').length + 1;
+          const vv = Number(v.replace('C', ''));
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScaleUMAP + paddingX,
