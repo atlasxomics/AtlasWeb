@@ -424,8 +424,6 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const geneNames = ref<any[]>([]);
     const topHeaders = ref<any[]>([]);
-    const useCached = ref<boolean>(false);
-    const noCompute = ref<boolean>(true);
     const isDrawing = ref<boolean>(false);
     const isClicked = ref<boolean>(false);
     const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
@@ -499,7 +497,7 @@ export default defineComponent({
     }
     function highlightCluster(clusterName: string) {
       lodash.each(circlesSpatial.value, (c: any, i: number) => {
-        if (c.cluster !== Number(clusterName)) {
+        if (c.cluster !== clusterName) {
           circlesSpatial.value[i].fill = inactiveColor.value;
           circlesSpatial.value[i].stroke = inactiveColor.value;
         } else {
@@ -508,7 +506,7 @@ export default defineComponent({
         }
       });
       lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
-        if (c.cluster !== Number(clusterName)) {
+        if (c.cluster !== clusterName) {
           circlesSpatialUMAP.value[i].fill = inactiveColor.value;
           circlesSpatialUMAP.value[i].stroke = inactiveColor.value;
         } else {
@@ -576,18 +574,19 @@ export default defineComponent({
       const [paddingX, paddingY] = [10, 10];
       const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
       if (isClusterView.value) {
-        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
+          const vv = Number(v.replace('C', '')) - v.split('C').length + 1;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
             radius,
-            originalColor: colors[Number(v)],
-            fill: colors[Number(v)],
-            stroke: colors[Number(v)],
+            originalColor: colors[vv],
+            fill: colors[vv],
+            stroke: colors[vv],
             strokeWidth: 1.0,
             cluster: v,
             total: geneSum[i],
@@ -599,18 +598,19 @@ export default defineComponent({
           });
           circles.push(c);
         });
-        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
+          const vv = Number(v.replace('C', '')) - v.split('C').length + 1;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScaleUMAP + paddingX,
             y: y * scale.value * viewScaleUMAP + paddingY,
             radius,
-            originalColor: colors[Number(v)],
-            fill: colors[Number(v)],
-            stroke: colors[Number(v)],
+            originalColor: colors[vv],
+            fill: colors[vv],
+            stroke: colors[vv],
             strokeWidth: 1.0,
             cluster: v,
             total: geneSum[i],
@@ -627,7 +627,7 @@ export default defineComponent({
         highestCount.value = 0;
         lowestCount.value = 10000;
         const geneColors = colormapBounded(colors_intensity, geneSum);
-        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
@@ -655,7 +655,7 @@ export default defineComponent({
           circles.push(c);
         });
         makearray(highestCount.value, lowestCount.value);
-        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
@@ -701,7 +701,6 @@ export default defineComponent({
       const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}/${v.split('/')[2]}` }));
       items.value = qc_data;
       loading.value = false;
-      // console.log(qc_data);
     }
     async function runSpatial(stype: string) {
       if (!client.value) return;
@@ -710,10 +709,9 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         await loadExpressions();
-        // console.log(currentRunId.value);
-        const { task } = currentTask.value;// 'gene.compute_qc';
-        const [queue] = currentTask.value.queues;// 'atxcloud_gene';
-        const args = [filename.value, selectedGenes.value, useCached.value, noCompute.value];
+        const { task } = currentTask.value;
+        const [queue] = currentTask.value.queues;
+        const args = [filename.value, selectedGenes.value];
         if (!props.query.public) {
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
           const { host } = window.location;
@@ -746,7 +744,7 @@ export default defineComponent({
         spatialData.value = resp;
         const geneRank: any[] = [];
         const tableHeaders: any[] = [];
-        clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v.toString() }));
+        clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
         tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
         for (let i = 0; i < clusterItems.value.length; i += 1) {
           tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
@@ -904,12 +902,6 @@ export default defineComponent({
       isClusterView.value = false;
       await runSpatial(currentViewType.value);
     }
-    watch(noCompute, (v: boolean) => {
-      if (v) useCached.value = false;
-    });
-    watch(useCached, (v: boolean) => {
-      if (v) noCompute.value = false;
-    });
     watch(scale, (v: number, ov: number) => {
       const scaleRatio = v / ov;
       reScale(scaleRatio);
@@ -1016,8 +1008,6 @@ export default defineComponent({
       stepArray,
       topHeaders,
       geneNames,
-      useCached,
-      noCompute,
       isDrawing,
       mouseDownOnStageLeft,
       mouseMoveOnStageLeft,
