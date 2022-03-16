@@ -144,7 +144,8 @@
                 multiple
                 dense
                 clearable
-                placeholder="Enter gene ID"
+                placeholder=""
+                label="Enter gene ID:"
                 :allow-overflow="false"
                 chips
                 :cache-items="false"
