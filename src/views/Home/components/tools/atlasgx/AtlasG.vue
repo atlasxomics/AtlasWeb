@@ -922,6 +922,7 @@ export default defineComponent({
         isClusterView.value = true;
         showFlag.value = false;
         stepArray.value = [];
+        updateCircles();
       }
     });
     watch(searchInput, (v: any) => {
