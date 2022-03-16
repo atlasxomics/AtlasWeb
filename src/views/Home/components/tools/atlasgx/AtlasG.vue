@@ -3,6 +3,7 @@
       <v-row>
         <v-col cols="12" sm="3">
           <v-card
+            v-if="!query.public"
             :disabled="loading">
             <v-text-field
               v-model="search"
@@ -26,12 +27,21 @@
             <v-card-title>
               <v-text-field
                 v-model="filename"
+                v-if="!query.public"
                 :loading="loading"
                 :messages="progressMessage"
                 label="Filename"
               />
-
               <v-text-field
+                v-model="runId"
+                v-if="query.public"
+                :loading="loading"
+                :messages="progressMessage"
+                label="ID"
+                :disabled="true"
+              />
+              <v-text-field
+                v-if="!query.public"
                 v-model="publicLink"
                 label="Public Link"
                 :readonly='true'
@@ -49,7 +59,7 @@
               </v-text-field>
               <v-select
                 v-model="currentTask"
-                v-if="candidateWorkers"
+                v-if="candidateWorkers && !query.public"
                 :items="candidateWorkers"
                 label="Select Worker"
                 item-text="task"
@@ -62,6 +72,17 @@
               dense
               :disabled="!spatialData"
             >
+              <template v-slot:append>
+                <v-btn
+                  label="Reset Regions"
+                  small
+                  icon
+                  color="error"
+                  dense
+                  @click="removeRegions">
+                  <v-icon small>mdi-delete</v-icon>
+                </v-btn>
+              </template>
             </v-checkbox>
             <v-combobox
               v-model="backgroundColor"
@@ -72,30 +93,12 @@
               label="Background Color"
               />
             <v-combobox
-              v-model="inactiveColor"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['darkgray',  'transparent', 'black', 'white']"
-              label="Inactive Color (gene)"
-              @change="updateCircles()"
-              />
-            <v-combobox
               v-model="heatMap"
               dense
               no-details
               :disabled="!spatialData"
               :items="['jet',  'hot', 'inferno', 'picnic', 'bone']"
-              label="Heatmap (gene)"
-              @change="updateCircles()"
-              />
-            <v-combobox
-              v-model="clusterColorMap"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['jet',  'hot']"
-              label="Heatmap (cluster)"
+              label="Heatmap"
               @change="updateCircles()"
               />
             <v-text-field
@@ -111,7 +114,7 @@
               />
             <v-card-text v-if="clusterItems && isClusterView">
               <v-data-table
-                height="34vh"
+                height="37vh"
                 v-model="selected"
                 dense
                 :items-per-page="999"
@@ -124,15 +127,15 @@
               <template v-slot:item.name="{ item }">
                 <span>{{ item.name }} :</span>
                 <v-chip
-                  :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 1]"
+                  :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 2]"
                   small>{{ item.name }}</v-chip>
               </template>
               </v-data-table>
             </v-card-text>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="9">
-          <v-card flat :disabled="loading">
+        <v-col cols="11" sm="7">
+          <v-card flat>
             <v-card-title>
               <v-autocomplete
                 v-model="selectedGenes"
@@ -141,6 +144,8 @@
                 multiple
                 dense
                 clearable
+                placeholder="Enter gene ID"
+                :allow-overflow="false"
                 chips
                 :cache-items="false"
                 color="blue-grey lighten-2"
@@ -163,20 +168,20 @@
                   >{{ data.item.name }}
                   </v-chip>
                 </template>
-                <template v-slot:append-outer>
+                <template v-slot:append-outer v-if="selectedGenes.length > 0">
                   <v-btn
                     color="primary"
                     small
                     text
                     :disabled="!filename"
-                    @click="runSpatial('spatial')"
-                    >Load</v-btn>
+                    @click="runSpatial('spatial');showFlag=true"
+                    >Show</v-btn>
                 </template>
               </v-autocomplete>
             </v-card-title>
           </v-card>
           <v-row>
-            <v-col cols="12" sm="6">
+            <v-col cols="11" sm="6">
               <v-card id="stageParent"
                       v-resize="onResize"
                       :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
@@ -206,13 +211,19 @@
                     ref="drawingLayer"
                     id="drawingLayer"
                     v-if="isDrawing">
+                    <template
+                      v-for="poly in regions">
+                      <v-line
+                        v-bind:key="poly.id"
+                        :config="poly"/>
+                    </template>
                     <v-line
                       :config="polygon"/>
                   </v-layer>
                 </v-stage>
               </v-card>
             </v-col>
-            <v-col cols="12" sm="6">
+            <v-col cols="11" sm="6">
               <v-card id="stageParentRight"
                   v-resize="onResize"
                   :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
@@ -245,7 +256,40 @@
               </v-card-title>
             </v-card>
           </v-row>
+          <v-card v-if="clusterItems">
+              <v-data-table
+                height="37vh"
+                dense
+                :items-per-page="999"
+                hide-default-footer
+                :loading="loading"
+                :items="geneNames"
+                :headers="topHeaders"
+              >
+              <template v-slot:item="row">
+                <tr>
+                  <td>{{row.item['id']}}</td>
+                  <td v-for="num in lengthClust" :key="num.toString()"><v-btn text x-small dense @click="sendGene(row.item['C'+num])">{{row.item['C'+num]}}</v-btn></td>
+                </tr>
+              </template>
+              </v-data-table>
+          </v-card>
         </v-col>
+         <template v-if="!isClusterView && showFlag">
+          <v-card flat>
+            <div style="padding:5px;">
+              <div :style="{ 'background-image': some, 'width':'30px','height':'340px','margin-top':'100px','float':'left'}" >
+              </div>
+              <div style="width:40px;float:left;margin-top:100px;height:450px;">
+                <p style="position:absolute;top:90px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
+                <p style="position:absolute;top:175px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
+                <p style="position:absolute;top:260px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
+                <p style="position:absolute;top:340px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
+                <p style="position:absolute;top:415px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
+              </div>
+            </div>
+          </v-card>
+        </template>
       </v-row>
     </v-container>
 </template>
@@ -257,7 +301,7 @@ import lodash from 'lodash';
 import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
-import { get_uuid, generateRouteByQuery, splitarray } from '@/utils';
+import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -310,6 +354,7 @@ export default defineComponent({
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
     const currentRunId = ref<string | null>(null);
+    const runId = ref<string | null>(null);
     const publicLink = ref<string | null>(null);
     const items = ref<any[]>();
     const search = ref<string>();
@@ -330,6 +375,11 @@ export default defineComponent({
     const isClusterView = ref(true);
     const isSummation = ref(true);
     const isHighlighted = ref(false);
+    const highlightedSpatial = ref<any[]>([]);
+    const highestCount = ref<number>(0);
+    const lowestCount = ref<number>(10000);
+    const stepArray = ref<any[]>([]);
+    const some = ref<string>('');
     const highlightedCluster = ref<any>();
     const tooltip = new Konva.Text({
       text: '',
@@ -354,19 +404,21 @@ export default defineComponent({
     const clusterColors = ref<string[]>([]);
     const inactiveColor = ref<string>('darkgray');
     const backgroundColor = ref<string>('black');
-    const clusterColorMap = ref<string>('jet');
     const heatMap = ref<string>('jet');
     const autocompleteLoading = ref(false);
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
     const currentTask = ref<any | null>();
     const progressMessage = ref<string | null>(null);
-    const useCached = ref<boolean>(false);
-    const noCompute = ref<boolean>(true);
+    const geneNames = ref<any[]>([]);
+    const topHeaders = ref<any[]>([]);
     const isDrawing = ref<boolean>(false);
     const isClicked = ref<boolean>(false);
     const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
-    // const polygon = ref<any>({ x: 10, y: 10, points: [10, 10, 100, 100, 100, 200], stroke: 'blue' });
+    const regions = ref<any[]>([]);
+    const lengthClust = ref<number>(0);
+    const colorBar = ref<any[]>([]);
+    const showFlag = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -403,10 +455,25 @@ export default defineComponent({
       });
       [currentTask.value] = candidateWorkers.value;
     }
+    function makearray(stopValue: number, startValue: number) {
+      if (highestCount.value === 0) return;
+      const arr = [];
+      const steps = 5;
+      const step = (stopValue - startValue) / (steps - 1);
+      for (let i = 0; i < steps; i += 1) {
+        arr.push(Math.round((startValue + (step * i)) * 10) / 10);
+      }
+      stepArray.value = arr;
+    }
+    function sendGene(ev: any) {
+      searchInput.value = ev;
+      selectedGenes.value.push(ev);
+      isClusterView.value = false;
+    }
     async function loadExpressions() {
       if (!client.value) return;
       if (!filename.value) return;
-      const resp = await client.value.getGeneExpressions(filename.value);
+      const resp = props.query.public ? await client.value.getGeneExpressionsByToken(filename.value) : await client.value.getGeneExpressions(filename.value);
       genes.value = resp.map((v: string) => ({ name: v }));
     }
     function remove(item: any) {
@@ -426,7 +493,7 @@ export default defineComponent({
     }
     function highlightCluster(clusterName: string) {
       lodash.each(circlesSpatial.value, (c: any, i: number) => {
-        if (c.cluster !== Number(clusterName)) {
+        if (c.cluster !== clusterName) {
           circlesSpatial.value[i].fill = inactiveColor.value;
           circlesSpatial.value[i].stroke = inactiveColor.value;
         } else {
@@ -435,7 +502,7 @@ export default defineComponent({
         }
       });
       lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
-        if (c.cluster !== Number(clusterName)) {
+        if (c.cluster !== clusterName) {
           circlesSpatialUMAP.value[i].fill = inactiveColor.value;
           circlesSpatialUMAP.value[i].stroke = inactiveColor.value;
         } else {
@@ -447,43 +514,52 @@ export default defineComponent({
       isHighlighted.value = true;
     }
     function highlightRegion() {
-      const funcInside = (pt: number[]) => pointInPolygon(pt, splitarray(polygon.value.points, 2));
-      const filteredIndex = circlesSpatial.value.map((v: any) => funcInside([v.x, v.y]));
+      const funcInsideRegions = (pt: number[]) => {
+        let res = false;
+        regions.value.forEach((poly: any, idx: number) => {
+          if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+        });
+        return res;
+      };
+      const filteredIndex = circlesSpatial.value.map((v: any) => funcInsideRegions([v.x, v.y]));
       const hitCount = filteredIndex.filter((x: boolean) => x).length;
       if (hitCount < 1) {
         unHighlighCluster();
         return;
       }
-      // console.log(filteredIndex);
+      console.log(filteredIndex);
+      console.log(hitCount);
       lodash.each(filteredIndex, (v: boolean, idx: number) => {
         if (!v) {
-          circlesSpatial.value[idx].fill = inactiveColor.value;
-          // circlesSpatial.value[idx].stroke = inactiveColor.value;
-          circlesSpatialUMAP.value[idx].fill = 'transparent';
-          // circlesSpatialUMAP.value[idx].stroke = inactiveColor.value;
-          circlesSpatialUMAP.value[idx].stroke = 'darkgray';
-        } else {
           circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;
           circlesSpatial.value[idx].stroke = circlesSpatial.value[idx].originalColor;
-          if (circlesSpatialUMAP.value[idx].originalColor === inactiveColor.value) {
-            circlesSpatialUMAP.value[idx].fill = 'transparent';
-            circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
-          } else {
-            circlesSpatialUMAP.value[idx].fill = circlesSpatialUMAP.value[idx].originalColor;
-            circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
-          }
+          circlesSpatialUMAP.value[idx].fill = circlesSpatialUMAP.value[idx].originalColor;
+          circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
+        } else {
+          circlesSpatial.value[idx].fill = 'white';
+          circlesSpatial.value[idx].stroke = 'white';
+          circlesSpatialUMAP.value[idx].fill = 'white';
+          circlesSpatialUMAP.value[idx].stroke = 'white';
         }
       });
     }
     async function updateCircles() {
+      console.log(isClusterView.value);
       isHighlighted.value = false;
       const geneSum = spatialData.value.genes_summation;
       const circles: any[] = [];
       const circlesUMAP: any[] = [];
+      stepArray.value = [];
       const numClusters = lodash.uniq(spatialData.value.clusters).length;
-      const colors = colormap({ colormap: clusterColorMap.value, nshades: numClusters + 1, format: 'hex', alpha: 1 });
+      const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters + 1) * 3, format: 'hex', alpha: 1 });
+      const colors: any[] = [];
+      colors_raw.forEach((v: any, i: number) => {
+        if ((i % 3) === 0) colors.push(v);
+      });
       clusterColors.value = colors;
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
+      colorBar.value = colors_intensity;
+      some.value = `linear-gradient( ${colors_intensity[63]}, ${colors_intensity[48]}, ${colors_intensity[32]} , ${colors_intensity[16]}, ${colors_intensity[0]})`;
       const spatialCoord = spatialData.value.coordinates;
       const spatialCoordUMAP = spatialData.value.coordinates_umap.map((v: number[]) => ([v[0], -v[1]]));
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
@@ -500,18 +576,19 @@ export default defineComponent({
       const [paddingX, paddingY] = [10, 10];
       const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
       if (isClusterView.value) {
-        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
+          const vv = Number(v.replace('C', '')) - v.split('C').length + 2;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
             radius,
-            originalColor: colors[Number(v)],
-            fill: colors[Number(v)],
-            stroke: colors[Number(v)],
+            originalColor: colors[vv],
+            fill: colors[vv],
+            stroke: colors[vv],
             strokeWidth: 1.0,
             cluster: v,
             total: geneSum[i],
@@ -523,18 +600,19 @@ export default defineComponent({
           });
           circles.push(c);
         });
-        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
+          const vv = Number(v.replace('C', '')) - v.split('C').length + 2;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScaleUMAP + paddingX,
             y: y * scale.value * viewScaleUMAP + paddingY,
             radius,
-            originalColor: colors[Number(v)],
-            fill: colors[Number(v)],
-            stroke: colors[Number(v)],
+            originalColor: colors[vv],
+            fill: colors[vv],
+            stroke: colors[vv],
             strokeWidth: 1.0,
             cluster: v,
             total: geneSum[i],
@@ -547,14 +625,17 @@ export default defineComponent({
           circlesUMAP.push(c);
         });
       } else {
+        highestCount.value = 0;
+        lowestCount.value = 10000;
         const geneColors = colormapBounded(colors_intensity, geneSum);
-        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
           const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
-          console.log(clr);
           const rd = (geneSum[i] > 0) ? 1 : 1;
+          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
+          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingY,
@@ -574,7 +655,8 @@ export default defineComponent({
           });
           circles.push(c);
         });
-        lodash.each(spatialData.value.clusters_number, (v: number, i: number) => {
+        makearray(highestCount.value, lowestCount.value);
+        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
@@ -606,7 +688,7 @@ export default defineComponent({
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
-      taskStatus.value = await client.value.getTaskStatus(task_id);
+      taskStatus.value = props.query.public ? await client.value.getPublicTaskStatus(task_id) : await client.value.getTaskStatus(task_id);
     };
     async function fetchFileList() {
       if (!client.value) {
@@ -617,10 +699,9 @@ export default defineComponent({
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
+      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}/${v.split('/')[2]}` }));
       items.value = qc_data;
       loading.value = false;
-      // console.log(qc_data);
     }
     async function runSpatial(stype: string) {
       if (!client.value) return;
@@ -629,15 +710,17 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         await loadExpressions();
-        // console.log(currentRunId.value);
-        const { task } = currentTask.value;// 'gene.compute_qc';
-        const [queue] = currentTask.value.queues;// 'atxcloud_gene';
-        const args = [filename.value, selectedGenes.value, useCached.value, noCompute.value];
-        const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
-        const { host } = window.location;
-        publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}`;
+        const { task } = currentTask.value;
+        const [queue] = currentTask.value.queues;
+        const args = [filename.value, selectedGenes.value];
+        if (!props.query.public) {
+          const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
+          const { host } = window.location;
+          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
+        }
         const kwargs = {};
-        const taskObject = await client.value.postTask(task, args, kwargs, queue);
+        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, 'joshua_gene') : await client.value.postTask(task, args, kwargs, 'joshua_gene');
+        if (props.query.public) runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -660,8 +743,31 @@ export default defineComponent({
         const resp = taskStatus.value.result;
         currentViewType.value = stype;
         spatialData.value = resp;
-        clusterItems.value = lodash.uniq(spatialData.value.clusters_number).map((v: any) => ({ name: v.toString() }));
-        // console.log(clusterItems.value);
+        const geneRank: any[] = [];
+        const tableHeaders: any[] = [];
+        clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
+        tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
+        for (let i = 0; i < clusterItems.value.length; i += 1) {
+          tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
+        }
+        topHeaders.value = tableHeaders;
+        lodash.each(spatialData.value.top_ten, (v: string[], i: number) => {
+          const tenGenes: {[k: string]: any} = {};
+          const key = [];
+          const value = [];
+          key.push('id');
+          value.push(i);
+          for (let x = 0; x < clusterItems.value!.length; x += 1) {
+            key.push(clusterItems.value![x].name);
+            value.push(v[x]);
+          }
+          for (let j = 0; j < key.length; j += 1) {
+            tenGenes[key[j]] = value[j];
+          }
+          geneRank.push(tenGenes);
+        });
+        geneNames.value = geneRank;
+        lengthClust.value = clusterItems.value.length;
         await updateCircles();
         await fitStageToParent();
         loading.value = false;
@@ -672,15 +778,22 @@ export default defineComponent({
       }
     }
     async function selectAction(ev: any) {
-      const root = 'data';
-      const fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
-      filename.value = fn;
-      currentRunId.value = ev.id;
-      pushByQuery({ component: 'AtlasG', run_id: ev.id });
-      selectedGenes.value = [];
+      if (props.query.public) {
+        const fn = ev.id;
+        filename.value = fn;
+      } else {
+        const root = 'data';
+        const fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
+        filename.value = fn;
+        currentRunId.value = ev.id;
+        pushByQuery({ component: 'AtlasG', run_id: ev.id });
+        selectedGenes.value = [];
+      }
       await runSpatial(currentViewType.value);
+      selectedGenes.value = [];
       isClusterView.value = true;
       isDrawing.value = false;
+      stepArray.value = [];
     }
     function onResize() {
       fitStageToParent();
@@ -739,6 +852,7 @@ export default defineComponent({
     function mouseDownOnStageLeft(ev: any) {
       if (isDrawing.value) {
         isClicked.value = true;
+        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.5, listening: true, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 };
         const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
         // polygon.value.x = Math.round(mousePos.x);
         // polygon.value.y = Math.round(mousePos.y);
@@ -758,12 +872,19 @@ export default defineComponent({
     function mouseUpOnStageLeft(ev: any) {
       if (isDrawing.value) {
         isClicked.value = false;
+        regions.value.push(deepCopy(polygon.value));
+        polygon.value.points = [];
         highlightRegion();
       }
     }
     // Drawing Region ends
     async function mouseOverClusterItem(ev: any) {
       highlightCluster(ev.name);
+    }
+    function removeRegions(ev: any) {
+      regions.value = [];
+      polygon.value.points = [];
+      highlightRegion();
     }
     async function acInputChanged() { // autocomplete input event handler;
       filteredGenes.value = filteredGenes.value.filter((v: any) => selectedGenes.value.includes(v.name));
@@ -785,12 +906,6 @@ export default defineComponent({
       isClusterView.value = false;
       await runSpatial(currentViewType.value);
     }
-    watch(noCompute, (v: boolean) => {
-      if (v) useCached.value = false;
-    });
-    watch(useCached, (v: boolean) => {
-      if (v) noCompute.value = false;
-    });
     watch(scale, (v: number, ov: number) => {
       const scaleRatio = v / ov;
       reScale(scaleRatio);
@@ -803,17 +918,11 @@ export default defineComponent({
       if (!isDrawing.value) unHighlighCluster();
       polygon.value.points = [];
     });
-    watch(isClusterView, (v: boolean) => {
-      if (isClusterView.value) inactiveColor.value = 'transparent';
-      else inactiveColor.value = 'darkgray';
-      updateCircles();
-    });
     watch(selectedGenes, (v: any[]) => {
-      runSpatial(currentViewType.value);
-      if (selectedGenes.value.length > 0) {
-        isClusterView.value = false;
-      } else {
+      if (selectedGenes.value.length === 0) {
         isClusterView.value = true;
+        showFlag.value = false;
+        stepArray.value = [];
       }
     });
     watch(searchInput, (v: any) => {
@@ -827,8 +936,14 @@ export default defineComponent({
       fitStageToParent();
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
-      loadCandidateWorkers('AtlasGX');
-      await fetchFileList();
+      if (props.query) {
+        if (!props.query.public) {
+          loadCandidateWorkers('AtlasGX');
+          await fetchFileList();
+        } else {
+          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
+        }
+      }
       if (props.query) {
         if (props.query.run_id) {
           await selectAction({ id: props.query.run_id });
@@ -878,21 +993,32 @@ export default defineComponent({
       acInputChanged,
       onGenelistChanged,
       heatMap,
-      clusterColorMap,
       progressMessage,
       selectAction,
       workers,
       candidateWorkers,
       loadCandidateWorkers,
       currentTask,
-      useCached,
-      noCompute,
+      highestCount,
+      lowestCount,
+      makearray,
+      stepArray,
+      topHeaders,
+      geneNames,
       isDrawing,
       mouseDownOnStageLeft,
       mouseMoveOnStageLeft,
       mouseUpOnStageLeft,
       polygon,
+      regions,
+      removeRegions,
       reScale,
+      runId,
+      sendGene,
+      lengthClust,
+      colorBar,
+      some,
+      showFlag,
     };
   },
 });
