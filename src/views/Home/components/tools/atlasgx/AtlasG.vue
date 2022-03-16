@@ -527,8 +527,6 @@ export default defineComponent({
         unHighlighCluster();
         return;
       }
-      console.log(filteredIndex);
-      console.log(hitCount);
       lodash.each(filteredIndex, (v: boolean, idx: number) => {
         if (!v) {
           circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;

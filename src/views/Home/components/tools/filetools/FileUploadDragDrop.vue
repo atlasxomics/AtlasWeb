@@ -1,5 +1,5 @@
 <template>
-  <v-card :disabled="disabled || uploaded">
+  <v-card :disabled="disabled">
     <v-card-title>
       {{ filetype }} <span v-if="uploaded">(Uploaded)</span>
     </v-card-title>
@@ -88,7 +88,7 @@ interface MetaData {
 export default defineComponent({
   name: 'FileUploadDragDrop',
   components: { FileUpload },
-  props: ['disabled', 'run_id', 'datatype', 'filetype', 'extension', 'destination'],
+  props: ['disabled', 'run_id', 'ng_id', 'datatype', 'filetype', 'extension', 'destination'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
