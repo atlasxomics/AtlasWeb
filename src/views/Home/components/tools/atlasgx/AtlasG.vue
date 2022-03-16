@@ -939,7 +939,7 @@ export default defineComponent({
           loadCandidateWorkers('AtlasGX');
           await fetchFileList();
         } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: [atxcloud_gene] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query) {
