@@ -572,9 +572,8 @@ export default defineComponent({
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       metadata.value = resp;
-      console.log(scaleFactor_json.value);
-      // metadata.value.numChannels = '50';
       if (resp) {
+        optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
       } else {
         optionFlag.value = true;

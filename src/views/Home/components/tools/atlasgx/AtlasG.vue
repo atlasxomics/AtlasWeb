@@ -144,6 +144,7 @@
                 multiple
                 dense
                 clearable
+                placeholder="Enter gene ID"
                 :allow-overflow="false"
                 chips
                 :cache-items="false"
@@ -167,14 +168,14 @@
                   >{{ data.item.name }}
                   </v-chip>
                 </template>
-                <template v-slot:append-outer>
+                <template v-slot:append-outer v-if="selectedGenes.length > 0">
                   <v-btn
                     color="primary"
                     small
                     text
                     :disabled="!filename"
-                    @click="runSpatial('spatial')"
-                    >Load</v-btn>
+                    @click="runSpatial('spatial');showFlag=true"
+                    >Show</v-btn>
                 </template>
               </v-autocomplete>
             </v-card-title>
@@ -265,21 +266,26 @@
                 :items="geneNames"
                 :headers="topHeaders"
               >
+              <template v-slot:item="row">
+                <tr>
+                  <td>{{row.item['id']}}</td>
+                  <td v-for="num in lengthClust" :key="num.toString()"><v-btn text x-small dense @click="sendGene(row.item['C'+num])">{{row.item['C'+num]}}</v-btn></td>
+                </tr>
+              </template>
               </v-data-table>
           </v-card>
         </v-col>
-        <template v-if="!isClusterView">
+         <template v-if="!isClusterView && showFlag">
           <v-card flat>
             <div style="padding:5px;">
-              <div style="background-image:linear-gradient(to top, rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red);width:30px;height:340px;margin-top:100px;float:left;">
+              <div :style="{ 'background-image': some, 'width':'30px','height':'340px','margin-top':'100px','float':'left'}" >
               </div>
               <div style="width:40px;float:left;margin-top:100px;height:450px;">
-                <p style="position:absolute;top:80px;transform:rotate(-45deg);padding:5px;"> {{stepArray[5]}} </p>
-                <p style="position:absolute;top:148px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
-                <p style="position:absolute;top:216px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
-                <p style="position:absolute;top:284px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
-                <p style="position:absolute;top:352px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
-                <p style="position:absolute;top:420px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
+                <p style="position:absolute;top:90px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
+                <p style="position:absolute;top:175px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
+                <p style="position:absolute;top:260px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
+                <p style="position:absolute;top:340px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
+                <p style="position:absolute;top:415px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
               </div>
             </div>
           </v-card>
@@ -373,6 +379,7 @@ export default defineComponent({
     const highestCount = ref<number>(0);
     const lowestCount = ref<number>(10000);
     const stepArray = ref<any[]>([]);
+    const some = ref<string>('');
     const highlightedCluster = ref<any>();
     const tooltip = new Konva.Text({
       text: '',
@@ -409,6 +416,9 @@ export default defineComponent({
     const isClicked = ref<boolean>(false);
     const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
     const regions = ref<any[]>([]);
+    const lengthClust = ref<number>(0);
+    const colorBar = ref<any[]>([]);
+    const showFlag = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -448,12 +458,17 @@ export default defineComponent({
     function makearray(stopValue: number, startValue: number) {
       if (highestCount.value === 0) return;
       const arr = [];
-      const steps = 6;
+      const steps = 5;
       const step = (stopValue - startValue) / (steps - 1);
       for (let i = 0; i < steps; i += 1) {
         arr.push(Math.round((startValue + (step * i)) * 10) / 10);
       }
       stepArray.value = arr;
+    }
+    function sendGene(ev: any) {
+      searchInput.value = ev;
+      selectedGenes.value.push(ev);
+      isClusterView.value = false;
     }
     async function loadExpressions() {
       if (!client.value) return;
@@ -527,10 +542,12 @@ export default defineComponent({
       });
     }
     async function updateCircles() {
+      console.log(isClusterView.value);
       isHighlighted.value = false;
       const geneSum = spatialData.value.genes_summation;
       const circles: any[] = [];
       const circlesUMAP: any[] = [];
+      stepArray.value = [];
       const numClusters = lodash.uniq(spatialData.value.clusters).length;
       const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters + 1) * 3, format: 'hex', alpha: 1 });
       const colors: any[] = [];
@@ -539,6 +556,8 @@ export default defineComponent({
       });
       clusterColors.value = colors;
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
+      colorBar.value = colors_intensity;
+      some.value = `linear-gradient( ${colors_intensity[63]}, ${colors_intensity[48]}, ${colors_intensity[32]} , ${colors_intensity[16]}, ${colors_intensity[0]})`;
       const spatialCoord = spatialData.value.coordinates;
       const spatialCoordUMAP = spatialData.value.coordinates_umap.map((v: number[]) => ([v[0], -v[1]]));
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
@@ -604,7 +623,6 @@ export default defineComponent({
           circlesUMAP.push(c);
         });
       } else {
-        stepArray.value = [];
         highestCount.value = 0;
         lowestCount.value = 10000;
         const geneColors = colormapBounded(colors_intensity, geneSum);
@@ -699,7 +717,7 @@ export default defineComponent({
           publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
         }
         const kwargs = {};
-        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
+        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, 'joshua_gene') : await client.value.postTask(task, args, kwargs, 'joshua_gene');
         if (props.query.public) runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
@@ -747,6 +765,7 @@ export default defineComponent({
           geneRank.push(tenGenes);
         });
         geneNames.value = geneRank;
+        lengthClust.value = clusterItems.value.length;
         await updateCircles();
         await fitStageToParent();
         loading.value = false;
@@ -769,8 +788,10 @@ export default defineComponent({
         selectedGenes.value = [];
       }
       await runSpatial(currentViewType.value);
+      selectedGenes.value = [];
       isClusterView.value = true;
       isDrawing.value = false;
+      stepArray.value = [];
     }
     function onResize() {
       fitStageToParent();
@@ -896,11 +917,10 @@ export default defineComponent({
       polygon.value.points = [];
     });
     watch(selectedGenes, (v: any[]) => {
-      runSpatial(currentViewType.value);
-      if (selectedGenes.value.length > 0) {
-        isClusterView.value = false;
-      } else {
+      if (selectedGenes.value.length === 0) {
         isClusterView.value = true;
+        showFlag.value = false;
+        stepArray.value = [];
       }
     });
     watch(searchInput, (v: any) => {
@@ -919,7 +939,7 @@ export default defineComponent({
           loadCandidateWorkers('AtlasGX');
           await fetchFileList();
         } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
         }
       }
       if (props.query) {
@@ -992,6 +1012,11 @@ export default defineComponent({
       removeRegions,
       reScale,
       runId,
+      sendGene,
+      lengthClust,
+      colorBar,
+      some,
+      showFlag,
     };
   },
 });
