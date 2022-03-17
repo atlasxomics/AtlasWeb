@@ -543,7 +543,7 @@ export default defineComponent({
       });
     }
     async function updateCircles() {
-      console.log(isClusterView.value);
+      if (spatialData.value === null) return;
       isHighlighted.value = false;
       const geneSum = spatialData.value.genes_summation;
       const circles: any[] = [];
