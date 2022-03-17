@@ -902,8 +902,9 @@ export default defineComponent({
       polygon.value.points = polygon.value.points.map((c: number) => c * scaleRatio);
     }
     async function onGenelistChanged(ev: any) {
-      isClusterView.value = false;
-      await runSpatial(currentViewType.value);
+      if (selectedGenes.value.length > 0) {
+        isClusterView.value = false;
+      }
     }
     watch(scale, (v: number, ov: number) => {
       const scaleRatio = v / ov;
