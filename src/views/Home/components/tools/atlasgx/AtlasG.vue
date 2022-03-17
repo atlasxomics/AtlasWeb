@@ -904,6 +904,8 @@ export default defineComponent({
     async function onGenelistChanged(ev: any) {
       if (selectedGenes.value.length > 0) {
         isClusterView.value = false;
+      } else {
+        isClusterView.value = true;
       }
     }
     watch(scale, (v: number, ov: number) => {
