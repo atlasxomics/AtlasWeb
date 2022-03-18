@@ -1,148 +1,93 @@
 <template>
-    <v-container fluid>
+  <v-app>
+    <v-container fluid :style="{ 'background-color': backgroundColor, 'height': '100%', 'padding': '0' }">
       <v-row>
-        <v-col cols="12" sm="3">
-          <v-card
-            v-if="!query.public"
-            :disabled="loading">
-            <v-text-field
-              v-model="search"
-              :loading="loading"
-              prepend-icon="mdi-magnify"/>
-            <v-data-table
-            v-model="selected"
-            height="20vh"
-            width="30%"
-            dense
-            single-select
-            :search="search"
-            :loading="loading"
-            :items="items"
-            :headers="headers"
-            sort-by="id"
-            @click:row="selectAction"
-            />
-          </v-card>
-          <v-card :disabled="loading">
-            <v-card-title>
+        <v-col cols="12" sm="12">
+            <v-card tag="runid" style="width:200px;position: absolute;z-index: 999;top:70px;left:20px;"
+              v-if="!query.public && runIdFlag"
+              :disabled="loading">
               <v-text-field
-                v-model="filename"
-                v-if="!query.public"
+                v-model="search"
                 :loading="loading"
-                :messages="progressMessage"
-                label="Filename"
-              />
-              <v-text-field
-                v-model="runId"
-                v-if="query.public"
-                :loading="loading"
-                :messages="progressMessage"
-                label="ID"
-                :disabled="true"
-              />
-              <v-text-field
-                v-if="!query.public"
-                v-model="publicLink"
-                label="Public Link"
-                :readonly='true'
-              >
-                <template v-slot:append>
-                  <v-btn
-                    icon
-                    small
-                    color="primary"
-                    v-clipboard:copy="publicLink"
-                    >
-                    <v-icon>mdi-content-copy</v-icon>
-                  </v-btn>
-                </template>
-              </v-text-field>
-              <v-select
-                v-model="currentTask"
-                v-if="candidateWorkers && !query.public"
-                :items="candidateWorkers"
-                label="Select Worker"
-                item-text="task"
-                return-object>
-              </v-select>
-            </v-card-title>
-            <v-checkbox
-              v-model="isDrawing"
-              label="Draw Region"
-              dense
-              :disabled="!spatialData"
-            >
-              <template v-slot:append>
-                <v-btn
-                  label="Reset Regions"
-                  small
-                  icon
-                  color="error"
-                  dense
-                  @click="removeRegions">
-                  <v-icon small>mdi-delete</v-icon>
-                </v-btn>
-              </template>
-            </v-checkbox>
-            <v-combobox
-              v-model="backgroundColor"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['black',  'white', 'darkgray']"
-              label="Background Color"
-              />
-            <v-combobox
-              v-model="heatMap"
-              dense
-              no-details
-              :disabled="!spatialData"
-              :items="['jet',  'hot', 'inferno', 'picnic', 'bone']"
-              label="Heatmap"
-              @change="updateCircles()"
-              />
-            <v-text-field
-              v-model="scale"
-              label="Scale"
-              type="number"
-              :disabled="!spatialData"
-              dense
-              :readonly="false"
-              :step="0.05"
-              :min="0.2"
-              :max="1.2"
-              />
-            <v-card-text v-if="clusterItems && isClusterView">
+                style="width: 190px;"
+                prepend-icon="mdi-magnify"/>
               <v-data-table
-                height="37vh"
-                v-model="selected"
-                dense
-                :items-per-page="999"
-                hide-default-footer
-                :items="clusterItems"
-                :headers="clusterHeaders"
-                sort-by="name"
-                @click:row="mouseOverClusterItem"
-              >
+              v-model="selected"
+              height="20vh"
+              width="20%"
+              dense
+              single-select
+              :search="search"
+              :loading="loading"
+              :items="items"
+              :headers="headers"
+              sort-by="id"
+              @click:row="selectAction"
+              />
+            </v-card>
+            <v-card style="width:100px;position: absolute;z-index: 999;top:70px;left:180px;"
+            v-if="backgroundFlag">
+              <v-data-table
+              v-model="selected"
+              height="13vh"
+              width="20%"
+              dense
+              single-select
+              hide-default-footer
+              hide-default-header
+              :disabled="!spatialData"
+              :items="backgroundOptions"
+              :headers="backgroundHeader"
+              @click:row="chooseBackground"
+              />
+            </v-card>
+            <v-card style="width:100px;position: absolute;z-index: 999;top:70px;left:270px;"
+            v-if="heatmapFlag">
+              <v-data-table
+              v-model="selected"
+              height="19vh"
+              width="20%"
+              dense
+              single-select
+              hide-default-footer
+              hide-default-header
+              :disabled="!spatialData"
+              :items="heatmapOptions"
+              :headers="heatmapHeader"
+              @click:row="chooseHeatmap"
+              />
+            </v-card>
+            <v-card style="width:100px;position: absolute;z-index: 999;top:70px;left:400px;"
+            v-if="clusterFlag">
+              <v-data-table
+              v-model="selected"
+              height="19vh"
+              width="35px"
+              dense
+              single-select
+              hide-default-footer
+              :items="clusterItems"
+              :headers="clusterHeaders"
+              sort-by="name"
+              @click:row="mouseOverClusterItem">
               <template v-slot:item.name="{ item }">
                 <span>{{ item.name }} :</span>
                 <v-chip
                   :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 2]"
-                  small>{{ item.name }}</v-chip>
+                  small>
+                  {{ item.name }}
+                </v-chip>
               </template>
               </v-data-table>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="11" sm="7">
-          <v-card flat>
-            <v-card-title>
+            </v-card>
+            <v-card flat>
               <v-autocomplete
                 v-model="selectedGenes"
                 :items="filteredGenes"
                 :outlined="false"
                 multiple
                 dense
+                style="padding-left:65vw;padding-right:10px;padding-top:15px"
                 clearable
                 placeholder=""
                 label="Enter gene ID:"
@@ -179,14 +124,135 @@
                     >Show</v-btn>
                 </template>
               </v-autocomplete>
-            </v-card-title>
+              <v-tooltip :disabled="runIdFlag" bottom>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn
+                    :disabled="loading"
+                    v-bind="attrs"
+                    v-on="on"
+                    small
+                    class="mt-n16 ml-15"
+                    @click="runIdFlag = !runIdFlag;dropDownFlag = true">
+                  <v-icon>mdi-magnify</v-icon>
+                  </v-btn>
+                </template>
+                <span>Run ID's</span>
+              </v-tooltip>
+              <v-tooltip :disabled="backgroundFlag" bottom>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn
+                    :disabled="!spatialData || loading"
+                    v-bind="attrs"
+                    v-on="on"
+                    small
+                    class="mt-n16 ml-10"
+                    @click="backgroundFlag = !backgroundFlag;dropDownFlag = true">
+                  <v-icon>mdi-palette</v-icon>
+                  </v-btn>
+                </template>
+                <span>Background Color</span>
+              </v-tooltip>
+              <v-tooltip :disabled="heatmapFlag" bottom>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn
+                    v-bind="attrs"
+                    :disabled="!spatialData || loading"
+                    v-on="on"
+                    small
+                    class="mt-n16 ml-10"
+                    @click="heatmapFlag = !heatmapFlag;dropDownFlag = true">
+                  <v-icon>mdi-fire</v-icon>
+                  </v-btn>
+                </template>
+                <span>Heatmap</span>
+              </v-tooltip>
+              <v-tooltip :disabled="clusterFlag" bottom>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn
+                    v-bind="attrs"
+                    :disabled="!spatialData || loading"
+                    v-on="on"
+                    small
+                    class="mt-n16 ml-10"
+                    @click="clusterFlag = !clusterFlag;dropDownFlag = true">Clusters
+                  </v-btn>
+                </template>
+                <span>Clusters</span>
+              </v-tooltip>
           </v-card>
+        </v-col>
+        <v-col cols="2" sm="1">
+          <v-card style="width:80px;height:250px" flat>
+            <v-btn
+              class="ml-4"
+              v-model="isDrawing"
+              :disabled="!spatialData"
+              :color="colorOnOff"
+              small
+              @click="isDrawing = !isDrawing">
+              <v-icon>mdi-lasso</v-icon>
+            </v-btn>
+            <v-btn
+              class="ml-4 mt-5"
+              v-model="isDrawing"
+              :disabled="!spatialData"
+              :color="colorOnOffRect"
+              small>
+              <v-icon>mdi-select</v-icon>
+            </v-btn>
+            <v-btn
+              class="ml-1 mt-5"
+              v-model="isDrawing"
+              :disabled="!spatialData || !isDrawing"
+              small>
+            View C
+            </v-btn>
+            <v-btn
+              class="ml-1 mt-5"
+              v-model="isDrawing"
+              :disabled="!spatialData"
+              small>
+            Save P
+            </v-btn>
+            <v-tooltip right>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                class="ml-4 mt-5"
+                v-on="on"
+                small
+                v-clipboard:copy="publicLink">
+                <v-icon>mdi-content-copy</v-icon>
+              </v-btn>
+            </template>
+            <span>Copy Public Llink</span>
+            </v-tooltip>
+          </v-card>
+        </v-col>
+        <v-col cols="11" sm="10">
           <v-row>
             <v-col cols="11" sm="6">
               <v-card id="stageParent"
-                      v-resize="onResize"
-                      :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                      height="45vh">
+                flat
+                v-resize="onResize"
+                :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
+                height="48vh">
+                <v-btn
+                v-model="scale"
+                color="white"
+                :disabled="!spatialData"
+                @click="scale += .05"
+                x-small>
+                <v-icon>mdi-plus</v-icon>
+                </v-btn>
+                <v-btn
+                v-model="scale"
+                color="white"
+                :disabled="!spatialData"
+                @click="scale -= .05"
+                x-small>
+                <v-icon>mdi-minus</v-icon>
+                </v-btn>
                 <v-stage
                   ref="konvaStage"
                   class="mainStage"
@@ -226,9 +292,29 @@
             </v-col>
             <v-col cols="11" sm="6">
               <v-card id="stageParentRight"
-                  v-resize="onResize"
-                  :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                  height="45vh">
+                flat
+                v-resize="onResize"
+                :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
+                @mousedown="mouseDownOnStageRight"
+                @mousemove="mouseMoveOnStageRight"
+                @mouseup="mouseUpOnStageRight"
+                height="48vh">
+                <v-btn
+                v-model="scaleUMAP"
+                color="white"
+                :disabled="!spatialData"
+                @click="scaleUMAP += .05"
+                x-small>
+                <v-icon>mdi-plus</v-icon>
+                </v-btn>
+                <v-btn
+                v-model="scaleUMAP"
+                color="white"
+                :disabled="!spatialData"
+                @click="scaleUMAP -= .05"
+                x-small>
+                <v-icon>mdi-minus</v-icon>
+                </v-btn>
                 <v-stage
                   ref="konvaStageRight"
                   class="mainStage"
@@ -247,15 +333,24 @@
                   <v-layer
                     ref="annotationLayerRight"
                     />
+                  <v-layer
+                    ref="drawingLayerRight"
+                    id="drawingLayerRight"
+                    v-if="isDrawing">
+                    <template
+                      v-for="poly in regionsUMAP">
+                      <v-line
+                        v-bind:key="poly.id"
+                        :config="poly"/>
+                    </template>
+                    <v-line
+                      :config="polygonUMAP"/>
+                  </v-layer>
                 </v-stage>
               </v-card>
             </v-col>
           </v-row>
           <v-row>
-            <v-card flat>
-              <v-card-title>
-              </v-card-title>
-            </v-card>
           </v-row>
           <v-card v-if="clusterItems">
               <v-data-table
@@ -277,22 +372,23 @@
           </v-card>
         </v-col>
          <template v-if="!isClusterView && showFlag">
-          <v-card flat>
-            <div style="padding:5px;">
-              <div :style="{ 'background-image': some, 'width':'30px','height':'340px','margin-top':'100px','float':'left'}" >
+          <v-card :style="{ 'background-color': backgroundColor }" flat>
+            <div :style="{ 'color':colorbarText, 'font-size':'22px' }">
+              <div :style="{ 'background-image': colorBarmap, 'width':'30px','height':'340px','margin-top':'60px','float':'left'}" >
               </div>
-              <div style="width:40px;float:left;margin-top:100px;height:450px;">
-                <p style="position:absolute;top:90px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
-                <p style="position:absolute;top:175px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
-                <p style="position:absolute;top:260px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
-                <p style="position:absolute;top:340px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
-                <p style="position:absolute;top:415px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
+              <div style="width:40px;float:left;height:300px;">
+                <p style="position:absolute;top:40px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
+                <p style="position:absolute;top:125px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
+                <p style="position:absolute;top:210px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
+                <p style="position:absolute;top:290px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
+                <p style="position:absolute;top:365px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
               </div>
             </div>
           </v-card>
         </template>
       </v-row>
     </v-container>
+  </v-app>
 </template>
 
 <script lang='ts'>
@@ -303,6 +399,7 @@ import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
+import { Console } from 'console';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -317,6 +414,24 @@ const headers = [
 ];
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
+];
+const backgroundHeader = [
+  { text: '', value: 'background' },
+];
+const heatmapHeader = [
+  { text: '', value: 'heat' },
+];
+const backgroundOptions = [
+  { background: 'black' },
+  { background: 'white' },
+  { background: 'darkgrey' },
+];
+const heatmapOptions = [
+  { heat: 'jet' },
+  { heat: 'hot' },
+  { heat: 'inferno' },
+  { heat: 'picnic' },
+  { heat: 'bone' },
 ];
 function colormapBounded(cmap: string[], values: number[]) {
   const min_v = Math.min(...values);
@@ -371,7 +486,8 @@ export default defineComponent({
     const height = window.innerHeight;
     const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true });
     const konvaConfigRight = ref<any>({ x: 0, y: 0, width, height, draggable: true });
-    const scale = ref<number>(0.95);
+    const scale = ref<number>(0.75);
+    const scaleUMAP = ref<number>(0.75);
     const currentViewType = ref<string>('spatial');
     const isClusterView = ref(true);
     const isSummation = ref(true);
@@ -380,7 +496,7 @@ export default defineComponent({
     const highestCount = ref<number>(0);
     const lowestCount = ref<number>(10000);
     const stepArray = ref<any[]>([]);
-    const some = ref<string>('');
+    const colorBarmap = ref<string>('');
     const highlightedCluster = ref<any>();
     const tooltip = new Konva.Text({
       text: '',
@@ -416,10 +532,21 @@ export default defineComponent({
     const isDrawing = ref<boolean>(false);
     const isClicked = ref<boolean>(false);
     const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
+    const polygonUMAP = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
     const regions = ref<any[]>([]);
+    const regionsUMAP = ref<any[]>([]);
     const lengthClust = ref<number>(0);
     const colorBar = ref<any[]>([]);
     const showFlag = ref<boolean>(false);
+    const runIdFlag = ref<boolean>(false);
+    const backgroundFlag = ref<boolean>(false);
+    const heatmapFlag = ref<boolean>(false);
+    const clusterFlag = ref<boolean>(false);
+    const dropDownFlag = ref<boolean>(false);
+    const lassoSide = ref<string>();
+    const colorOnOff = ref<string>('');
+    const colorOnOffRect = ref<string>('');
+    const colorbarText = ref<string>('white');
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -456,6 +583,17 @@ export default defineComponent({
       });
       [currentTask.value] = candidateWorkers.value;
     }
+    function closeDropDowns(ev: any) {
+      console.log(ev);
+    }
+    function chooseBackground(ev: any) {
+      backgroundColor.value = ev.background;
+      if (ev.background === 'white') {
+        colorbarText.value = 'black';
+      } else {
+        colorbarText.value = 'white';
+      }
+    }
     function makearray(stopValue: number, startValue: number) {
       if (highestCount.value === 0) return;
       const arr = [];
@@ -467,8 +605,10 @@ export default defineComponent({
       stepArray.value = arr;
     }
     function sendGene(ev: any) {
-      searchInput.value = ev;
-      selectedGenes.value.push(ev);
+      if (!selectedGenes.value.includes(ev)) {
+        searchInput.value = ev;
+        selectedGenes.value.push(ev);
+      }
       isClusterView.value = false;
     }
     async function loadExpressions() {
@@ -493,6 +633,11 @@ export default defineComponent({
       highlightedCluster.value = '';
     }
     function highlightCluster(clusterName: string) {
+      if (backgroundColor.value === 'darkgrey') {
+        inactiveColor.value = 'white';
+      } else {
+        inactiveColor.value = 'darkgrey';
+      }
       lodash.each(circlesSpatial.value, (c: any, i: number) => {
         if (c.cluster !== clusterName) {
           circlesSpatial.value[i].fill = inactiveColor.value;
@@ -517,12 +662,23 @@ export default defineComponent({
     function highlightRegion() {
       const funcInsideRegions = (pt: number[]) => {
         let res = false;
-        regions.value.forEach((poly: any, idx: number) => {
-          if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
-        });
+        if (lassoSide.value === 'left') {
+          regions.value.forEach((poly: any, idx: number) => {
+            if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+          });
+        } else {
+          regionsUMAP.value.forEach((poly: any, idx: number) => {
+            if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+          });
+        }
         return res;
       };
-      const filteredIndex = circlesSpatial.value.map((v: any) => funcInsideRegions([v.x, v.y]));
+      let filteredIndex: any;
+      if (lassoSide.value === 'left') {
+        filteredIndex = circlesSpatial.value.map((v: any) => funcInsideRegions([v.x, v.y]));
+      } else {
+        filteredIndex = circlesSpatialUMAP.value.map((v: any) => funcInsideRegions([v.x, v.y]));
+      }
       const hitCount = filteredIndex.filter((x: boolean) => x).length;
       if (hitCount < 1) {
         unHighlighCluster();
@@ -544,6 +700,10 @@ export default defineComponent({
     }
     async function updateCircles() {
       if (spatialData.value === null) return;
+      regions.value = [];
+      polygon.value.points = [];
+      regionsUMAP.value = [];
+      polygonUMAP.value.points = [];
       isHighlighted.value = false;
       const geneSum = spatialData.value.genes_summation;
       const circles: any[] = [];
@@ -558,7 +718,7 @@ export default defineComponent({
       clusterColors.value = colors;
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
       colorBar.value = colors_intensity;
-      some.value = `linear-gradient( ${colors_intensity[63]}, ${colors_intensity[48]}, ${colors_intensity[32]} , ${colors_intensity[16]}, ${colors_intensity[0]})`;
+      colorBarmap.value = `linear-gradient( ${colors_intensity[63]}, ${colors_intensity[48]}, ${colors_intensity[32]} , ${colors_intensity[16]}, ${colors_intensity[0]})`;
       const spatialCoord = spatialData.value.coordinates;
       const spatialCoordUMAP = spatialData.value.coordinates_umap.map((v: number[]) => ([v[0], -v[1]]));
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
@@ -606,8 +766,8 @@ export default defineComponent({
           const vv = Number(v.replace('C', '')) - v.split('C').length + 2;
           const c = {
             id: get_uuid(),
-            x: x * scale.value * viewScaleUMAP + paddingX,
-            y: y * scale.value * viewScaleUMAP + paddingY,
+            x: x * scaleUMAP.value * viewScaleUMAP + paddingX,
+            y: y * scaleUMAP.value * viewScaleUMAP + paddingY,
             radius,
             originalColor: colors[vv],
             fill: colors[vv],
@@ -663,8 +823,8 @@ export default defineComponent({
           const rd = (geneSum[i] > 0) ? 1 : 1;
           const c = {
             id: get_uuid(),
-            x: x * scale.value * viewScaleUMAP + paddingY,
-            y: y * scale.value * viewScaleUMAP + paddingY,
+            x: x * scaleUMAP.value * viewScaleUMAP + paddingY,
+            y: y * scaleUMAP.value * viewScaleUMAP + paddingY,
             radius,
             originalColor: clr,
             fill: clr,
@@ -685,6 +845,10 @@ export default defineComponent({
       circlesSpatialUMAP.value = circlesUMAP;
       highlightRegion();
     }
+    function chooseHeatmap(ev: any) {
+      heatMap.value = ev.heat;
+      updateCircles();
+    }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = props.query.public ? await client.value.getPublicTaskStatus(task_id) : await client.value.getTaskStatus(task_id);
@@ -703,6 +867,7 @@ export default defineComponent({
       loading.value = false;
     }
     async function runSpatial(stype: string) {
+      console.log(ctx);
       if (!client.value) return;
       if (!filename.value) return;
       try {
@@ -850,12 +1015,33 @@ export default defineComponent({
     // Drawing Region
     function mouseDownOnStageLeft(ev: any) {
       if (isDrawing.value) {
+        lassoSide.value = 'left';
+        regions.value = [];
+        polygon.value.points = [];
+        regionsUMAP.value = [];
+        polygonUMAP.value.points = [];
+        highlightRegion();
         isClicked.value = true;
         polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.5, listening: true, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 };
-        const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
         // polygon.value.x = Math.round(mousePos.x);
         // polygon.value.y = Math.round(mousePos.y);
         polygon.value.points = [];
+      }
+    }
+    function mouseDownOnStageRight(ev: any) {
+      if (isDrawing.value) {
+        lassoSide.value = 'right';
+        regionsUMAP.value = [];
+        polygonUMAP.value.points = [];
+        regions.value = [];
+        polygon.value.points = [];
+        highlightRegion();
+        isClicked.value = true;
+        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.5, listening: true, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 };
+        const mousePos = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
+        // polygon.value.x = Math.round(mousePos.x);
+        // polygon.value.y = Math.round(mousePos.y);
+        polygonUMAP.value.points = [];
       }
     }
     function mouseMoveOnStageLeft(ev: any) {
@@ -868,11 +1054,29 @@ export default defineComponent({
         }
       }
     }
+    function mouseMoveOnStageRight(ev: any) {
+      if (isDrawing.value) {
+        if (isClicked.value) {
+          const mousePos = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
+          polygonUMAP.value.points.push(Math.round(mousePos.x));
+          polygonUMAP.value.points.push(Math.round(mousePos.y));
+          (ctx as any).refs.drawingLayerRight.getNode().batchDraw(); // forced update since due to pointer issue
+        }
+      }
+    }
     function mouseUpOnStageLeft(ev: any) {
       if (isDrawing.value) {
         isClicked.value = false;
         regions.value.push(deepCopy(polygon.value));
         polygon.value.points = [];
+        highlightRegion();
+      }
+    }
+    function mouseUpOnStageRight(ev: any) {
+      if (isDrawing.value) {
+        isClicked.value = false;
+        regionsUMAP.value.push(deepCopy(polygonUMAP.value));
+        polygonUMAP.value.points = [];
         highlightRegion();
       }
     }
@@ -901,6 +1105,10 @@ export default defineComponent({
       updateCircles();
       polygon.value.points = polygon.value.points.map((c: number) => c * scaleRatio);
     }
+    function reScaleUMAP(scaleRatio: number) {
+      updateCircles();
+      polygonUMAP.value.points = polygonUMAP.value.points.map((c: number) => c * scaleRatio);
+    }
     async function onGenelistChanged(ev: any) {
       if (selectedGenes.value.length > 0) {
         isClusterView.value = false;
@@ -909,16 +1117,28 @@ export default defineComponent({
       }
     }
     watch(scale, (v: number, ov: number) => {
-      const scaleRatio = v / ov;
-      reScale(scaleRatio);
+      if (ov >= 0.2 && ov <= 1.2) {
+        const scaleRatio = v / ov;
+        reScale(scaleRatio);
+      }
+    });
+    watch(scaleUMAP, (v: number, ov: number) => {
+      if (ov >= 0.2 && ov <= 1.2) {
+        const scaleRatio = v / ov;
+        reScaleUMAP(scaleRatio);
+      }
     });
     watch(currentTask, (v: any) => {
       runSpatial(currentViewType.value);
     });
     watch(isDrawing, (v: boolean) => {
       setDraggable(!v);
-      if (!isDrawing.value) unHighlighCluster();
-      polygon.value.points = [];
+      if (!isDrawing.value) {
+        colorOnOff.value = '';
+        unHighlighCluster();
+      } else {
+        colorOnOff.value = 'green';
+      }
     });
     watch(selectedGenes, (v: any[]) => {
       if (selectedGenes.value.length === 0) {
@@ -933,12 +1153,20 @@ export default defineComponent({
         querySelections(v);
       }
     });
+    watch(dropDownFlag, (v: boolean) => {
+      if (v) {
+        window.addEventListener('click', closeDropDowns);
+      } else {
+        window.removeEventListener('click', closeDropDowns);
+      }
+    });
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(null);
       fitStageToParent();
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
+      console.log(ctx.refs);
       if (props.query) {
         if (!props.query.public) {
           loadCandidateWorkers('AtlasGX');
@@ -955,6 +1183,7 @@ export default defineComponent({
     });
     return {
       scale,
+      scaleUMAP,
       filename,
       publicLink,
       items,
@@ -964,6 +1193,10 @@ export default defineComponent({
       loading,
       loadExpressions,
       clusterHeaders,
+      backgroundOptions,
+      backgroundHeader,
+      heatmapHeader,
+      heatmapOptions,
       genes,
       selectedGenes,
       searchInput,
@@ -1010,18 +1243,36 @@ export default defineComponent({
       geneNames,
       isDrawing,
       mouseDownOnStageLeft,
+      mouseDownOnStageRight,
       mouseMoveOnStageLeft,
+      mouseMoveOnStageRight,
       mouseUpOnStageLeft,
+      mouseUpOnStageRight,
       polygon,
+      polygonUMAP,
       regions,
+      regionsUMAP,
       removeRegions,
       reScale,
+      reScaleUMAP,
       runId,
       sendGene,
       lengthClust,
       colorBar,
-      some,
+      colorBarmap,
       showFlag,
+      runIdFlag,
+      backgroundFlag,
+      chooseBackground,
+      chooseHeatmap,
+      heatmapFlag,
+      clusterFlag,
+      dropDownFlag,
+      lassoSide,
+      colorOnOff,
+      colorOnOffRect,
+      colorbarText,
+      closeDropDowns,
     };
   },
 });
