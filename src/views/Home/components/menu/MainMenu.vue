@@ -52,6 +52,7 @@ const menu = [
       { name: 'Atlas Browser', icon: 'mdi-pencil-box', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasBrowser' } },
       { name: 'Atlas Viewer', icon: 'mdi-checkbox-multiple-marked', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasViewer' } },
       { name: 'Atlas GX', icon: 'mdi-biohazard', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasG' } },
+      { name: 'Atlas Compare', icon: 'mdi-biohazard', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasCompare' } },
       { name: 'Atlas Analytics', icon: 'mdi-sigma', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasAnalytics' } },
       { name: 'Atlas Uploader', icon: 'mdi-cloud-upload', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasUploader' } },
     ],
