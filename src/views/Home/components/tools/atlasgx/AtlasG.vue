@@ -87,10 +87,10 @@
                 :outlined="false"
                 multiple
                 dense
-                placeholder=""
-                label="Enter gene ID:"
                 style="padding-left:65vw;padding-right:10px;padding-top:15px"
                 clearable
+                placeholder=""
+                label="Enter gene ID:"
                 :allow-overflow="false"
                 chips
                 :cache-items="false"
@@ -699,7 +699,7 @@ export default defineComponent({
       });
     }
     async function updateCircles() {
-      if (!spatialData.value) return;
+      if (spatialData.value === null) return;
       regions.value = [];
       polygon.value.points = [];
       regionsUMAP.value = [];
@@ -883,7 +883,7 @@ export default defineComponent({
           publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
         }
         const kwargs = {};
-        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, 'joshua_gene') : await client.value.postTask(task, args, kwargs, 'joshua_gene');
+        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
         if (props.query.public) runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
@@ -1110,8 +1110,11 @@ export default defineComponent({
       polygonUMAP.value.points = polygonUMAP.value.points.map((c: number) => c * scaleRatio);
     }
     async function onGenelistChanged(ev: any) {
-      isClusterView.value = false;
-      await runSpatial(currentViewType.value);
+      if (selectedGenes.value.length > 0) {
+        isClusterView.value = false;
+      } else {
+        isClusterView.value = true;
+      }
     }
     watch(scale, (v: number, ov: number) => {
       if (ov >= 0.2 && ov <= 1.2) {
@@ -1169,7 +1172,7 @@ export default defineComponent({
           loadCandidateWorkers('AtlasGX');
           await fetchFileList();
         } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query) {
