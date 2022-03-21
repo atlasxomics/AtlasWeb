@@ -747,7 +747,6 @@ export default defineComponent({
     }
     // custom events
     function onRegionUpdated(filtIndex: boolean[]) {
-      console.log(filtIndex);
       selectedTixels.value = filtIndex;
     }
     watch(scale, (v: number, ov: number) => {
