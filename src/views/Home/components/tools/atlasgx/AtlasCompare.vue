@@ -77,10 +77,13 @@
                           :genelist="genes"
                           :standalone="false"
                           :presentation="'spatial'"
+                          :selected_tixels="selectedTixels"
                           :background="'black'"
                           :heatmap="'jet'"
                           :worker="'gene.compute_qc'"
-                          :queue="'atxcloud_gene'"/>
+                          :queue="'atxcloud_gene'"
+                          v-on:regionUpdated="onRegionUpdated"
+                          />
             </v-col>
             <v-col cols="12" sm="6">
               <atx-viewer :query="{ public: false }"
@@ -88,11 +91,13 @@
                           :spatialdata="spatialData"
                           :genelist="genes"
                           :standalone="false"
-                          :presentation="'spatial'"
+                          :presentation="'umap'"
+                          :selected_tixels="selectedTixels"
                           :background="'black'"
                           :heatmap="'jet'"
                           :worker="'gene.compute_qc'"
-                          :queue="'atxcloud_gene'"/>
+                          :queue="'atxcloud_gene'"
+                          v-on:regionUpdated="onRegionUpdated"/>
             </v-col>
           </v-row>
           <v-row>
@@ -103,10 +108,12 @@
                           :genelist="genes"
                           :standalone="false"
                           :presentation="'spatial'"
+                          :selected_tixels="selectedTixels"
                           :background="'black'"
                           :heatmap="'jet'"
                           :worker="'gene.compute_qc'"
-                          :queue="'atxcloud_gene'"/>
+                          :queue="'atxcloud_gene'"
+                          v-on:regionUpdated="onRegionUpdated"/>
             </v-col>
             <v-col cols="12" sm="6">
               <atx-viewer :query="{ public: false }"
@@ -114,11 +121,13 @@
                           :spatialdata="spatialData"
                           :genelist="genes"
                           :standalone="false"
-                          :presentation="'spatial'"
+                          :presentation="'umap'"
+                          :selected_tixels="selectedTixels"
                           :background="'black'"
                           :heatmap="'jet'"
                           :worker="'gene.compute_qc'"
-                          :queue="'atxcloud_gene'"/>
+                          :queue="'atxcloud_gene'"
+                          v-on:regionUpdated="onRegionUpdated"/>
             </v-col>
           </v-row>
           <v-card v-if="clusterItems">
@@ -261,6 +270,7 @@ export default defineComponent({
     const isClicked = ref<boolean>(false);
     const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
     const regions = ref<any[]>([]);
+    const selectedTixels = ref<boolean[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -735,6 +745,11 @@ export default defineComponent({
       isClusterView.value = false;
       await runSpatial(currentViewType.value);
     }
+    // custom events
+    function onRegionUpdated(filtIndex: boolean[]) {
+      console.log(filtIndex);
+      selectedTixels.value = filtIndex;
+    }
     watch(scale, (v: number, ov: number) => {
       const scaleRatio = v / ov;
       reScale(scaleRatio);
@@ -842,6 +857,8 @@ export default defineComponent({
       polygon,
       regions,
       removeRegions,
+      selectedTixels,
+      onRegionUpdated,
       reScale,
       runId,
     };

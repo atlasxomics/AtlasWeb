@@ -203,10 +203,8 @@
                   <v-card
                     class="rounded-0"
                     flat
-                    style="
-                      background-image:linear-gradient(to right, rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red);
-                      'background-color': 'red';
-                      'overflow-x': 'None';"
+                    :style="{
+                      'background-image':`linear-gradient(to right, rgba(0, 0, 100, 1) 0%, rgba(28, 127, 238, 1) 14%,rgba(47, 201, 226, 1) 28%, rgba(63, 218, 216, 1) 38%, rgba(79, 220, 74, 1) 52%, rgba(208, 222, 33, 1) 65%, rgba(184, 10, 10, 1) 100%, red)` }"
                     height="2vh"
                     width="100%"
                     >
@@ -300,7 +298,7 @@ function pointInPolygon(point: number[], vs: any[]) { // point is like [5,5], vs
 
 export default defineComponent({
   name: 'AtxViewer',
-  props: ['query', 'filename', 'spatialdata', 'genelist', 'presentation', 'heatmap', 'background', 'worker', 'queue', 'standalone'],
+  props: ['query', 'filename', 'spatialdata', 'genelist', 'presentation', 'selected_tixels', 'heatmap', 'background', 'worker', 'queue', 'standalone'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
@@ -324,6 +322,7 @@ export default defineComponent({
     const searchInput = ref<string | null>(null);
     const spatialData = ref<any | null>(props.spatialdata);
     const spatialDataFromParent = computed(() => props.spatialdata);
+    const selectedTixelsFromParent = computed(() => props.selected_tixels);
     const clusterItems = ref<any[] | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -363,6 +362,7 @@ export default defineComponent({
     const inactiveColor = ref<string>('darkgray');
     const backgroundColor = computed(() => (props.background ? props.background : 'black'));
     const heatMap = computed(() => (props.heatmap ? props.heatmap : 'jet'));
+    const gradientColors = ref<string[]>([]);
     const stepArray = ref<any[]>([]);
     const autocompleteLoading = ref(false);
     const progressMessage = ref<string | null>(null);
@@ -373,6 +373,7 @@ export default defineComponent({
     const isLocked = ref<boolean>(true);
     const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
     const regions = ref<any[]>([]);
+    const selectedTixels = ref<boolean[]>(props.selected_tixels);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -396,12 +397,43 @@ export default defineComponent({
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
       selectedGenes.value = newArr;
     }
+    function highlightRegion(tixels: boolean[] | null = null) {
+      // let filteredIndex = [];
+      if (!tixels) {
+        const funcInsideRegions = (pt: number[]) => {
+          let res = false;
+          regions.value.forEach((poly: any, idx: number) => {
+            if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+          });
+          return res;
+        };
+        selectedTixels.value = circlesSpatial.value.map((v: any) => funcInsideRegions([v.x, v.y]));
+        const hitCount = selectedTixels.value.filter((x: boolean) => x).length;
+        if (hitCount < 1) {
+          // unHighlighCluster();
+          return;
+        }
+      } else {
+        selectedTixels.value = tixels;
+      }
+      lodash.each(selectedTixels.value, (v: boolean, idx: number) => {
+        if (!v) {
+          circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;
+          circlesSpatial.value[idx].stroke = circlesSpatial.value[idx].originalColor;
+        } else {
+          circlesSpatial.value[idx].fill = 'white';
+          circlesSpatial.value[idx].stroke = 'white';
+        }
+      });
+      ctx.emit('regionUpdated', selectedTixels.value);
+    }
     function unHighlighCluster() {
       lodash.each(circlesSpatial.value, (c: any, i: number) => {
         circlesSpatial.value[i].fill = c.originalColor;
         circlesSpatial.value[i].stroke = c.originalColor;
       });
       highlightedCluster.value = '';
+      highlightRegion(selectedTixels.value);
     }
     function highlightCluster(clusterName: string) {
       lodash.each(circlesSpatial.value, (c: any, i: number) => {
@@ -415,30 +447,7 @@ export default defineComponent({
       });
       highlightedCluster.value = clusterName;
       isHighlighted.value = true;
-    }
-    function highlightRegion() {
-      const funcInsideRegions = (pt: number[]) => {
-        let res = false;
-        regions.value.forEach((poly: any, idx: number) => {
-          if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
-        });
-        return res;
-      };
-      const filteredIndex = circlesSpatial.value.map((v: any) => funcInsideRegions([v.x, v.y]));
-      const hitCount = filteredIndex.filter((x: boolean) => x).length;
-      if (hitCount < 1) {
-        unHighlighCluster();
-        return;
-      }
-      lodash.each(filteredIndex, (v: boolean, idx: number) => {
-        if (!v) {
-          circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;
-          circlesSpatial.value[idx].stroke = circlesSpatial.value[idx].originalColor;
-        } else {
-          circlesSpatial.value[idx].fill = 'white';
-          circlesSpatial.value[idx].stroke = 'white';
-        }
-      });
+      // highlightRegion(selectedTixels.value);
     }
     function makearray(stopValue: number, startValue: number) {
       if (highestCount.value === 0) return;
@@ -531,7 +540,7 @@ export default defineComponent({
         });
       }
       circlesSpatial.value = circles;
-      highlightRegion();
+      highlightRegion(selectedTixels.value);
     }
     async function loadExpressions() {
       if (!client.value) return;
@@ -716,7 +725,8 @@ export default defineComponent({
     function removeRegions(ev: any) {
       regions.value = [];
       polygon.value.points = [];
-      highlightRegion();
+      selectedTixels.value = selectedTixels.value.map((x: any) => false);
+      highlightRegion(selectedTixels.value);
     }
     async function acInputChanged() { // autocomplete input event handler;
       filteredGenes.value = filteredGenes.value.filter((v: any) => selectedGenes.value.includes(v.name));
@@ -743,6 +753,10 @@ export default defineComponent({
     });
     watch(spatialDataFromParent, (v: any) => {
       runSpatial(false);
+    });
+    watch(selectedTixelsFromParent, (v: any) => {
+      selectedTixels.value = v;
+      highlightRegion(v);
     });
     watch(scale, (v: number, ov: number) => {
       const stage = (ctx as any).refs.konvaStage.getNode();
@@ -808,6 +822,7 @@ export default defineComponent({
       acInputChanged,
       onGenelistChanged,
       heatMap,
+      gradientColors,
       stepArray,
       highestCount,
       lowestCount,
