@@ -164,17 +164,28 @@
           </v-card>
         </v-col>
         <v-col cols="2" sm="1">
-          <v-card style="width:5vw;height:250px" flat>
+          <v-card :style="{ 'width': '5vw', 'height':'250px', 'background-color': 'darkgrey' }" flat>
+            <v-tooltip right>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                class="ml-4"
+                v-model="isDrawing"
+                :disabled="!spatialData || isDrawingRect || !isClusterView || loading"
+                :color="colorOnOff"
+                small
+                @click="isDrawing = !isDrawing">
+                <v-icon>mdi-lasso</v-icon>
+              </v-btn>
+            </template>
+            <span>Lasso Select</span>
+            </v-tooltip>
+            <v-tooltip right>
+            <template v-slot:activator="{ on, attrs }">
             <v-btn
-              class="ml-4"
-              v-model="isDrawing"
-              :disabled="!spatialData || isDrawingRect || !isClusterView || loading"
-              :color="colorOnOff"
-              small
-              @click="isDrawing = !isDrawing">
-              <v-icon>mdi-lasso</v-icon>
-            </v-btn>
-            <v-btn
+              v-bind="attrs"
+              v-on="on"
               class="ml-4 mt-5"
               v-model="isDrawingRect"
               :disabled="!spatialData || isDrawing || !isClusterView || loading"
@@ -183,28 +194,38 @@
               @click="isDrawingRect = !isDrawingRect">
               <v-icon>mdi-select</v-icon>
             </v-btn>
+            </template>
+            <span>Quad Select</span>
+            </v-tooltip>
+            <v-tooltip right>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                class="ml-4 mt-5"
+                v-model="isDrawing"
+                v-bind="attrs"
+                v-on="on"
+                :disabled="(!isDrawing && !isDrawingRect) || loading"
+                @click="listId = true"
+                small>
+              <v-icon>mdi-eye</v-icon>
+              </v-btn>
+            </template>
+            <span>View Id's/Genes</span>
+            </v-tooltip>
             <v-dialog
               v-model="listId"
               width="600px"
               height="300px">
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                  class="ml-1 mt-5"
-                  v-model="isDrawing"
-                  v-bind="attrs"
-                  v-on="on"
-                  :disabled="(!isDrawing && !isDrawingRect) || loading"
-                  small>
-                View C
-                </v-btn>
-              </template>
               <v-card>
                 <v-card-title>
-                  <span class="text-h5">Tixel Id's Selected/Top 10 Genes</span>
+                  <span class="text-h5">Tixel Id's Selected</span>
                 </v-card-title>
                 <v-card-text>
-                  {{clusterIds}}
+                  {{highlightIds}}
                 </v-card-text>
+                <v-card-title>
+                  <span class="text-h5">Top 10 Genes</span>
+                </v-card-title>
                 <v-card-text>
                   {{topSelected}}
                 </v-card-text>
@@ -216,23 +237,36 @@
                     @click="saveTxt">
                     Save
                   </v-btn>
+                  <v-btn
+                    color="red"
+                    text
+                    @click="listId = false">
+                    Close
+                  </v-btn>
                 </v-card-actions>
               </v-card>
             </v-dialog>
+            <v-tooltip right>
+            <template v-slot:activator="{ on, attrs }">
             <v-btn
-              class="ml-1 mt-5"
+              v-bind="attrs"
+              v-on="on"
+              class="ml-4 mt-5"
               v-model="isDrawing"
               :disabled="!spatialData || loading"
               @click="captureScreen"
               small>
-            Save P
+            <v-icon>mdi-download</v-icon>
             </v-btn>
+            </template>
+            <span>Save Display</span>
+            </v-tooltip>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
                 v-bind="attrs"
-                class="ml-4 mt-5"
                 v-on="on"
+                class="ml-4 mt-5"
                 small
                 v-clipboard:copy="publicLink">
                 <v-icon>mdi-content-copy</v-icon>
@@ -244,31 +278,29 @@
         </v-col>
         <v-col cols="11" md="9" class="ml-10">
           <div id="screenCapture">
-          <v-row no-gutters>
+          <v-row>
             <v-col cols="11" sm="5">
               <v-card id="stageParent"
                 flat
                 v-resize="onResize"
                 :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
                 height="48vh">
-                <v-row>
-                  <v-btn
-                    small
-                    icon
-                    color="primary"
-                    @click="scale=scale*1.1"
-                    ><v-icon small>mdi-magnify-plus</v-icon>
-                  </v-btn>
-                </v-row>
-                <v-row>
-                  <v-btn
-                    small
-                    icon
-                    color="primary"
-                    @click="scale=scale*0.9"
-                    ><v-icon small>mdi-magnify-minus</v-icon>
-                  </v-btn>
-                </v-row>
+                <v-btn
+                  v-model="scale"
+                  color="white"
+                  :disabled="!spatialData"
+                  @click="scale *= 1.1"
+                  x-small>
+                  <v-icon>mdi-plus</v-icon>
+                </v-btn>
+                <v-btn
+                  v-model="scale"
+                  color="white"
+                  :disabled="!spatialData"
+                  @click="scale *= 0.9"
+                  x-small>
+                  <v-icon>mdi-minus</v-icon>
+                </v-btn>
                 <v-stage
                   ref="konvaStage"
                   class="mainStage"
@@ -339,24 +371,22 @@
                 @mousemove="mouseMoveOnStageRight"
                 @mouseup="mouseUpOnStageRight"
                 height="48vh">
-                <v-row>
-                  <v-btn
-                    small
-                    icon
-                    color="primary"
-                    @click="scaleUMAP=scaleUMAP*1.1"
-                    ><v-icon small>mdi-magnify-plus</v-icon>
-                  </v-btn>
-                </v-row>
-                <v-row>
-                  <v-btn
-                    small
-                    icon
-                    color="primary"
-                    @click="scaleUMAP=scaleUMAP*0.9"
-                    ><v-icon small>mdi-magnify-minus</v-icon>
-                  </v-btn>
-                </v-row>
+                <v-btn
+                  v-model="scale"
+                  color="white"
+                  :disabled="!spatialData"
+                  @click="scaleUMAP *= 1.1"
+                  x-small>
+                  <v-icon>mdi-plus</v-icon>
+                </v-btn>
+                <v-btn
+                  v-model="scale"
+                  color="white"
+                  :disabled="!spatialData"
+                  @click="scaleUMAP *= 0.9"
+                  x-small>
+                  <v-icon>mdi-minus</v-icon>
+                </v-btn>
                 <v-stage
                   ref="konvaStageRight"
                   class="mainStage"
@@ -594,7 +624,7 @@ export default defineComponent({
     const colorOnOff = ref<string>('');
     const colorOnOffRect = ref<string>('');
     const colorbarText = ref<string>('white');
-    const clusterIds = ref<any[]>([]);
+    const highlightIds = ref<any[]>([]);
     const topSelected = ref<any[]>([]);
     const highlightCount = ref<number>(0);
     function pushByQuery(query: any) {
@@ -621,7 +651,7 @@ export default defineComponent({
     }
     function saveTxt() {
       listId.value = false;
-      const ids = clusterIds.value.join();
+      const ids = highlightIds.value.join();
       const listGene = topSelected.value.join();
       const final = `${ids}\n\n${listGene}`;
       const pom = document.createElement('a');
@@ -755,7 +785,7 @@ export default defineComponent({
       return inside;
     }
     function highlightRegion() {
-      clusterIds.value = [];
+      highlightIds.value = [];
       const funcInsideRegions = (pt: number[]) => {
         let res = false;
         if (lassoSide.value === 'left') {
@@ -778,6 +808,7 @@ export default defineComponent({
       const hitCount = filteredIndex.filter((x: boolean) => x).length;
       highlightCount.value = hitCount;
       if (hitCount < 1) {
+        topSelected.value = [];
         unHighlighCluster();
         return;
       }
@@ -794,7 +825,7 @@ export default defineComponent({
           } else {
             color = 'white';
           }
-          clusterIds.value.push(idx);
+          highlightIds.value.push(idx);
           circlesSpatial.value[idx].fill = color;
           circlesSpatial.value[idx].stroke = color;
           circlesSpatialUMAP.value[idx].fill = color;
@@ -1015,7 +1046,7 @@ export default defineComponent({
         await loadExpressions();
         const { task } = currentTask.value;
         const [queue] = currentTask.value.queues;
-        const args = [filename.value, selectedGenes.value, clusterIds.value];
+        const args = [filename.value, selectedGenes.value, highlightIds.value];
         if (!props.query.public) {
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
           const { host } = window.location;
@@ -1164,7 +1195,7 @@ export default defineComponent({
         polygon.value.points = [];
         highlightRegion();
         isClicked.value = true;
-        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.5, listening: true, closed: true, fill: 'black', stroke: 'black', strokeWidth: 1 };
+        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'black', strokeWidth: 3 };
         polygon.value.points = [];
       }
       if (isDrawingRect.value) {
@@ -1174,8 +1205,8 @@ export default defineComponent({
         regions.value = [];
         polygon.value.points = [];
         const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
-        rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.5, fill: 'black', stroke: 'black', strokeWidth: 1, endPointx: 0, endPointy: 0 };
-        rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.5, fill: 'black', stroke: 'black', strokeWidth: 1, endPointx: 0, endPointy: 0 };
+        rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
         isClicked.value = true;
       }
@@ -1189,7 +1220,7 @@ export default defineComponent({
         polygon.value.points = [];
         highlightRegion();
         isClicked.value = true;
-        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.5, listening: true, closed: true, fill: 'black', stroke: 'black', strokeWidth: 1 };
+        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'black', strokeWidth: 3 };
         polygonUMAP.value.points = [];
       }
       if (isDrawingRect.value) {
@@ -1199,8 +1230,8 @@ export default defineComponent({
         regions.value = [];
         polygon.value.points = [];
         const mousePos = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
-        rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.5, fill: 'black', stroke: 'black', strokeWidth: 1, endPointx: 0, endPointy: 0 };
-        rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.5, fill: 'black', stroke: 'black', strokeWidth: 1, endPointx: 0, endPointy: 0 };
+        rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
         isClicked.value = true;
       }
@@ -1355,8 +1386,8 @@ export default defineComponent({
       setDraggable(!v);
       regions.value = [];
       polygon.value.points = [];
-      rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.5, fill: 'black', stroke: 'black', strokeWidth: 1, endPointx: 0, endPointy: 0 };
-      rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.5, fill: 'black', stroke: 'black', strokeWidth: 1, endPointx: 0, endPointy: 0 };
+      rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+      rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
       if (!isDrawing.value) {
         colorOnOff.value = '';
         unHighlighCluster();
@@ -1368,8 +1399,8 @@ export default defineComponent({
       setDraggable(!v);
       regions.value = [];
       polygon.value.points = [];
-      rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.5, fill: 'black', stroke: 'black', strokeWidth: 1, endPointx: 0, endPointy: 0 };
-      rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.5, fill: 'black', stroke: 'black', strokeWidth: 1, endPointx: 0, endPointy: 0 };
+      rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+      rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
       if (!isDrawingRect.value) {
         colorOnOffRect.value = '';
         unHighlighCluster();
@@ -1507,7 +1538,7 @@ export default defineComponent({
       colorOnOff,
       colorOnOffRect,
       colorbarText,
-      clusterIds,
+      highlightIds,
       topSelected,
       listId,
       pointInPolygon,
