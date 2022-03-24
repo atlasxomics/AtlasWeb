@@ -1047,7 +1047,7 @@ export default defineComponent({
         loading.value = true;
         await loadExpressions();
         const { task } = currentTask.value;
-        const queue = 'atxcloud_liya_gene';
+        const [queue] = currentTask.value.queues;
         const args = [filename.value, selectedGenes.value, highlightIds.value];
         if (!props.query.public) {
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
