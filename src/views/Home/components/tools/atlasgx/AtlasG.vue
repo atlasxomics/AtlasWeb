@@ -408,26 +408,26 @@
               </v-data-table>
           </v-card>
         </v-col>
-        <v-card v-if="isClusterView || !showFlag" :style="{ 'background-color': backgroundColor }" :disabled="loading" flat>
-              <v-data-table
-                width="10vw"
-                v-model="selected"
-                dense
-                :items-per-page="lengthClust"
-                hide-default-footer
-                :items="clusterItems"
-                :headers="clusterHeaders"
-                sort-by="name"
-                @click:row="mouseOverClusterItem"
-              >
-              <template v-slot:item.name="{ item }">
-                <span>{{ item.name }} </span>
-                <v-chip
-                  :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 2]"
-                  small>{{ item.name }}</v-chip>
-              </template>
-              </v-data-table>
-            </v-card>
+          <v-card v-if="isClusterView || !showFlag" :style="{ 'background-color': backgroundColor }" :disabled="loading" flat>
+            <v-data-table
+              width="10vw"
+              v-model="selected"
+              dense
+              :items-per-page="lengthClust"
+              hide-default-footer
+              :items="clusterItems"
+              :headers="clusterHeaders"
+              sort-by="name"
+              @click:row="mouseOverClusterItem"
+            >
+            <template v-slot:item.name="{ item }">
+              <span>{{ item.name }} </span>
+              <v-chip
+                :color="clusterColors[Number(item.name.toString().replace('C', '')) - item.name.toString().split('C').length + 2]"
+                small>{{ item.name }}</v-chip>
+            </template>
+            </v-data-table>
+          </v-card>
       </v-row>
     </v-container>
   </v-app>
@@ -512,7 +512,7 @@ export default defineComponent({
     const selectedGenes = ref<any[]>([]);
     const searchInput = ref<string | null>(null);
     const spatialData = ref<any | null>(null);
-    const clusterItems = ref<any[] | null>(null);
+    const clusterItems = ref<any[]>();
     const width = window.innerWidth;
     const height = window.innerHeight;
     const searchgenePlace = ref<string>(`${Math.abs(width / 2)}px`);
@@ -1406,7 +1406,7 @@ export default defineComponent({
       {
         text: 'Heat Map',
         icon: 'mdi-fire',
-        tooltip: 'Background Color',
+        tooltip: 'HeatMap Color',
         click: () => {
           heatmapFlag.value = !heatmapFlag.value;
         },
