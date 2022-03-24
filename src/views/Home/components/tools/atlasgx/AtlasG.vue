@@ -164,7 +164,7 @@
           </v-card>
         </v-col>
         <v-col cols="2" sm="1">
-          <v-card :style="{ 'width': '5vw', 'height':'250px', 'background-color': 'darkgrey' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '83px', 'min-width': '83px', 'height':'250px', 'padding-top': '15px', 'background-color': 'silver' }" flat>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -276,15 +276,16 @@
             </v-tooltip>
           </v-card>
         </v-col>
-        <v-col cols="11" md="9" class="ml-10">
+        <v-col cols="11" md="10">
           <div id="screenCapture">
           <v-row>
             <v-col cols="11" sm="5">
               <v-card id="stageParent"
                 flat
                 v-resize="onResize"
-                :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                height="48vh">
+                :style="{ 'background-color': backgroundColor, 'overflow-x': 'None'}"
+                height="48vh"
+                align="center">
                 <v-btn
                   v-model="scale"
                   color="white"
@@ -292,7 +293,7 @@
                   @click="scale *= 1.1"
                   x-small>
                   <v-icon>mdi-plus</v-icon>
-                </v-btn>
+                </v-btn>&nbsp;
                 <v-btn
                   v-model="scale"
                   color="white"
@@ -349,14 +350,14 @@
           <template v-if="!isClusterView && showFlag">
             <v-card :style="{ 'background-color': backgroundColor }" flat>
               <div :style="{ 'color':colorbarText, 'font-size':'22px' }">
-                <div :style="{ 'background-image': colorBarmap, 'width':'30px','height':'340px','margin-top':'25px','float':'left'}" >
+                <div :style="{ 'background-image': colorBarmap, 'width':'30px','height':'340px','margin-top':'75px','float':'left'}" >
                 </div>
                 <div style="width:40px;float:left;height:300px;">
-                  <p style="position:absolute;top:5px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
-                  <p style="position:absolute;top:80px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
-                  <p style="position:absolute;top:170px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
-                  <p style="position:absolute;top:245px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
-                  <p style="position:absolute;top:330px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
+                  <p style="position:absolute;top:55px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
+                  <p style="position:absolute;top:130px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
+                  <p style="position:absolute;top:220px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
+                  <p style="position:absolute;top:295px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
+                  <p style="position:absolute;top:380px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
                 </div>
               </div>
             </v-card>
@@ -370,7 +371,8 @@
                 @mousedown="mouseDownOnStageRight"
                 @mousemove="mouseMoveOnStageRight"
                 @mouseup="mouseUpOnStageRight"
-                height="48vh">
+                height="48vh"
+                align="center">
                 <v-btn
                   v-model="scale"
                   color="white"
@@ -378,7 +380,7 @@
                   @click="scaleUMAP *= 1.1"
                   x-small>
                   <v-icon>mdi-plus</v-icon>
-                </v-btn>
+                </v-btn>&nbsp;
                 <v-btn
                   v-model="scale"
                   color="white"
