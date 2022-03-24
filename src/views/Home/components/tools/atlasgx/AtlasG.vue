@@ -8,7 +8,7 @@
               :value="runIdFlag"
               @click:outside="runIdFlag = !runIdFlag"
               hide-overlay>
-              <v-card style="width:200px;position: absolute;z-index: 999;top:110px;left:90px;"
+              <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
                 :disabled="loading">
                 <v-text-field
                   v-model="search"
@@ -36,7 +36,7 @@
               :value="backgroundFlag"
               @click:outside="backgroundFlag = !backgroundFlag"
               hide-overlay>
-              <v-card style="width:100px;position: absolute;z-index: 999;top:110px;left:180px;">
+              <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:130px;">
                 <v-data-table
                 v-model="selected"
                 height="13vh"
@@ -58,7 +58,7 @@
               :value="heatmapFlag"
               @click:outside="heatmapFlag = !heatmapFlag"
               hide-overlay>
-              <v-card style="width:100px;position: absolute;z-index: 999;top:110px;left:270px;">
+              <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:200px;">
                 <v-data-table
                 v-model="selected"
                 height="19vh"
@@ -75,14 +75,14 @@
               </v-card>
             </v-dialog>
           </v-template>
-          <v-card flat>
+          <v-template>
+          <v-card flat :style="{ 'width': '450px', 'left':searchgenePlace }">
             <v-autocomplete
               v-model="selectedGenes"
               :items="filteredGenes"
               :outlined="false"
               multiple
               dense
-              style="padding-left:65vw;padding-right:10px;padding-top:15px"
               clearable
               placeholder=""
               label="Enter gene ID:"
@@ -119,49 +119,8 @@
                   >Show</v-btn>
               </template>
             </v-autocomplete>
-            <v-tooltip :disabled="runIdFlag" bottom>
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                  :disabled="loading"
-                  v-bind="attrs"
-                  v-on="on"
-                  small
-                  class="mt-n16 ml-15"
-                  @click="runIdFlag = !runIdFlag">
-                <v-icon>mdi-magnify</v-icon>
-                </v-btn>
-              </template>
-              <span>Run ID's</span>
-            </v-tooltip>
-            <v-tooltip :disabled="backgroundFlag" bottom>
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                  :disabled="!spatialData || loading"
-                  v-bind="attrs"
-                  v-on="on"
-                  small
-                  class="mt-n16 ml-10"
-                  @click="backgroundFlag = !backgroundFlag">
-                <v-icon>mdi-palette</v-icon>
-                </v-btn>
-              </template>
-              <span>Background Color</span>
-            </v-tooltip>
-            <v-tooltip :disabled="heatmapFlag" bottom>
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                  v-bind="attrs"
-                  :disabled="!spatialData || loading"
-                  v-on="on"
-                  small
-                  class="mt-n16 ml-10"
-                  @click="heatmapFlag = !heatmapFlag;">
-                <v-icon>mdi-fire</v-icon>
-                </v-btn>
-              </template>
-              <span>Heatmap</span>
-            </v-tooltip>
           </v-card>
+          </v-template>
         </v-col>
         <v-col cols="2" sm="1">
           <v-card :style="{ 'margin-left': '5px', 'width': '83px', 'min-width': '83px', 'height':'250px', 'padding-top': '15px', 'background-color': 'silver' }" flat>
@@ -558,6 +517,7 @@ export default defineComponent({
     const clusterItems = ref<any[] | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
+    const searchgenePlace = ref<string>(`${Math.abs(width / 2)}px`);
     const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true });
     const konvaConfigRight = ref<any>({ x: 0, y: 0, width, height, draggable: true });
     const scale = ref<number>(0.75);
@@ -621,6 +581,7 @@ export default defineComponent({
     const backgroundFlag = ref<boolean>(false);
     const heatmapFlag = ref<boolean>(false);
     const clusterFlag = ref<boolean>(false);
+    const autoCompleteFlag = ref<boolean>(false);
     const listId = ref<boolean>(false);
     const lassoSide = ref<string>();
     const colorOnOff = ref<string>('');
@@ -646,6 +607,7 @@ export default defineComponent({
       if (!parent) return;
       const parentWidth = (parent as any).offsetWidth;
       const parentHeight = (parent as any).offsetHeight;
+      searchgenePlace.value = `${Math.abs(window.innerWidth / 2.9)}px`;
       konvaConfigLeft.value.width = parentWidth;
       konvaConfigLeft.value.height = parentHeight;
       konvaConfigRight.value.width = parentWidth;
@@ -1055,7 +1017,7 @@ export default defineComponent({
           publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
         }
         const kwargs = {};
-        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
+        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, 'joshua_gene') : await client.value.postTask(task, args, kwargs, 'joshua_gene');
         if (props.query.public) runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
@@ -1425,9 +1387,36 @@ export default defineComponent({
         querySelections(v);
       }
     });
+    const submenu = [
+      {
+        text: 'Run ID\'s',
+        icon: 'mdi-magnify',
+        tooltip: 'Run ID\'s',
+        disabled: loading.value,
+        click: () => {
+          runIdFlag.value = !runIdFlag.value;
+        },
+      },
+      {
+        text: 'Background Color',
+        icon: 'mdi-palette',
+        tooltip: 'Background Color',
+        click: () => {
+          backgroundFlag.value = !backgroundFlag.value;
+        },
+      },
+      {
+        text: 'Heat Map',
+        icon: 'mdi-fire',
+        tooltip: 'Background Color',
+        click: () => {
+          heatmapFlag.value = !heatmapFlag.value;
+        },
+      },
+    ];
     onMounted(async () => {
       await clientReady;
-      store.commit.setSubmenu(null);
+      store.commit.setSubmenu(submenu);
       fitStageToParent();
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
@@ -1436,7 +1425,7 @@ export default defineComponent({
           loadCandidateWorkers('AtlasGX');
           await fetchFileList();
         } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
         }
       }
       if (props.query) {
@@ -1547,6 +1536,8 @@ export default defineComponent({
       captureScreen,
       saveTxt,
       highlightCount,
+      autoCompleteFlag,
+      searchgenePlace,
     };
   },
 });
