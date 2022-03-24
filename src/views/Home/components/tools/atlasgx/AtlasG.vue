@@ -112,7 +112,7 @@
               <template v-slot:append-outer v-if="selectedGenes.length > 0">
                 <v-btn
                   color="primary"
-                  small
+                  large
                   text
                   :disabled="!filename || loading"
                   @click="runSpatial('spatial');showFlag=true"
@@ -451,7 +451,7 @@
               </v-data-table>
           </v-card>
         </v-col>
-        <v-card v-if="clusterItems && isClusterView" :style="{ 'background-color': backgroundColor }" :disabled="loading" flat>
+        <v-card v-if="!showFlag" :style="{ 'background-color': backgroundColor }" :disabled="loading" flat>
               <v-data-table
                 width="10vw"
                 v-model="selected"
@@ -1047,7 +1047,7 @@ export default defineComponent({
         loading.value = true;
         await loadExpressions();
         const { task } = currentTask.value;
-        const [queue] = currentTask.value.queues;
+        const queue = 'atxcloud_liya_gene';
         const args = [filename.value, selectedGenes.value, highlightIds.value];
         if (!props.query.public) {
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
