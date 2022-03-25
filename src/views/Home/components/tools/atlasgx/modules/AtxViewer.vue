@@ -212,7 +212,7 @@
                       <v-col v-if="stepArray.length < 1">
                         No step info
                       </v-col>
-                      <v-col v-for="step in stepArray" v-bind:key="step" class="ma-0 pa-0">
+                      <v-col v-for="step in stepArray" v-bind:key="`${step}-${get_uuid()}`" class="ma-0 pa-0">
                         <p class="overline h6 text-center">{{ step }}</p>
                       </v-col>
                     </v-row>
@@ -230,7 +230,7 @@
                               No clusters
                             </v-col>
                             <v-col v-for="item in clusterItems"
-                                   v-bind:key="item.name" class="ma-0 pa-0 text-center">
+                                   v-bind:key="`${item.name}-${get_uuid()}`" class="ma-0 pa-0 text-center">
                               <v-btn
                                 small
                                 icon

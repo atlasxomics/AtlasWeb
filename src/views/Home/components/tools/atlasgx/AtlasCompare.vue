@@ -148,7 +148,9 @@
 </template>
 
 <script lang='ts'>
-import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
+import Vue from 'vue';
+import vuetify from '@/plugins/vuetify';
+import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import Konva from 'konva';
 import lodash from 'lodash';
 import colormap from 'colormap';
@@ -156,6 +158,7 @@ import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
 import AtxViewer from './modules/AtxViewer.vue';
+import GeneAutoComplete from './modules/GeneAutoComplete.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -199,7 +202,7 @@ function pointInPolygon(point: number[], vs: any[]) { // point is like [5,5], vs
 
 export default defineComponent({
   name: 'AtlasCompare',
-  components: { AtxViewer },
+  components: { AtxViewer, GeneAutoComplete },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -774,9 +777,28 @@ export default defineComponent({
         querySelections(v);
       }
     });
+    const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
+    const acInstance = new GeneAutoCompleteClass({
+      vuetify,
+      propsData: { gene_list: genes },
+      created() {
+        this.$on('changed', (ev: any[]) => {
+          // selectedGenes.value = ev;
+          console.log(ev);
+        });
+      },
+    });
+    const submenu = [
+      {
+        type: 'component',
+        name: 'GeneAutoComplete',
+        id: 'geneac',
+        component: acInstance,
+      },
+    ];
     onMounted(async () => {
       await clientReady;
-      store.commit.setSubmenu(null);
+      store.commit.setSubmenu(submenu);
       fitStageToParent();
       // (ctx.refs.annotationLayer as any).getNode().add(tooltip);
       // (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
@@ -793,6 +815,13 @@ export default defineComponent({
           await selectAction({ id: props.query.run_id });
         }
       }
+      acInstance.$mount('#geneac');
+    });
+    onUnmounted(() => {
+      console.log('Unmounted');
+      acInstance.$destroy();
+      acInstance.$el.parentNode.removeChild(acInstance.$el);
+      store.commit.setSubmenu(null);
     });
     return {
       scale,

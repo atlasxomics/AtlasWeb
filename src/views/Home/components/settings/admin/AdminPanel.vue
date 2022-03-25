@@ -11,6 +11,9 @@
       <v-tab-item key="ResetPassword">
         <reset-password/>
       </v-tab-item>
+      <v-tab-item key="AddRemoveGroup">
+        <add-remove-group/>
+      </v-tab-item>
       <v-tab-item key="WorkerStatus">
         <worker-status/>
       </v-tab-item>
@@ -25,8 +28,9 @@ import lodash from 'lodash';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { generateRouteByQuery } from '@/utils';
-import ResetPassword from './ResetPassword.vue';
-import WorkerStatus from './WorkerStatus.vue';
+import ResetPassword from './modules/ResetPassword.vue';
+import WorkerStatus from './modules/WorkerStatus.vue';
+import AddRemoveGroup from './modules/AddRemoveGroup.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -37,12 +41,13 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Worker Status'];
+const tabs = ['Reset Password', 'Add/Remove Group', 'Worker Status'];
 
 export default defineComponent({
   name: 'AdminPanel',
   components: {
     ResetPassword,
+    AddRemoveGroup,
     WorkerStatus,
   },
   setup(props, ctx) {
