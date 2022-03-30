@@ -777,28 +777,28 @@ export default defineComponent({
         querySelections(v);
       }
     });
-    const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
-    const acInstance = new GeneAutoCompleteClass({
-      vuetify,
-      propsData: { gene_list: genes },
-      created() {
-        this.$on('changed', (ev: any[]) => {
-          // selectedGenes.value = ev;
-          console.log(ev);
-        });
-      },
-    });
-    const submenu = [
-      {
-        type: 'component',
-        name: 'GeneAutoComplete',
-        id: 'geneac',
-        component: acInstance,
-      },
-    ];
+    // const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
+    // const acInstance = ref<any>();
+    // const submenu = [
+    //   {
+    //     type: 'component',
+    //     name: 'GeneAutoComplete',
+    //     id: 'geneac',
+    //   },
+    // ];
     onMounted(async () => {
       await clientReady;
-      store.commit.setSubmenu(submenu);
+      // store.commit.setSubmenu(submenu);
+      // acInstance.value = new GeneAutoCompleteClass({
+      //   vuetify,
+      //   propsData: { gene_list: genes },
+      //   created() {
+      //     this.$on('changed', (ev: any[]) => {
+      //       // selectedGenes.value = ev;
+      //       console.log(ev);
+      //     });
+      //   },
+      // });
       fitStageToParent();
       // (ctx.refs.annotationLayer as any).getNode().add(tooltip);
       // (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
@@ -815,13 +815,17 @@ export default defineComponent({
           await selectAction({ id: props.query.run_id });
         }
       }
-      acInstance.$mount('#geneac');
+      // acInstance.value.$mount('#geneac');
     });
     onUnmounted(() => {
       console.log('Unmounted');
-      acInstance.$destroy();
-      acInstance.$el.parentNode.removeChild(acInstance.$el);
-      store.commit.setSubmenu(null);
+      // if (!acInstance.value) {
+      //   store.commit.setSubmenu(null);
+      //   return;
+      // }
+      // acInstance.value.$destroy();
+      // if (!acInstance.value.$el) return;
+      // acInstance.value.$el.parentNode.removeChild(acInstance.value.$el);
     });
     return {
       scale,
