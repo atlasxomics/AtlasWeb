@@ -183,179 +183,191 @@
             <span>Copy Public Llink</span>
             </v-tooltip>
           </v-card>
+          <v-card :style="{ 'margin-left': '5px', 'width': '83px', 'min-width': '83px', 'height':'100px', 'padding-top': '15px', 'background-color': 'silver', 'position': 'absolute', 'bottom': '38vh' }" flat>
+            <v-tooltip right>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                class="ml-4"
+                small>
+                <v-icon>mdi-table-large</v-icon>
+              </v-btn>
+            </template>
+            <span>Feature Table</span>
+            </v-tooltip>
+            <v-tooltip right>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                class="ml-4 mt-5"
+                small>
+                <v-icon>mdi-chart-bar</v-icon>
+              </v-btn>
+            </template>
+            <span>Peak Viewer</span>
+            </v-tooltip>
+          </v-card>
         </v-col>
         <v-col cols="11" md="10">
           <div id="screenCapture">
-          <v-row>
-            <v-col cols="11" sm="5">
-              <v-card id="stageParent"
-                flat
-                v-resize="onResize"
-                :style="{ 'background-color': backgroundColor, 'overflow-x': 'None'}"
-                height="48vh"
-                align="center">
-                <v-btn
-                  v-model="scale"
-                  color="white"
-                  :disabled="!spatialData"
-                  @click="scale *= 1.1"
-                  x-small>
-                  <v-icon>mdi-plus</v-icon>
-                </v-btn>&nbsp;
-                <v-btn
-                  v-model="scale"
-                  color="white"
-                  :disabled="!spatialData"
-                  @click="scale *= 0.9"
-                  x-small>
-                  <v-icon>mdi-minus</v-icon>
-                </v-btn>
-                <v-stage
-                  ref="konvaStage"
-                  class="mainStage"
-                  :config="konvaConfigLeft"
-                  :style="{ 'overflow': 'hidden' }"
-                  @mousedown="mouseDownOnStageLeft"
-                  @mousemove="mouseMoveOnStageLeft"
-                  @mouseup="mouseUpOnStageLeft"
-                  >
-                  <v-layer
-                    ref="spatialLayer"
-                    id="spatialLayer">
-                    <v-circle v-for="p in circlesSpatial"
-                      :config="p"
-                      v-bind:key="p.id"
-                      @mouseover="mouseMoveOnSpatial"
-                      @mouseout="mouseOutOnSpatial"/>
-                  </v-layer>
-                  <v-layer
-                    ref="annotationLayer"
-                    />
-                  <v-layer
-                    ref="drawingLayer"
-                    id="drawingLayer"
-                    v-if="isDrawing">
-                    <template
-                      v-for="poly in regions">
+            <v-row>
+              <v-col cols="11" sm="5">
+                <v-card id="stageParent"
+                  flat
+                  v-resize="onResize"
+                  :style="{ 'background-color': backgroundColor, 'overflow-x': 'None'}"
+                  height="48vh"
+                  align="center">
+                  <v-btn
+                    v-model="scale"
+                    color="white"
+                    :disabled="!spatialData"
+                    @click="scale *= 1.1"
+                    x-small>
+                    <v-icon>mdi-plus</v-icon>
+                  </v-btn>&nbsp;
+                  <v-btn
+                    v-model="scale"
+                    color="white"
+                    :disabled="!spatialData"
+                    @click="scale *= 0.9"
+                    x-small>
+                    <v-icon>mdi-minus</v-icon>
+                  </v-btn>
+                  <v-stage
+                    ref="konvaStage"
+                    class="mainStage"
+                    :config="konvaConfigLeft"
+                    :style="{ 'overflow': 'hidden' }"
+                    @mousedown="mouseDownOnStageLeft"
+                    @mousemove="mouseMoveOnStageLeft"
+                    @mouseup="mouseUpOnStageLeft"
+                    >
+                    <v-layer
+                      ref="spatialLayer"
+                      id="spatialLayer">
+                      <v-circle v-for="p in circlesSpatial"
+                        :config="p"
+                        v-bind:key="p.id"
+                        @mouseover="mouseMoveOnSpatial"
+                        @mouseout="mouseOutOnSpatial"/>
+                    </v-layer>
+                    <v-layer
+                      ref="annotationLayer"
+                      />
+                    <v-layer
+                      ref="drawingLayer"
+                      id="drawingLayer"
+                      v-if="isDrawing">
+                      <template
+                        v-for="poly in regions">
+                        <v-line
+                          v-bind:key="poly.id"
+                          :config="poly"/>
+                      </template>
                       <v-line
-                        v-bind:key="poly.id"
-                        :config="poly"/>
-                    </template>
-                    <v-line
-                      :config="polygon"/>
-                  </v-layer>
-                  <v-layer
-                    v-if="isDrawingRect"
-                    ref="drawingLayerRect"
-                    id="drawingLayerRect">
-                    <v-rect
-                      :config="rectangle"/>
-                  </v-layer>
-                </v-stage>
-              </v-card>
-            </v-col>
-          <v-col cols="11" sm="1">
-          <template v-if="!isClusterView && showFlag[0]">
-            <v-card :style="{ 'background-color': backgroundColor }" flat>
-              <div :style="{ 'color':colorbarText, 'font-size':'22px' }">
-                <div :style="{ 'background-image': colorBarmap, 'width':'30px','height':'340px','margin-top':'75px','float':'left'}" >
-                </div>
-                <div style="width:40px;float:left;height:300px;">
-                  <p style="position:absolute;top:55px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
-                  <p style="position:absolute;top:130px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
-                  <p style="position:absolute;top:220px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
-                  <p style="position:absolute;top:295px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
-                  <p style="position:absolute;top:380px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
-                </div>
-              </div>
-            </v-card>
-          </template>
-          </v-col>
-            <v-col cols="11" sm="5">
-              <v-card id="stageParentRight"
-                flat
-                v-resize="onResize"
-                :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                @mousedown="mouseDownOnStageRight"
-                @mousemove="mouseMoveOnStageRight"
-                @mouseup="mouseUpOnStageRight"
-                height="48vh"
-                align="center">
-                <v-btn
-                  v-model="scale"
-                  color="white"
-                  :disabled="!spatialData"
-                  @click="scaleUMAP *= 1.1"
-                  x-small>
-                  <v-icon>mdi-plus</v-icon>
-                </v-btn>&nbsp;
-                <v-btn
-                  v-model="scale"
-                  color="white"
-                  :disabled="!spatialData"
-                  @click="scaleUMAP *= 0.9"
-                  x-small>
-                  <v-icon>mdi-minus</v-icon>
-                </v-btn>
-                <v-stage
-                  ref="konvaStageRight"
-                  class="mainStage"
-                  :config="konvaConfigRight"
-                  :style="{ 'overflow': 'hidden' }"
-                  >
-                  <v-layer
-                    ref="spatialLayerRight"
-                    id="spatialLayerRight">
-                    <v-circle v-for="p in circlesSpatialUMAP"
-                      :config="p"
-                      v-bind:key="p.id"
-                      @mousemove="mouseMoveOnSpatialRight"
-                      @mouseout="mouseOutOnSpatialRight"/>
-                  </v-layer>
-                  <v-layer
-                    ref="annotationLayerRight"
-                    />
-                  <v-layer
-                    ref="drawingLayerRight"
-                    id="drawingLayerRight"
-                    v-if="isDrawing">
-                    <template
-                      v-for="poly in regionsUMAP">
+                        :config="polygon"/>
+                    </v-layer>
+                    <v-layer
+                      v-if="isDrawingRect"
+                      ref="drawingLayerRect"
+                      id="drawingLayerRect">
+                      <v-rect
+                        :config="rectangle"/>
+                    </v-layer>
+                  </v-stage>
+                </v-card>
+              </v-col>
+              <v-col cols="11" sm="1">
+                <template v-if="!isClusterView && showFlag[0]">
+                  <v-card :style="{ 'background-color': backgroundColor }" flat>
+                    <div :style="{ 'color':colorbarText, 'font-size':'22px' }">
+                      <div :style="{ 'background-image': colorBarmap, 'width':'30px','height':'340px','margin-top':'75px','float':'left'}" >
+                      </div>
+                      <div style="width:40px;float:left;height:300px;">
+                        <p style="position:absolute;top:55px;transform:rotate(-45deg);padding:5px;"> {{stepArray[4]}} </p>
+                        <p style="position:absolute;top:130px;transform:rotate(-45deg);padding:5px;"> {{stepArray[3]}} </p>
+                        <p style="position:absolute;top:220px;transform:rotate(-45deg);padding:5px;"> {{stepArray[2]}} </p>
+                        <p style="position:absolute;top:295px;transform:rotate(-45deg);padding:5px;"> {{stepArray[1]}} </p>
+                        <p style="position:absolute;top:380px;transform:rotate(-45deg);padding:5px;"> {{stepArray[0]}} </p>
+                      </div>
+                    </div>
+                  </v-card>
+                </template>
+              </v-col>
+              <v-col cols="11" sm="5">
+                <v-card id="stageParentRight"
+                  flat
+                  v-resize="onResize"
+                  :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
+                  @mousedown="mouseDownOnStageRight"
+                  @mousemove="mouseMoveOnStageRight"
+                  @mouseup="mouseUpOnStageRight"
+                  height="48vh"
+                  align="center">
+                  <v-btn
+                    v-model="scale"
+                    color="white"
+                    :disabled="!spatialData"
+                    @click="scaleUMAP *= 1.1"
+                    x-small>
+                    <v-icon>mdi-plus</v-icon>
+                  </v-btn>&nbsp;
+                  <v-btn
+                    v-model="scale"
+                    color="white"
+                    :disabled="!spatialData"
+                    @click="scaleUMAP *= 0.9"
+                    x-small>
+                    <v-icon>mdi-minus</v-icon>
+                  </v-btn>
+                  <v-stage
+                    ref="konvaStageRight"
+                    class="mainStage"
+                    :config="konvaConfigRight"
+                    :style="{ 'overflow': 'hidden' }"
+                    >
+                    <v-layer
+                      ref="spatialLayerRight"
+                      id="spatialLayerRight">
+                      <v-circle v-for="p in circlesSpatialUMAP"
+                        :config="p"
+                        v-bind:key="p.id"
+                        @mousemove="mouseMoveOnSpatialRight"
+                        @mouseout="mouseOutOnSpatialRight"/>
+                    </v-layer>
+                    <v-layer
+                      ref="annotationLayerRight"
+                      />
+                    <v-layer
+                      ref="drawingLayerRight"
+                      id="drawingLayerRight"
+                      v-if="isDrawing">
+                      <template
+                        v-for="poly in regionsUMAP">
+                        <v-line
+                          v-bind:key="poly.id"
+                          :config="poly"/>
+                      </template>
                       <v-line
-                        v-bind:key="poly.id"
-                        :config="poly"/>
-                    </template>
-                    <v-line
-                      :config="polygonUMAP"/>
-                  </v-layer>
-                  <v-layer
-                    v-if="isDrawingRect"
-                    ref="drawingLayerRightRect"
-                    id="drawingLayerRightRect">
-                    <v-rect
-                      :config="rectangleUMAP"/>
-                  </v-layer>
-                </v-stage>
-              </v-card>
-            </v-col>
-          </v-row>
+                        :config="polygonUMAP"/>
+                    </v-layer>
+                    <v-layer
+                      v-if="isDrawingRect"
+                      ref="drawingLayerRightRect"
+                      id="drawingLayerRightRect">
+                      <v-rect
+                        :config="rectangleUMAP"/>
+                    </v-layer>
+                  </v-stage>
+                </v-card>
+              </v-col>
+            </v-row>
           </div>
           <v-card v-if="clusterItems" :disabled="loading">
-              <v-data-table
-                dense
-                :items-per-page="999"
-                hide-default-footer
-                :loading="loading"
-                :items="geneNames"
-                :headers="topHeaders"
-              >
-              <template v-slot:item="row">
-                <tr>
-                  <td>{{row.item['id']}}</td>
-                  <td v-for="num in lengthClust" :key="num.toString()"><v-btn text x-small dense @click="sendGene(row.item['C'+num])">{{row.item['C'+num]}}</v-btn></td>
-                </tr>
-              </template>
-              </v-data-table>
+            <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"></table-component>
           </v-card>
         </v-col>
           <v-card v-if="isClusterView && spatialData" :style="{ 'background-color': backgroundColor }" flat>
@@ -396,6 +408,7 @@ import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
 import { Console } from 'console';
 import html2canvas from 'html2canvas';
 import GeneAutoComplete from './modules/GeneAutoComplete.vue';
+import GeneDataTable from './modules/GeneDataTable.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -445,7 +458,7 @@ function colormapBounded(cmap: string[], values: number[]) {
 
 export default defineComponent({
   name: 'AtlasG',
-  components: { 'my-component': GeneAutoComplete },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -1030,6 +1043,7 @@ export default defineComponent({
           geneRank.push(tenGenes);
         });
         geneNames.value = geneRank;
+        console.log(geneNames.value);
         lengthClust.value = clusterItems.value.length;
         topSelected.value = spatialData.value.top_selected;
         await updateCircles();
