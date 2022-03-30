@@ -1,74 +1,7 @@
 <template>
     <v-container fluid>
       <v-row no-gutters>
-        <v-col cols="12" sm="3">
-          <v-card
-            v-if="!query.public"
-            :disabled="loading">
-            <v-text-field
-              v-model="search"
-              :loading="loading"
-              prepend-icon="mdi-magnify"/>
-            <v-data-table
-            v-model="selected"
-            height="20vh"
-            width="30%"
-            dense
-            single-select
-            :search="search"
-            :loading="loading"
-            :items="items"
-            :headers="headers"
-            sort-by="id"
-            @click:row="selectAction"
-            />
-          </v-card>
-          <v-card :disabled="loading">
-            <v-card-title>
-              <v-text-field
-                v-model="filename"
-                v-if="!query.public"
-                :loading="loading"
-                :messages="progressMessage"
-                label="Filename"
-              />
-              <v-text-field
-                v-model="runId"
-                v-if="query.public"
-                :loading="loading"
-                :messages="progressMessage"
-                label="ID"
-                :disabled="true"
-              />
-              <v-text-field
-                v-if="!query.public"
-                v-model="publicLink"
-                label="Public Link"
-                :readonly='true'
-              >
-                <template v-slot:append>
-                  <v-btn
-                    icon
-                    small
-                    color="primary"
-                    v-clipboard:copy="publicLink"
-                    >
-                    <v-icon>mdi-content-copy</v-icon>
-                  </v-btn>
-                </template>
-              </v-text-field>
-              <v-select
-                v-model="currentTask"
-                v-if="candidateWorkers && !query.public"
-                :items="candidateWorkers"
-                label="Select Worker"
-                item-text="task"
-                return-object>
-              </v-select>
-            </v-card-title>
-          </v-card>
-        </v-col>
-        <v-col cols="12" sm="9">
+        <v-col cols="12" sm="12">
           <v-row>
             <v-col cols="12" sm="6">
               <atx-viewer :query="{ public: false }"
@@ -91,22 +24,6 @@
                           :spatialdata="spatialData"
                           :genelist="genes"
                           :standalone="false"
-                          :presentation="'umap'"
-                          :selected_tixels="selectedTixels"
-                          :background="'black'"
-                          :heatmap="'jet'"
-                          :worker="'gene.compute_qc'"
-                          :queue="'atxcloud_gene'"
-                          v-on:regionUpdated="onRegionUpdated"/>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="12" sm="6">
-              <atx-viewer :query="{ public: false }"
-                          :filename="filename"
-                          :spatialdata="spatialData"
-                          :genelist="genes"
-                          :standalone="false"
                           :presentation="'spatial'"
                           :selected_tixels="selectedTixels"
                           :background="'black'"
@@ -115,33 +32,7 @@
                           :queue="'atxcloud_gene'"
                           v-on:regionUpdated="onRegionUpdated"/>
             </v-col>
-            <v-col cols="12" sm="6">
-              <atx-viewer :query="{ public: false }"
-                          :filename="filename"
-                          :spatialdata="spatialData"
-                          :genelist="genes"
-                          :standalone="false"
-                          :presentation="'umap'"
-                          :selected_tixels="selectedTixels"
-                          :background="'black'"
-                          :heatmap="'jet'"
-                          :worker="'gene.compute_qc'"
-                          :queue="'atxcloud_gene'"
-                          v-on:regionUpdated="onRegionUpdated"/>
-            </v-col>
           </v-row>
-          <v-card v-if="clusterItems">
-              <v-data-table
-                height="37vh"
-                dense
-                :items-per-page="999"
-                hide-default-footer
-                :loading="loading"
-                :items="geneNames"
-                :headers="topHeaders"
-              >
-              </v-data-table>
-          </v-card>
         </v-col>
       </v-row>
     </v-container>
@@ -544,7 +435,7 @@ export default defineComponent({
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}/${v.split('/')[2]}` }));
+      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
       items.value = qc_data;
       loading.value = false;
     }

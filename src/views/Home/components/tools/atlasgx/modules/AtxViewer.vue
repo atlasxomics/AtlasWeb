@@ -1,5 +1,18 @@
 <template>
     <v-container fixed>
+          <fresh-dialog v-model="fileDialog" width="30%" height="30%">
+            <v-card flat height="20vh" class="d-flex flex-column">
+              <v-card-title>
+                <file-auto-complete v-model="acFilename" :filter="'obj/genes.h5ad'"/>
+              </v-card-title>
+              <v-spacer horizontal/>
+              <v-card-actions>
+                <v-spacer/>
+                <v-btn color="success" @click="onSelectFiles(acFilename)">Select</v-btn>
+                <v-btn color="error" @click="fileDialog=false">Cancel</v-btn>
+              </v-card-actions>
+            </v-card>
+          </fresh-dialog>
           <v-row no-gutters>
             <v-col cols="12" sm="12">
               <v-card flat>
@@ -9,6 +22,7 @@
                     :outlined="false"
                     multiple
                     dense
+                    :label="selectedFiles"
                     clearable
                     :allow-overflow="false"
                     chips
@@ -48,6 +62,15 @@
                   width="100%"
                   >
                   <v-card-text>
+                    <v-row>
+                      <v-btn
+                        small
+                        icon
+                        color="primary"
+                        @click="fileDialog = true"
+                        ><v-icon>mdi-folder</v-icon>
+                      </v-btn>
+                    </v-row>
                     <v-row>
                       <template v-if="currentViewType=='umap'">
                         <v-btn
@@ -255,6 +278,8 @@ import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
+import FreshDialog from '@/components/FreshDialog.vue';
+import FileAutoComplete from './FileAutoComplete.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -299,10 +324,14 @@ function pointInPolygon(point: number[], vs: any[]) { // point is like [5,5], vs
 export default defineComponent({
   name: 'AtxViewer',
   props: ['query', 'filename', 'spatialdata', 'genelist', 'presentation', 'selected_tixels', 'heatmap', 'background', 'worker', 'queue', 'standalone'],
+  components: { FreshDialog, FileAutoComplete },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
+    const fileDialog = ref<boolean>(false);
+    const selectedFiles = ref<string>();
+    const acFilename = ref<string>();
     const workers = computed(() => store.state.client?.workers);
     const currentRunId = ref<string | null>(null);
     const filename = computed(() => props.filename);
@@ -544,8 +573,8 @@ export default defineComponent({
     }
     async function loadExpressions() {
       if (!client.value) return;
-      if (!filename.value) return;
-      const resp = props.query.public ? await client.value.getGeneExpressionsByToken(filename.value) : await client.value.getGeneExpressions(filename.value);
+      if (!selectedFiles.value) return;
+      const resp = props.query.public ? await client.value.getGeneExpressionsByToken(selectedFiles.value) : await client.value.getGeneExpressions(selectedFiles.value);
       genes.value = resp.map((v: string) => ({ name: v }));
     }
     const checkTaskStatus = async (task_id: string) => {
@@ -554,7 +583,7 @@ export default defineComponent({
     };
     async function runSpatial(workerRequired = true) {
       if (!client.value) return;
-      if (!filename.value) return;
+      if (!selectedFiles.value) return;
       try {
         progressMessage.value = null;
         loading.value = true;
@@ -562,9 +591,9 @@ export default defineComponent({
           await loadExpressions();
           const task = currentTask.value;
           const queue = currentQueue.value;
-          const args = [filename.value, selectedGenes.value];
+          const args = [selectedFiles.value, selectedGenes.value];
           if (!props.query.public) {
-            const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
+            const { encoded: filenameToken } = await client.value.encodeLink({ args: [selectedFiles.value], meta: { run_id: currentRunId.value } });
             const { host } = window.location;
             publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
           }
@@ -744,9 +773,23 @@ export default defineComponent({
       isClusterView.value = false;
       // TODO to send signal to the parent
     }
+    function onFilesChanged(ev: any) {
+      selectedFiles.value = ev;
+    }
+    async function onSelectFiles(ev: any) {
+      fileDialog.value = false;
+      selectedGenes.value = [];
+      selectedFiles.value = acFilename.value;
+      runSpatial(true);
+    }
+    watch(selectedFiles, (v: any) => {
+      // console.log(v);
+    });
     watch(filename, (v: string) => {
       selectedGenes.value = [];
-      runSpatial(false);
+      selectedFiles.value = v;
+      onSelectFiles(v);
+      // runSpatial(false);
     });
     watch(currentViewType, (v: any) => {
       updateCircles();
@@ -797,6 +840,11 @@ export default defineComponent({
       search,
       selected,
       loading,
+      fileDialog,
+      acFilename,
+      selectedFiles,
+      onFilesChanged,
+      onSelectFiles,
       clusterHeaders,
       genes,
       selectedGenes,
