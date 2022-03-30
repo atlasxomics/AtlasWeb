@@ -820,7 +820,7 @@ export default defineComponent({
     onUnmounted(() => {
       console.log('Unmounted');
       acInstance.$destroy();
-      acInstance.$el.parentNode.removeChild(acInstance.$el);
+      acInstance.$el.parentNode!.removeChild(acInstance.$el);
       store.commit.setSubmenu(null);
     });
     return {

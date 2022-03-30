@@ -1,126 +1,75 @@
 <template>
-  <v-app>
+  <v-app v-bind="{ 'geneButton': geneButton }">
     <v-container fluid :style="{ 'background-color': backgroundColor, 'height': '100%', 'padding': '0' }">
       <v-row>
         <v-col cols="12" sm="12">
-          <v-template v-if="!query.public && runIdFlag">
-            <v-dialog
-              :value="runIdFlag"
-              @click:outside="runIdFlag = !runIdFlag"
-              hide-overlay>
-              <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
-                :disabled="loading">
-                <v-text-field
-                  v-model="search"
-                  :loading="loading"
-                  style="width: 190px;"
-                  prepend-icon="mdi-magnify"/>
-                <v-data-table
-                v-model="selected"
-                height="20vh"
-                width="20%"
-                dense
-                single-select
-                :search="search"
+          <v-dialog
+            v-if="!query.public && runIdFlag"
+            :value="runIdFlag"
+            @click:outside="runIdFlag = !runIdFlag"
+            hide-overlay>
+            <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
+              :disabled="loading">
+              <v-text-field
+                v-model="search"
                 :loading="loading"
-                :items="items"
-                :headers="headers"
-                sort-by="id"
-                @click:row="selectAction"
-                />
-              </v-card>
-            </v-dialog>
-          </v-template>
-          <v-template v-if="backgroundFlag">
-            <v-dialog
-              :value="backgroundFlag"
-              @click:outside="backgroundFlag = !backgroundFlag"
-              hide-overlay>
-              <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:130px;">
-                <v-data-table
-                v-model="selected"
-                height="13vh"
-                width="20%"
-                dense
-                single-select
-                hide-default-footer
-                hide-default-header
-                :disabled="!spatialData || loading"
-                :items="backgroundOptions"
-                :headers="backgroundHeader"
-                @click:row="chooseBackground"
-                />
-              </v-card>
-            </v-dialog>
-          </v-template>
-          <v-template v-if="heatmapFlag">
-            <v-dialog
-              :value="heatmapFlag"
-              @click:outside="heatmapFlag = !heatmapFlag"
-              hide-overlay>
-              <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:200px;">
-                <v-data-table
-                v-model="selected"
-                height="19vh"
-                width="20%"
-                dense
-                single-select
-                hide-default-footer
-                hide-default-header
-                :disabled="!spatialData || loading"
-                :items="heatmapOptions"
-                :headers="heatmapHeader"
-                @click:row="chooseHeatmap"
-                />
-              </v-card>
-            </v-dialog>
-          </v-template>
-          <v-template>
-          <v-card flat :style="{ 'width': '450px', 'left':searchgenePlace }">
-            <v-autocomplete
-              v-model="selectedGenes"
-              :items="filteredGenes"
-              :outlined="false"
-              multiple
+                style="width: 190px;"
+                prepend-icon="mdi-magnify"/>
+              <v-data-table
+              v-model="selected"
+              height="20vh"
+              width="20%"
               dense
-              clearable
-              placeholder=""
-              label="Enter gene ID:"
-              :allow-overflow="false"
-              chips
-              :cache-items="false"
-              color="blue-grey lighten-2"
-              item-text="name"
-              item-value="name"
-              @input="acInputChanged"
-              :search-input.sync="searchInput"
-              :loading="autocompleteLoading"
-              :disabled="!filename || loading"
-              @change="onGenelistChanged"
-              small-chips>
-              <template v-slot:selection="data">
-                <v-chip
-                  v-bind="data.attrs"
-                  :input-value="data.selected"
-                  close
-                  color="warning"
-                  @click="data.select"
-                  @click:close="remove(data.item)"
-                >{{ data.item.name }}
-                </v-chip>
-              </template>
-              <template v-slot:append-outer v-if="selectedGenes.length > 0">
-                <v-btn
-                  color="primary"
-                  large
-                  text
-                  :disabled="!filename || loading"
-                  @click="runSpatial('spatial');showFlag=true"
-                  >Show</v-btn>
-              </template>
-            </v-autocomplete>
-          </v-card>
-          </v-template>
+              single-select
+              :search="search"
+              :loading="loading"
+              :items="items"
+              :headers="headers"
+              sort-by="id"
+              @click:row="selectAction"
+              />
+            </v-card>
+          </v-dialog>
+          <v-dialog
+            :value="backgroundFlag"
+            @click:outside="backgroundFlag = !backgroundFlag"
+            hide-overlay>
+            <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:130px;">
+              <v-data-table
+              v-model="selected"
+              height="13vh"
+              width="20%"
+              dense
+              single-select
+              hide-default-footer
+              hide-default-header
+              :disabled="!spatialData || loading"
+              :items="backgroundOptions"
+              :headers="backgroundHeader"
+              @click:row="chooseBackground"
+              />
+            </v-card>
+          </v-dialog>
+          <v-dialog
+            :value="heatmapFlag"
+            @click:outside="heatmapFlag = !heatmapFlag"
+            hide-overlay>
+            <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:200px;">
+              <v-data-table
+              v-model="selected"
+              height="19vh"
+              width="20%"
+              dense
+              single-select
+              hide-default-footer
+              hide-default-header
+              :disabled="!spatialData || loading"
+              :items="heatmapOptions"
+              :headers="heatmapHeader"
+              @click:row="chooseHeatmap"
+              />
+            </v-card>
+          </v-dialog>
         </v-col>
         <v-col cols="2" sm="1">
           <v-card :style="{ 'margin-left': '5px', 'width': '83px', 'min-width': '83px', 'height':'250px', 'padding-top': '15px', 'background-color': 'silver' }" flat>
@@ -306,7 +255,7 @@
               </v-card>
             </v-col>
           <v-col cols="11" sm="1">
-          <template v-if="!isClusterView && showFlag">
+          <template v-if="!isClusterView && showFlag[0]">
             <v-card :style="{ 'background-color': backgroundColor }" flat>
               <div :style="{ 'color':colorbarText, 'font-size':'22px' }">
                 <div :style="{ 'background-image': colorBarmap, 'width':'30px','height':'340px','margin-top':'75px','float':'left'}" >
@@ -393,7 +342,6 @@
           </div>
           <v-card v-if="clusterItems" :disabled="loading">
               <v-data-table
-                height="35vh"
                 dense
                 :items-per-page="999"
                 hide-default-footer
@@ -436,7 +384,9 @@
 </template>
 
 <script lang='ts'>
-import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
+import Vue from 'vue';
+import vuetify from '@/plugins/vuetify';
+import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import Konva from 'konva';
 import lodash from 'lodash';
 import colormap from 'colormap';
@@ -445,6 +395,7 @@ import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
 import { Console } from 'console';
 import html2canvas from 'html2canvas';
+import GeneAutoComplete from './modules/GeneAutoComplete.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -494,6 +445,7 @@ function colormapBounded(cmap: string[], values: number[]) {
 
 export default defineComponent({
   name: 'AtlasG',
+  components: { 'my-component': GeneAutoComplete },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -566,17 +518,15 @@ export default defineComponent({
     const isDrawing = ref<boolean>(false);
     const isDrawingRect = ref<boolean>(false);
     const isClicked = ref<boolean>(false);
-    const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
-    const polygonUMAP = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'white', strokeWidth: 1 });
-    const rectangle = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'white', strokeWidth: 1, endPointx: 0, endPointy: 0 });
-    const rectangleUMAP = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'white', strokeWidth: 1, endPointx: 0, endPointy: 0 });
+    const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'brown', strokeWidth: 1 });
+    const polygonUMAP = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'brown', strokeWidth: 1 });
+    const rectangle = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'brown', strokeWidth: 1, endPointx: 0, endPointy: 0 });
+    const rectangleUMAP = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'brown', strokeWidth: 1, endPointx: 0, endPointy: 0 });
     const regions = ref<any>();
-    const regionsUMAP = ref<any[]>([]);
-    const regionRect = ref<any[]>([]);
-    const regionRectUMAP = ref<any[]>([]);
+    const regionsUMAP = ref<any>();
     const lengthClust = ref<number>(0);
     const colorBar = ref<any[]>([]);
-    const showFlag = ref<boolean>(false);
+    const showFlag = ref<boolean[]>([false]);
     const runIdFlag = ref<boolean>(false);
     const backgroundFlag = ref<boolean>(false);
     const heatmapFlag = ref<boolean>(false);
@@ -590,6 +540,20 @@ export default defineComponent({
     const highlightIds = ref<any[]>([]);
     const topSelected = ref<any[]>([]);
     const highlightCount = ref<number>(0);
+    const geneButton = ref<any[]>(['']);
+    const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
+    const acInstance = ref(new GeneAutoCompleteClass({
+      vuetify,
+      propsData: { gene_list: genes, geneButton },
+      created() {
+        this.$on('changed', (ev: any[]) => {
+          selectedGenes.value = ev;
+        });
+        this.$on('flag', (ev: any) => {
+          showFlag.value = [ev];
+        });
+      },
+    }));
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -668,8 +632,7 @@ export default defineComponent({
     }
     function sendGene(ev: any) {
       if (!selectedGenes.value.includes(ev)) {
-        searchInput.value = ev;
-        selectedGenes.value.push(ev);
+        geneButton.value = [ev];
       }
       isClusterView.value = false;
     }
@@ -756,7 +719,8 @@ export default defineComponent({
           regions.value.forEach((poly: any, idx: number) => {
             if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
           });
-        } else {
+        }
+        if (lassoSide.value === 'right') {
           regionsUMAP.value.forEach((poly: any, idx: number) => {
             if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
           });
@@ -1010,7 +974,7 @@ export default defineComponent({
         await loadExpressions();
         const { task } = currentTask.value;
         const [queue] = currentTask.value.queues;
-        // const queue = 'joshua_gene';
+        // const queue = 'atxcloud_liya_gene';
         const args = [filename.value, selectedGenes.value, highlightIds.value];
         if (!props.query.public) {
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
@@ -1160,7 +1124,7 @@ export default defineComponent({
         polygon.value.points = [];
         highlightRegion();
         isClicked.value = true;
-        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'black', strokeWidth: 3 };
+        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'brown', strokeWidth: 3 };
         polygon.value.points = [];
       }
       if (isDrawingRect.value) {
@@ -1170,8 +1134,8 @@ export default defineComponent({
         regions.value = [];
         polygon.value.points = [];
         const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
-        rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
         isClicked.value = true;
       }
@@ -1185,7 +1149,7 @@ export default defineComponent({
         polygon.value.points = [];
         highlightRegion();
         isClicked.value = true;
-        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'black', strokeWidth: 3 };
+        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'brown', strokeWidth: 3 };
         polygonUMAP.value.points = [];
       }
       if (isDrawingRect.value) {
@@ -1195,8 +1159,8 @@ export default defineComponent({
         regions.value = [];
         polygon.value.points = [];
         const mousePos = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
-        rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'black', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
         isClicked.value = true;
       }
@@ -1376,11 +1340,20 @@ export default defineComponent({
     watch(selectedGenes, (v: any[]) => {
       if (selectedGenes.value.length === 0) {
         isClusterView.value = true;
-        showFlag.value = false;
+        showFlag.value = [false];
         stepArray.value = [];
         updateCircles();
       } else {
         removeRegions('');
+      }
+    });
+    watch(showFlag, (v: any[]) => {
+      const bool = v[0];
+      if (bool) {
+        isClusterView.value = false;
+        runSpatial('spatial');
+      } else {
+        geneButton.value = [];
       }
     });
     watch(searchInput, (v: any) => {
@@ -1414,6 +1387,12 @@ export default defineComponent({
           heatmapFlag.value = !heatmapFlag.value;
         },
       },
+      {
+        type: 'component',
+        name: 'GeneAutoComplete',
+        id: 'geneac',
+        component: acInstance,
+      },
     ];
     onMounted(async () => {
       await clientReady;
@@ -1434,6 +1413,12 @@ export default defineComponent({
           await selectAction({ id: props.query.run_id });
         }
       }
+      acInstance.value.$mount('#geneac');
+    });
+    onUnmounted(() => {
+      acInstance.value.$destroy();
+      acInstance.value.$el.parentNode!.removeChild(acInstance.value.$el);
+      store.commit.setSubmenu(null);
     });
     return {
       scale,
@@ -1509,8 +1494,6 @@ export default defineComponent({
       regionsUMAP,
       rectangle,
       rectangleUMAP,
-      regionRect,
-      regionRectUMAP,
       removeRegions,
       reScale,
       reScaleUMAP,
@@ -1539,6 +1522,8 @@ export default defineComponent({
       highlightCount,
       autoCompleteFlag,
       searchgenePlace,
+      acInstance,
+      geneButton,
     };
   },
 });
