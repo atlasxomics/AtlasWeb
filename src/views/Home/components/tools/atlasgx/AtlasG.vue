@@ -410,7 +410,7 @@
               </v-data-table>
           </v-card>
         </v-col>
-          <v-card v-if="isClusterView && spatialData" :style="{ 'background-color': backgroundColor }" :disabled="loading" flat>
+          <v-card v-if="isClusterView && spatialData" :style="{ 'background-color': backgroundColor }" flat>
             <v-data-table
               width="10vw"
               v-model="selected"

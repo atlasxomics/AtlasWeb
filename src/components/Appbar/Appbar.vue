@@ -9,20 +9,25 @@
         v-bind:key="menu.text"
         bottom>
         <template v-slot:activator="{ on, attrs }" >
-          <v-btn
-            text
-            @click="menu.click"
-            :icon="menu.icon ? true : false"
-            v-bind="attrs"
-            v-on="on"
-            >
-            <template v-if="menu.icon">
-              <v-icon :color="menu.color">{{ menu.icon }}</v-icon>
-            </template>
-            <template v-if="!menu.icon">
-              {{ menu.text }}
-            </template>
-          </v-btn>
+          <template v-if="!menu.type">
+            <v-btn
+              text
+              @click="menu.click"
+              :icon="menu.icon ? true : false"
+              v-bind="attrs"
+              v-on="on"
+              >
+              <template v-if="menu.icon">
+                <v-icon :color="menu.color">{{ menu.icon }}</v-icon>
+              </template>
+              <template v-if="!menu.icon">
+                {{ menu.text }}
+              </template>
+            </v-btn>
+          </template>
+          <template v-if="menu.type == 'component'">
+            <div :id="menu.id"/>
+          </template>
         </template>
         <span v-bind:key="`${menu.text}-span`">{{ menu.tooltip }}</span>
       </v-tooltip>
