@@ -169,7 +169,6 @@
               dense
               color="primary"
               @click="optionFlag=true;optionCreate=true;"
-              class="ml-7"
               x-small>
               Reprocess
             </v-btn>
