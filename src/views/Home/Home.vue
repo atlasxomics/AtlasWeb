@@ -31,6 +31,7 @@ import WaferInformationViewer from './components/edit/WaferInformationViewer.vue
 import DbitInformationViewer from './components/edit/DbitInformationViewer.vue';
 import AtlasBrowser from './components/tools/atlasbrowser/AtlasBrowser.vue';
 import AtlasG from './components/tools/atlasgx/AtlasG.vue';
+import AtlasTest from './components/tools/atlasgx/AtlasTest.vue';
 import AtlasCompare from './components/tools/atlasgx/AtlasCompare.vue';
 import AtlasAnalytics from './components/tools/atlasanalytics/AtlasAnalytics.vue';
 import AtlasViewer from './components/tools/atlasview/AtlasViewer.vue';
@@ -62,6 +63,7 @@ export default defineComponent({
     DbitInformationViewer,
     AtlasBrowser,
     AtlasG,
+    AtlasTest,
     AtlasCompare,
     AtlasAnalytics,
     AtlasUploader,
