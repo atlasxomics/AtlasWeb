@@ -643,20 +643,20 @@ export default defineComponent({
         });
       }, 1000);
     }
-    function loadCandidateWorkers(target: string) {
-      if (!workers.value) return;
-      candidateWorkers.value = workers.value.filter((x: any) => {
-        if (x) {
-          if (x.params) {
-            if (x.params.target === target) {
-              return true;
-            }
-          }
-        }
-        return false;
-      });
-      [currentTask.value] = candidateWorkers.value;
-    }
+    // function loadCandidateWorkers(target: string) {
+    //   if (!workers.value) return;
+    //   candidateWorkers.value = workers.value.filter((x: any) => {
+    //     if (x) {
+    //       if (x.params) {
+    //         if (x.params.target === target) {
+    //           return true;
+    //         }
+    //       }
+    //     }
+    //     return false;
+    //   });
+    //   [currentTask.value] = candidateWorkers.value;
+    // }
     function makearray(stopValue: number, startValue: number) {
       if (highestCount.value === 0) return;
       const arr = [];
@@ -1428,7 +1428,8 @@ export default defineComponent({
       (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
       if (props.query) {
         if (!props.query.public) {
-          loadCandidateWorkers('AtlasGX');
+          // loadCandidateWorkers('AtlasGX');
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
           await fetchFileList();
         } else {
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
@@ -1492,7 +1493,7 @@ export default defineComponent({
       selectAction,
       workers,
       candidateWorkers,
-      loadCandidateWorkers,
+      // loadCandidateWorkers,
       currentTask,
       highestCount,
       lowestCount,
