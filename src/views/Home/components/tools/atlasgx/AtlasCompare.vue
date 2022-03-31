@@ -679,7 +679,7 @@ export default defineComponent({
     // ];
     onMounted(async () => {
       await clientReady;
-      // store.commit.setSubmenu(submenu);
+      store.commit.setSubmenu(null);
       // acInstance.value = new GeneAutoCompleteClass({
       //   vuetify,
       //   propsData: { gene_list: genes },

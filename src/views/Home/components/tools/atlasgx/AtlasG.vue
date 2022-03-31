@@ -1001,7 +1001,7 @@ export default defineComponent({
       const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Genes', id_with_tag: `${v.split('/')[1]}-Genes` }));
       const fl_payload_motif = { params: { path: 'data', filter: 'obj/motifs.h5ad' } };
       const filelist_motif = await client.value.getFileList(fl_payload_motif);
-      const qc_data_motif = filelist.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Motifs', id_with_tag: `${v.split('/')[1]}-Motifs` }));
+      const qc_data_motif = filelist_motif.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Motifs', id_with_tag: `${v.split('/')[1]}-Motifs` }));
       items.value = qc_data.concat(...qc_data_motif);
       loading.value = false;
     }
