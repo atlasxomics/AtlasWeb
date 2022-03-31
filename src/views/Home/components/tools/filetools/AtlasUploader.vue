@@ -51,6 +51,7 @@
           <v-row>
             <v-col cols=12 sm="4">
               <file-upload-drag-drop :disabled="!runId" :run_id="runId" filetype="Gene Matrix (.h5ad)"  :destination="generateGeneMatrixDestination(runId, NgId, 'genes.h5ad')"/>
+              <file-upload-drag-drop :disabled="!runId" :run_id="runId" filetype="Motif Matrix (.h5ad)"  :destination="generateGeneMatrixDestination(runId, NgId, 'motifs.h5ad')"/>
             </v-col>
           </v-row>
         </v-container>
