@@ -3,7 +3,7 @@
           <fresh-dialog v-model="fileDialog" width="30%" height="30%">
             <v-card flat height="20vh" class="d-flex flex-column">
               <v-card-title>
-                <file-auto-complete v-model="acFilename" :filter="'obj/genes.h5ad'"/>
+                <file-auto-complete v-model="acFilename" :filter="'.h5ad'"/>
               </v-card-title>
               <v-spacer horizontal/>
               <v-card-actions>
