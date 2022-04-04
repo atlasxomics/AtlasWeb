@@ -12,8 +12,8 @@
             />
           <v-btn
             color="primary"
-            @click="onChangePassword"
-          >Change Password</v-btn>
+            @click="onSave"
+          >Save</v-btn>
         </v-form>
       </v-col>
     </v-row>
@@ -63,6 +63,9 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Form is not valid', options: { color: 'error', right: true } });
       }
     }
+    async function onSave(ev: any) {
+      console.log('Save button clicked');
+    }
     onMounted(async () => {
       await clientReady;
       await getUserInfo();
@@ -72,6 +75,7 @@ export default defineComponent({
       overview,
       validForm,
       onGroupCreated,
+      onSave,
     };
   },
 });

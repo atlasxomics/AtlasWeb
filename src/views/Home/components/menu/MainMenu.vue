@@ -53,7 +53,7 @@ const menu = [
       { name: 'Atlas Viewer', icon: 'mdi-checkbox-multiple-marked', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasViewer' } },
       { name: 'Atlas GX', icon: 'mdi-biohazard', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasG' } },
       { name: 'Atlas Compare', icon: 'mdi-compare', access_control: ['admin'], color: 'red', query: { component: 'AtlasCompare' } },
-      { name: 'Atlas Test', icon: 'mdi-test-tube', access_control: ['admin'], color: 'red', query: { component: 'AtlasTest' } },
+      // { name: 'Atlas Test', icon: 'mdi-test-tube', access_control: ['admin'], color: 'red', query: { component: 'AtlasTest' } },
       { name: 'Atlas Analytics', icon: 'mdi-sigma', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasAnalytics' } },
       { name: 'Atlas Uploader', icon: 'mdi-cloud-upload', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasUploader' } },
     ],

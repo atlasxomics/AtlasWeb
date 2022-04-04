@@ -3,7 +3,7 @@
     <v-container fluid :style="{ 'background-color': backgroundColor, 'height': '100%', 'padding': '0' }">
       <v-row>
         <v-col cols="12" sm="12">
-          <v-template v-if="!query.public && runIdFlag">
+          <template v-if="!query.public && runIdFlag">
             <v-dialog
               :value="runIdFlag"
               @click:outside="runIdFlag = !runIdFlag"
@@ -23,15 +23,16 @@
                 single-select
                 :search="search"
                 :loading="loading"
+                item-key="id_with_tag"
                 :items="items"
                 :headers="headers"
-                sort-by="id"
+                sort-by="id_with_tag"
                 @click:row="selectAction"
                 />
               </v-card>
             </v-dialog>
-          </v-template>
-          <v-template v-if="backgroundFlag">
+          </template>
+          <template v-if="backgroundFlag">
             <v-dialog
               :value="backgroundFlag"
               @click:outside="backgroundFlag = !backgroundFlag"
@@ -52,8 +53,8 @@
                 />
               </v-card>
             </v-dialog>
-          </v-template>
-          <v-template v-if="heatmapFlag">
+          </template>
+          <template v-if="heatmapFlag">
             <v-dialog
               :value="heatmapFlag"
               @click:outside="heatmapFlag = !heatmapFlag"
@@ -74,8 +75,8 @@
                 />
               </v-card>
             </v-dialog>
-          </v-template>
-          <v-template>
+          </template>
+          <template>
           <v-card flat :style="{ 'width': '450px', 'left':searchgenePlace }">
             <v-autocomplete
               v-model="selectedGenes"
@@ -120,7 +121,7 @@
               </template>
             </v-autocomplete>
           </v-card>
-          </v-template>
+          </template>
         </v-col>
         <v-col cols="2" sm="1">
           <v-card :style="{ 'margin-left': '5px', 'width': '83px', 'min-width': '83px', 'height':'250px', 'padding-top': '15px', 'background-color': 'silver' }" flat>
@@ -455,7 +456,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 const headers = [
-  { text: 'ID', value: 'id' },
+  { text: 'ID', value: 'id_with_tag' },
 ];
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
@@ -642,20 +643,20 @@ export default defineComponent({
         });
       }, 1000);
     }
-    function loadCandidateWorkers(target: string) {
-      if (!workers.value) return;
-      candidateWorkers.value = workers.value.filter((x: any) => {
-        if (x) {
-          if (x.params) {
-            if (x.params.target === target) {
-              return true;
-            }
-          }
-        }
-        return false;
-      });
-      [currentTask.value] = candidateWorkers.value;
-    }
+    // function loadCandidateWorkers(target: string) {
+    //   if (!workers.value) return;
+    //   candidateWorkers.value = workers.value.filter((x: any) => {
+    //     if (x) {
+    //       if (x.params) {
+    //         if (x.params.target === target) {
+    //           return true;
+    //         }
+    //       }
+    //     }
+    //     return false;
+    //   });
+    //   [currentTask.value] = candidateWorkers.value;
+    // }
     function makearray(stopValue: number, startValue: number) {
       if (highestCount.value === 0) return;
       const arr = [];
@@ -997,8 +998,11 @@ export default defineComponent({
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}/${v.split('/')[2]}` }));
-      items.value = qc_data;
+      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Genes', id_with_tag: `${v.split('/')[1]}-Genes` }));
+      const fl_payload_motif = { params: { path: 'data', filter: 'obj/motifs.h5ad' } };
+      const filelist_motif = await client.value.getFileList(fl_payload_motif);
+      const qc_data_motif = filelist_motif.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Motifs', id_with_tag: `${v.split('/')[1]}-Motifs` }));
+      items.value = qc_data.concat(...qc_data_motif);
       loading.value = false;
     }
     async function runSpatial(stype: string) {
@@ -1010,7 +1014,9 @@ export default defineComponent({
         await loadExpressions();
         const { task } = currentTask.value;
         const [queue] = currentTask.value.queues;
-        const args = [filename.value, selectedGenes.value, highlightIds.value];
+        // const queue = 'atxcloud_liya_gene';
+        const args = [filename.value, selectedGenes.value];
+        // const args = [filename.value, selectedGenes.value, highlightIds.value];
         if (!props.query.public) {
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
           const { host } = window.location;
@@ -1082,10 +1088,10 @@ export default defineComponent({
         filename.value = fn;
       } else {
         const root = 'data';
-        const fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
+        const fn = ev.tag === 'Genes' ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
         currentRunId.value = ev.id;
-        pushByQuery({ component: 'AtlasG', run_id: ev.id });
+        pushByQuery({ component: 'AtlasG', run_id: ev.id, tag: ev.tag });
         selectedGenes.value = [];
       }
       await runSpatial(currentViewType.value);
@@ -1422,15 +1428,16 @@ export default defineComponent({
       (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
       if (props.query) {
         if (!props.query.public) {
-          loadCandidateWorkers('AtlasGX');
+          // loadCandidateWorkers('AtlasGX');
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
           await fetchFileList();
         } else {
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query) {
-        if (props.query.run_id) {
-          await selectAction({ id: props.query.run_id });
+        if (props.query.run_id && props.query.tag) {
+          await selectAction({ id: props.query.run_id, tag: props.query.tag });
         }
       }
     });
@@ -1486,7 +1493,7 @@ export default defineComponent({
       selectAction,
       workers,
       candidateWorkers,
-      loadCandidateWorkers,
+      // loadCandidateWorkers,
       currentTask,
       highestCount,
       lowestCount,

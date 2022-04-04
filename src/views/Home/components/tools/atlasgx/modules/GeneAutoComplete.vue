@@ -8,6 +8,7 @@
       clearable
       :allow-overflow="false"
       chips
+      label="Search Gene Expressions"
       :cache-items="false"
       color="blue-grey lighten-2"
       item-text="name"
@@ -95,7 +96,7 @@ export default defineComponent({
         querySelections(v);
       }
     });
-    watch(props.gene_list, (v: any[]) => {
+    watch(geneList, (v: any[]) => {
       // console.log('gene list changed');
       selectedGenes.value = [];
       filteredGenes.value = [];
