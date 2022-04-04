@@ -3,7 +3,7 @@
     <appbar class="appbar" v-on:openDrawer="openDrawer"/>
     <v-sheet
       style="position: relative;">
-      <main-menu ref="mainmenu"  v-on:menuClicked="menuClicked" style="z-index: 999;"/>
+      <main-menu ref="mainmenu"  v-on:menuClicked="menuClicked" style="z-index: 99999;"/>
       <template v-if="component.component">
         <component v-bind:is="component.component" :query="component"/>
       </template>
