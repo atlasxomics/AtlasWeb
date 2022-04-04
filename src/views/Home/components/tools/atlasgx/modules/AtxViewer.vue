@@ -328,7 +328,7 @@ function pointInPolygon(point: number[], vs: any[]) { // point is like [5,5], vs
 
 export default defineComponent({
   name: 'AtxViewer',
-  props: ['query', 'filename', 'spatialdata', 'genelist', 'selected_genes', 'presentation', 'selected_tixels', 'heatmap', 'background', 'worker', 'queue', 'standalone', 'disable_gene_selection', 'loadingprop'],
+  props: ['query', 'filename', 'spatialdata', 'genelist', 'selected_genes', 'presentation', 'selected_tixels', 'heatmap', 'background', 'worker', 'queue', 'standalone', 'disable_gene_selection', 'loadingprop', 'highlighted_cluster', 'selected_tixel_index'],
   components: { FreshDialog, FileAutoComplete },
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -358,6 +358,7 @@ export default defineComponent({
     const spatialData = ref<any | null>();
     const spatialDataFromParent = computed(() => props.spatialdata);
     const selectedTixelsFromParent = computed(() => props.selected_tixels);
+    const selectedTixelIndexFromParent = computed(() => props.selected_tixel_index);
     const clusterItems = ref<any[] | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -371,6 +372,7 @@ export default defineComponent({
     const lowestCount = ref<number>(10000);
     const highestCount = ref<number>(0);
     const highlightedCluster = ref<any>();
+    const highlightedClusterFromParent = computed(() => props.highlighted_cluster);
     const topHeaders = ref<any[]>([]);
     const tooltip = new Konva.Label({ visible: false });
     const tooltipTag = new Konva.Tag({
@@ -468,6 +470,7 @@ export default defineComponent({
         circlesSpatial.value[i].stroke = c.originalColor;
       });
       highlightedCluster.value = '';
+      ctx.emit('cluster-highlighted', null);
       highlightRegion(selectedTixels.value);
     }
     function highlightCluster(clusterName: string) {
@@ -482,6 +485,7 @@ export default defineComponent({
       });
       highlightedCluster.value = clusterName;
       isHighlighted.value = true;
+      ctx.emit('cluster-highlighted', clusterName);
       // highlightRegion(selectedTixels.value);
     }
     function makearray(stopValue: number, startValue: number) {
@@ -534,6 +538,7 @@ export default defineComponent({
             cluster: v,
             total: geneSum[i],
             inactive: false,
+            index: i,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
@@ -565,6 +570,7 @@ export default defineComponent({
             cluster: v,
             total: geneSum[i],
             inactive: false,
+            index: i,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
@@ -673,10 +679,30 @@ export default defineComponent({
         const { cluster } = item;
         highlightCluster(cluster);
       }
+      ctx.emit('tixel_selected', item);
+    }
+    async function showTooltip(idx: number | null) {
+      if (!idx) {
+        tooltip.hide();
+        return;
+      }
+      const item = circlesSpatial.value[idx];
+      tooltip.position({
+        x: item.x,
+        y: item.y,
+      });
+      let text = `Cluster: ${item.cluster}`;
+      if (item.total > 0) text = `${text}\nSum: ${item.total}`;
+      lodash.forIn(item.genes, (v: number, k: string) => {
+        if (v > 0) text = `${text}\n${k}: ${v}`;
+      });
+      tooltipText.text(text);
+      tooltip.show();
     }
     async function mouseOutOnSpatial(ev: any) {
       isHighlighted.value = false;
       tooltip.hide();
+      ctx.emit('tixel_selected', null);
       if (!isDrawing.value) unHighlighCluster();
     }
     // Drawing Region
@@ -787,6 +813,16 @@ export default defineComponent({
     watch(selectedTixelsFromParent, (v: any) => {
       selectedTixels.value = v;
       highlightRegion(v);
+    });
+    watch(selectedTixelIndexFromParent, (v: number) => {
+      showTooltip(v);
+    });
+    watch(highlightedClusterFromParent, (v: any) => {
+      if (v) {
+        highlightCluster(v);
+      } else {
+        unHighlighCluster();
+      }
     });
     watch(scale, (v: number, ov: number) => {
       const stage = (ctx as any).refs.konvaStage.getNode();

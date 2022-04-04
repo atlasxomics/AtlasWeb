@@ -18,6 +18,8 @@
                           :presentation="'spatial'"
                           :selected_tixels="selectedTixels"
                           :selected_genes="selectedGenes"
+                          :highlighted_cluster="highlightedCluster"
+                          :selected_tixel_index="selectedTixelIndex"
                           :background="'black'"
                           :heatmap="'jet'"
                           :worker="'gene.compute_qc'"
@@ -25,6 +27,8 @@
                           :loadingprop="loading"
                           disable_gene_selection="true"
                           v-on:regionUpdated="onRegionUpdated"
+                          v-on:cluster-highlighted="onClusterHighlighted"
+                          v-on:tixel_selected="onTixelSelected"
                           ref="mainAtxViewer"
                           />
             </v-col>
@@ -39,13 +43,18 @@
                           :presentation="'umap'"
                           :selected_tixels="selectedTixels"
                           :selected_genes="selectedGenes"
+                          :highlighted_cluster="highlightedCluster"
+                          :selected_tixel_index="selectedTixelIndex"
                           :background="'black'"
                           :heatmap="'jet'"
                           :worker="'gene.compute_qc'"
                           :queue="'atxcloud_gene'"
                           :loadingprop="loading"
                           disable_gene_selection="true"
-                          v-on:regionUpdated="onRegionUpdated"/>
+                          v-on:regionUpdated="onRegionUpdated"
+                          v-on:cluster-highlighted="onClusterHighlighted"
+                          v-on:tixel_selected="onTixelSelected"
+                          />
             </v-col>
           </v-row>
           <v-row no-gutters>
@@ -107,6 +116,8 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const selectedTixels = ref<boolean[]>([]);
     const colorMap = ref<any>({});
+    const highlightedCluster = ref<string>();
+    const selectedTixelIndex = ref<number | null>(null);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -199,6 +210,14 @@ export default defineComponent({
     async function onSelectedGeneChanged(ev: any) {
       selectedGenes.value = ev;
     }
+    async function onClusterHighlighted(ev: any) {
+      const clusterName = ev;
+      highlightedCluster.value = clusterName;
+    }
+    async function onTixelSelected(ev: any) {
+      if (ev) selectedTixelIndex.value = ev.index;
+      else selectedTixelIndex.value = null;
+    }
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(null);
@@ -228,6 +247,10 @@ export default defineComponent({
       onRunIdChanged,
       onSelectedGeneChanged,
       colorMap,
+      onClusterHighlighted,
+      highlightedCluster,
+      onTixelSelected,
+      selectedTixelIndex,
     };
   },
 });

@@ -70,6 +70,7 @@ export default defineComponent({
     const sourceLinks = ref<any[]>([]);
     const trackSources = ref<any[]>([]);
     const runId = computed(() => props.run_id);
+    const colorMap = computed(() => props.colormap);
     const pageId = `svgHolder-${get_uuid()}`;
     const species = ['Human', 'Mouse', 'XXX'];
     const brParams = {
@@ -112,6 +113,7 @@ export default defineComponent({
             bwgURI: v.href,
             style: [{ type: 'default', style: { glyph: 'HISTOGRAM', FGCOLOR: props.colormap[alid], BGCOLOR: props.colormap[alid], HEIGHT: 30, id: 'style1' } }],
             noDownsample: true,
+            tier_type: 'bw',
           };
           srcs.push(s);
         }
@@ -125,6 +127,7 @@ export default defineComponent({
             desc: v.key,
             bwgURI: v.href,
             stylesheet_uri: '//www.biodalliance.org/stylesheets/bb-repeats.xml',
+            tier_type: 'bb',
           };
           srcs.push(s);
         }
@@ -159,8 +162,19 @@ export default defineComponent({
       sourceLinks.value = proms;
       generateTrackSources(sourceLinks.value);
     }
-    watch(runId, async () => {
-      console.log(runId.value);
+    function mapColors(cmap: any) {
+      trackBrowserParams.value.sources.forEach((v: any, i: number) => {
+        if (v.tier_type === 'bw') {
+          trackBrowserParams.value.sources[i].style = [{ type: 'default', style: { glyph: 'HISTOGRAM', FGCOLOR: cmap[v.id], BGCOLOR: cmap[v.id], HEIGHT: 30, id: 'style1' } }];
+        }
+      });
+    }
+    watch(runId, async (v: string) => {
+      await fetchFileList(props.run_id);
+      trackBrowser.value = new (window as any).Browser(trackBrowserParams.value);
+    });
+    watch(colorMap, async (v: any) => {
+      mapColors(v);
       await fetchFileList(props.run_id);
       trackBrowser.value = new (window as any).Browser(trackBrowserParams.value);
     });
