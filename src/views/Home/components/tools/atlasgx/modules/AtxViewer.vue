@@ -1,6 +1,19 @@
 <template>
     <v-container fixed>
-          <v-row no-gutters>
+          <fresh-dialog v-model="fileDialog" width="30%" height="30%">
+            <v-card flat height="20vh" class="d-flex flex-column">
+              <v-card-title>
+                <file-auto-complete v-model="acFilename" :filter="'.h5ad'"/>
+              </v-card-title>
+              <v-spacer horizontal/>
+              <v-card-actions>
+                <v-spacer/>
+                <v-btn color="success" @click="onSelectFiles(acFilename)">Select</v-btn>
+                <v-btn color="error" @click="fileDialog=false">Cancel</v-btn>
+              </v-card-actions>
+            </v-card>
+          </fresh-dialog>
+          <v-row no-gutters v-if="!disable_gene_selection">
             <v-col cols="12" sm="12">
               <v-card flat>
                   <v-autocomplete
@@ -9,6 +22,7 @@
                     :outlined="false"
                     multiple
                     dense
+                    :label="selectedFiles"
                     clearable
                     :allow-overflow="false"
                     chips
@@ -48,6 +62,15 @@
                   width="100%"
                   >
                   <v-card-text>
+                    <v-row>
+                      <v-btn
+                        small
+                        icon
+                        color="primary"
+                        @click="fileDialog = true"
+                        ><v-icon>mdi-folder</v-icon>
+                      </v-btn>
+                    </v-row>
                     <v-row>
                       <template v-if="currentViewType=='umap'">
                         <v-btn
@@ -147,6 +170,11 @@
                           @click="scale=scale*0.9"
                           ><v-icon small>mdi-magnify-minus</v-icon>
                         </v-btn>
+                    </v-row>
+                    <v-row>
+                      <template v-if="loadingprop || loading">
+                        <v-progress-circular indeterminate color="primary"></v-progress-circular>
+                      </template>
                     </v-row>
                   </v-card-text>
                 </v-card>
@@ -255,6 +283,8 @@ import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
+import FreshDialog from '@/components/FreshDialog.vue';
+import FileAutoComplete from './FileAutoComplete.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -298,11 +328,15 @@ function pointInPolygon(point: number[], vs: any[]) { // point is like [5,5], vs
 
 export default defineComponent({
   name: 'AtxViewer',
-  props: ['query', 'filename', 'spatialdata', 'genelist', 'presentation', 'selected_tixels', 'heatmap', 'background', 'worker', 'queue', 'standalone'],
+  props: ['query', 'filename', 'spatialdata', 'genelist', 'selected_genes', 'presentation', 'selected_tixels', 'heatmap', 'background', 'worker', 'queue', 'standalone', 'disable_gene_selection', 'loadingprop', 'highlighted_cluster', 'selected_tixel_index'],
+  components: { FreshDialog, FileAutoComplete },
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
+    const fileDialog = ref<boolean>(false);
+    const selectedFiles = ref<string>();
+    const acFilename = ref<string>();
     const workers = computed(() => store.state.client?.workers);
     const currentRunId = ref<string | null>(null);
     const filename = computed(() => props.filename);
@@ -319,10 +353,12 @@ export default defineComponent({
     const filteredGenes = ref<any[]>([]);
     const loading = ref<boolean>(false);
     const selectedGenes = ref<any[]>([]);
+    const selectedGenesFromParent = computed(() => props.selected_genes);
     const searchInput = ref<string | null>(null);
-    const spatialData = ref<any | null>(props.spatialdata);
+    const spatialData = ref<any | null>();
     const spatialDataFromParent = computed(() => props.spatialdata);
     const selectedTixelsFromParent = computed(() => props.selected_tixels);
+    const selectedTixelIndexFromParent = computed(() => props.selected_tixel_index);
     const clusterItems = ref<any[] | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -336,6 +372,7 @@ export default defineComponent({
     const lowestCount = ref<number>(10000);
     const highestCount = ref<number>(0);
     const highlightedCluster = ref<any>();
+    const highlightedClusterFromParent = computed(() => props.highlighted_cluster);
     const topHeaders = ref<any[]>([]);
     const tooltip = new Konva.Label({ visible: false });
     const tooltipTag = new Konva.Tag({
@@ -433,6 +470,7 @@ export default defineComponent({
         circlesSpatial.value[i].stroke = c.originalColor;
       });
       highlightedCluster.value = '';
+      ctx.emit('cluster-highlighted', null);
       highlightRegion(selectedTixels.value);
     }
     function highlightCluster(clusterName: string) {
@@ -447,6 +485,7 @@ export default defineComponent({
       });
       highlightedCluster.value = clusterName;
       isHighlighted.value = true;
+      ctx.emit('cluster-highlighted', clusterName);
       // highlightRegion(selectedTixels.value);
     }
     function makearray(stopValue: number, startValue: number) {
@@ -499,6 +538,7 @@ export default defineComponent({
             cluster: v,
             total: geneSum[i],
             inactive: false,
+            index: i,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
@@ -530,6 +570,7 @@ export default defineComponent({
             cluster: v,
             total: geneSum[i],
             inactive: false,
+            index: i,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
@@ -544,8 +585,8 @@ export default defineComponent({
     }
     async function loadExpressions() {
       if (!client.value) return;
-      if (!filename.value) return;
-      const resp = props.query.public ? await client.value.getGeneExpressionsByToken(filename.value) : await client.value.getGeneExpressions(filename.value);
+      if (!selectedFiles.value) return;
+      const resp = props.query.public ? await client.value.getGeneExpressionsByToken(selectedFiles.value) : await client.value.getGeneExpressions(selectedFiles.value);
       genes.value = resp.map((v: string) => ({ name: v }));
     }
     const checkTaskStatus = async (task_id: string) => {
@@ -554,7 +595,7 @@ export default defineComponent({
     };
     async function runSpatial(workerRequired = true) {
       if (!client.value) return;
-      if (!filename.value) return;
+      // if (!selectedFiles.value) return;
       try {
         progressMessage.value = null;
         loading.value = true;
@@ -562,9 +603,9 @@ export default defineComponent({
           await loadExpressions();
           const task = currentTask.value;
           const queue = currentQueue.value;
-          const args = [filename.value, selectedGenes.value];
+          const args = [selectedFiles.value, selectedGenes.value];
           if (!props.query.public) {
-            const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
+            const { encoded: filenameToken } = await client.value.encodeLink({ args: [selectedFiles.value], meta: { run_id: currentRunId.value } });
             const { host } = window.location;
             publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
           }
@@ -585,7 +626,7 @@ export default defineComponent({
           }
           /* eslint-disable no-await-in-loop */
           if (taskStatus.value.status !== 'SUCCESS') {
-            snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+            snackbar.dispatch({ text: 'Worker failed in AtxViewer', options: { right: true, color: 'error' } });
             loading.value = false;
             return;
           }
@@ -598,30 +639,7 @@ export default defineComponent({
           genes.value = props.genelist;
           if (!spatialData.value) return;
         }
-        const geneRank: any[] = [];
-        const tableHeaders: any[] = [];
         clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
-        tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
-        for (let i = 0; i < clusterItems.value.length; i += 1) {
-          tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
-        }
-        topHeaders.value = tableHeaders;
-        lodash.each(spatialData.value.top_ten, (v: string[], i: number) => {
-          const tenGenes: {[k: string]: any} = {};
-          const key = [];
-          const value = [];
-          key.push('id');
-          value.push(i);
-          for (let x = 0; x < clusterItems.value!.length; x += 1) {
-            key.push(clusterItems.value![x].name);
-            value.push(v[x]);
-          }
-          for (let j = 0; j < key.length; j += 1) {
-            tenGenes[key[j]] = value[j];
-          }
-          geneRank.push(tenGenes);
-        });
-        geneNames.value = geneRank;
         await updateCircles();
         await fitStageToParent();
         loading.value = false;
@@ -661,10 +679,30 @@ export default defineComponent({
         const { cluster } = item;
         highlightCluster(cluster);
       }
+      ctx.emit('tixel_selected', item);
+    }
+    async function showTooltip(idx: number | null) {
+      if (!idx) {
+        tooltip.hide();
+        return;
+      }
+      const item = circlesSpatial.value[idx];
+      tooltip.position({
+        x: item.x,
+        y: item.y,
+      });
+      let text = `Cluster: ${item.cluster}`;
+      if (item.total > 0) text = `${text}\nSum: ${item.total}`;
+      lodash.forIn(item.genes, (v: number, k: string) => {
+        if (v > 0) text = `${text}\n${k}: ${v}`;
+      });
+      tooltipText.text(text);
+      tooltip.show();
     }
     async function mouseOutOnSpatial(ev: any) {
       isHighlighted.value = false;
       tooltip.hide();
+      ctx.emit('tixel_selected', null);
       if (!isDrawing.value) unHighlighCluster();
     }
     // Drawing Region
@@ -742,21 +780,49 @@ export default defineComponent({
     }
     async function onGenelistChanged(ev: any) {
       isClusterView.value = false;
+      // console.log('gene_list_changed');
       // TODO to send signal to the parent
     }
+    function onFilesChanged(ev: any) {
+      selectedFiles.value = ev;
+    }
+    async function onSelectFiles(ev: any) {
+      fileDialog.value = false;
+      selectedGenes.value = [];
+      selectedFiles.value = ev;
+      runSpatial(true);
+    }
+    watch(selectedFiles, (v: any) => {
+      // console.log(v);
+    });
     watch(filename, (v: string) => {
       selectedGenes.value = [];
-      runSpatial(false);
+      selectedFiles.value = v;
+      onSelectFiles(v);
+      // runSpatial(false);
     });
     watch(currentViewType, (v: any) => {
       updateCircles();
     });
-    watch(spatialDataFromParent, (v: any) => {
+    watch(spatialDataFromParent, (nv: any, ov: any) => {
+      spatialData.value = nv;
+      // console.log('Parent data changed');
+      // console.log(spatialData.value);
       runSpatial(false);
     });
     watch(selectedTixelsFromParent, (v: any) => {
       selectedTixels.value = v;
       highlightRegion(v);
+    });
+    watch(selectedTixelIndexFromParent, (v: number) => {
+      showTooltip(v);
+    });
+    watch(highlightedClusterFromParent, (v: any) => {
+      if (v) {
+        highlightCluster(v);
+      } else {
+        unHighlighCluster();
+      }
     });
     watch(scale, (v: number, ov: number) => {
       const stage = (ctx as any).refs.konvaStage.getNode();
@@ -776,6 +842,10 @@ export default defineComponent({
         isClusterView.value = true;
       }
       updateCircles();
+    });
+    watch(selectedGenesFromParent, (v: any) => {
+      // console.log(v);
+      selectedGenes.value = v;
     });
     watch(searchInput, (v: any) => {
       if (v) {
@@ -797,6 +867,11 @@ export default defineComponent({
       search,
       selected,
       loading,
+      fileDialog,
+      acFilename,
+      selectedFiles,
+      onFilesChanged,
+      onSelectFiles,
       clusterHeaders,
       genes,
       selectedGenes,

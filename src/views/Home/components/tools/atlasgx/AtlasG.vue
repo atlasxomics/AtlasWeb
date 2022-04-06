@@ -526,7 +526,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 const headers = [
-  { text: 'ID', value: 'id' },
+  { text: 'ID', value: 'id_with_tag' },
 ];
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
@@ -719,20 +719,20 @@ export default defineComponent({
         });
       }, 1000);
     }
-    function loadCandidateWorkers(target: string) {
-      if (!workers.value) return;
-      candidateWorkers.value = workers.value.filter((x: any) => {
-        if (x) {
-          if (x.params) {
-            if (x.params.target === target) {
-              return true;
-            }
-          }
-        }
-        return false;
-      });
-      [currentTask.value] = candidateWorkers.value;
-    }
+    // function loadCandidateWorkers(target: string) {
+    //   if (!workers.value) return;
+    //   candidateWorkers.value = workers.value.filter((x: any) => {
+    //     if (x) {
+    //       if (x.params) {
+    //         if (x.params.target === target) {
+    //           return true;
+    //         }
+    //       }
+    //     }
+    //     return false;
+    //   });
+    //   [currentTask.value] = candidateWorkers.value;
+    // }
     function makearray(stopValue: number, startValue: number) {
       if (highestCount.value === 0) return;
       const arr = [];
@@ -1076,8 +1076,11 @@ export default defineComponent({
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}/${v.split('/')[2]}` }));
-      items.value = qc_data;
+      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Genes', id_with_tag: `${v.split('/')[1]}-Genes` }));
+      const fl_payload_motif = { params: { path: 'data', filter: 'obj/motifs.h5ad' } };
+      const filelist_motif = await client.value.getFileList(fl_payload_motif);
+      const qc_data_motif = filelist_motif.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Motifs', id_with_tag: `${v.split('/')[1]}-Motifs` }));
+      items.value = qc_data.concat(...qc_data_motif);
       loading.value = false;
     }
     async function runSpatial(stype: string) {
@@ -1109,7 +1112,7 @@ export default defineComponent({
           publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
         }
         const kwargs = {};
-        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, 'joshua_gene') : await client.value.postTask(task, args, kwargs, 'joshua_gene');
+        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
         if (props.query.public) runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
@@ -1174,10 +1177,10 @@ export default defineComponent({
         filename.value = fn;
       } else {
         const root = 'data';
-        const fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
+        const fn = ev.tag === 'Genes' ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
         currentRunId.value = ev.id;
-        pushByQuery({ component: 'AtlasG', run_id: ev.id });
+        pushByQuery({ component: 'AtlasG', run_id: ev.id, tag: ev.tag });
         selectedGenes.value = [];
       }
       await runSpatial(currentViewType.value);
@@ -1562,15 +1565,16 @@ export default defineComponent({
       (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
       if (props.query) {
         if (!props.query.public) {
-          loadCandidateWorkers('AtlasGX');
+          // loadCandidateWorkers('AtlasGX');
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
           await fetchFileList();
         } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query) {
-        if (props.query.run_id) {
-          await selectAction({ id: props.query.run_id });
+        if (props.query.run_id && props.query.tag) {
+          await selectAction({ id: props.query.run_id, tag: props.query.tag });
         }
       }
       acInstance.value.$mount('#geneac');
@@ -1631,7 +1635,7 @@ export default defineComponent({
       selectAction,
       workers,
       candidateWorkers,
-      loadCandidateWorkers,
+      // loadCandidateWorkers,
       currentTask,
       highestCount,
       lowestCount,

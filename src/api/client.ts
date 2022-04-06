@@ -75,7 +75,7 @@ export default class Client {
     try {
       await this.fetchUser();
       this.refreshTimeoutId = window.setTimeout(this.refreshToken.bind(this), getTimeout(this.authorizationToken));
-      this.workers = await this.getWorkerSummary();
+      // this.workers = await this.getWorkerSummary();
     } catch (e) {
       console.log(e);
     }
@@ -111,6 +111,16 @@ export default class Client {
     const { data } = await this.axios.get('/api/v1/auth/whoami');
     const userdata = { username: data.Username, user_level: 0, name: 'None', email: '', groups: data.groups };
     this.user = userdata;
+  }
+
+  async downloadByLink(filename: string, expiry: number) {
+    const uri = '/api/v1/storage/download_link';
+    const params = {
+      filename,
+      expiry,
+    };
+    const resp = await this.axios.get(uri, { params });
+    return resp.data;
   }
 
   async uploadDatasetFile(upload: Upload): Promise<string | null> {
