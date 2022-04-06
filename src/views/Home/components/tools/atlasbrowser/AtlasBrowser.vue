@@ -2,6 +2,37 @@
 <!--     <v-card ref="mainCard"> -->
   <v-app class="main">
     <v-row>
+      <v-dialog
+        v-if="runIdFlag"
+        :value="runIdFlag"
+        @click:outside="runIdFlag = !runIdFlag"
+        hide-overlay>
+        <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
+            :disabled="loading">
+          <v-card-title>
+            <v-text-field
+              v-model="search"
+              dense
+              prepend-inner-icon="mdi-magnify"
+              :value="searchInput"
+              @input="searchInput = $event; searchRuns(searchInput)"
+            />
+          </v-card-title>
+          <v-data-table
+            v-model="selected"
+            height="20vh"
+            width="20%"
+            dense
+            single-select
+            :loading="loading"
+            :items="itemsHolder"
+            :headers="headers"
+            hide-default-footer
+            sort-by="id"
+            @click:row="selectAction"
+          />
+        </v-card>
+      </v-dialog>
       <v-col cols="12" sm="2" class="pl-6 pt-3">
         <template v-if="run_id && optionFlag">
           <v-card>
@@ -138,30 +169,6 @@
             </v-list>
           </v-card>
         </template>
-        <v-card height="38vh">
-          <v-card-title>
-            <v-text-field
-              v-model="search"
-              dense
-              prepend-inner-icon="mdi-magnify"
-              :value="searchInput"
-              @input="searchInput = $event; searchRuns(searchInput)"
-            />
-          </v-card-title>
-          <v-data-table
-            v-model="selected"
-            height="30vh"
-            width="30%"
-            dense
-            single-select
-            :loading="loading"
-            :items="itemsHolder"
-            :headers="headers"
-            hide-default-footer
-            sort-by="id"
-            @click:row="selectAction"
-          />
-        </v-card>
         <v-card v-if="run_id && !loading && !optionFlag && csvHolder">
           <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
           <v-card-actions>
@@ -511,6 +518,8 @@ export default defineComponent({
     const optionUpdate = ref<boolean>(false);
     const optionFlag = ref<boolean>(false);
     const generating = ref<boolean>(false);
+    const runIdFlag = ref<boolean>(false);
+    const imageh = ref<any>();
     const scaleFactor_json = ref<any>({
       fiducial_diameter_fullres: null,
       spot_diameter_fullres: null,
@@ -546,6 +555,7 @@ export default defineComponent({
       thresh.value = false;
       spatial.value = false;
       onOff.value = false;
+      runIdFlag.value = false;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
     }
     function pushByQuery(query: any) {
@@ -571,6 +581,7 @@ export default defineComponent({
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       metadata.value = resp;
+      metadata.value.numChannels = '50';
       if (resp) {
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
@@ -586,7 +597,6 @@ export default defineComponent({
       const root = 'data';
       let filename: any;
       if (optionUpdate.value) {
-        // filename = `${root}/${run_id.value}/images/spatial/tissue_hires_image.png`;
         filename = `${root}/${run_id.value}/images/spatial/figure/postB_BSA.tif`;
       } else {
         filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
@@ -594,13 +604,14 @@ export default defineComponent({
       const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
       try {
         const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
+        imageh.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
         const scalefactor = 0.1;
         if (imgObj) {
           imgObj.onload = (ev: any) => {
-            // const scalefactor = (ctx as any).refs.canvas._data.stageWidth / imgObj.width;
+            URL.revokeObjectURL(imgObj.src);
             current_image.value = {
               x: 0,
               y: 0,
@@ -614,6 +625,7 @@ export default defineComponent({
           };
         }
         loading.value = false;
+        runIdFlag.value = false;
       } catch (error) {
         loading.value = false;
         snackbar.dispatch({ text: 'Failed to load the image file', options: { color: 'error', right: true } });
@@ -688,7 +700,6 @@ export default defineComponent({
       const { id } = ev.target.attrs;
       const pos = ev.target._lastPos;
       activePointId.value = null;
-      // crop.value.generateRect();
     }
     function handleDragMove_Crop(ev: any) {
       const { id } = ev.target.attrs;
@@ -803,9 +814,49 @@ export default defineComponent({
     function onLatticeButton(ev: any) {
       generateLattices(ev);
     }
+    function onChangeScale(ev: any) {
+      const v = scaleFactor.value;
+      console.log(current_image.value);
+      current_image.value.scale = { x: v, y: v };
+      konvaConfig.value.width = v * current_image.value.image.width;
+      konvaConfig.value.height = v * current_image.value.image.height;
+      stageWidth.value = konvaConfig.value.width;
+      stageHeight.value = konvaConfig.value.height;
+      roi.value.setScaleFactor(v);
+      crop.value.setScaleFactor(v);
+    }
     function onCropButton(ev: any) {
       cropFlag.value = true;
       isCropMode.value = true;
+      const coords = crop.value.getCoordinatesOnImage();
+      const imgObj = new window.Image();
+      const newImage = new window.Image();
+      imgObj.src = URL.createObjectURL(imageh.value);
+      const canvas = document.createElement('canvas');
+      const ctxe = canvas.getContext('2d');
+      imgObj.onload = (v: any) => {
+        URL.revokeObjectURL(imgObj.src);
+        canvas.width = coords[2] - coords[0];
+        canvas.height = coords[3] - coords[1];
+        ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
+        canvas.toBlob((blob: any) => {
+          newImage.src = URL.createObjectURL(blob);
+          newImage.onload = (e: any) => {
+            URL.revokeObjectURL(newImage.src);
+            current_image.value = {
+              x: 0,
+              y: 0,
+              draggable: false,
+              scale: { x: scaleFactor.value, y: scaleFactor.value },
+              image: newImage,
+              src: URL.createObjectURL(blob),
+              original_src: URL.createObjectURL(blob),
+              alternative_src: null,
+            };
+          };
+        });
+      };
+      onChangeScale('');
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
@@ -927,8 +978,8 @@ export default defineComponent({
         const cropCoords = crop.value.getCoordinatesOnImage();
         const points: number[] = [];
         coords.forEach((v, i) => {
-          points.push(Math.abs(v.x - cropCoords[0]));
-          points.push(Math.abs(v.y - cropCoords[1]));
+          points.push(v.x);
+          points.push(v.y);
         });
         metadata.value = Object.assign(metadata.value, {
           points,
@@ -996,16 +1047,6 @@ export default defineComponent({
     function autoFill(ev: any) {
       roi.value.autoMask(atpixels.value, threshold.value);
       onOff.value = true;
-    }
-    function onChangeScale(ev: any) {
-      const v = scaleFactor.value;
-      current_image.value.scale = { x: v, y: v };
-      konvaConfig.value.width = v * current_image.value.image.width;
-      konvaConfig.value.height = v * current_image.value.image.height;
-      stageWidth.value = konvaConfig.value.width;
-      stageHeight.value = konvaConfig.value.height;
-      roi.value.setScaleFactor(v);
-      crop.value.setScaleFactor(v);
     }
     async function fetchFileList() {
       if (!client.value) {
@@ -1078,6 +1119,15 @@ export default defineComponent({
       if (current_image.value) onChangeScale(scaleFactor.value);
     });
     const submenu = [
+      {
+        text: 'Run ID\'s',
+        icon: 'mdi-magnify',
+        tooltip: 'Run ID\'s',
+        disabled: loading.value,
+        click: () => {
+          runIdFlag.value = !runIdFlag.value;
+        },
+      },
       {
         text: 'Save spatial data',
         icon: 'mdi-content-save',
@@ -1182,6 +1232,8 @@ export default defineComponent({
       optionUpdate,
       optionFlag,
       generating,
+      runIdFlag,
+      imageh,
     };
   },
 });

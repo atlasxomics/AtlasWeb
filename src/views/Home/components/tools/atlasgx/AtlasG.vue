@@ -2,73 +2,71 @@
   <v-app v-bind="{ 'geneButton': geneButton }">
     <v-container fluid :style="{ 'background-color': backgroundColor, 'height': '100%', 'padding': '0' }">
       <v-row>
-        <v-col cols="12" sm="12">
-          <v-dialog
-            v-if="!query.public && runIdFlag"
-            :value="runIdFlag"
-            @click:outside="runIdFlag = !runIdFlag"
-            hide-overlay>
-            <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
-              :disabled="loading">
-              <v-text-field
-                v-model="search"
-                :loading="loading"
-                style="width: 190px;"
-                prepend-icon="mdi-magnify"/>
-              <v-data-table
-              v-model="selected"
-              height="20vh"
-              width="20%"
-              dense
-              single-select
-              :search="search"
+        <v-dialog
+          v-if="!query.public && runIdFlag"
+          :value="runIdFlag"
+          @click:outside="runIdFlag = !runIdFlag"
+          hide-overlay>
+          <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
+            :disabled="loading">
+            <v-text-field
+              v-model="search"
               :loading="loading"
-              :items="items"
-              :headers="headers"
-              sort-by="id"
-              @click:row="selectAction"
-              />
-            </v-card>
-          </v-dialog>
-          <v-dialog
-            :value="backgroundFlag"
-            @click:outside="backgroundFlag = !backgroundFlag"
-            hide-overlay>
-            <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:130px;">
-              <v-data-table
-              v-model="selected"
-              width="20%"
-              dense
-              single-select
-              hide-default-footer
-              hide-default-header
-              :disabled="!spatialData || loading"
-              :items="backgroundOptions"
-              :headers="backgroundHeader"
-              @click:row="chooseBackground"
-              />
-            </v-card>
-          </v-dialog>
-          <v-dialog
-            :value="heatmapFlag"
-            @click:outside="heatmapFlag = !heatmapFlag"
-            hide-overlay>
-            <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:200px;">
-              <v-data-table
-              v-model="selected"
-              width="20%"
-              dense
-              single-select
-              hide-default-footer
-              hide-default-header
-              :disabled="!spatialData || loading"
-              :items="heatmapOptions"
-              :headers="heatmapHeader"
-              @click:row="chooseHeatmap"
-              />
-            </v-card>
-          </v-dialog>
-        </v-col>
+              style="width: 190px;"
+              prepend-icon="mdi-magnify"/>
+            <v-data-table
+            v-model="selected"
+            height="20vh"
+            width="20%"
+            dense
+            single-select
+            :search="search"
+            :loading="loading"
+            :items="items"
+            :headers="headers"
+            sort-by="id"
+            @click:row="selectAction"
+            />
+          </v-card>
+        </v-dialog>
+        <v-dialog
+          :value="backgroundFlag"
+          @click:outside="backgroundFlag = !backgroundFlag"
+          hide-overlay>
+          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:130px;">
+            <v-data-table
+            v-model="selected"
+            width="20%"
+            dense
+            single-select
+            hide-default-footer
+            hide-default-header
+            :disabled="!spatialData || loading"
+            :items="backgroundOptions"
+            :headers="backgroundHeader"
+            @click:row="chooseBackground"
+            />
+          </v-card>
+        </v-dialog>
+        <v-dialog
+          :value="heatmapFlag"
+          @click:outside="heatmapFlag = !heatmapFlag"
+          hide-overlay>
+          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:200px;">
+            <v-data-table
+            v-model="selected"
+            width="20%"
+            dense
+            single-select
+            hide-default-footer
+            hide-default-header
+            :disabled="!spatialData || loading"
+            :items="heatmapOptions"
+            :headers="heatmapHeader"
+            @click:row="chooseHeatmap"
+            />
+          </v-card>
+        </v-dialog>
         <v-col cols="2" sm="1">
           <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'250px', 'padding-top': '15px', 'background-color': 'silver' }" flat>
             <v-tooltip right>
@@ -189,7 +187,7 @@
             <span>Copy Public Llink</span>
             </v-tooltip>
           </v-card>
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'150px', 'padding-top': '15px', 'background-color': 'silver', 'position': 'absolute', 'bottom': '38vh' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'position': 'absolute', 'bottom': '38vh' }" flat>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -222,29 +220,14 @@
             </template>
             <span>Peak Viewer</span>
             </v-tooltip>
-            <v-tooltip right>
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                v-bind="attrs"
-                v-on="on"
-                color="black"
-                icon
-                class="ml-3 mt-5"
-                medium
-                :disabled="!spatialData || loading || !isClusterView || (isDrawing || isDrawingRect)"
-                @click="geneMotif = !geneMotif">
-                <v-icon>mdi-teamviewer</v-icon>
-              </v-btn>
-            </template>
-            <span>Gene/Motif</span>
-            </v-tooltip>
           </v-card>
         </v-col>
         <v-col cols="12" sm="10">
-          <div id="screenCapture">
+          <div id="screenCapture" :style="{ 'background-color': backgroundColor }">
             <v-row no-gutters>
               <v-col cols="12" sm="1">
                 <v-card
+                class="rounded-0"
                 flat
                 :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
                 height="42vh">
@@ -284,6 +267,7 @@
               </v-col>
               <v-col cols="12" sm="5">
                 <v-card id="stageParent"
+                  class="rounded-0"
                   v-resize="onResize"
                   flat
                   :style="{ 'background-color': backgroundColor, 'overflow-x': 'None'}"
@@ -337,6 +321,7 @@
                   <v-col cols="12" sm="9">
                     <template v-if="!isClusterView">
                       <v-card
+                        class="rounded-0"
                         flat
                         :style="{ 'background-image': colorBarmap, 'overflow-x': 'None' }"
                         height="3vh"
@@ -375,6 +360,7 @@
               </v-col>
               <v-col cols="12" sm="1">
                 <v-card
+                class="rounded-0"
                 flat
                 :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
                 height="42vh"
@@ -415,6 +401,7 @@
               </v-col>
               <v-col cols="12" sm="5">
                 <v-card id="stageParentRight"
+                  class="rounded-0"
                   flat
                   v-resize="onResize"
                   :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
@@ -467,6 +454,7 @@
                   <v-col cols="12" sm="9">
                     <template v-if="!isClusterView">
                       <v-card
+                        class="rounded-0"
                         flat
                         :style="{ 'background-image': colorBarmap, 'overflow-x': 'None' }"
                         height="3vh"
@@ -667,7 +655,7 @@ export default defineComponent({
     const lassoSide = ref<string>();
     const colorOnOff = ref<string>('black');
     const colorOnOffRect = ref<string>('black');
-    const colorbarText = ref<string>('black');
+    const colorbarText = ref<string>('white');
     const highlightIds = ref<any[]>([]);
     const topSelected = ref<any[]>([]);
     const highlightCount = ref<number>(0);
@@ -1066,12 +1054,12 @@ export default defineComponent({
     function chooseHeatmap(ev: any) {
       heatMap.value = ev.heat;
       heatmapFlag.value = false;
-      if (ev.heat === 'jet' || ev.heat === 'picnic' || ev.heat === 'hot') {
+      if (ev.heat === 'picnic' || ev.heat === 'hot') {
         colorbarText.value = 'black';
-      } else if (ev.heat === 'bone') {
-        colorbarText.value = 'brown';
-      } else {
+      } else if (ev.heat === 'jet' || ev.heat === 'inferno') {
         colorbarText.value = 'white';
+      } else {
+        colorbarText.value = 'brown';
       }
       updateCircles();
     }
@@ -1464,6 +1452,12 @@ export default defineComponent({
       reScale();
     });
     watch(geneMotif, (v: any) => {
+      isClusterView.value = true;
+      selectedGenes.value = [];
+      showFlag.value = [false];
+      stepArray.value = [];
+      geneButton.value = [];
+      // updateCircles();
       runSpatial('spatial');
     });
     watch(scaleUMAP, () => {
@@ -1484,7 +1478,7 @@ export default defineComponent({
     });
     watch(isDrawingRect, (v: boolean) => {
       setDraggable(!v);
-      removeRegions();     
+      removeRegions();
       if (!isDrawingRect.value) {
         colorOnOffRect.value = 'black';
         unHighlighCluster();
@@ -1526,6 +1520,15 @@ export default defineComponent({
         disabled: loading.value,
         click: () => {
           runIdFlag.value = !runIdFlag.value;
+        },
+      },
+      {
+        text: 'Gene/Motif',
+        icon: 'mdi-teamviewer',
+        tooltip: 'Gene/Motif',
+        disabled: loading.value,
+        click: () => {
+          geneMotif.value = !geneMotif.value;
         },
       },
       {

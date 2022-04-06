@@ -122,6 +122,10 @@ export default defineComponent({
         selectedGenes.value.push(gene);
         onGenelistChanged(selectedGenes.value);
       }
+      if (v.length === 0) {
+        searchInput.value = '';
+        selectedGenes.value = [];
+      }
     });
     watch(selectedGenes, (v: any[]) => {
       if (selectedGenes.value.length === 0) {
