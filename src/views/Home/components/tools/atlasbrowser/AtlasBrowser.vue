@@ -188,7 +188,7 @@
             </v-btn>
           </v-card-actions>
         </v-card>
-        <v-card v-if="!csvHolder || optionFlag">
+        <v-card v-if="(!csvHolder && run_id) || optionFlag">
           <v-card-title>
             {{ run_id }}
           </v-card-title>
@@ -876,7 +876,7 @@ export default defineComponent({
           if (one.value === 100) {
             clearTimeout(valueone);
           }
-          one.value += 20;
+          one.value += 50;
         }, 1000);
       }
 
@@ -885,7 +885,7 @@ export default defineComponent({
           if (two.value === 100) {
             clearTimeout(valuetwo);
           }
-          two.value += 20;
+          two.value += 50;
         }, 1000);
       }
 
