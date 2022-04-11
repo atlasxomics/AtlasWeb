@@ -33,6 +33,49 @@
           />
         </v-card>
       </v-dialog>
+      <v-dialog
+        v-if="metaFlag && ((!csvHolder && run_id) || optionFlag)"
+        :value="metaFlag"
+        @click:outside="metaFlag = !metaFlag"
+        hide-overlay>
+        <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left: 150px;px;"
+            :disabled="loading">
+          <v-card-title>
+            {{ run_id }}
+          </v-card-title>
+          <v-card-text>
+            <v-select
+              v-model="metadata.species"
+              :items="metaItemLists.species"
+              dense
+              outlined
+              label="Species">
+            </v-select>
+            <v-select
+              v-model="metadata.type"
+              :items="metaItemLists.types"
+              dense
+              outlined
+              label="Type">
+            </v-select>
+            <v-select
+              v-model="metadata.assay"
+              :items="metaItemLists.assays"
+              dense
+              outlined
+              label="Assay">
+            </v-select>
+            <v-select
+              v-model="metadata.numChannels"
+              :items="metaItemLists.numChannels"
+              dense
+              outlined
+              label="Barcode"
+              @change="updateChannels">
+            </v-select>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
       <v-col cols="12" sm="2" class="pl-6 pt-3">
         <template v-if="run_id && optionFlag">
           <v-card>
@@ -188,42 +231,6 @@
             </v-btn>
           </v-card-actions>
         </v-card>
-        <v-card v-if="(!csvHolder && run_id) || optionFlag">
-          <v-card-title>
-            {{ run_id }}
-          </v-card-title>
-          <v-card-text>
-            <v-select
-              v-model="metadata.species"
-              :items="metaItemLists.species"
-              dense
-              outlined
-              label="Species">
-            </v-select>
-            <v-select
-              v-model="metadata.type"
-              :items="metaItemLists.types"
-              dense
-              outlined
-              label="Type">
-            </v-select>
-            <v-select
-              v-model="metadata.assay"
-              :items="metaItemLists.assays"
-              dense
-              outlined
-              label="Assay">
-            </v-select>
-            <v-select
-              v-model="metadata.numChannels"
-              :items="metaItemLists.numChannels"
-              dense
-              outlined
-              label="Barcode"
-              @change="updateChannels">
-            </v-select>
-          </v-card-text>
-        </v-card>
       </v-col>
       <v-col cols="12" sm="9">
           <v-container fluid>
@@ -364,7 +371,7 @@
                       ref="cropLayer"
                       id="cropLayer"
                       @mouseup="handleMouseUp">
-                      <template v-if="current_image">
+                      <template v-if="current_image && !loading">
                         <v-rect
                           :config="crop.generateRect()"/>
                         <template v-if="!isBrushMode">
@@ -420,7 +427,6 @@ import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/uti
 import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
-import template from '../../_empty/template.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -458,7 +464,7 @@ interface Metadata {
 }
 
 export default defineComponent({
-  components: { template },
+  components: {},
   name: 'AtlasBrowser',
   props: ['query'],
   setup(props, ctx) {
@@ -485,8 +491,6 @@ export default defineComponent({
     const crop = ref<Crop>(new Crop(null));
     const roi = ref<ROI>(new ROI(null));
     const lines = ref<Konva.Line[]>();
-    const activePointId = ref<string | null>(null);
-    // const polygons = ref<any[] | null>([]);
     const isMouseDown = ref(false);
     const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
@@ -519,6 +523,7 @@ export default defineComponent({
     const optionFlag = ref<boolean>(false);
     const generating = ref<boolean>(false);
     const runIdFlag = ref<boolean>(false);
+    const metaFlag = ref<boolean>(false);
     const imageh = ref<any>();
     const scaleFactor_json = ref<any>({
       fiducial_diameter_fullres: null,
@@ -541,7 +546,7 @@ export default defineComponent({
       barcodes: 1,
     });
     function initialize() {
-      current_image.value = null;
+      // current_image.value = null;
       roi.value = new ROI(null);
       crop.value = new Crop(null);
       roi.value.setScaleFactor(scaleFactor.value);
@@ -556,6 +561,8 @@ export default defineComponent({
       spatial.value = false;
       onOff.value = false;
       runIdFlag.value = false;
+      loading.value = false;
+      imageh.value = null;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
     }
     function pushByQuery(query: any) {
@@ -611,7 +618,6 @@ export default defineComponent({
         const scalefactor = 0.1;
         if (imgObj) {
           imgObj.onload = (ev: any) => {
-            URL.revokeObjectURL(imgObj.src);
             current_image.value = {
               x: 0,
               y: 0,
@@ -678,28 +684,24 @@ export default defineComponent({
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
-      if (current_image.value) {
-        current_image.value.scale = { x: v, y: v };
+      current_image.value.scale = { x: v, y: v };
+      if (current_image.value !== null) {
         konvaConfig.value.width = v * current_image.value.image.width;
         konvaConfig.value.height = v * current_image.value.image.height;
         stageWidth.value = konvaConfig.value.width;
         stageHeight.value = konvaConfig.value.height;
       } else {
-        konvaConfig.value.width = v * stageWidth.value;
-        konvaConfig.value.height = v * stageHeight.value;
-        stageWidth.value = konvaConfig.value.width;
-        stageHeight.value = konvaConfig.value.height;
+        konvaConfig.value.width = stageWidth.value;
+        konvaConfig.value.height = stageHeight.value;
       }
     }
     // Cropping events
     function handleDragStart_Crop(ev: any) {
       const { id } = ev.target.attrs;
-      activePointId.value = id;
     }
     function handleDragEnd_Crop(ev: any) {
       const { id } = ev.target.attrs;
       const pos = ev.target._lastPos;
-      activePointId.value = null;
     }
     function handleDragMove_Crop(ev: any) {
       const { id } = ev.target.attrs;
@@ -725,13 +727,11 @@ export default defineComponent({
     function handleDragStart(ev: any) {
       // console.log(ev);
       const { id } = ev.target.attrs;
-      activePointId.value = id;
       roi.value.polygons = [];
     }
     function handleDragEnd(ev: any) {
       const { id } = ev.target.attrs;
       const pos = ev.target._lastPos;
-      activePointId.value = null;
     }
     function handleDragMove(ev: any) {
       const { id } = ev.target.attrs;
@@ -743,7 +743,6 @@ export default defineComponent({
         roi.value.coordinates[id].x = Math.min(Math.max(0, pos.x), stageWidth.value);
         roi.value.coordinates[id].y = Math.min(Math.max(0, pos.y), stageHeight.value);
       }
-      // console.log(activePointId.value);
     }
     function handleDragCenterStart(ev: any) {
       roi.value.polygons = [];
@@ -816,7 +815,6 @@ export default defineComponent({
     }
     function onChangeScale(ev: any) {
       const v = scaleFactor.value;
-      console.log(current_image.value);
       current_image.value.scale = { x: v, y: v };
       konvaConfig.value.width = v * current_image.value.image.width;
       konvaConfig.value.height = v * current_image.value.image.height;
@@ -842,7 +840,6 @@ export default defineComponent({
         canvas.toBlob((blob: any) => {
           newImage.src = URL.createObjectURL(blob);
           newImage.onload = (e: any) => {
-            URL.revokeObjectURL(newImage.src);
             current_image.value = {
               x: 0,
               y: 0,
@@ -1129,6 +1126,15 @@ export default defineComponent({
         },
       },
       {
+        text: 'Metadata',
+        icon: 'mdi-filter-variant',
+        tooltip: 'Metadata',
+        disabled: loading.value,
+        click: () => {
+          metaFlag.value = !metaFlag.value;
+        },
+      },
+      {
         text: 'Save spatial data',
         icon: 'mdi-content-save',
         color: 'primary',
@@ -1233,6 +1239,7 @@ export default defineComponent({
       optionFlag,
       generating,
       runIdFlag,
+      metaFlag,
       imageh,
     };
   },

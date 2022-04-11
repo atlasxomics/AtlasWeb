@@ -39,15 +39,15 @@ export class ROI {
   }
 
   initializeROI(width: number, height: number) {
-    const rng = [[0.1, 0.1], [0.85, 0.1], [0.85, 0.85], [0.1, 0.85]];
+    const rng = [[0.1, 0.1], [1, 0.1], [1, 1], [0.1, 1]];
     rng.forEach((x: number[], idx: number) => {
       const [xp, yp] = x;
       const id = get_uuid();
       const circle: any = {
         draggable: true,
         id,
-        x: xp * width * this.scalefactor,
-        y: yp * height * this.scalefactor,
+        x: xp * (width * 0.35),
+        y: yp * (width * 0.35),
         stroke: 'green',
         radius: 10,
       };
@@ -207,7 +207,6 @@ export class ROI {
   }
 
   loadTixels(tixel_array: any[]) {
-    // console.log(tixel_array);
     const [p1, p2, p3, p4] = this.getCoordinates();
     const ratioNum = (this.channels * 2) - 1;
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);

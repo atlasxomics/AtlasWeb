@@ -197,7 +197,7 @@
                 icon
                 class="ml-4"
                 :disabled="!spatialData || loading"
-                @click="featureTableFlag = true"
+                @click="featureTableFlag = true; peakViewerFlag = false"
                 small>
                 <v-icon>mdi-table-large</v-icon>
               </v-btn>
@@ -213,7 +213,7 @@
                 icon
                 class="ml-4 mt-5"
                 :disabled="!spatialData || loading"
-                @click="peakViewerFlag = true"
+                @click="peakViewerFlag = true; featureTableFlag = false"
                 small>
                 <v-icon>mdi-chart-bar</v-icon>
               </v-btn>
@@ -281,7 +281,6 @@
                     @mousedown="mouseDownOnStageLeft"
                     @mousemove="mouseMoveOnStageLeft"
                     @mouseup="mouseUpOnStageLeft"
-                    @wheel="mouseWheelOnStage"
                     >
                     <v-layer
                       ref="spatialLayer"
@@ -413,7 +412,6 @@
                     @mousedown="mouseDownOnStageRight"
                     @mousemove="mouseMoveOnStageRight"
                     @mouseup="mouseUpOnStageRight"
-                    @wheel="mouseWheelOnStageUMAP"
                     :style="{ 'overflow': 'hidden' }"
                     >
                     <v-layer
@@ -493,9 +491,16 @@
               </v-col>
             </v-row>
           </div>
-          <v-card class="mt-3" v-if="clusterItems && featureTableFlag" :disabled="loading">
-            <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"></table-component>
-          </v-card>
+          <v-row no-gutters>
+            <v-col cols="12" sm="12">
+              <v-card class="mt-3" v-if="clusterItems && featureTableFlag" :disabled="loading">
+                <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
+              </v-card>
+              <v-card class="mt-3" v-if="clusterItems && peakViewerFlag" :disabled="loading">
+                <track-browser :run_id="'D264'" :colormap="colorMap"/>
+              </v-card>
+            </v-col>
+          </v-row>
         </v-col>
       </v-row>
     </v-container>
@@ -516,6 +521,7 @@ import { Console } from 'console';
 import html2canvas from 'html2canvas';
 import GeneAutoComplete from './modules/GeneAutoComplete.vue';
 import GeneDataTable from './modules/GeneDataTable.vue';
+import TrackBrowser from './modules/TrackBrowser.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -526,7 +532,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 const headers = [
-  { text: 'ID', value: 'id_with_tag' },
+  { text: 'ID', value: 'id' },
 ];
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
@@ -565,7 +571,7 @@ function colormapBounded(cmap: string[], values: number[]) {
 
 export default defineComponent({
   name: 'AtlasG',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -637,10 +643,10 @@ export default defineComponent({
     const isDrawing = ref<boolean>(false);
     const isDrawingRect = ref<boolean>(false);
     const isClicked = ref<boolean>(false);
-    const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'brown', strokeWidth: 1 });
-    const polygonUMAP = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'brown', strokeWidth: 1 });
-    const rectangle = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'brown', strokeWidth: 1, endPointx: 0, endPointy: 0 });
-    const rectangleUMAP = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'brown', strokeWidth: 1, endPointx: 0, endPointy: 0 });
+    const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'green', strokeWidth: 1 });
+    const polygonUMAP = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'green', strokeWidth: 1 });
+    const rectangle = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'green', strokeWidth: 1, endPointx: 0, endPointy: 0 });
+    const rectangleUMAP = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'green', strokeWidth: 1, endPointx: 0, endPointy: 0 });
     const regions = ref<any>();
     const regionsUMAP = ref<any>();
     const lengthClust = ref<number>(0);
@@ -663,6 +669,7 @@ export default defineComponent({
     const geneMotif = ref<boolean>(false);
     const featureTableFlag = ref<boolean>(true);
     const peakViewerFlag = ref<boolean>(false);
+    const colorMap = ref<any>({});
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = ref(new GeneAutoCompleteClass({
       vuetify,
@@ -895,6 +902,12 @@ export default defineComponent({
         if ((i % 3) === 0) colors.push(v);
       });
       clusterColors.value = colors;
+      const cmap: any = {};
+      for (let i = 0; i < clusterColors.value.length; i += 1) {
+        const cidx = `C${i + 1}`;
+        cmap[cidx] = clusterColors.value[i];
+      }
+      colorMap.value = cmap;
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
       colorBar.value = colors_intensity;
       colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
@@ -1054,10 +1067,12 @@ export default defineComponent({
     function chooseHeatmap(ev: any) {
       heatMap.value = ev.heat;
       heatmapFlag.value = false;
-      if (ev.heat === 'picnic' || ev.heat === 'hot') {
+      if (ev.heat === 'picnic') {
         colorbarText.value = 'black';
       } else if (ev.heat === 'jet' || ev.heat === 'inferno') {
         colorbarText.value = 'white';
+      } else if (ev.heat === 'hot') {
+        colorbarText.value = 'grey';
       } else {
         colorbarText.value = 'brown';
       }
@@ -1076,11 +1091,8 @@ export default defineComponent({
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Genes', id_with_tag: `${v.split('/')[1]}-Genes` }));
-      const fl_payload_motif = { params: { path: 'data', filter: 'obj/motifs.h5ad' } };
-      const filelist_motif = await client.value.getFileList(fl_payload_motif);
-      const qc_data_motif = filelist_motif.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Motifs', id_with_tag: `${v.split('/')[1]}-Motifs` }));
-      items.value = qc_data.concat(...qc_data_motif);
+      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
+      items.value = qc_data;
       loading.value = false;
     }
     async function runSpatial(stype: string) {
@@ -1112,9 +1124,10 @@ export default defineComponent({
           publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
         }
         const kwargs = {};
-        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
+        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, 'joshua_gene') : await client.value.postTask(task, args, kwargs, 'joshua_gene');
         if (props.query.public) runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
+        console.log(taskObject);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
           if (taskStatus.value.status === 'PROGRESS') {
@@ -1251,8 +1264,8 @@ export default defineComponent({
       polygonUMAP.value.points = [];
       regions.value = [];
       polygon.value.points = [];
-      rectangle.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-      rectangleUMAP.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+      rectangle.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+      rectangleUMAP.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
       highlightRegion();
     }
     function mouseDownOnStageLeft(ev: any) {
@@ -1260,15 +1273,15 @@ export default defineComponent({
         lassoSide.value = 'left';
         removeRegions();
         isClicked.value = true;
-        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'brown', strokeWidth: 3 };
+        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'green', strokeWidth: 3 };
         polygon.value.points = [];
       }
       if (isDrawingRect.value) {
         lassoSide.value = 'left';
         removeRegions();
         const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
-        rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
         isClicked.value = true;
       }
@@ -1278,15 +1291,15 @@ export default defineComponent({
         lassoSide.value = 'right';
         removeRegions();
         isClicked.value = true;
-        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'brown', strokeWidth: 3 };
+        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'green', strokeWidth: 3 };
         polygonUMAP.value.points = [];
       }
       if (isDrawingRect.value) {
         lassoSide.value = 'right';
         removeRegions();
         const mousePos = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
-        rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
         isClicked.value = true;
       }
@@ -1566,15 +1579,15 @@ export default defineComponent({
       if (props.query) {
         if (!props.query.public) {
           // loadCandidateWorkers('AtlasGX');
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
           await fetchFileList();
         } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
         }
       }
       if (props.query) {
-        if (props.query.run_id && props.query.tag) {
-          await selectAction({ id: props.query.run_id, tag: props.query.tag });
+        if (props.query.run_id) {
+          await selectAction({ id: props.query.run_id });
         }
       }
       acInstance.value.$mount('#geneac');
@@ -1693,6 +1706,7 @@ export default defineComponent({
       geneMotif,
       featureTableFlag,
       peakViewerFlag,
+      colorMap,
     };
   },
 });
