@@ -1,18 +1,37 @@
 <template>
     <v-container fluid>
-<!--       <div ref="canvas" v-html="rawHtml"/> -->
       <v-card flat>
-        <v-card-title>
-          {{ run_id }}
-          <v-select
-            :items="species">
-          </v-select>
-          <v-spacer/>
-<!--           <v-btn
-            @click="onClick"
-            color="primary"
-            >Load</v-btn> -->
-        </v-card-title>
+          <v-row>
+            <v-col cols="12" sm="12">
+              <v-select
+                v-model='selectedSpecies'
+                label='Species'
+                :items="species"
+                dense>
+              </v-select>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="12" sm="12">
+              <v-text-field
+                v-model="search"
+                label="Search Gene Expressions"
+                append-icon="mdi-magnify"
+                dense
+                clearable
+                @click:append="onClickSearch">
+              </v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="12" sm="12">
+              <v-btn
+                color="primary"
+                @click="reload(run_id)">
+                Refresh
+              </v-btn>
+            </v-col>
+          </v-row>
         <v-card-text>
           <div :id="pageId"></div>
         </v-card-text>
@@ -26,7 +45,6 @@ import lodash from 'lodash';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { generateRouteByQuery, get_uuid } from '@/utils';
-// import Browser from 'dalliance';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -39,7 +57,6 @@ const clientReady = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'TrackBrowser',
-  // props: ['run_id', 'params', 'colormap'],
   props: {
     value: {
       type: String,
@@ -47,6 +64,11 @@ export default defineComponent({
       default: null,
     },
     run_id: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    search_key: {
       type: String,
       required: false,
       default: null,
@@ -67,27 +89,21 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const trackBrowser = ref<any>();
+    const search = ref<string | null>(props.search_key);
+    const searchKeyFromParents = computed(() => props.search_key);
     const sourceLinks = ref<any[]>([]);
     const trackSources = ref<any[]>([]);
     const runId = computed(() => props.run_id);
-    const colorMap = computed(() => props.colormap);
+    const colorMap = ref<any>();
+    const colorMapFromParents = computed(() => props.colormap);
     const pageId = `svgHolder-${get_uuid()}`;
-    const species = ['Human', 'Mouse', 'XXX'];
-    const brParams = {
-      chr: '1',
-      viewStart: 0,
-      viewEnd: 10000000,
-      pageName: pageId,
-      coordSystem: {
-        speciesName: 'Human',
-        taxon: 9606,
-        auth: 'GRCh',
-        version: '37',
-        ucscName: 'hg19',
-      },
-    };
-    const trackBrowserParams = ref<any>(brParams);
-    // const trackBrowser = ref<any>(new Browser.Browser({}));
+    const selectedSpecies = ref<any | null>();
+    const trackBrowserParams = ref<any>();
+    const speciesMap: any = { human: 'h19', 'Rattus norvegicus': 'rn6' };
+    const species: string[] = [];
+    lodash.forIn(speciesMap, (v: string, k: string) => {
+      species.push(k);
+    });
     function generateTrackSources(srcLink: any[]) {
       const srcs: any[] = [];
       lodash.each(srcLink, (v: any) => {
@@ -99,6 +115,38 @@ export default defineComponent({
             desc: v.key,
             twoBitURI: v.href,
             tier_type: 'sequence',
+          };
+          srcs.push(s);
+        }
+      });
+      lodash.each(srcLink, (v: any) => {
+        if (v.key.includes('.bed')) {
+          const alid = v.key.split('/').reverse()[0].split('.')[0];
+          const s = {
+            id: alid,
+            name: alid,
+            desc: v.key,
+            uri: v.href,
+            tier_type: 'memstore',
+            payload: 'bed',
+          };
+          srcs.push(s);
+        }
+      });
+      lodash.each(srcLink, (v: any) => {
+        if (v.key.includes('.bb')) {
+          const [{ href: indexFileURI }] = srcLink.filter((x: any) => x.key.endsWith('.ix'));
+          const alid = v.key.split('/').reverse()[0].split('.')[0];
+          const s = {
+            id: alid,
+            name: alid,
+            desc: v.key,
+            bwgURI: v.href,
+            // stylesheet_uri: '//www.biodalliance.org/stylesheets/bb-repeats.xml',
+            stylesheet_uri: '//www.biodalliance.org/stylesheets/gencode.xml',
+            tier_type: 'bb',
+            collapseSuperGroups: true,
+            trixURI: indexFileURI,
           };
           srcs.push(s);
         }
@@ -118,33 +166,46 @@ export default defineComponent({
           srcs.push(s);
         }
       });
-      lodash.each(srcLink, (v: any) => {
-        if (v.key.includes('.bb')) {
-          const alid = v.key.split('/').reverse()[0].split('.')[0];
-          const s = {
-            id: alid,
-            name: alid,
-            desc: v.key,
-            bwgURI: v.href,
-            stylesheet_uri: '//www.biodalliance.org/stylesheets/bb-repeats.xml',
-            tier_type: 'bb',
-          };
-          srcs.push(s);
-        }
-      });
       // console.log(srcs);
       trackBrowserParams.value.sources = srcs;
     }
-    async function fetchFileList(rid: string) {
+    async function generateTrackParams(rid: string) {
       if (!client.value) {
         return;
       }
+      const metadata = await client.value.getMetadataFromRunId(rid);
+      selectedSpecies.value = metadata.Species;
+      trackBrowserParams.value = {
+        chr: '1',
+        viewStart: 0,
+        viewEnd: 1000000,
+        maxViewWidth: 10000000,
+        pageName: pageId,
+        coordSystem: {
+          speciesName: selectedSpecies.value,
+          // taxon: 9606,
+          auth: '',
+          // version: '37',
+          ucscName: speciesMap[selectedSpecies.value],
+        },
+        onFirstRender: () => {
+          console.log('Rendered');
+        },
+      };
+      const ref_bucket = 'atx-track-host';
       const fl_payload = { params: { path: 'data', filter: `${rid}/tracks` } };
+      const fl_payload_ref = { params: { bucket: ref_bucket, path: 'ref', filter: `${speciesMap[selectedSpecies.value]}` } };
       const resp = await client.value.getFileList(fl_payload);
-      const filelist = resp.filter((x: string) => x.includes('.bw') || x.includes('.bb') || x.includes('.2bit'));
+      const resp_ref = await client.value.getFileList(fl_payload_ref);
+      const merged_list = resp.concat(...resp_ref);
+      const filelist = merged_list.filter((x: string) => x.includes('.bw') || x.includes('.bb') || x.includes('.2bit') || x.includes('.bed') || x.endsWith('.ix') || x.endsWith('.ixx'));
       const proms = filelist.map((x: any) => {
         let href: Promise<any> | null = null;
-        if (client.value) href = client.value.downloadByLink(x, 3600);
+        if (client.value) {
+          if (x.endsWith('.ixx') || x.endsWith('.2bit') || x.endsWith('.ix') || x.endsWith('.bb')) {
+            href = client.value.downloadByLinkPublic(ref_bucket, x);
+          } else href = client.value.downloadByLink(x, 3600);
+        }
         const elm: any = {
           key: x,
           href,
@@ -169,23 +230,45 @@ export default defineComponent({
         }
       });
     }
-    watch(runId, async (v: string) => {
-      await fetchFileList(props.run_id);
-      trackBrowser.value = new (window as any).Browser(trackBrowserParams.value);
+    function onClickSearch(ev: any) {
+      // console.log(search.value);
+      // console.log(trackBrowser.value);
+      trackBrowser.value.search(search.value, (x: any) => {
+        if (!x) {
+          snackbar.dispatch({ text: `Expression ${search.value} found`, options: { right: true, color: 'success' } });
+        } else {
+          snackbar.dispatch({ text: `Expression ${search.value} NOT found`, options: { right: true, color: 'error' } });
+        }
+      }, {});
+    }
+    async function reload(rid = props.run_id, cmap = colorMapFromParents.value) {
+      await generateTrackParams(rid);
+      mapColors(cmap);
+      trackBrowser.value = await new (window as any).Browser(trackBrowserParams.value);
+      // if (search.value) onClickSearch(null);
+    }
+    watch(searchKeyFromParents, (v: string) => {
+      search.value = v;
+      onClickSearch(null);
     });
-    watch(colorMap, async (v: any) => {
+    watch(runId, async (v: string) => {
+      if (v) reload(v);
+    });
+    watch(colorMapFromParents, async (v: any) => {
       mapColors(v);
-      await fetchFileList(props.run_id);
-      trackBrowser.value = new (window as any).Browser(trackBrowserParams.value);
+      if (trackBrowser.value) trackBrowser.value.drawOverlays();
     });
     onMounted(async () => {
       await clientReady;
-      store.commit.setSubmenu(null);
     });
     return {
       currentRoute,
       species,
+      selectedSpecies,
       pageId,
+      search,
+      onClickSearch,
+      reload,
     };
   },
 });
