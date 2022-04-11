@@ -1,7 +1,6 @@
 /* eslint-disable lines-between-class-members */
 /* eslint-disable no-underscore-dangle */
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-
 import {
   User,
   RegisterUserPayload,
@@ -30,6 +29,12 @@ function getTimeout(token: string): number | undefined {
   }
 
   return undefined;
+}
+
+export function padzeros(v: number, digit: number): string {
+  let s = v.toString();
+  while (s.length < digit) s = `0${s}`;
+  return s;
 }
 
 const baseApiUrl = (user: boolean) => (user ? '/api/v1/user' : '/api/v1');
@@ -118,6 +123,16 @@ export default class Client {
     const params = {
       filename,
       expiry,
+    };
+    const resp = await this.axios.get(uri, { params });
+    return resp.data;
+  }
+
+  async downloadByLinkPublic(bucket_name: string, filename: string) {
+    const uri = '/api/v1/storage/download_link_public';
+    const params = {
+      bucket_name,
+      filename,
     };
     const resp = await this.axios.get(uri, { params });
     return resp.data;
@@ -339,6 +354,14 @@ export default class Client {
   }
   async generateQcEntry(payload: QcEntryGenerationRequest): Promise<any> {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
+    return resp.data;
+  }
+  // SLIMS
+  async getMetadataFromRunId(rid: string, cntn_type = 'NGS Library'): Promise<any> {
+    const uri = '/api/v1/dataset/slimstest_runid';
+    const run_id = `D${padzeros(Number(rid.split('D')[1]), 5)}`;
+    const payload = { params: { run_id, cntn_type } };
+    const resp = await this.axios.get(uri, payload);
     return resp.data;
   }
   // Dataset

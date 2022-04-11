@@ -1,7 +1,7 @@
 <template>
   <v-container fluid>
     <run-id-auto-complete v-model="runId" :filter="'tracks'" :multiple="false" label="Search Run ID" v-on:changed="onRunIdChanged"/>
-    <track-browser :run_id="runId" :params="trackBrowserParams" :colormap="colorMap"/>
+    <track-browser :run_id="runId" :params="trackBrowserParams" :colormap="colorMap" :search_key="'Pex2'"/>
 <!--     <fresh-dialog v-model="dialog" width="30%" height="30%">
       <v-card flat height="20vh" class="d-flex flex-column">
         <v-card-title>
@@ -169,7 +169,7 @@ export default defineComponent({
     }
     function onRunIdChanged(ev: any) {
       // selectedFiles.value = ev;
-      runId.value = ev;
+      if (ev !== '') runId.value = ev;
       // console.log(runId.value);
     }
     function onClicked(ev: any) {
