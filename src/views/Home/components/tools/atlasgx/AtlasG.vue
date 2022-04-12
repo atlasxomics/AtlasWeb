@@ -68,7 +68,7 @@
           </v-card>
         </v-dialog>
         <v-col cols="2" sm="1">
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'250px', 'padding-top': '15px', 'background-color': 'silver' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'250px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -212,7 +212,7 @@
                 color="black"
                 icon
                 class="ml-4 mt-5"
-                :disabled="!spatialData || loading"
+                :disabled="!spatialData || loading || geneMotif"
                 @click="peakViewerFlag = true; featureTableFlag = false"
                 small>
                 <v-icon>mdi-chart-bar</v-icon>
@@ -230,7 +230,7 @@
                 class="rounded-0"
                 flat
                 :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                height="42vh">
+                height="50vh">
                   <v-card-text style="margin-left:4vw">
                     <v-row>
                       <v-btn
@@ -271,7 +271,7 @@
                   v-resize="onResize"
                   flat
                   :style="{ 'background-color': backgroundColor, 'overflow-x': 'None'}"
-                  height="42vh"
+                  height="50vh"
                   align="center">
                   <v-stage
                     ref="konvaStage"
@@ -362,7 +362,7 @@
                 class="rounded-0"
                 flat
                 :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                height="42vh"
+                height="50vh"
                 width="100%">
                   <v-card-text style="margin-left:4vw">
                     <v-row>
@@ -404,7 +404,7 @@
                   flat
                   v-resize="onResize"
                   :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                  height="42vh">
+                  height="50vh">
                   <v-stage
                     ref="konvaStageRight"
                     class="mainStage"
@@ -493,11 +493,11 @@
           </div>
           <v-row no-gutters>
             <v-col cols="12" sm="12">
-              <v-card class="mt-3" v-if="clusterItems && featureTableFlag" :disabled="loading">
+              <v-card class="mt-3" v-show="clusterItems && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
-              <v-card class="mt-3" v-if="clusterItems && peakViewerFlag" :disabled="loading">
-                <track-browser :run_id="'D264'" :colormap="colorMap"/>
+              <v-card class="mt-3" v-show="clusterItems && peakViewerFlag" :disabled="loading">
+                <track-browser ref="trackbrowser" :run_id="currentRunId" :colormap="colorMap" :search_key="selectedGenes[selectedGenes.length - 1]"/>
               </v-card>
             </v-col>
           </v-row>
@@ -695,8 +695,8 @@ export default defineComponent({
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParent');
       if (!parent) return;
-      const parentWidth = (parent as any).offsetWidth * 0.99;
-      const parentHeight = (parent as any).offsetHeight * 0.99;
+      const parentWidth = (parent as any).offsetWidth;
+      const parentHeight = (parent as any).offsetHeight;
       konvaConfigLeft.value.width = parentWidth;
       konvaConfigLeft.value.height = parentHeight;
       konvaConfigRight.value.width = parentWidth;
@@ -1127,7 +1127,6 @@ export default defineComponent({
         const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, 'joshua_gene') : await client.value.postTask(task, args, kwargs, 'joshua_gene');
         if (props.query.public) runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
-        console.log(taskObject);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
           if (taskStatus.value.status === 'PROGRESS') {
@@ -1190,13 +1189,14 @@ export default defineComponent({
         filename.value = fn;
       } else {
         const root = 'data';
-        const fn = ev.tag === 'Genes' ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
+        const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
         currentRunId.value = ev.id;
-        pushByQuery({ component: 'AtlasG', run_id: ev.id, tag: ev.tag });
+        pushByQuery({ component: 'AtlasG', run_id: ev.id });
         selectedGenes.value = [];
       }
       await runSpatial(currentViewType.value);
+      (ctx as any).refs.trackbrowser.reload(currentRunId.value, colorMap.value);
       await loadExpressions();
       runIdFlag.value = false;
       selectedGenes.value = [];
@@ -1707,6 +1707,7 @@ export default defineComponent({
       featureTableFlag,
       peakViewerFlag,
       colorMap,
+      currentRunId,
     };
   },
 });

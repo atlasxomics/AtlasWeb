@@ -337,7 +337,7 @@
                     id="roiLayer"
                     @mouseup="handleMouseUp">
                     <template v-if="current_image && !loading">
-                      <template v-if="!optionUpdate">
+                      <template v-if="!optionUpdate && !isBrushMode && !isEraseMode">
                         <v-line
                           :config="roi.generateBoundary()"/>
                       </template>

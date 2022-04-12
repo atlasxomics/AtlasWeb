@@ -7,7 +7,7 @@
       dense
       clearable
       placeholder=""
-      label="Enter gene ID:"
+      label="Enter ID:"
       :allow-overflow="false"
       chips
       :cache-items="false"
