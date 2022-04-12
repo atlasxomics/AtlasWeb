@@ -666,7 +666,7 @@ export default defineComponent({
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = ref(new GeneAutoCompleteClass({
       vuetify,
-      propsData: { gene_list: genes, geneButton },
+      propsData: { gene_list: genes, gene_button: geneButton },
       created() {
         this.$on('changed', (ev: any[]) => {
           selectedGenes.value = ev;
