@@ -4,7 +4,7 @@
         <v-col cols="12" sm="12">
           <v-row>
             <v-col cols="12" sm="12">
-              <run-id-auto-complete v-model="runId" :filter="'h5'" :multiple="false" label="Search Run ID" v-on:changed="onRunIdChanged"/>
+              <run-id-auto-complete v-model="runId" :filter="'genes.h5ad'" :multiple="false" label="Search Run ID" v-on:changed="onRunIdChanged"/>
               <gene-auto-complete :gene_list="genes" v-on:changed="onSelectedGeneChanged"/>
             </v-col>
           </v-row>
@@ -59,7 +59,7 @@
           </v-row>
           <v-row no-gutters>
             <v-col cols="12" sm="12">
-              <track-browser :run_id="runId" :colormap="colorMap"/>
+              <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="selectedGenes[selectedGenes.length - 1]"/>
             </v-col>
           </v-row>
         </v-col>
@@ -143,7 +143,7 @@ export default defineComponent({
         await loadExpressions();
         const { task } = currentTask.value;
         const [queue] = currentTask.value.queues;
-        const args = [filename.value, selectedGenes.value];
+        const args = [filename.value, selectedGenes.value, []];
         if (!props.query.public) {
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
           const { host } = window.location;
@@ -174,7 +174,6 @@ export default defineComponent({
         const resp = taskStatus.value.result;
         currentViewType.value = stype;
         spatialData.value = resp;
-        loading.value = false;
         const { clusterColors } = (ctx as any).refs.mainAtxViewer;
         const cmap: any = {};
         clusterColors.forEach((x: string, i: number) => {
@@ -182,7 +181,9 @@ export default defineComponent({
           cmap[cidx] = x;
         });
         colorMap.value = cmap;
+        loading.value = false;
         // console.log(colorMap.value);
+        // (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -220,7 +221,6 @@ export default defineComponent({
     }
     onMounted(async () => {
       await clientReady;
-      store.commit.setSubmenu(null);
       if (props.query) {
         if (!props.query.public) {
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };

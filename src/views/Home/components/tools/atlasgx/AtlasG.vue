@@ -532,7 +532,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 const headers = [
-  { text: 'ID', value: 'id' },
+  { text: 'ID', value: 'id_with_tag' },
 ];
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
@@ -1110,7 +1110,7 @@ export default defineComponent({
           publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
         }
         const kwargs = {};
-        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, 'joshua_gene') : await client.value.postTask(task, args, kwargs, 'joshua_gene');
+        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
         if (props.query.public) runId.value = taskObject.meta.run_id;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
@@ -1579,15 +1579,15 @@ export default defineComponent({
       if (props.query) {
         if (!props.query.public) {
           // loadCandidateWorkers('AtlasGX');
-          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
           await fetchFileList();
         } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query) {
-        if (props.query.run_id) {
-          await selectAction({ id: props.query.run_id });
+        if (props.query.run_id && props.query.tag) {
+          await selectAction({ id: props.query.run_id, tag: props.query.tag });
         }
       }
       acInstance.$mount('#geneac');

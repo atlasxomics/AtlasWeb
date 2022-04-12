@@ -53,6 +53,7 @@ const clientReady = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
+
 export default defineComponent({
   name: 'TrackBrowser',
   props: {
@@ -215,8 +216,9 @@ export default defineComponent({
           proms[i].href = v.value.msg;
         });
       }).finally(() => {
-        console.log('Done');
+        // console.log('Done');
       });
+      // console.log(proms);
       sourceLinks.value = proms;
       generateTrackSources(sourceLinks.value);
     }
@@ -228,6 +230,8 @@ export default defineComponent({
       });
     }
     function onClickSearch(ev: any) {
+      // console.log(search.value);
+      // console.log(trackBrowser.value);
       trackBrowser.value.search(search.value, (x: any) => {
         if (!x) {
           snackbar.dispatch({ text: `Expression ${search.value} found`, options: { right: true, color: 'success' } });
@@ -268,5 +272,6 @@ export default defineComponent({
   },
 });
 </script>
+
 <style>
 </style>
