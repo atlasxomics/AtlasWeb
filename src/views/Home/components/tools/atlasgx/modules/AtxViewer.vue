@@ -603,7 +603,7 @@ export default defineComponent({
           await loadExpressions();
           const task = currentTask.value;
           const queue = currentQueue.value;
-          const args = [selectedFiles.value, selectedGenes.value];
+          const args = [selectedFiles.value, selectedGenes.value, []];
           if (!props.query.public) {
             const { encoded: filenameToken } = await client.value.encodeLink({ args: [selectedFiles.value], meta: { run_id: currentRunId.value } });
             const { host } = window.location;

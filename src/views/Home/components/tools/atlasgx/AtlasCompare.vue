@@ -3,21 +3,13 @@
       <v-row no-gutters>
         <v-col cols="12" sm="12">
           <v-row>
-            <v-col vols="12" sm="4">
-              <v-card>
-               <atx-dual-gene-viewer :query="query"/>
-              </v-card>
-            </v-col>
-            <v-col vols="12" sm="4">
-              <v-card>
-               <atx-dual-gene-viewer :query="query"/>
-              </v-card>
-            </v-col>
-            <v-col vols="12" sm="4">
-              <v-card>
-               <atx-dual-gene-viewer :query="query"/>
-              </v-card>
-            </v-col>
+            <template v-for="v in dualGVIndex">
+              <v-col vols="12" sm="4" :key="v">
+                <v-card>
+                 <atx-dual-gene-viewer :query="query"/>
+                </v-card>
+              </v-col>
+            </template>
           </v-row>
         </v-col>
       </v-row>
@@ -49,10 +41,26 @@ export default defineComponent({
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
+    const dualGVIndex = ref<string[]>([get_uuid()]);
+    const submenu = [
+      {
+        text: 'Add Viewer',
+        icon: 'mdi-plus',
+        tooltip: 'Add Viewer',
+        color: 'primary',
+        click: () => {
+          dualGVIndex.value.push(get_uuid());
+        },
+      },
+    ];
     onMounted(async () => {
       await clientReady;
+      store.commit.setSubmenu(submenu);
+    });
+    onUnmounted(() => {
       store.commit.setSubmenu(null);
     });
+    return { dualGVIndex };
   },
 });
 </script>
