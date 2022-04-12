@@ -1,5 +1,5 @@
 <template>
-  <v-app v-bind="{ 'geneButton': geneButton }">
+  <v-app v-bind="{ 'gene_button': geneButton }">
     <v-container fluid :style="{ 'background-color': backgroundColor, 'height': '100%', 'padding': '0' }">
       <v-row>
         <v-dialog
@@ -497,7 +497,7 @@
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
               <v-card class="mt-3" v-show="clusterItems && peakViewerFlag" :disabled="loading">
-                <track-browser ref="trackbrowser" :run_id="currentRunId" :colormap="colorMap" :search_key="selectedGenes[selectedGenes.length - 1]"/>
+                <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="selectedGenes[selectedGenes.length - 1]"/>
               </v-card>
             </v-col>
           </v-row>
@@ -580,7 +580,6 @@ export default defineComponent({
     const workers = computed(() => store.state.client?.workers);
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
-    const currentRunId = ref<string | null>(null);
     const runId = ref<string | null>(null);
     const publicLink = ref<string | null>(null);
     const items = ref<any[]>();
@@ -670,19 +669,6 @@ export default defineComponent({
     const featureTableFlag = ref<boolean>(true);
     const peakViewerFlag = ref<boolean>(false);
     const colorMap = ref<any>({});
-    const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
-    const acInstance = ref(new GeneAutoCompleteClass({
-      vuetify,
-      propsData: { gene_list: genes, geneButton },
-      created() {
-        this.$on('changed', (ev: any[]) => {
-          selectedGenes.value = ev;
-        });
-        this.$on('flag', (ev: any) => {
-          showFlag.value = [ev];
-        });
-      },
-    }));
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -711,7 +697,7 @@ export default defineComponent({
       const blob = new Blob([final], { type: 'text;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       pom.href = url;
-      pom.setAttribute('download', `${currentRunId.value}/Selection.txt`);
+      pom.setAttribute('download', `${runId.value}/Selection.txt`);
       pom.click();
     }
     function captureScreen() {
@@ -721,7 +707,7 @@ export default defineComponent({
           const pom = document.createElement('a');
           pom.href = base64image;
           const listGene = selectedGenes.value.join();
-          pom.setAttribute('download', `${currentRunId.value}/${listGene}.png`);
+          pom.setAttribute('download', `${runId.value}/${listGene}.png`);
           pom.click();
         });
       }, 1000);
@@ -1119,7 +1105,7 @@ export default defineComponent({
         // const queue = 'atxcloud_liya_gene';
         const args = [filename.value, selectedGenes.value, highlightIds.value];
         if (!props.query.public) {
-          const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
+          const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: runId.value } });
           const { host } = window.location;
           publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
         }
@@ -1191,12 +1177,12 @@ export default defineComponent({
         const root = 'data';
         const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
-        currentRunId.value = ev.id;
+        runId.value = ev.id;
         pushByQuery({ component: 'AtlasG', run_id: ev.id });
         selectedGenes.value = [];
       }
       await runSpatial(currentViewType.value);
-      (ctx as any).refs.trackbrowser.reload(currentRunId.value, colorMap.value);
+      (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       await loadExpressions();
       runIdFlag.value = false;
       selectedGenes.value = [];
@@ -1464,6 +1450,20 @@ export default defineComponent({
       stage.position(newPos);
       scaleUMAP.value = 0.75;
     }
+    const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
+    const acInstance = new GeneAutoCompleteClass({
+      vuetify,
+      propsData: { gene_list: genes, gene_button: geneButton },
+      created() {
+        this.$on('changed', (ev: any[]) => {
+          console.log(ev);
+          selectedGenes.value = ev;
+        });
+        this.$on('flag', (ev: any) => {
+          showFlag.value = [ev];
+        });
+      },
+    });
     watch(scale, () => {
       reScale();
     });
@@ -1590,11 +1590,11 @@ export default defineComponent({
           await selectAction({ id: props.query.run_id });
         }
       }
-      acInstance.value.$mount('#geneac');
+      acInstance.$mount('#geneac');
     });
     onUnmounted(() => {
-      acInstance.value.$destroy();
-      acInstance.value.$el.parentNode!.removeChild(acInstance.value.$el);
+      acInstance.$destroy();
+      acInstance.$el.parentNode!.removeChild(acInstance.$el);
       store.commit.setSubmenu(null);
     });
     return {
@@ -1701,13 +1701,11 @@ export default defineComponent({
       saveTxt,
       highlightCount,
       autoCompleteFlag,
-      acInstance,
       geneButton,
       geneMotif,
       featureTableFlag,
       peakViewerFlag,
       colorMap,
-      currentRunId,
     };
   },
 });

@@ -62,7 +62,7 @@ const clientReady = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'GeneAutoComplete',
-  props: ['gene_list', 'geneButton'],
+  props: ['gene_list', 'gene_button'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
@@ -71,7 +71,7 @@ export default defineComponent({
     const filteredGenes = ref<any[]>([]);
     const searchInput = ref<string | null>(null);
     const geneList = computed(() => props.gene_list);
-    const geneButton = computed(() => props.geneButton);
+    const geneButton = computed(() => props.gene_button);
     const genes = ref<any[]>([]);
     const showFlag = ref<boolean>(false);
     const autocompleteLoading = ref(false);
@@ -112,10 +112,10 @@ export default defineComponent({
         querySelections(v);
       }
     });
-    watch(props.gene_list, (v: any[]) => {
+    watch(geneList.value, (v: any[]) => {
       genes.value = v;
     });
-    watch(props.geneButton, (v: any[]) => {
+    watch(geneButton.value, (v: any[]) => {
       const gene = v[0];
       if (!selectedGenes.value.includes(v[0]) && (typeof gene === 'string')) {
         searchInput.value = gene;
