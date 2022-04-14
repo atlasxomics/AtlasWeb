@@ -1,6 +1,56 @@
 <template>
-  <v-app v-bind="{ 'gene_button': geneButton }">
-    <v-container fluid :style="{ 'background-color': backgroundColor, 'height': '100%', 'padding': '0' }">
+  <v-app>
+    <v-container fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
+      <template v-if="query.public">
+        <v-app-bar>
+            <v-tooltip right>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                color="black"
+                icon
+                class="ml-3"
+                medium
+                :disabled="!spatialData || loading || !isClusterView || (isDrawing || isDrawingRect)"
+                @click="geneMotif = !geneMotif">
+                <v-icon>mdi-teamviewer</v-icon>
+              </v-btn>
+            </template>
+            <span>Gene/Motif</span>
+            </v-tooltip>
+            <v-tooltip :disabled="backgroundFlag" bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn
+                  :disabled="!spatialData || loading"
+                  v-bind="attrs"
+                  v-on="on"
+                  class="ml-3"
+                  small
+                  @click="backgroundFlag = !backgroundFlag">
+                <v-icon>mdi-palette</v-icon>
+                </v-btn>
+              </template>
+              <span>Background Color</span>
+            </v-tooltip>
+            <v-tooltip :disabled="heatmapFlag" bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn
+                  v-bind="attrs"
+                  :disabled="!spatialData || loading"
+                  v-on="on"
+                  class="ml-3 mr-3"
+                  small
+                  @click="heatmapFlag = !heatmapFlag;">
+                <v-icon>mdi-fire</v-icon>
+                </v-btn>
+              </template>
+              <span>Heatmap</span>
+            </v-tooltip>
+              <div id="geneac">
+              </div>
+          </v-app-bar>
+      </template>
       <v-row>
         <v-dialog
           v-if="!query.public && runIdFlag"
@@ -184,10 +234,10 @@
                 <v-icon>mdi-content-copy</v-icon>
               </v-btn>
             </template>
-            <span>Copy Public Llink</span>
+            <span>Copy Public Link</span>
             </v-tooltip>
           </v-card>
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'position': 'absolute', 'bottom': '38vh' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '300px' }" flat>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -196,13 +246,13 @@
                 color="black"
                 icon
                 class="ml-4"
-                :disabled="!spatialData || loading"
-                @click="featureTableFlag = true; peakViewerFlag = false"
+                :disabled="!spatialData || loading || geneMotif"
+                @click="peakViewerFlag = true; featureTableFlag = false"
                 small>
-                <v-icon>mdi-table-large</v-icon>
+                <v-icon>mdi-chart-bar</v-icon>
               </v-btn>
             </template>
-            <span>Feature Table</span>
+            <span>Peak Viewer</span>
             </v-tooltip>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
@@ -212,17 +262,17 @@
                 color="black"
                 icon
                 class="ml-4 mt-5"
-                :disabled="!spatialData || loading || geneMotif"
-                @click="peakViewerFlag = true; featureTableFlag = false"
+                :disabled="!spatialData || loading"
+                @click="featureTableFlag = true; peakViewerFlag = false"
                 small>
-                <v-icon>mdi-chart-bar</v-icon>
+                <v-icon>mdi-table-large</v-icon>
               </v-btn>
             </template>
-            <span>Peak Viewer</span>
+            <span>Feature Table</span>
             </v-tooltip>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="10">
+        <v-col cols="12" sm="10" class="mt-5">
           <div id="screenCapture" :style="{ 'background-color': backgroundColor }">
             <v-row no-gutters>
               <v-col cols="12" sm="1">
@@ -532,7 +582,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 const headers = [
-  { text: 'ID', value: 'id_with_tag' },
+  { text: 'ID', value: 'id' },
 ];
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
@@ -580,6 +630,7 @@ export default defineComponent({
     const workers = computed(() => store.state.client?.workers);
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
+    const filenameMotif = ref<string | null>(null);
     const runId = ref<string | null>(null);
     const publicLink = ref<string | null>(null);
     const items = ref<any[]>();
@@ -608,23 +659,45 @@ export default defineComponent({
     const stepArray = ref<any[]>([]);
     const colorBarmap = ref<string>('');
     const highlightedCluster = ref<any>();
-    const tooltip = new Konva.Text({
-      text: '',
-      fontFamily: 'Calibri',
-      fontSize: 15,
-      fontStyle: 'bold',
-      padding: 5,
-      visible: false,
+    const tooltip = new Konva.Label({ visible: false });
+    const tooltipRight = new Konva.Label({ visible: false });
+    const tooltipTag = new Konva.Tag({
       fill: 'white',
+      pointerDirection: 'down',
+      pointerWidth: 10,
+      pointerHeight: 10,
+      lineJoin: 'round',
+      shadowColor: 'black',
+      shadowBlur: 10,
+      shadowOffsetX: 10,
+      shadowOffsetY: 10,
+      shadowOpacity: 0.5,
     });
-    const tooltipRight = new Konva.Text({
+    const tooltipText = new Konva.Text({
       text: '',
       fontFamily: 'Calibri',
       fontSize: 15,
-      fontStyle: 'bold',
       padding: 5,
-      visible: false,
+      fill: 'black',
+    });
+    const tooltipTextRight = new Konva.Text({
+      text: '',
+      fontFamily: 'Calibri',
+      fontSize: 15,
+      padding: 5,
+      fill: 'black',
+    });
+    const tooltipTagRight = new Konva.Tag({
       fill: 'white',
+      pointerDirection: 'down',
+      pointerWidth: 10,
+      pointerHeight: 10,
+      lineJoin: 'round',
+      shadowColor: 'black',
+      shadowBlur: 10,
+      shadowOffsetX: 10,
+      shadowOffsetY: 10,
+      shadowOpacity: 0.5,
     });
     const circlesSpatial = ref<any[]>([]);
     const circlesSpatialUMAP = ref<any[]>([]);
@@ -666,8 +739,8 @@ export default defineComponent({
     const highlightCount = ref<number>(0);
     const geneButton = ref<any[]>(['']);
     const geneMotif = ref<boolean>(false);
-    const featureTableFlag = ref<boolean>(true);
-    const peakViewerFlag = ref<boolean>(false);
+    const featureTableFlag = ref<boolean>(false);
+    const peakViewerFlag = ref<boolean>(true);
     const colorMap = ref<any>({});
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
@@ -745,7 +818,16 @@ export default defineComponent({
     async function loadExpressions() {
       if (!client.value) return;
       if (!filename.value) return;
-      const resp = props.query.public ? await client.value.getGeneExpressionsByToken(filename.value) : await client.value.getGeneExpressions(filename.value);
+      let resp: any;
+      if (props.query.public) {
+        if (geneMotif.value) {
+          resp = await client.value.getGeneExpressionsByToken(filenameMotif.value!);
+        } else {
+          resp = await client.value.getGeneExpressionsByToken(filename.value);
+        }
+      } else {
+        resp = await client.value.getGeneExpressions(filename.value);
+      }
       genes.value = resp.map((v: string) => ({ name: v }));
     }
     function remove(item: any) {
@@ -1087,7 +1169,7 @@ export default defineComponent({
       try {
         progressMessage.value = null;
         loading.value = true;
-        if (geneMotif.value) {
+        if (geneMotif.value && !props.query.public) {
           const hold = filename.value.replace(/genes/i, 'motifs');
           filename.value = hold;
           if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
@@ -1103,11 +1185,15 @@ export default defineComponent({
         const { task } = currentTask.value;
         const [queue] = currentTask.value.queues;
         // const queue = 'atxcloud_liya_gene';
-        const args = [filename.value, selectedGenes.value, highlightIds.value];
+        const args = (!props.query.public) ? [filename.value, selectedGenes.value, highlightIds.value] : [(geneMotif.value) ? filenameMotif.value : filename.value, selectedGenes.value, highlightIds.value];
         if (!props.query.public) {
+          const motifHold = filename.value!.replace(/genes/i, 'motifs');
+          const hold = filename.value!.replace(/motifs/i, 'genes');
+          filename.value = hold;
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: runId.value } });
+          const { encoded: filenameTokenMotif } = await client.value.encodeLink({ args: [motifHold], meta: { run_id: runId.value } });
           const { host } = window.location;
-          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
+          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true`;
         }
         const kwargs = {};
         const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
@@ -1171,18 +1257,22 @@ export default defineComponent({
     }
     async function selectAction(ev: any) {
       if (props.query.public) {
-        const fn = ev.id;
+        const mid = ev.id.search(/motif/i);
+        const end = ev.id.length;
+        const fn = ev.id.slice(0, mid);
+        const fn2 = ev.id.slice(mid + 5, end);
         filename.value = fn;
+        filenameMotif.value = fn2;
       } else {
         const root = 'data';
         const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
+        filenameMotif.value = '';
         runId.value = ev.id;
         pushByQuery({ component: 'AtlasG', run_id: ev.id });
         selectedGenes.value = [];
       }
       await runSpatial(currentViewType.value);
-      (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       await loadExpressions();
       runIdFlag.value = false;
       selectedGenes.value = [];
@@ -1196,17 +1286,19 @@ export default defineComponent({
     }
     async function mouseMoveOnSpatial(ev: any) {
       const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
-      tooltip.position({
-        x: mousePos.x + 5,
-        y: mousePos.y + 5,
-      });
       const item = ev.target.attrs;
-      let text = `Cluster: ${item.cluster}`;
-      if (item.total > 0) text = `${text}\nSum: ${item.total}`;
-      lodash.forIn(item.genes, (v: number, k: string) => {
-        if (v > 0) text = `${text}\n${k}: ${v}`;
+      tooltip.position({
+        x: mousePos.x,
+        y: mousePos.y,
       });
-      tooltip.text(text);
+      let text = `Cluster: ${item.cluster}`;
+      if (item.total > 0 && selectedGenes.value.length > 0) {
+        text = `${text}\nSum: ${item.total}`;
+        lodash.forIn(item.genes, (v: number, k: string) => {
+          if (v > 0) text = `${text}\n${k}: ${v}`;
+        });
+      }
+      tooltipText.text(text);
       tooltip.show();
       if (isClusterView.value && item.cluster !== highlightedCluster.value && (!isDrawing.value && !isDrawingRect.value)) {
         const { cluster } = item;
@@ -1221,17 +1313,19 @@ export default defineComponent({
     }
     async function mouseMoveOnSpatialRight(ev: any) {
       const mousePosRight = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
-      tooltipRight.position({
-        x: mousePosRight.x + 5,
-        y: mousePosRight.y + 5,
-      });
       const item = ev.target.attrs;
-      let text = `Cluster: ${item.cluster}`;
-      if (item.total > 0) text = `${text}\nSum: ${item.total}`;
-      lodash.forIn(item.genes, (v: number, k: string) => {
-        if (v > 0) text = `${text}\n${k}: ${v}`;
+      tooltipRight.position({
+        x: mousePosRight.x,
+        y: mousePosRight.y,
       });
-      tooltipRight.text(text);
+      let text = `Cluster: ${item.cluster}`;
+      if (item.total > 0 && selectedGenes.value.length > 0) {
+        text = `${text}\nSum: ${item.total}`;
+        lodash.forIn(item.genes, (v: number, k: string) => {
+          if (v > 0) text = `${text}\n${k}: ${v}`;
+        });
+      }
+      tooltipTextRight.text(text);
       tooltipRight.show();
       if (isClusterView.value && item.cluster !== highlightedCluster.value && (!isDrawing.value && !isDrawingRect.value)) {
         const { cluster } = item;
@@ -1456,7 +1550,6 @@ export default defineComponent({
       propsData: { gene_list: genes, gene_button: geneButton },
       created() {
         this.$on('changed', (ev: any[]) => {
-          console.log(ev);
           selectedGenes.value = ev;
         });
         this.$on('flag', (ev: any) => {
@@ -1574,6 +1667,10 @@ export default defineComponent({
       await clientReady;
       store.commit.setSubmenu(submenu);
       fitStageToParent();
+      tooltip.add(tooltipTag);
+      tooltip.add(tooltipText);
+      tooltipRight.add(tooltipTagRight);
+      tooltipRight.add(tooltipTextRight);
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
       if (props.query) {
@@ -1586,8 +1683,8 @@ export default defineComponent({
         }
       }
       if (props.query) {
-        if (props.query.run_id && props.query.tag) {
-          await selectAction({ id: props.query.run_id, tag: props.query.tag });
+        if (props.query.run_id) {
+          await selectAction({ id: props.query.run_id });
         }
       }
       acInstance.$mount('#geneac');
@@ -1601,6 +1698,7 @@ export default defineComponent({
       scale,
       scaleUMAP,
       filename,
+      filenameMotif,
       publicLink,
       items,
       headers,
@@ -1712,4 +1810,7 @@ export default defineComponent({
 </script>
 
 <style>
+  .container {
+    padding: 0;
+  }
 </style>
