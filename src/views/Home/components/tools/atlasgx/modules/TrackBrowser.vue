@@ -1,37 +1,6 @@
 <template>
     <v-container fluid>
       <v-card flat>
-          <v-row>
-            <v-col cols="12" sm="12">
-              <v-select
-                v-model='selectedSpecies'
-                label='Species'
-                :items="species"
-                dense>
-              </v-select>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="12" sm="12">
-              <v-text-field
-                v-model="search"
-                label="Search Gene Expressions"
-                append-icon="mdi-magnify"
-                dense
-                clearable
-                @click:append="onClickSearch">
-              </v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="12" sm="12">
-              <v-btn
-                color="primary"
-                @click="reload(run_id)">
-                Refresh
-              </v-btn>
-            </v-col>
-          </v-row>
         <v-card-text>
           <div :id="pageId"></div>
         </v-card-text>
@@ -39,7 +8,6 @@
     </v-container>
 </template>
 <script lang='ts'>
-
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import lodash from 'lodash';
 import store from '@/store';
@@ -272,8 +240,7 @@ export default defineComponent({
     };
   },
 });
-
 </script>
-<style>
 
+<style>
 </style>

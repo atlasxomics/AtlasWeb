@@ -1,7 +1,5 @@
 <template>
-  <v-container fluid>
-    <atlas-g :query="query"/>
-  </v-container>
+  <atlas-g :query="query"/>
 </template>
 
 <script lang='ts'>
@@ -46,5 +44,4 @@ export default defineComponent({
 </script>
 
 <style>
-
 </style>

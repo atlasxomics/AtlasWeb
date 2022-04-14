@@ -7,7 +7,7 @@
       dense
       clearable
       placeholder=""
-      label="Enter gene ID:"
+      label="Enter ID:"
       :allow-overflow="false"
       chips
       :cache-items="false"
@@ -112,10 +112,10 @@ export default defineComponent({
         querySelections(v);
       }
     });
-    watch(geneList, (v: any[]) => {
+    watch(geneList.value, (v: any[]) => {
       genes.value = v;
     });
-    watch(geneButton, (v: any[]) => {
+    watch(geneButton.value, (v: any[]) => {
       const gene = v[0];
       if (!selectedGenes.value.includes(v[0]) && (typeof gene === 'string')) {
         searchInput.value = gene;

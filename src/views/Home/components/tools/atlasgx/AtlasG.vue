@@ -1,6 +1,56 @@
 <template>
-  <v-app v-bind="{ 'geneButton': geneButton }">
-    <v-container fluid :style="{ 'background-color': backgroundColor, 'height': '100%', 'padding': '0' }">
+  <v-app>
+    <v-container fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
+      <template v-if="query.public">
+        <v-app-bar>
+            <v-tooltip right>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                color="black"
+                icon
+                class="ml-3"
+                medium
+                :disabled="!spatialData || loading || !isClusterView || (isDrawing || isDrawingRect)"
+                @click="geneMotif = !geneMotif">
+                <v-icon>mdi-teamviewer</v-icon>
+              </v-btn>
+            </template>
+            <span>Gene/Motif</span>
+            </v-tooltip>
+            <v-tooltip :disabled="backgroundFlag" bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn
+                  :disabled="!spatialData || loading"
+                  v-bind="attrs"
+                  v-on="on"
+                  class="ml-3"
+                  small
+                  @click="backgroundFlag = !backgroundFlag">
+                <v-icon>mdi-palette</v-icon>
+                </v-btn>
+              </template>
+              <span>Background Color</span>
+            </v-tooltip>
+            <v-tooltip :disabled="heatmapFlag" bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn
+                  v-bind="attrs"
+                  :disabled="!spatialData || loading"
+                  v-on="on"
+                  class="ml-3 mr-3"
+                  small
+                  @click="heatmapFlag = !heatmapFlag;">
+                <v-icon>mdi-fire</v-icon>
+                </v-btn>
+              </template>
+              <span>Heatmap</span>
+            </v-tooltip>
+              <div id="geneac">
+              </div>
+          </v-app-bar>
+      </template>
       <v-row>
         <v-dialog
           v-if="!query.public && runIdFlag"
@@ -68,7 +118,7 @@
           </v-card>
         </v-dialog>
         <v-col cols="2" sm="1">
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'250px', 'padding-top': '15px', 'background-color': 'silver' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'250px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -184,10 +234,10 @@
                 <v-icon>mdi-content-copy</v-icon>
               </v-btn>
             </template>
-            <span>Copy Public Llink</span>
+            <span>Copy Public Link</span>
             </v-tooltip>
           </v-card>
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'position': 'absolute', 'bottom': '38vh' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '300px' }" flat>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -196,13 +246,13 @@
                 color="black"
                 icon
                 class="ml-4"
-                :disabled="!spatialData || loading"
-                @click="featureTableFlag = true"
+                :disabled="!spatialData || loading || geneMotif"
+                @click="peakViewerFlag = true; featureTableFlag = false"
                 small>
-                <v-icon>mdi-table-large</v-icon>
+                <v-icon>mdi-chart-bar</v-icon>
               </v-btn>
             </template>
-            <span>Feature Table</span>
+            <span>Peak Viewer</span>
             </v-tooltip>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
@@ -213,16 +263,16 @@
                 icon
                 class="ml-4 mt-5"
                 :disabled="!spatialData || loading"
-                @click="peakViewerFlag = true"
+                @click="featureTableFlag = true; peakViewerFlag = false"
                 small>
-                <v-icon>mdi-chart-bar</v-icon>
+                <v-icon>mdi-table-large</v-icon>
               </v-btn>
             </template>
-            <span>Peak Viewer</span>
+            <span>Feature Table</span>
             </v-tooltip>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="10">
+        <v-col cols="12" sm="10" class="mt-5">
           <div id="screenCapture" :style="{ 'background-color': backgroundColor }">
             <v-row no-gutters>
               <v-col cols="12" sm="1">
@@ -230,7 +280,7 @@
                 class="rounded-0"
                 flat
                 :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                height="42vh">
+                height="50vh">
                   <v-card-text style="margin-left:4vw">
                     <v-row>
                       <v-btn
@@ -271,7 +321,7 @@
                   v-resize="onResize"
                   flat
                   :style="{ 'background-color': backgroundColor, 'overflow-x': 'None'}"
-                  height="42vh"
+                  height="50vh"
                   align="center">
                   <v-stage
                     ref="konvaStage"
@@ -281,7 +331,6 @@
                     @mousedown="mouseDownOnStageLeft"
                     @mousemove="mouseMoveOnStageLeft"
                     @mouseup="mouseUpOnStageLeft"
-                    @wheel="mouseWheelOnStage"
                     >
                     <v-layer
                       ref="spatialLayer"
@@ -363,7 +412,7 @@
                 class="rounded-0"
                 flat
                 :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                height="42vh"
+                height="50vh"
                 width="100%">
                   <v-card-text style="margin-left:4vw">
                     <v-row>
@@ -405,7 +454,7 @@
                   flat
                   v-resize="onResize"
                   :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
-                  height="42vh">
+                  height="50vh">
                   <v-stage
                     ref="konvaStageRight"
                     class="mainStage"
@@ -413,7 +462,6 @@
                     @mousedown="mouseDownOnStageRight"
                     @mousemove="mouseMoveOnStageRight"
                     @mouseup="mouseUpOnStageRight"
-                    @wheel="mouseWheelOnStageUMAP"
                     :style="{ 'overflow': 'hidden' }"
                     >
                     <v-layer
@@ -493,9 +541,16 @@
               </v-col>
             </v-row>
           </div>
-          <v-card class="mt-3" v-if="clusterItems && featureTableFlag" :disabled="loading">
-            <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"></table-component>
-          </v-card>
+          <v-row no-gutters>
+            <v-col cols="12" sm="12">
+              <v-card class="mt-3" v-show="clusterItems && featureTableFlag" :disabled="loading">
+                <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
+              </v-card>
+              <v-card class="mt-3" v-show="clusterItems && peakViewerFlag" :disabled="loading">
+                <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="selectedGenes[selectedGenes.length - 1]"/>
+              </v-card>
+            </v-col>
+          </v-row>
         </v-col>
       </v-row>
     </v-container>
@@ -516,6 +571,7 @@ import { Console } from 'console';
 import html2canvas from 'html2canvas';
 import GeneAutoComplete from './modules/GeneAutoComplete.vue';
 import GeneDataTable from './modules/GeneDataTable.vue';
+import TrackBrowser from './modules/TrackBrowser.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -526,7 +582,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 const headers = [
-  { text: 'ID', value: 'id_with_tag' },
+  { text: 'ID', value: 'id' },
 ];
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
@@ -565,7 +621,7 @@ function colormapBounded(cmap: string[], values: number[]) {
 
 export default defineComponent({
   name: 'AtlasG',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -574,7 +630,7 @@ export default defineComponent({
     const workers = computed(() => store.state.client?.workers);
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
-    const currentRunId = ref<string | null>(null);
+    const filenameMotif = ref<string | null>(null);
     const runId = ref<string | null>(null);
     const publicLink = ref<string | null>(null);
     const items = ref<any[]>();
@@ -603,23 +659,45 @@ export default defineComponent({
     const stepArray = ref<any[]>([]);
     const colorBarmap = ref<string>('');
     const highlightedCluster = ref<any>();
-    const tooltip = new Konva.Text({
-      text: '',
-      fontFamily: 'Calibri',
-      fontSize: 15,
-      fontStyle: 'bold',
-      padding: 5,
-      visible: false,
+    const tooltip = new Konva.Label({ visible: false });
+    const tooltipRight = new Konva.Label({ visible: false });
+    const tooltipTag = new Konva.Tag({
       fill: 'white',
+      pointerDirection: 'down',
+      pointerWidth: 10,
+      pointerHeight: 10,
+      lineJoin: 'round',
+      shadowColor: 'black',
+      shadowBlur: 10,
+      shadowOffsetX: 10,
+      shadowOffsetY: 10,
+      shadowOpacity: 0.5,
     });
-    const tooltipRight = new Konva.Text({
+    const tooltipText = new Konva.Text({
       text: '',
       fontFamily: 'Calibri',
       fontSize: 15,
-      fontStyle: 'bold',
       padding: 5,
-      visible: false,
+      fill: 'black',
+    });
+    const tooltipTextRight = new Konva.Text({
+      text: '',
+      fontFamily: 'Calibri',
+      fontSize: 15,
+      padding: 5,
+      fill: 'black',
+    });
+    const tooltipTagRight = new Konva.Tag({
       fill: 'white',
+      pointerDirection: 'down',
+      pointerWidth: 10,
+      pointerHeight: 10,
+      lineJoin: 'round',
+      shadowColor: 'black',
+      shadowBlur: 10,
+      shadowOffsetX: 10,
+      shadowOffsetY: 10,
+      shadowOpacity: 0.5,
     });
     const circlesSpatial = ref<any[]>([]);
     const circlesSpatialUMAP = ref<any[]>([]);
@@ -637,10 +715,10 @@ export default defineComponent({
     const isDrawing = ref<boolean>(false);
     const isDrawingRect = ref<boolean>(false);
     const isClicked = ref<boolean>(false);
-    const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'brown', strokeWidth: 1 });
-    const polygonUMAP = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'brown', strokeWidth: 1 });
-    const rectangle = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'brown', strokeWidth: 1, endPointx: 0, endPointy: 0 });
-    const rectangleUMAP = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'brown', strokeWidth: 1, endPointx: 0, endPointy: 0 });
+    const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'green', strokeWidth: 1 });
+    const polygonUMAP = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'green', strokeWidth: 1 });
+    const rectangle = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'green', strokeWidth: 1, endPointx: 0, endPointy: 0 });
+    const rectangleUMAP = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'green', strokeWidth: 1, endPointx: 0, endPointy: 0 });
     const regions = ref<any>();
     const regionsUMAP = ref<any>();
     const lengthClust = ref<number>(0);
@@ -661,21 +739,9 @@ export default defineComponent({
     const highlightCount = ref<number>(0);
     const geneButton = ref<any[]>(['']);
     const geneMotif = ref<boolean>(false);
-    const featureTableFlag = ref<boolean>(true);
-    const peakViewerFlag = ref<boolean>(false);
-    const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
-    const acInstance = ref(new GeneAutoCompleteClass({
-      vuetify,
-      propsData: { gene_list: genes, gene_button: geneButton },
-      created() {
-        this.$on('changed', (ev: any[]) => {
-          selectedGenes.value = ev;
-        });
-        this.$on('flag', (ev: any) => {
-          showFlag.value = [ev];
-        });
-      },
-    }));
+    const featureTableFlag = ref<boolean>(false);
+    const peakViewerFlag = ref<boolean>(true);
+    const colorMap = ref<any>({});
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -688,8 +754,8 @@ export default defineComponent({
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParent');
       if (!parent) return;
-      const parentWidth = (parent as any).offsetWidth * 0.99;
-      const parentHeight = (parent as any).offsetHeight * 0.99;
+      const parentWidth = (parent as any).offsetWidth;
+      const parentHeight = (parent as any).offsetHeight;
       konvaConfigLeft.value.width = parentWidth;
       konvaConfigLeft.value.height = parentHeight;
       konvaConfigRight.value.width = parentWidth;
@@ -704,7 +770,7 @@ export default defineComponent({
       const blob = new Blob([final], { type: 'text;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       pom.href = url;
-      pom.setAttribute('download', `${currentRunId.value}/Selection.txt`);
+      pom.setAttribute('download', `${runId.value}/Selection.txt`);
       pom.click();
     }
     function captureScreen() {
@@ -714,7 +780,7 @@ export default defineComponent({
           const pom = document.createElement('a');
           pom.href = base64image;
           const listGene = selectedGenes.value.join();
-          pom.setAttribute('download', `${currentRunId.value}/${listGene}.png`);
+          pom.setAttribute('download', `${runId.value}/${listGene}.png`);
           pom.click();
         });
       }, 1000);
@@ -752,7 +818,16 @@ export default defineComponent({
     async function loadExpressions() {
       if (!client.value) return;
       if (!filename.value) return;
-      const resp = props.query.public ? await client.value.getGeneExpressionsByToken(filename.value) : await client.value.getGeneExpressions(filename.value);
+      let resp: any;
+      if (props.query.public) {
+        if (geneMotif.value) {
+          resp = await client.value.getGeneExpressionsByToken(filenameMotif.value!);
+        } else {
+          resp = await client.value.getGeneExpressionsByToken(filename.value);
+        }
+      } else {
+        resp = await client.value.getGeneExpressions(filename.value);
+      }
       genes.value = resp.map((v: string) => ({ name: v }));
     }
     function remove(item: any) {
@@ -895,6 +970,12 @@ export default defineComponent({
         if ((i % 3) === 0) colors.push(v);
       });
       clusterColors.value = colors;
+      const cmap: any = {};
+      for (let i = 0; i < clusterColors.value.length; i += 1) {
+        const cidx = `C${i + 1}`;
+        cmap[cidx] = clusterColors.value[i];
+      }
+      colorMap.value = cmap;
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
       colorBar.value = colors_intensity;
       colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
@@ -1054,10 +1135,12 @@ export default defineComponent({
     function chooseHeatmap(ev: any) {
       heatMap.value = ev.heat;
       heatmapFlag.value = false;
-      if (ev.heat === 'picnic' || ev.heat === 'hot') {
+      if (ev.heat === 'picnic') {
         colorbarText.value = 'black';
       } else if (ev.heat === 'jet' || ev.heat === 'inferno') {
         colorbarText.value = 'white';
+      } else if (ev.heat === 'hot') {
+        colorbarText.value = 'grey';
       } else {
         colorbarText.value = 'brown';
       }
@@ -1076,11 +1159,8 @@ export default defineComponent({
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Genes', id_with_tag: `${v.split('/')[1]}-Genes` }));
-      const fl_payload_motif = { params: { path: 'data', filter: 'obj/motifs.h5ad' } };
-      const filelist_motif = await client.value.getFileList(fl_payload_motif);
-      const qc_data_motif = filelist_motif.map((v: string) => ({ id: `${v.split('/')[1]}`, tag: 'Motifs', id_with_tag: `${v.split('/')[1]}-Motifs` }));
-      items.value = qc_data.concat(...qc_data_motif);
+      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
+      items.value = qc_data;
       loading.value = false;
     }
     async function runSpatial(stype: string) {
@@ -1089,7 +1169,7 @@ export default defineComponent({
       try {
         progressMessage.value = null;
         loading.value = true;
-        if (geneMotif.value) {
+        if (geneMotif.value && !props.query.public) {
           const hold = filename.value.replace(/genes/i, 'motifs');
           filename.value = hold;
           if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
@@ -1105,11 +1185,15 @@ export default defineComponent({
         const { task } = currentTask.value;
         const [queue] = currentTask.value.queues;
         // const queue = 'atxcloud_liya_gene';
-        const args = [filename.value, selectedGenes.value, highlightIds.value];
+        const args = (!props.query.public) ? [filename.value, selectedGenes.value, highlightIds.value] : [(geneMotif.value) ? filenameMotif.value : filename.value, selectedGenes.value, highlightIds.value];
         if (!props.query.public) {
-          const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: currentRunId.value } });
+          const motifHold = filename.value!.replace(/genes/i, 'motifs');
+          const hold = filename.value!.replace(/motifs/i, 'genes');
+          filename.value = hold;
+          const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: runId.value } });
+          const { encoded: filenameTokenMotif } = await client.value.encodeLink({ args: [motifHold], meta: { run_id: runId.value } });
           const { host } = window.location;
-          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
+          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true`;
         }
         const kwargs = {};
         const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
@@ -1173,14 +1257,19 @@ export default defineComponent({
     }
     async function selectAction(ev: any) {
       if (props.query.public) {
-        const fn = ev.id;
+        const mid = ev.id.search(/motif/i);
+        const end = ev.id.length;
+        const fn = ev.id.slice(0, mid);
+        const fn2 = ev.id.slice(mid + 5, end);
         filename.value = fn;
+        filenameMotif.value = fn2;
       } else {
         const root = 'data';
-        const fn = ev.tag === 'Genes' ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
+        const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
-        currentRunId.value = ev.id;
-        pushByQuery({ component: 'AtlasG', run_id: ev.id, tag: ev.tag });
+        filenameMotif.value = '';
+        runId.value = ev.id;
+        pushByQuery({ component: 'AtlasG', run_id: ev.id });
         selectedGenes.value = [];
       }
       await runSpatial(currentViewType.value);
@@ -1197,17 +1286,19 @@ export default defineComponent({
     }
     async function mouseMoveOnSpatial(ev: any) {
       const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
-      tooltip.position({
-        x: mousePos.x + 5,
-        y: mousePos.y + 5,
-      });
       const item = ev.target.attrs;
-      let text = `Cluster: ${item.cluster}`;
-      if (item.total > 0) text = `${text}\nSum: ${item.total}`;
-      lodash.forIn(item.genes, (v: number, k: string) => {
-        if (v > 0) text = `${text}\n${k}: ${v}`;
+      tooltip.position({
+        x: mousePos.x,
+        y: mousePos.y,
       });
-      tooltip.text(text);
+      let text = `Cluster: ${item.cluster}`;
+      if (item.total > 0 && selectedGenes.value.length > 0) {
+        text = `${text}\nSum: ${item.total}`;
+        lodash.forIn(item.genes, (v: number, k: string) => {
+          if (v > 0) text = `${text}\n${k}: ${v}`;
+        });
+      }
+      tooltipText.text(text);
       tooltip.show();
       if (isClusterView.value && item.cluster !== highlightedCluster.value && (!isDrawing.value && !isDrawingRect.value)) {
         const { cluster } = item;
@@ -1222,17 +1313,19 @@ export default defineComponent({
     }
     async function mouseMoveOnSpatialRight(ev: any) {
       const mousePosRight = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
-      tooltipRight.position({
-        x: mousePosRight.x + 5,
-        y: mousePosRight.y + 5,
-      });
       const item = ev.target.attrs;
-      let text = `Cluster: ${item.cluster}`;
-      if (item.total > 0) text = `${text}\nSum: ${item.total}`;
-      lodash.forIn(item.genes, (v: number, k: string) => {
-        if (v > 0) text = `${text}\n${k}: ${v}`;
+      tooltipRight.position({
+        x: mousePosRight.x,
+        y: mousePosRight.y,
       });
-      tooltipRight.text(text);
+      let text = `Cluster: ${item.cluster}`;
+      if (item.total > 0 && selectedGenes.value.length > 0) {
+        text = `${text}\nSum: ${item.total}`;
+        lodash.forIn(item.genes, (v: number, k: string) => {
+          if (v > 0) text = `${text}\n${k}: ${v}`;
+        });
+      }
+      tooltipTextRight.text(text);
       tooltipRight.show();
       if (isClusterView.value && item.cluster !== highlightedCluster.value && (!isDrawing.value && !isDrawingRect.value)) {
         const { cluster } = item;
@@ -1251,8 +1344,8 @@ export default defineComponent({
       polygonUMAP.value.points = [];
       regions.value = [];
       polygon.value.points = [];
-      rectangle.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-      rectangleUMAP.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+      rectangle.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+      rectangleUMAP.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
       highlightRegion();
     }
     function mouseDownOnStageLeft(ev: any) {
@@ -1260,15 +1353,15 @@ export default defineComponent({
         lassoSide.value = 'left';
         removeRegions();
         isClicked.value = true;
-        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'brown', strokeWidth: 3 };
+        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'green', strokeWidth: 3 };
         polygon.value.points = [];
       }
       if (isDrawingRect.value) {
         lassoSide.value = 'left';
         removeRegions();
         const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
-        rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
         isClicked.value = true;
       }
@@ -1278,15 +1371,15 @@ export default defineComponent({
         lassoSide.value = 'right';
         removeRegions();
         isClicked.value = true;
-        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'brown', strokeWidth: 3 };
+        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'green', strokeWidth: 3 };
         polygonUMAP.value.points = [];
       }
       if (isDrawingRect.value) {
         lassoSide.value = 'right';
         removeRegions();
         const mousePos = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
-        rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'brown', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
+        rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
         isClicked.value = true;
       }
@@ -1451,6 +1544,19 @@ export default defineComponent({
       stage.position(newPos);
       scaleUMAP.value = 0.75;
     }
+    const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
+    const acInstance = new GeneAutoCompleteClass({
+      vuetify,
+      propsData: { gene_list: genes, gene_button: geneButton },
+      created() {
+        this.$on('changed', (ev: any[]) => {
+          selectedGenes.value = ev;
+        });
+        this.$on('flag', (ev: any) => {
+          showFlag.value = [ev];
+        });
+      },
+    });
     watch(scale, () => {
       reScale();
     });
@@ -1561,6 +1667,10 @@ export default defineComponent({
       await clientReady;
       store.commit.setSubmenu(submenu);
       fitStageToParent();
+      tooltip.add(tooltipTag);
+      tooltip.add(tooltipText);
+      tooltipRight.add(tooltipTagRight);
+      tooltipRight.add(tooltipTextRight);
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
       if (props.query) {
@@ -1573,21 +1683,22 @@ export default defineComponent({
         }
       }
       if (props.query) {
-        if (props.query.run_id && props.query.tag) {
-          await selectAction({ id: props.query.run_id, tag: props.query.tag });
+        if (props.query.run_id) {
+          await selectAction({ id: props.query.run_id });
         }
       }
-      acInstance.value.$mount('#geneac');
+      acInstance.$mount('#geneac');
     });
     onUnmounted(() => {
-      acInstance.value.$destroy();
-      acInstance.value.$el.parentNode!.removeChild(acInstance.value.$el);
+      acInstance.$destroy();
+      acInstance.$el.parentNode!.removeChild(acInstance.$el);
       store.commit.setSubmenu(null);
     });
     return {
       scale,
       scaleUMAP,
       filename,
+      filenameMotif,
       publicLink,
       items,
       headers,
@@ -1688,15 +1799,18 @@ export default defineComponent({
       saveTxt,
       highlightCount,
       autoCompleteFlag,
-      acInstance,
       geneButton,
       geneMotif,
       featureTableFlag,
       peakViewerFlag,
+      colorMap,
     };
   },
 });
 </script>
 
 <style>
+  .container {
+    padding: 0;
+  }
 </style>

@@ -19,15 +19,15 @@ export class Crop {
   }
 
   initialize(width: number, height: number) {
-    const rng = [[0.0, 0.0], [1.0, 1.0]];
+    const rng = [[0.3, 0.5], [1.0, 1.0]];
     rng.forEach((x: number[], idx: number) => {
       const [xp, yp] = x;
       const id = idx;
       const circle: any = {
         draggable: true,
         id,
-        x: xp * width * this.scalefactor,
-        y: yp * height * this.scalefactor,
+        x: xp * (width * 0.35),
+        y: yp * (height * 0.35),
         stroke: 'red',
         radius: 10,
       };
@@ -38,7 +38,6 @@ export class Crop {
   getCoordinates(): Point[] {
     const out: Point[] = [];
     lodash.forIn(this.coordinates, (v, k) => {
-      // console.log(v.attrs.id, v.attrs.x, v.attrs.y);
       const p = { x: v.x, y: v.y, id: k };
       out.push(p);
     });
