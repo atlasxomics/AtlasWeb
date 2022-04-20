@@ -548,6 +548,20 @@
               </v-card>
               <v-card class="mt-3" :style="{ visibility: visible }" :disabled="loading">
                 <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
+                <v-spacer></v-spacer>
+                <v-card>
+                  <v-simple-table>
+                    <template v-slot:default>
+                      <tr>
+                        <th v-for="item in selectedGenes" :key="item"/>
+                      </tr>
+                      <tr>
+                        <td style="padding-left:4px;width:10%;"> Selected Genes: </td>
+                        <td v-for="item in selectedGenes" :key="item" ><v-btn text x-small dense @click="trackBrowserGenes = [item]">{{item}}</v-btn></td>
+                      </tr>
+                    </template>
+                  </v-simple-table>
+                </v-card>
               </v-card>
             </v-col>
           </v-row>
@@ -1628,7 +1642,7 @@ export default defineComponent({
       if (bool) {
         isClusterView.value = false;
         runSpatial('spatial');
-        trackBrowserGenes.value = selectedGenes.value;
+        trackBrowserGenes.value = [selectedGenes.value[selectedGenes.value.length - 1]];
       } else {
         geneButton.value = [];
         spatialRun.value = true;
@@ -1694,10 +1708,10 @@ export default defineComponent({
       if (props.query) {
         if (!props.query.public) {
           // loadCandidateWorkers('AtlasGX');
-          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
           await fetchFileList();
         } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query) {
