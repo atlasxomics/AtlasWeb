@@ -13,7 +13,7 @@ import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { generateRouteByQuery } from '@/utils';
 import { Client } from '@/api';
-import { loginAnonymous } from '@/utils/auth';
+import { saveCookie, loginExisting } from '@/utils/auth';
 import PublicGeneViewer from './viewers/PublicGeneViewer.vue';
 
 const clientReady = new Promise((resolve) => {
@@ -41,12 +41,15 @@ export default defineComponent({
     }
     onMounted(async () => {
       // await clientReady;
-      loginAnonymous(TEST_SERVER_URL); // this needs to be changed to live server afterwards
       store.commit.setSubmenu(null);
       console.log('Mounted');
       const route = currentRoute.value;
       if (route.query.component) store.commit.setComponent(route.query);
       else store.commit.setComponent({ component: null });
+      console.log(component.value);
+      const cookie = { token: component.value.token, url: TEST_SERVER_URL };
+      saveCookie(cookie);
+      loginExisting();
     });
     return { component };
   },

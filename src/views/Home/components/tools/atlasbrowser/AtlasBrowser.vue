@@ -44,20 +44,24 @@
             {{ run_id }}
           </v-card-title>
           <v-card-text>
-            <v-select
+            <v-text-field
               v-model="metadata.species"
-              :items="metaItemLists.species"
               dense
               outlined
               label="Species">
-            </v-select>
-            <v-select
+            </v-text-field>
+            <v-text-field
+              v-model="metadata.organ"
+              dense
+              outlined
+              label="Organ">
+            </v-text-field>
+            <v-text-field
               v-model="metadata.type"
-              :items="metaItemLists.types"
               dense
               outlined
               label="Type">
-            </v-select>
+            </v-text-field>
             <v-select
               v-model="metadata.assay"
               :items="metaItemLists.assays"
@@ -444,8 +448,9 @@ const metaHeaders = [
   { text: 'Value', value: 'value' },
 ];
 const metaItemLists = {
-  types: ['FF', 'FFPE', 'EFPE'],
-  species: ['Mouse', 'Human', 'Rat', 'Hamster'],
+  types: [],
+  species: [],
+  organ: [],
   assays: ['mRNA', 'Protein', 'ATAC', 'H3K27me3', 'H3K4me3', 'H3K27ac'],
   numChannels: ['50', '50 v2'],
 };
@@ -461,6 +466,7 @@ interface Metadata {
   orientation: any | null;
   crop_area: any | null;
   barcodes: number | null;
+  organ: string | null;
 }
 
 export default defineComponent({
@@ -541,6 +547,7 @@ export default defineComponent({
       species: 'Mouse',
       assay: 'mRNA',
       numChannels: '50',
+      organ: null,
       orientation: null,
       crop_area: null,
       barcodes: 1,
@@ -588,6 +595,12 @@ export default defineComponent({
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       metadata.value = resp;
+      const slimsData = await client.value.getMetadataFromRunId(`${run_id.value}`);
+      console.log(slimsData);
+      metadata.value.organ = slimsData.Organ;
+      metadata.value.species = slimsData.Species;
+      metadata.value.type = slimsData['Tissue type'];
+      console.log(slimsData['Tissue type']);
       metadata.value.numChannels = '50';
       if (resp) {
         optionFlag.value = false;
@@ -684,8 +697,8 @@ export default defineComponent({
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
-      current_image.value.scale = { x: v, y: v };
       if (current_image.value !== null) {
+        current_image.value.scale = { x: v, y: v };
         konvaConfig.value.width = v * current_image.value.image.width;
         konvaConfig.value.height = v * current_image.value.image.height;
         stageWidth.value = konvaConfig.value.width;

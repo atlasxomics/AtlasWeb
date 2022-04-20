@@ -238,7 +238,7 @@
             </v-tooltip>
           </v-card>
           <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '300px' }" flat>
-            <v-tooltip right>
+            <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
                 v-bind="attrs"
@@ -246,22 +246,6 @@
                 color="black"
                 icon
                 class="ml-4"
-                :disabled="!spatialData || loading || geneMotif"
-                @click="peakViewerFlag = true; featureTableFlag = false"
-                small>
-                <v-icon>mdi-chart-bar</v-icon>
-              </v-btn>
-            </template>
-            <span>Peak Viewer</span>
-            </v-tooltip>
-            <v-tooltip right>
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                v-bind="attrs"
-                v-on="on"
-                color="black"
-                icon
-                class="ml-4 mt-5"
                 :disabled="!spatialData || loading"
                 @click="featureTableFlag = true; peakViewerFlag = false"
                 small>
@@ -269,6 +253,22 @@
               </v-btn>
             </template>
             <span>Feature Table</span>
+            </v-tooltip>
+            <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                color="black"
+                icon
+                class="ml-4 mt-5"
+                :disabled="!spatialData || loading || geneMotif"
+                @click="peakViewerFlag = true; featureTableFlag = false"
+                small>
+                <v-icon>mdi-chart-bar</v-icon>
+              </v-btn>
+            </template>
+            <span>Peak Viewer</span>
             </v-tooltip>
           </v-card>
         </v-col>
@@ -367,8 +367,8 @@
                   </v-stage>
                 </v-card>
                 <v-row>
-                  <v-col cols="12" sm="9">
-                    <template v-if="!isClusterView">
+                  <v-col cols="12" sm="10">
+                    <template v-if="!isClusterView && !spatialRun">
                       <v-card
                         class="rounded-0"
                         flat
@@ -499,8 +499,8 @@
                   </v-stage>
                 </v-card>
                 <v-row>
-                  <v-col cols="12" sm="9">
-                    <template v-if="!isClusterView">
+                  <v-col cols="12" sm="10">
+                    <template v-if="!isClusterView && !spatialRun">
                       <v-card
                         class="rounded-0"
                         flat
@@ -546,8 +546,8 @@
               <v-card class="mt-3" v-show="clusterItems && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
-              <v-card class="mt-3" v-show="clusterItems && peakViewerFlag" :disabled="loading">
-                <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="selectedGenes[selectedGenes.length - 1]"/>
+              <v-card class="mt-3" :style="{ visibility: visible }" :disabled="loading">
+                <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
               </v-card>
             </v-col>
           </v-row>
@@ -567,6 +567,7 @@ import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
+import { readCookie } from '@/utils/auth';
 import { Console } from 'console';
 import html2canvas from 'html2canvas';
 import GeneAutoComplete from './modules/GeneAutoComplete.vue';
@@ -640,6 +641,7 @@ export default defineComponent({
     const filteredGenes = ref<any[]>([]);
     const loading = ref<boolean>(false);
     const selectedGenes = ref<any[]>([]);
+    const trackBrowserGenes = ref<any[]>([]);
     const searchInput = ref<string | null>(null);
     const spatialData = ref<any | null>(null);
     const clusterItems = ref<any[]>();
@@ -739,8 +741,10 @@ export default defineComponent({
     const highlightCount = ref<number>(0);
     const geneButton = ref<any[]>(['']);
     const geneMotif = ref<boolean>(false);
-    const featureTableFlag = ref<boolean>(false);
-    const peakViewerFlag = ref<boolean>(true);
+    const featureTableFlag = ref<boolean>(true);
+    const peakViewerFlag = ref<boolean>(false);
+    const visible = ref<string>('hidden');
+    const spatialRun = ref<boolean>(false);
     const colorMap = ref<any>({});
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
@@ -1169,6 +1173,7 @@ export default defineComponent({
       try {
         progressMessage.value = null;
         loading.value = true;
+        spatialRun.value = true;
         if (geneMotif.value && !props.query.public) {
           const hold = filename.value.replace(/genes/i, 'motifs');
           filename.value = hold;
@@ -1187,13 +1192,14 @@ export default defineComponent({
         // const queue = 'atxcloud_liya_gene';
         const args = (!props.query.public) ? [filename.value, selectedGenes.value, highlightIds.value] : [(geneMotif.value) ? filenameMotif.value : filename.value, selectedGenes.value, highlightIds.value];
         if (!props.query.public) {
+          const existingCookie = readCookie();
           const motifHold = filename.value!.replace(/genes/i, 'motifs');
           const hold = filename.value!.replace(/motifs/i, 'genes');
           filename.value = hold;
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: runId.value } });
           const { encoded: filenameTokenMotif } = await client.value.encodeLink({ args: [motifHold], meta: { run_id: runId.value } });
           const { host } = window.location;
-          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true`;
+          publicLink.value = `http://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true&token=${existingCookie?.token}`;
         }
         const kwargs = {};
         const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
@@ -1249,6 +1255,7 @@ export default defineComponent({
         await updateCircles();
         await fitStageToParent();
         loading.value = false;
+        spatialRun.value = false;
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -1267,6 +1274,7 @@ export default defineComponent({
         const root = 'data';
         const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
+        console.log(filename.value);
         filenameMotif.value = '';
         runId.value = ev.id;
         pushByQuery({ component: 'AtlasG', run_id: ev.id });
@@ -1557,6 +1565,13 @@ export default defineComponent({
         });
       },
     });
+    watch(peakViewerFlag, (v: any) => {
+      if (v) {
+        visible.value = 'visible';
+      } else {
+        visible.value = 'hidden';
+      }
+    });
     watch(scale, () => {
       reScale();
     });
@@ -1601,6 +1616,7 @@ export default defineComponent({
         showFlag.value = [false];
         stepArray.value = [];
         updateCircles();
+        trackBrowserGenes.value = [];
       } else {
         isDrawing.value = false;
         isDrawingRect.value = false;
@@ -1612,8 +1628,10 @@ export default defineComponent({
       if (bool) {
         isClusterView.value = false;
         runSpatial('spatial');
+        trackBrowserGenes.value = selectedGenes.value;
       } else {
         geneButton.value = [];
+        spatialRun.value = true;
       }
     });
     watch(searchInput, (v: any) => {
@@ -1676,10 +1694,10 @@ export default defineComponent({
       if (props.query) {
         if (!props.query.public) {
           // loadCandidateWorkers('AtlasGX');
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
           await fetchFileList();
         } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
         }
       }
       if (props.query) {
@@ -1804,6 +1822,9 @@ export default defineComponent({
       featureTableFlag,
       peakViewerFlag,
       colorMap,
+      spatialRun,
+      visible,
+      trackBrowserGenes,
     };
   },
 });
