@@ -550,14 +550,14 @@
                 <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
                 <v-spacer></v-spacer>
                 <v-card>
-                  <v-simple-table>
+                  <v-simple-table style="margin-bottom:20px">
                     <template v-slot:default>
                       <tr>
                         <th v-for="item in selectedGenes" :key="item"/>
                       </tr>
                       <tr>
-                        <td style="padding-left:4px;width:10%;"> Selected Genes: </td>
-                        <td v-for="item in selectedGenes" :key="item" ><v-btn text x-small dense @click="trackBrowserGenes = [item]">{{item}}</v-btn></td>
+                        <td style="padding-left:4px;width:120px;"> Selected Genes: </td>
+                        <td v-for="item in selectedGenes" :key="item"><v-btn text x-small dense @click="trackBrowserGenes = [item]">{{item}}</v-btn></td>
                       </tr>
                     </template>
                   </v-simple-table>
