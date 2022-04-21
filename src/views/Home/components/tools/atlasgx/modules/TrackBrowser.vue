@@ -205,7 +205,7 @@ export default defineComponent({
         if (!x) {
           snackbar.dispatch({ text: `Expression ${search.value} found`, options: { right: true, color: 'success' } });
         } else {
-          snackbar.dispatch({ text: `Expression ${search.value} NOT found`, options: { right: true, color: 'error' } });
+          // snackbar.dispatch({ text: `Expression ${search.value} NOT found`, options: { right: true, color: 'error' } });
         }
       }, {});
     }
