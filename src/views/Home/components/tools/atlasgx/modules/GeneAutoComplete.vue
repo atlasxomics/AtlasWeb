@@ -17,6 +17,7 @@
       @input="acInputChanged"
       :search-input.sync="searchInput"
       :loading="autocompleteLoading"
+      :menu-props="{closeOnClick:true}"
       @change="onGenelistChanged"
       width="100%"
       small-chips>
@@ -27,7 +28,7 @@
           close
           small
           color="warning"
-          @click="data.select"
+          @click="updateTrack(data.item.name)"
           @click:close="remove(data.item)"
         >{{ data.item.name }}
         </v-chip>
@@ -94,12 +95,14 @@ export default defineComponent({
     }
     async function onGenelistChanged(ev: any) {
       ctx.emit('changed', ev);
-      // console.log('emit changed');
       // TODO to send signal to the parent
     }
     async function showGene(ev: any) {
       showFlag.value = true;
       ctx.emit('flag', showFlag.value);
+    }
+    async function updateTrack(ev: any) {
+      ctx.emit('track', ev);
     }
     function remove(item: any) {
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
@@ -147,6 +150,7 @@ export default defineComponent({
       onGenelistChanged,
       remove,
       showGene,
+      updateTrack,
     };
   },
 });

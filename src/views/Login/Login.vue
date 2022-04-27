@@ -140,6 +140,10 @@ export default defineComponent({
         if (isClient(resp)) {
           saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
           store.commit.setClient(resp);
+          const clients = store.state.client;
+          const val = await clients!.getRunIdList();
+          console.log(val);
+          store.commit.setSlimsData(val);
         } else {
           loginErrorMessage.value = resp;
         }

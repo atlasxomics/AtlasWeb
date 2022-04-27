@@ -2,15 +2,31 @@
   <v-app>
     <v-container fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
-        <v-app-bar>
-            <v-tooltip right>
+        <v-app-bar  style="margin-top:-7px">
+          <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
                 v-bind="attrs"
                 v-on="on"
                 color="black"
                 icon
-                class="ml-3"
+                class="ml-1"
+                medium
+                :disabled="!spatialData || loading || !isClusterView || (isDrawing || isDrawingRect)"
+                @click="metaFlag = !metaFlag">
+                <v-icon>mdi-filter-variant</v-icon>
+              </v-btn>
+            </template>
+            <span>Metadata</span>
+          </v-tooltip>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                color="black"
+                icon
+                class="ml-1"
                 medium
                 :disabled="!spatialData || loading || !isClusterView || (isDrawing || isDrawingRect)"
                 @click="geneMotif = !geneMotif">
@@ -18,8 +34,8 @@
               </v-btn>
             </template>
             <span>Gene/Motif</span>
-            </v-tooltip>
-            <v-tooltip :disabled="backgroundFlag" bottom>
+          </v-tooltip>
+          <v-tooltip :disabled="backgroundFlag" bottom>
               <template v-slot:activator="{ on, attrs }">
                 <v-btn
                   :disabled="!spatialData || loading"
@@ -32,8 +48,8 @@
                 </v-btn>
               </template>
               <span>Background Color</span>
-            </v-tooltip>
-            <v-tooltip :disabled="heatmapFlag" bottom>
+          </v-tooltip>
+          <v-tooltip :disabled="heatmapFlag" bottom>
               <template v-slot:activator="{ on, attrs }">
                 <v-btn
                   v-bind="attrs"
@@ -46,9 +62,9 @@
                 </v-btn>
               </template>
               <span>Heatmap</span>
-            </v-tooltip>
-              <div id="geneac">
-              </div>
+          </v-tooltip>
+          <div id="geneac">
+          </div>
           </v-app-bar>
       </template>
       <v-row>
@@ -83,7 +99,7 @@
           :value="backgroundFlag"
           @click:outside="backgroundFlag = !backgroundFlag"
           hide-overlay>
-          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:130px;">
+          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:210px;">
             <v-data-table
             v-model="selected"
             width="20%"
@@ -102,7 +118,7 @@
           :value="heatmapFlag"
           @click:outside="heatmapFlag = !heatmapFlag"
           hide-overlay>
-          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:200px;">
+          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:250px;">
             <v-data-table
             v-model="selected"
             width="20%"
@@ -117,6 +133,44 @@
             />
           </v-card>
         </v-dialog>
+        <v-dialog
+          v-if="metaFlag"
+          :value="metaFlag"
+          @click:outside="metaFlag = !metaFlag"
+          hide-overlay>
+          <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left: 130px;"
+              :disabled="loading">
+            <v-card-title>
+              {{ runId }}
+            </v-card-title>
+            <v-card-text>
+              <v-text-field
+                v-model="metadata.species"
+                class="bold-disabled"
+                dense
+                disabled
+                outlined
+                label="Species">
+              </v-text-field>
+              <v-text-field
+                v-model="metadata.organ"
+                class="bold-disabled"
+                dense
+                outlined
+                disabled
+                label="Organ">
+              </v-text-field>
+              <v-text-field
+                v-model="metadata.type"
+                class="bold-disabled"
+                dense
+                outlined
+                disabled
+                label="Type">
+              </v-text-field>
+            </v-card-text>
+          </v-card>
+      </v-dialog>
         <v-col cols="2" sm="1">
           <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'250px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
             <v-tooltip right>
@@ -396,7 +450,7 @@
                             <v-btn
                             small
                             icon
-                            :color="clusterColors[Number(item.name.toString().replace('C', ''))]"
+                            :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
                             @click="mouseOverClusterItem(item)"
                             >{{ item.name }}
                             </v-btn>
@@ -528,7 +582,7 @@
                             <v-btn
                             small
                             icon
-                            :color="clusterColors[Number(item.name.toString().replace('C', ''))]"
+                            :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
                             @click="mouseOverClusterItem(item)"
                             >{{ item.name }}
                             </v-btn>
@@ -546,23 +600,11 @@
               <v-card class="mt-3" v-show="clusterItems && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
-              <v-card class="mt-3" :style="{ visibility: visible }" :disabled="loading">
-                <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
-                <v-spacer></v-spacer>
-                <v-card>
-                  <v-simple-table>
-                    <template v-slot:default>
-                      <tr>
-                        <th v-for="item in selectedGenes" :key="item"/>
-                      </tr>
-                      <tr>
-                        <td style="padding-left:4px;width:10%;"> Selected Genes: </td>
-                        <td v-for="item in selectedGenes" :key="item" ><v-btn text x-small dense @click="trackBrowserGenes = [item]">{{item}}</v-btn></td>
-                      </tr>
-                    </template>
-                  </v-simple-table>
+              <div id="capturePeak" :style="{ 'background-color': backgroundColor }">
+                <v-card class="mt-3" :style="{ visibility: visible }" v-show="clusterItems">
+                  <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
                 </v-card>
-              </v-card>
+              </div>
             </v-col>
           </v-row>
         </v-col>
@@ -576,7 +618,7 @@ import Vue from 'vue';
 import vuetify from '@/plugins/vuetify';
 import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import Konva from 'konva';
-import lodash from 'lodash';
+import lodash, { lte } from 'lodash';
 import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
@@ -620,6 +662,12 @@ const heatmapOptions = [
   { heat: 'picnic' },
   { heat: 'bone' },
 ];
+interface Metadata {
+  run: string | null;
+  type: string | null;
+  species: string | null;
+  organ: string | null;
+}
 function colormapBounded(cmap: string[], values: number[]) {
   const min_v = Math.min(...values);
   const max_v = Math.max(...values);
@@ -633,6 +681,11 @@ function colormapBounded(cmap: string[], values: number[]) {
   });
   return output;
 }
+function padzeros(v: number, digit: number): string {
+  let s = v.toString();
+  while (s.length < digit) s = `0${s}`;
+  return s;
+}
 
 export default defineComponent({
   name: 'AtlasG',
@@ -643,6 +696,7 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const workers = computed(() => store.state.client?.workers);
+    const slimsRuns = computed(() => store.state.slimsData);
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
     const filenameMotif = ref<string | null>(null);
@@ -675,6 +729,14 @@ export default defineComponent({
     const stepArray = ref<any[]>([]);
     const colorBarmap = ref<string>('');
     const highlightedCluster = ref<any>();
+    const metaFlag = ref<boolean>(false);
+    // Metadata
+    const metadata = ref<Metadata>({
+      run: null,
+      type: '',
+      species: '',
+      organ: null,
+    });
     const tooltip = new Konva.Label({ visible: false });
     const tooltipRight = new Konva.Label({ visible: false });
     const tooltipTag = new Konva.Tag({
@@ -792,16 +854,24 @@ export default defineComponent({
       pom.click();
     }
     function captureScreen() {
-      setTimeout(() => {
-        html2canvas(document.getElementById('screenCapture')!).then((canvas) => {
+      html2canvas(document.getElementById('screenCapture')!).then((canvas) => {
+        const base64image = canvas.toDataURL('image/png');
+        const pom = document.createElement('a');
+        pom.href = base64image;
+        const listGene = selectedGenes.value.join();
+        pom.setAttribute('download', `${runId.value}/${listGene}.png`);
+        pom.click();
+      });
+      if (peakViewerFlag.value) {
+        html2canvas(document.getElementById('capturePeak')!).then((canvas) => {
           const base64image = canvas.toDataURL('image/png');
           const pom = document.createElement('a');
           pom.href = base64image;
           const listGene = selectedGenes.value.join();
-          pom.setAttribute('download', `${runId.value}/${listGene}.png`);
+          pom.setAttribute('download', `${runId.value}/peaks.png`);
           pom.click();
         });
-      }, 1000);
+      }
     }
     // function loadCandidateWorkers(target: string) {
     //   if (!workers.value) return;
@@ -982,10 +1052,10 @@ export default defineComponent({
       const circlesUMAP: any[] = [];
       stepArray.value = [];
       const numClusters = lodash.uniq(spatialData.value.clusters).length;
-      const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters + 1) * 3, format: 'hex', alpha: 1 });
+      const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
       const colors: any[] = [];
       colors_raw.forEach((v: any, i: number) => {
-        if ((i % 3) === 0) colors.push(v);
+        if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
       });
       clusterColors.value = colors;
       const cmap: any = {};
@@ -994,6 +1064,9 @@ export default defineComponent({
         cmap[cidx] = clusterColors.value[i];
       }
       colorMap.value = cmap;
+      if (!showFlag.value[0]) {
+        (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+      }
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
       colorBar.value = colors_intensity;
       colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
@@ -1019,15 +1092,17 @@ export default defineComponent({
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
-          const vv = Number(v.replace('C', '')) - v.split('C').length + 2;
+          const regex = /\d+/g;
+          const string = v;
+          const match = Number(string.match(regex)![0]) - 1;
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
             y: y * scale.value * viewScale + paddingY,
             radius,
-            originalColor: colors[vv],
-            fill: colors[vv],
-            stroke: colors[vv],
+            originalColor: colors[match],
+            fill: colors[match],
+            stroke: colors[match],
             strokeWidth: 1.0,
             cluster: v,
             total: geneSum[i],
@@ -1043,15 +1118,17 @@ export default defineComponent({
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
-          const vv = Number(v.replace('C', '')) - v.split('C').length + 2;
+          const regex = /\d+/g;
+          const string = v;
+          const match = Number(string.match(regex)![0]) - 1;
           const c = {
             id: get_uuid(),
             x: x * scaleUMAP.value * viewScaleUMAP + paddingX,
             y: y * scaleUMAP.value * viewScaleUMAP + paddingY,
             radius: radiusUMAP,
-            originalColor: colors[vv],
-            fill: colors[vv],
-            stroke: colors[vv],
+            originalColor: colors[match],
+            fill: colors[match],
+            stroke: colors[match],
             strokeWidth: 1.0,
             cluster: v,
             total: geneSum[i],
@@ -1177,6 +1254,20 @@ export default defineComponent({
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
+      /*
+      const intersect = filelist.map((v: string) => (`${v.split('/')[1]}`));
+      const uniq: any[] = [];
+      let run_id: string;
+      console.log(slimsRuns.value);
+      slimsRuns.value!.forEach((v: any, idx: number) => {
+        const rid = v['Run Id'];
+        if (rid.includes('0')) {
+          run_id = `D${rid.split('0')[2]}`;
+        } else run_id = rid;
+        if (intersect.includes(run_id)) {
+          uniq.push(run_id);
+        }
+      }); */
       const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
       items.value = qc_data;
       loading.value = false;
@@ -1288,7 +1379,6 @@ export default defineComponent({
         const root = 'data';
         const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
-        console.log(filename.value);
         filenameMotif.value = '';
         runId.value = ev.id;
         pushByQuery({ component: 'AtlasG', run_id: ev.id });
@@ -1302,6 +1392,10 @@ export default defineComponent({
       isDrawing.value = false;
       isDrawingRect.value = false;
       stepArray.value = [];
+      const slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
+      metadata.value.organ = slimsData.Organ;
+      metadata.value.species = slimsData.Species;
+      metadata.value.type = slimsData['Tissue type'];
     }
     function onResize() {
       fitStageToParent();
@@ -1577,6 +1671,9 @@ export default defineComponent({
         this.$on('flag', (ev: any) => {
           showFlag.value = [ev];
         });
+        this.$on('track', (ev: any) => {
+          trackBrowserGenes.value = [ev];
+        });
       },
     });
     watch(peakViewerFlag, (v: any) => {
@@ -1590,6 +1687,10 @@ export default defineComponent({
       reScale();
     });
     watch(geneMotif, (v: any) => {
+      if (v) {
+        featureTableFlag.value = true;
+        peakViewerFlag.value = false;
+      }
       isClusterView.value = true;
       selectedGenes.value = [];
       showFlag.value = [false];
@@ -1661,6 +1762,15 @@ export default defineComponent({
         disabled: loading.value,
         click: () => {
           runIdFlag.value = !runIdFlag.value;
+        },
+      },
+      {
+        text: 'Metadata',
+        icon: 'mdi-filter-variant',
+        tooltip: 'Metadata',
+        disabled: loading.value,
+        click: () => {
+          metaFlag.value = !metaFlag.value;
         },
       },
       {
@@ -1839,6 +1949,8 @@ export default defineComponent({
       spatialRun,
       visible,
       trackBrowserGenes,
+      metadata,
+      metaFlag,
     };
   },
 });
@@ -1848,4 +1960,7 @@ export default defineComponent({
   .container {
     padding: 0;
   }
+  .bold-disabled input {
+      color: black !important;
+    }
 </style>

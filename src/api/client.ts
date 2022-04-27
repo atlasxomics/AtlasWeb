@@ -364,6 +364,11 @@ export default class Client {
     const resp = await this.axios.get(uri, payload);
     return resp.data;
   }
+  async getRunIdList(): Promise<any> {
+    const uri = '/api/v1/dataset/slimstest_list_runids';
+    const resp = await this.axios.get(uri);
+    return resp.data;
+  }
   // Dataset
   async checkWafer(id: string): Promise<any> {
     const req: DatasetRequest = {

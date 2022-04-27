@@ -20,6 +20,7 @@ const {
     currentComponent: { component: null } as any | null,
     serverStatus: null as any | null,
     subMenu: null as any[] | null,
+    slimsData: null as any[] | null,
   },
   getters: {},
   mutations: {
@@ -34,6 +35,9 @@ const {
     },
     setSubmenu(state, submenu: any[] | null) {
       state.subMenu = submenu;
+    },
+    setSlimsData(state, data: any[] | null) {
+      state.slimsData = data;
     },
   },
   actions: {},
