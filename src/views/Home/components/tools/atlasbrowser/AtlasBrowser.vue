@@ -596,11 +596,9 @@ export default defineComponent({
       csvHolder.value = resp_pos;
       metadata.value = resp;
       const slimsData = await client.value.getMetadataFromRunId(`${run_id.value}`);
-      console.log(slimsData);
       metadata.value.organ = slimsData.Organ;
       metadata.value.species = slimsData.Species;
       metadata.value.type = slimsData['Tissue type'];
-      console.log(slimsData['Tissue type']);
       metadata.value.numChannels = '50';
       if (resp) {
         optionFlag.value = false;
