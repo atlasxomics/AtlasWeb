@@ -431,7 +431,7 @@
                         width="100%">
                         <v-row no-gutters>
                           <v-col v-for="step in stepArray" v-bind:key="`${step}`" class="ma-0 pa-0">
-                          <p :style=" { 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold' } "  class="text-center">{{ step }}</p>
+                          <p :style=" { 'color': colorbarText, 'font-size': '16px', 'font-weight': 'bold' } "  class="text-center">{{ step }}</p>
                           </v-col>
                         </v-row>
                       </v-card>
@@ -563,7 +563,7 @@
                         width="100%">
                         <v-row no-gutters>
                           <v-col v-for="step in stepArray" v-bind:key="`${step}`" class="ma-0 pa-0">
-                          <p :style=" { 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold' } "  class="text-center">{{ step }}</p>
+                          <p :style=" { 'color': colorbarText, 'font-size': '16px', 'font-weight': 'bold' } "  class="text-center">{{ step }}</p>
                           </v-col>
                         </v-row>
                       </v-card>
