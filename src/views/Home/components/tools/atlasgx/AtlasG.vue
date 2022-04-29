@@ -1304,7 +1304,7 @@ export default defineComponent({
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [filename.value], meta: { run_id: runId.value } });
           const { encoded: filenameTokenMotif } = await client.value.encodeLink({ args: [motifHold], meta: { run_id: runId.value } });
           const { host } = window.location;
-          publicLink.value = `http://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true&token=${existingCookie?.token}`;
+          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true&token=${existingCookie?.token}`;
         }
         const kwargs = {};
         const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
