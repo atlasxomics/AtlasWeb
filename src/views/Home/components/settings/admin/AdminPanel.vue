@@ -11,6 +11,9 @@
       <v-tab-item key="ResetPassword">
         <reset-password/>
       </v-tab-item>
+      <v-tab-item key="AddRemoveUser">
+        <add-remove-user/>
+      </v-tab-item>
       <v-tab-item key="AddRemoveGroup">
         <add-remove-group/>
       </v-tab-item>
@@ -31,6 +34,7 @@ import { generateRouteByQuery } from '@/utils';
 import ResetPassword from './modules/ResetPassword.vue';
 import WorkerStatus from './modules/WorkerStatus.vue';
 import AddRemoveGroup from './modules/AddRemoveGroup.vue';
+import AddRemoveUser from './modules/AddRemoveUser.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -41,7 +45,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Add/Remove Group', 'Worker Status'];
+const tabs = ['Reset Password', 'Add/Remove User', 'Add/Remove Group', 'Worker Status'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -49,6 +53,7 @@ export default defineComponent({
     ResetPassword,
     AddRemoveGroup,
     WorkerStatus,
+    AddRemoveUser,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;

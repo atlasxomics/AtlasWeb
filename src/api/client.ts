@@ -227,7 +227,12 @@ export default class Client {
 
     return true;
   }
-
+  async confirmUser(user: string): Promise<any> {
+    await this.axios.put(`/api/v1/auth/confirm/${user}`);
+  }
+  async deleteUser(user: string): Promise<any> {
+    await this.axios.delete(`/api/v1/auth/user/${user}`);
+  }
   // Requires Admin
   async resetUserPassword(user: ResetUserPasswordPayload): Promise<void> {
     // This endpoint doesn't return anything useful, so nothing returned
