@@ -1386,6 +1386,7 @@ export default defineComponent({
       }
     }
     async function selectAction(ev: any) {
+      const root = 'data';
       if (props.query.public) {
         const mid = ev.id.search(/motif/i);
         const end = ev.id.length;
@@ -1394,7 +1395,6 @@ export default defineComponent({
         filename.value = fn;
         filenameMotif.value = fn2;
       } else {
-        const root = 'data';
         const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
         filenameMotif.value = '';
@@ -1410,6 +1410,43 @@ export default defineComponent({
       isDrawing.value = false;
       isDrawingRect.value = false;
       stepArray.value = [];
+      /* const task = 'creation.create_files';
+      const queue = 'creation_atlasbrowser';
+      const params = {
+        data: null,
+        path: `${root}/${runId.value}`,
+        file_type: 'json',
+        file_name: 'metadata.json',
+      };
+      const args: any[] = [params];
+      const kwargs: any = {};
+      const name = `${root}/${runId.value}/metadata.json`;
+      const jsonFileName = { params: { filename: name } };
+      const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
+      let slimsData: any;
+      if (!jsonBoolean) {
+        loading.value = true;
+        slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
+        params.data = slimsData;
+        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
+        await checkTaskStatus(taskObject._id);
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        } *//*
+        eslint-disable no-await-in-loop *//*
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+          loading.value = false;
+          return;
+        }
+        loading.value = false;
+      } else slimsData = jsonBoolean;
+      loading.value = false; */
       const slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
       metadata.value.organ = slimsData.Organ;
       metadata.value.species = slimsData.Species;
@@ -1599,50 +1636,6 @@ export default defineComponent({
           runSpatial('spatial');
         }
       }
-    }
-    function mouseWheelOnStage(ev: any) {
-      ev.evt.preventDefault();
-      const scaleBy = 1.05;
-      const stage = (ctx as any).refs.konvaStage.getNode();
-      const oldScale = scale.value;
-      const pointer = stage.getPointerPosition();
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      };
-      let direction = ev.evt.deltaY > 0 ? -1 : 1;
-      if (ev.evt.ctrlKey) {
-        direction = -direction;
-      }
-      const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-      const newPos = {
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      };
-      scale.value = newScale;
-      stage.position(newPos);
-    }
-    function mouseWheelOnStageUMAP(ev: any) {
-      ev.evt.preventDefault();
-      const scaleBy = 1.05;
-      const stage = (ctx as any).refs.konvaStageRight.getNode();
-      const oldScale = scaleUMAP.value;
-      const pointer = stage.getPointerPosition();
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      };
-      let direction = ev.evt.deltaY > 0 ? -1 : 1;
-      if (ev.evt.ctrlKey) {
-        direction = -direction;
-      }
-      const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-      const newPos = {
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      };
-      scaleUMAP.value = newScale;
-      stage.position(newPos);
     }
     async function mouseOverClusterItem(ev: any) {
       highlightCluster(ev.name);
@@ -1922,8 +1915,6 @@ export default defineComponent({
       mouseMoveOnStageRight,
       mouseUpOnStageLeft,
       mouseUpOnStageRight,
-      mouseWheelOnStage,
-      mouseWheelOnStageUMAP,
       polygon,
       polygonUMAP,
       regions,
@@ -1978,6 +1969,7 @@ export default defineComponent({
 <style>
   .container {
     padding: 0;
+    min-width: 900px;
   }
   .bold-disabled input {
       color: black !important;
