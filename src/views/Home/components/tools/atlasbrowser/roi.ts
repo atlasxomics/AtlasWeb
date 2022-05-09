@@ -11,17 +11,13 @@ export class ROI {
 
   channels: number | any;
 
-  constructor(coord: Circle[] | null) {
+  constructor(coord: number[], scale: number) {
+    this.scalefactor = scale;
+    this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
+    this.initializeROI(coord[0], coord[1]);
     this.scalefactor = 0.15;
     this.channels = 50;
     this.polygons = [];
-    if (coord) this.coordinates = coord;
-    else {
-      const width = window.innerWidth * 0.7;
-      const height = window.innerHeight;
-      this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
-      this.initializeROI(width, height);
-    }
   }
 
   static center(tL: number[], tR: number[], bR: number[], bL: number[]): number[] {
@@ -39,15 +35,15 @@ export class ROI {
   }
 
   initializeROI(width: number, height: number) {
-    const rng = [[0.1, 0.1], [1, 0.1], [1, 1], [0.1, 1]];
+    const rng = [[width * 0.15, height * 0.15], [width - (width * 0.15), height * 0.15], [width - (width * 0.15), height - (height * 0.15)], [width * 0.15, height - (height * 0.15)]];
     rng.forEach((x: number[], idx: number) => {
       const [xp, yp] = x;
       const id = get_uuid();
       const circle: any = {
         draggable: true,
         id,
-        x: xp * (width * 0.35),
-        y: yp * (width * 0.35),
+        x: xp,
+        y: yp,
         stroke: 'green',
         radius: 10,
       };

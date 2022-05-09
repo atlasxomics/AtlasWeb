@@ -141,7 +141,9 @@ export default defineComponent({
       if (!client.value) {
         return;
       }
-      const metadata = await client.value.getMetadataFromRunId(rid);
+      const name = `data/${rid}/metadata.json`;
+      const jsonFileName = { params: { filename: name } };
+      const metadata = await client.value?.getJsonFile(jsonFileName);
       selectedSpecies.value = metadata.Species;
       trackBrowserParams.value = {
         chr: '1',

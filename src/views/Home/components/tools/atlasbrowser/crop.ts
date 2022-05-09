@@ -7,27 +7,27 @@ export class Crop {
 
   scalefactor: number;
 
-  constructor(coord: Circle[] | null) {
-    this.scalefactor = 0.15;
-    if (coord) this.coordinates = coord;
-    else {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
-      this.initialize(width, height);
-    }
+  constructor(coord: number[], scale: number) {
+    this.scalefactor = scale;
+    this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
+    this.initialize(coord[0], coord[1]);
+  }
+
+  static distance(p1: number[], p2: number[]): number {
+    return Math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2);
   }
 
   initialize(width: number, height: number) {
-    const rng = [[0.3, 0.5], [1.0, 1.0]];
+    const dist = Crop.distance([width * 0.25, height * 0.15], [width - (width * 0.25), height * 0.15]);
+    const rng = [[width * 0.25, height * 0.15], [width - (width * 0.25), dist + height * 0.15]];
     rng.forEach((x: number[], idx: number) => {
       const [xp, yp] = x;
       const id = idx;
       const circle: any = {
         draggable: true,
         id,
-        x: xp * (width * 0.35),
-        y: yp * (height * 0.35),
+        x: xp,
+        y: yp,
         stroke: 'red',
         radius: 10,
       };

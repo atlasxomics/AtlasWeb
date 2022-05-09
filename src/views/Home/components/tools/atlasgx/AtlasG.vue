@@ -615,7 +615,7 @@
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
               <div id="capturePeak" :style="{ 'background-color': 'transparent' }">
-                <v-card class="mt-3" :style="{ visibility: visible }" v-show="clusterItems">
+                <v-card class="mt-3" :style="{ visibility: visible }" v-if="clusterItems && !loading">
                   <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
                 </v-card>
               </div>
@@ -1081,7 +1081,7 @@ export default defineComponent({
         cmap[cidx] = clusterColors.value[i];
       }
       colorMap.value = cmap;
-      if (!showFlag.value[0]) {
+      if (!showFlag.value[0] && !loading.value) {
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
@@ -1385,32 +1385,9 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       }
     }
-    async function selectAction(ev: any) {
+    async function getMeta() {
       const root = 'data';
-      if (props.query.public) {
-        const mid = ev.id.search(/motif/i);
-        const end = ev.id.length;
-        const fn = ev.id.slice(0, mid);
-        const fn2 = ev.id.slice(mid + 5, end);
-        filename.value = fn;
-        filenameMotif.value = fn2;
-      } else {
-        const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
-        filename.value = fn;
-        filenameMotif.value = '';
-        runId.value = ev.id;
-        pushByQuery({ component: 'AtlasG', run_id: ev.id });
-        selectedGenes.value = [];
-      }
-      await runSpatial(currentViewType.value);
-      await loadExpressions();
-      runIdFlag.value = false;
-      selectedGenes.value = [];
-      isClusterView.value = true;
-      isDrawing.value = false;
-      isDrawingRect.value = false;
-      stepArray.value = [];
-      /* const task = 'creation.create_files';
+      const task = 'creation.create_files';
       const queue = 'creation_atlasbrowser';
       const params = {
         data: null,
@@ -1437,16 +1414,49 @@ export default defineComponent({
           });
           taskTimeout.value = null;
           await checkTaskStatus(taskObject._id);
-        } *//*
-        eslint-disable no-await-in-loop *//*
+        }
+        /* eslint-disable no-await-in-loop */
         if (taskStatus.value.status !== 'SUCCESS') {
           snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
           loading.value = false;
           return;
         }
         loading.value = false;
-      } else slimsData = jsonBoolean;
-      loading.value = false; */
+      } else {
+        slimsData = jsonBoolean;
+      }
+      loading.value = false;
+      // const slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
+      metadata.value.organ = slimsData.Organ;
+      metadata.value.species = slimsData.Species;
+      metadata.value.type = slimsData['Tissue type'];
+    }
+    async function selectAction(ev: any) {
+      const root = 'data';
+      if (props.query.public) {
+        const mid = ev.id.search(/motif/i);
+        const end = ev.id.length;
+        const fn = ev.id.slice(0, mid);
+        const fn2 = ev.id.slice(mid + 5, end);
+        filename.value = fn;
+        filenameMotif.value = fn2;
+      } else {
+        const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
+        filename.value = fn;
+        filenameMotif.value = '';
+        runId.value = ev.id;
+        pushByQuery({ component: 'AtlasG', run_id: ev.id });
+        selectedGenes.value = [];
+      }
+      await runSpatial(currentViewType.value);
+      await loadExpressions();
+      runIdFlag.value = false;
+      selectedGenes.value = [];
+      isClusterView.value = true;
+      isDrawing.value = false;
+      isDrawingRect.value = false;
+      stepArray.value = [];
+      // await getMeta();
       const slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
       metadata.value.organ = slimsData.Organ;
       metadata.value.species = slimsData.Species;
@@ -1961,6 +1971,7 @@ export default defineComponent({
       metadata,
       metaFlag,
       displayFlag,
+      getMeta,
     };
   },
 });
