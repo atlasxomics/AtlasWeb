@@ -618,7 +618,7 @@ export default defineComponent({
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
-              const scalefactor = 0.1;
+        const scalefactor = 0.1;
         if (imgObj) {
           imgObj.onload = (ev: any) => {
             current_image.value = {

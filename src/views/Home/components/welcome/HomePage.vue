@@ -7,101 +7,25 @@
             Hello {{ client.user.username.toUpperCase() }}
           </v-card-title>
           <v-card-text>
-            ATX-Cloud is currently under development, any feedback will be appreciated. Please contact <a href="mailto:skpark@atlasxomics.com">SK</a> or <a href="mailto:liyaw@atlasxomics.com">Liya</a> if you have any question or suggestion. All rights reserved by AtlasXomics, 2021.
+            ATX-Cloud is currently under development, any feedback will be appreciated. Please contact <a href="mailto:joshuab@atlasxomics.com">Joshua</a> or <a href="mailto:liyaw@atlasxomics.com">Liya</a> if you have any question or suggestion. All rights reserved by AtlasXomics, 2021.
           </v-card-text>
         </v-card>
       </v-col>
-    </v-row>
-    <v-row>
-      <v-col cols="12" sm="6">
-        <v-card>
-          <v-card-title>
-            AtlasBrowser
-          </v-card-title>
-          <v-card-text>
-            Generate the tixel information using adaptive filter and interactive annotations.
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer/>
-            <v-btn
-              color="primary"
-              @click="go('AtlasBrowser')"
-              >Go</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="6">
-        <v-card>
-          <v-card-title>
-            Atlas GX
-          </v-card-title>
-          <v-card-text>
-            View spatial information and plots of genes
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer/>
-            <v-btn
-              color="primary"
-              @click="go('AtlasG')"
-              >Go</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col cols="12" sm="6">
-        <v-card>
-          <v-card-title>
-            Image Viewer
-          </v-card-title>
-          <v-card-text>
-            Browse wafers/chips/DBiTs and view images related to the hardwares/runs
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer/>
-            <v-btn
-              color="primary"
-              @click="go('ImageViewer')"
-              >Go</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="6">
-        <v-card>
-          <v-card-title>
-            Atlas Viewer
-          </v-card-title>
-          <v-card-text>
-            QC file browser with metadata and output images
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer/>
-            <v-btn
-              color="primary"
-              @click="go('AtlasViewer')"
-              >Go</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col cols="12" sm="6">
-        <v-card>
-          <v-card-title>
-            Upload Files
-          </v-card-title>
-          <v-card-text>
-            Upload images, spatial data to the common respository
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer/>
-            <v-btn
-              color="primary"
-              @click="go('AtlasUploader')"
-              >Go</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
+      <template v-for="item in tools">
+        <v-col cols="12" sm="6" v-if="resolveAuthGroup(item.access_control)" v-bind:key="item">
+          <v-card>
+              <v-card-title>{{item.name}}</v-card-title>
+              <v-card-text>{{item.text}}</v-card-text>
+              <v-card-actions>
+                <v-spacer/>
+                <v-btn
+                  color="primary"
+                  @click="go(item.query.component)">
+                  Go</v-btn>
+              </v-card-actions>
+          </v-card>
+        </v-col>
+      </template>
     </v-row>
   </v-container>
 </template>
@@ -112,6 +36,7 @@ import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@
 import lodash from 'lodash';
 import store from '@/store';
 import { generateRouteByQuery } from '@/utils';
+import { resolveAuthGroup } from '@/utils/auth';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -128,6 +53,16 @@ export default defineComponent({
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
+    const tools = ref([
+      { name: 'Atlas Browser', access_control: ['admin', 'user'], query: { component: 'AtlasBrowser' }, text: 'Generate the tixel information using adaptive filter and interactive annotations.' },
+      { name: 'Image Viewer', access_control: ['admin'], query: { component: 'ImageViewer' }, text: 'Browse wafers/chips/DBiTs and view images related to the hardwares/runs' },
+      { name: 'AtlasViewer', access_control: ['admin'], query: { component: 'AtlasViewer' }, text: 'QC file browser with metadata and output images' },
+      { name: 'Atlas Gx', access_control: ['admin', 'user'], query: { component: 'AtlasG' }, text: 'View spatial information and plots of genes' },
+      // { name: 'Atlas Compare', access_control: ['admin'], query: { component: 'AtlasCompare' }, text: '' },
+      // { name: 'Atlas Test', access_control: ['admin'], color: 'red', query: { component: 'AtlasTest' } },
+      // { 'AtlasAnalytics', name: 'Atlas Analytics', access_control: ['admin'], query: { component: 'AtlasAnalytics' }, text: '' },
+      { name: 'Atlas Uploader', access_control: ['admin'], query: { component: 'AtlasUploader' }, text: 'Upload images, spatial data to the common respository' },
+    ]);
     async function go(component: string) {
       const route = generateRouteByQuery(currentRoute, { component });
       router.push(route);
@@ -135,7 +70,7 @@ export default defineComponent({
     onMounted(() => {
       store.commit.setSubmenu(null);
     });
-    return { go, client };
+    return { go, resolveAuthGroup, client, tools };
   },
 });
 

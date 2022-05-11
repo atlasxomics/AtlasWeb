@@ -140,12 +140,14 @@ export default defineComponent({
           saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
           store.commit.setClient(resp);
           const clients = store.state.client;
+          /*
           const val = await clients!.getRunIdList();
           store.commit.setSlimsData(val);
+          */
         } else {
           loginErrorMessage.value = resp;
         }
-        loading.value = true;
+        loading.value = false;
         username.value = null;
         password.value = null;
       }
@@ -153,7 +155,7 @@ export default defineComponent({
 
     // Will re-route as soon as user is logged in
     watchEffect(() => {
-      if (loggedIn.value) {
+      if (loggedIn.value && !loading.value) {
         router.push('/');
       }
     });
