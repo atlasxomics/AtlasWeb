@@ -222,16 +222,6 @@
       </v-col>
       <v-col cols="12" sm="9">
           <v-container fluid>
-            <template v-if="loading && !loadingMessage">
-              <div class="center-progress">
-                <v-progress-circular
-                  :size="100"
-                  :width="10"
-                  color="primary"
-                  indeterminate>
-                </v-progress-circular>
-              </div>
-            </template>
             <template v-if="loadingMessage">
               <v-dialog
                 value=true
@@ -306,6 +296,16 @@
             </template>
             <v-row>
               <v-card :disabled="loading">
+                <template v-if="loading && !loadingMessage">
+                <div :style="{ 'position': 'absolute', 'z-index': 999, 'top': '43%', 'left': '47%'}">
+                  <v-progress-circular
+                    :size="100"
+                    :width="10"
+                    color="primary"
+                    indeterminate>
+                  </v-progress-circular>
+                </div>
+                </template>
                 <v-stage
                   ref="konvaStage"
                   class="mainStage"
@@ -1300,12 +1300,6 @@ export default defineComponent({
 </script>
 
 <style>
-.center-progress {
-  position: absolute;
-  z-index: 999;
-  top: 35%;
-  left: 45%;
-}
 .toolRow {
   height: 5vh;
 }
