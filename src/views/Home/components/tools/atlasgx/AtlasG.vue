@@ -615,7 +615,7 @@
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
               <div id="capturePeak" :style="{ 'background-color': 'transparent' }">
-                <v-card class="mt-3" :style="{ visibility: visible }" v-if="clusterItems && !loading">
+                <v-card class="mt-3" :style="{ visibility: visible }" v-show="clusterItems && !loading">
                   <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
                 </v-card>
               </div>
@@ -1987,5 +1987,8 @@ export default defineComponent({
   }
   #no-background-hover::before {
    background-color: transparent !important;
+  }
+  .dalliance.dalliance-root {
+    max-height: 800px;
   }
 </style>
