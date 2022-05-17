@@ -616,7 +616,7 @@
               </v-card>
               <div id="capturePeak" :style="{ 'background-color': 'transparent' }">
                 <v-card class="mt-3" :style="{ visibility: visible }" v-show="clusterItems && !loading">
-                  <track-browser ref="trackbrowser" :run_id="cleanRunId(runId)" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
+                  <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
                 </v-card>
               </div>
             </v-col>
