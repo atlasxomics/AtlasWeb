@@ -616,7 +616,7 @@
               </v-card>
               <div id="capturePeak" :style="{ 'background-color': 'transparent' }">
                 <v-card class="mt-3" :style="{ visibility: visible }" v-show="clusterItems && !loading">
-                  <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
+                  <track-browser ref="trackbrowser" :run_id="cleanRunId(runId)" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
                 </v-card>
               </div>
             </v-col>
@@ -714,7 +714,7 @@ export default defineComponent({
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
     const filenameMotif = ref<string | null>(null);
-    const runId = ref<string | null>(null);
+    const runId = ref<string>('');
     const publicLink = ref<string | null>(null);
     const items = ref<any[]>();
     const search = ref<string>();
@@ -841,6 +841,10 @@ export default defineComponent({
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
+    }
+    function cleanRunId(rid: string) {
+      const lastDigitLocation = rid.search(/[0-9]\b/i);
+      return rid.slice(0, lastDigitLocation);
     }
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
@@ -1082,7 +1086,7 @@ export default defineComponent({
       }
       colorMap.value = cmap;
       if (!showFlag.value[0] && !loading.value) {
-        (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+        (ctx as any).refs.trackbrowser.reload(cleanRunId(runId.value), colorMap.value);
       }
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
       colorBar.value = colors_intensity;
@@ -1388,7 +1392,7 @@ export default defineComponent({
     async function getMeta() {
       const root = 'data';
       const task = 'creation.create_files';
-      const queue = 'creation_atlasbrowser';
+      const queue = 'creation_worker';
       const params = {
         data: null,
         path: `${root}/${runId.value}`,
@@ -1403,7 +1407,7 @@ export default defineComponent({
       let slimsData: any;
       if (!jsonBoolean) {
         loading.value = true;
-        slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
+        slimsData = await client.value!.getMetadataFromRunId(`${cleanRunId(runId.value)}`);
         params.data = slimsData;
         const taskObject = await client.value!.postTask(task, args, kwargs, queue);
         await checkTaskStatus(taskObject._id);
@@ -1426,7 +1430,6 @@ export default defineComponent({
         slimsData = jsonBoolean;
       }
       loading.value = false;
-      // const slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
       metadata.value.organ = slimsData.Organ;
       metadata.value.species = slimsData.Species;
       metadata.value.type = slimsData['Tissue type'];
@@ -1456,11 +1459,7 @@ export default defineComponent({
       isDrawing.value = false;
       isDrawingRect.value = false;
       stepArray.value = [];
-      // await getMeta();
-      const slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
-      metadata.value.organ = slimsData.Organ;
-      metadata.value.species = slimsData.Species;
-      metadata.value.type = slimsData['Tissue type'];
+      await getMeta();
     }
     function onResize() {
       fitStageToParent();
@@ -1972,6 +1971,7 @@ export default defineComponent({
       metaFlag,
       displayFlag,
       getMeta,
+      cleanRunId,
     };
   },
 });
