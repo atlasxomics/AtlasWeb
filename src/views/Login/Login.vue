@@ -136,18 +136,18 @@ export default defineComponent({
         loading.value = true;
         const serverUrl = useTestServer.value ? TEST_SERVER_URL : PROD_SERVER_URL;
         const resp = await login(serverUrl, username.value, password.value);
-
         if (isClient(resp)) {
           saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
           store.commit.setClient(resp);
           const clients = store.state.client;
+          /*
           const val = await clients!.getRunIdList();
-          console.log(val);
           store.commit.setSlimsData(val);
+          */
         } else {
           loginErrorMessage.value = resp;
         }
-        loading.value = true;
+        loading.value = false;
         username.value = null;
         password.value = null;
       }
@@ -155,7 +155,7 @@ export default defineComponent({
 
     // Will re-route as soon as user is logged in
     watchEffect(() => {
-      if (loggedIn.value) {
+      if (loggedIn.value && !loading.value) {
         router.push('/');
       }
     });

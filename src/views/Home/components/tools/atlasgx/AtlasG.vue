@@ -3,7 +3,7 @@
     <v-container fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
-          <v-tooltip bottom>
+          <v-tooltip bottom :disabled="metaFlag">
             <template v-slot:activator="{ on, attrs }">
               <v-btn
                 v-bind="attrs"
@@ -173,7 +173,7 @@
       </v-dialog>
         <v-col cols="2" sm="1">
           <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'250px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
-            <v-tooltip right>
+            <v-tooltip right :disabled="isDrawing">
             <template v-slot:activator="{ on, attrs }">
               <v-btn
                 v-bind="attrs"
@@ -190,7 +190,7 @@
             </template>
             <span>Lasso Select</span>
             </v-tooltip>
-            <v-tooltip right>
+            <v-tooltip right :disabled="isDrawingRect">
             <template v-slot:activator="{ on, attrs }">
             <v-btn
               v-bind="attrs"
@@ -207,7 +207,7 @@
             </template>
             <span>Quad Select</span>
             </v-tooltip>
-            <v-tooltip right>
+            <v-tooltip right :disabled="isDrawing || isDrawingRect">
             <template v-slot:activator="{ on, attrs }">
               <v-btn
                 class="ml-4 mt-5"
@@ -258,7 +258,21 @@
                 </v-card-actions>
               </v-card>
             </v-dialog>
-            <v-tooltip right>
+            <v-dialog
+            v-if="displayFlag"
+            :value="displayFlag"
+            @click:outside="displayFlag = !displayFlag"
+            hide-overlay>
+              <v-card style="width:100px;position:absolute;z-index:999;top:210px;left:65px;">
+                <v-simple-table>
+                  <tbody>
+                    <tr><v-btn id="no-background-hover" flat text x-small @click="captureScreen('null')">Transparent</v-btn></tr>
+                    <tr><v-btn id="no-background-hover" flat text x-small @click="captureScreen(backgroundColor)">Background</v-btn></tr>
+                  </tbody>
+                </v-simple-table>
+              </v-card>
+            </v-dialog>
+            <v-tooltip right :disabled="displayFlag">
             <template v-slot:activator="{ on, attrs }">
             <v-btn
               v-bind="attrs"
@@ -268,7 +282,7 @@
               v-model="isDrawing"
               color="black"
               :disabled="!spatialData || loading"
-              @click="captureScreen"
+              @click="displayFlag = !displayFlag"
               small>
             <v-icon>mdi-download</v-icon>
             </v-btn>
@@ -327,13 +341,13 @@
           </v-card>
         </v-col>
         <v-col cols="12" sm="10" class="mt-5">
-          <div id="screenCapture" :style="{ 'background-color': backgroundColor }">
+          <div id="screenCapture" :style="{ 'background-color': 'transparent' }">
             <v-row no-gutters>
               <v-col cols="12" sm="1">
                 <v-card
                 class="rounded-0"
                 flat
-                :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
+                :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
                 height="50vh">
                   <v-card-text style="margin-left:4vw">
                     <v-row>
@@ -374,7 +388,7 @@
                   class="rounded-0"
                   v-resize="onResize"
                   flat
-                  :style="{ 'background-color': backgroundColor, 'overflow-x': 'None'}"
+                  :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
                   height="50vh"
                   align="center">
                   <v-stage
@@ -439,7 +453,7 @@
                     <template v-else>
                       <v-card
                         flat
-                        :style="{'background-color': backgroundColor, 'overflow-x': 'None'}"
+                        :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
                         height="3vh"
                         width="100%">
                         <v-row no-gutters>
@@ -465,7 +479,7 @@
                 <v-card
                 class="rounded-0"
                 flat
-                :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
+                :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
                 height="50vh"
                 width="100%">
                   <v-card-text style="margin-left:4vw">
@@ -507,7 +521,7 @@
                   class="rounded-0"
                   flat
                   v-resize="onResize"
-                  :style="{ 'background-color': backgroundColor, 'overflow-x': 'None' }"
+                  :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
                   height="50vh">
                   <v-stage
                     ref="konvaStageRight"
@@ -571,7 +585,7 @@
                     <template v-else>
                       <v-card
                         flat
-                        :style="{'background-color': backgroundColor, 'overflow-x': 'None'}"
+                        :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
                         height="3vh"
                         width="100%">
                         <v-row no-gutters>
@@ -600,8 +614,8 @@
               <v-card class="mt-3" v-show="clusterItems && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
-              <div id="capturePeak" :style="{ 'background-color': backgroundColor }">
-                <v-card class="mt-3" :style="{ visibility: visible }" v-show="clusterItems">
+              <div id="capturePeak" :style="{ 'background-color': 'transparent' }">
+                <v-card class="mt-3" :style="{ visibility: visible }" v-show="clusterItems && !loading">
                   <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
                 </v-card>
               </div>
@@ -819,6 +833,7 @@ export default defineComponent({
     const geneMotif = ref<boolean>(false);
     const featureTableFlag = ref<boolean>(true);
     const peakViewerFlag = ref<boolean>(false);
+    const displayFlag = ref<boolean>(false);
     const visible = ref<string>('hidden');
     const spatialRun = ref<boolean>(false);
     const colorMap = ref<any>({});
@@ -853,8 +868,9 @@ export default defineComponent({
       pom.setAttribute('download', `${runId.value}/Selection.txt`);
       pom.click();
     }
-    function captureScreen() {
-      html2canvas(document.getElementById('screenCapture')!).then((canvas) => {
+    function captureScreen(background: string) {
+      const el = document.getElementById('screenCapture')!;
+      html2canvas(el, { backgroundColor: background }).then((canvas) => {
         const base64image = canvas.toDataURL('image/png');
         const pom = document.createElement('a');
         pom.href = base64image;
@@ -863,7 +879,8 @@ export default defineComponent({
         pom.click();
       });
       if (peakViewerFlag.value) {
-        html2canvas(document.getElementById('capturePeak')!).then((canvas) => {
+        const ele = document.getElementById('capturePeak')!;
+        html2canvas(ele, { backgroundColor: background }).then((canvas) => {
           const base64image = canvas.toDataURL('image/png');
           const pom = document.createElement('a');
           pom.href = base64image;
@@ -1064,7 +1081,7 @@ export default defineComponent({
         cmap[cidx] = clusterColors.value[i];
       }
       colorMap.value = cmap;
-      if (!showFlag.value[0]) {
+      if (!showFlag.value[0] && !loading.value) {
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
       const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
@@ -1368,7 +1385,54 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       }
     }
+    async function getMeta() {
+      const root = 'data';
+      const task = 'creation.create_files';
+      const queue = 'creation_atlasbrowser';
+      const params = {
+        data: null,
+        path: `${root}/${runId.value}`,
+        file_type: 'json',
+        file_name: 'metadata.json',
+      };
+      const args: any[] = [params];
+      const kwargs: any = {};
+      const name = `${root}/${runId.value}/metadata.json`;
+      const jsonFileName = { params: { filename: name } };
+      const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
+      let slimsData: any;
+      if (!jsonBoolean) {
+        loading.value = true;
+        slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
+        params.data = slimsData;
+        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
+        await checkTaskStatus(taskObject._id);
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        /* eslint-disable no-await-in-loop */
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+          loading.value = false;
+          return;
+        }
+        loading.value = false;
+      } else {
+        slimsData = jsonBoolean;
+      }
+      loading.value = false;
+      // const slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
+      metadata.value.organ = slimsData.Organ;
+      metadata.value.species = slimsData.Species;
+      metadata.value.type = slimsData['Tissue type'];
+    }
     async function selectAction(ev: any) {
+      const root = 'data';
       if (props.query.public) {
         const mid = ev.id.search(/motif/i);
         const end = ev.id.length;
@@ -1377,7 +1441,6 @@ export default defineComponent({
         filename.value = fn;
         filenameMotif.value = fn2;
       } else {
-        const root = 'data';
         const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
         filenameMotif.value = '';
@@ -1393,6 +1456,7 @@ export default defineComponent({
       isDrawing.value = false;
       isDrawingRect.value = false;
       stepArray.value = [];
+      // await getMeta();
       const slimsData = await client.value!.getMetadataFromRunId(`${runId.value}`);
       metadata.value.organ = slimsData.Organ;
       metadata.value.species = slimsData.Species;
@@ -1582,50 +1646,6 @@ export default defineComponent({
           runSpatial('spatial');
         }
       }
-    }
-    function mouseWheelOnStage(ev: any) {
-      ev.evt.preventDefault();
-      const scaleBy = 1.05;
-      const stage = (ctx as any).refs.konvaStage.getNode();
-      const oldScale = scale.value;
-      const pointer = stage.getPointerPosition();
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      };
-      let direction = ev.evt.deltaY > 0 ? -1 : 1;
-      if (ev.evt.ctrlKey) {
-        direction = -direction;
-      }
-      const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-      const newPos = {
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      };
-      scale.value = newScale;
-      stage.position(newPos);
-    }
-    function mouseWheelOnStageUMAP(ev: any) {
-      ev.evt.preventDefault();
-      const scaleBy = 1.05;
-      const stage = (ctx as any).refs.konvaStageRight.getNode();
-      const oldScale = scaleUMAP.value;
-      const pointer = stage.getPointerPosition();
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      };
-      let direction = ev.evt.deltaY > 0 ? -1 : 1;
-      if (ev.evt.ctrlKey) {
-        direction = -direction;
-      }
-      const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-      const newPos = {
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      };
-      scaleUMAP.value = newScale;
-      stage.position(newPos);
     }
     async function mouseOverClusterItem(ev: any) {
       highlightCluster(ev.name);
@@ -1905,8 +1925,6 @@ export default defineComponent({
       mouseMoveOnStageRight,
       mouseUpOnStageLeft,
       mouseUpOnStageRight,
-      mouseWheelOnStage,
-      mouseWheelOnStageUMAP,
       polygon,
       polygonUMAP,
       regions,
@@ -1952,6 +1970,8 @@ export default defineComponent({
       trackBrowserGenes,
       metadata,
       metaFlag,
+      displayFlag,
+      getMeta,
     };
   },
 });
@@ -1960,8 +1980,15 @@ export default defineComponent({
 <style>
   .container {
     padding: 0;
+    min-width: 900px;
   }
   .bold-disabled input {
       color: black !important;
-    }
+  }
+  #no-background-hover::before {
+   background-color: transparent !important;
+  }
+  .dalliance.dalliance-root {
+    max-height: 800px;
+  }
 </style>

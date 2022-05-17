@@ -12,14 +12,14 @@
       <v-list-item-group
           active-class="deep-purple--text text--accent-4"
         >
-        <template  v-for="group in menu" >
-          <v-subheader  v-bind:key="group.name">{{ group.groupname }}</v-subheader>
-            <v-list-item v-for="v in group.items" v-bind:key="v.component" @click="$emit('menuClicked',v.query)">
-              <template v-if="resolveAuthGroup(v.access_control)">
-                <v-list-item-icon><v-icon :color="v.color">{{ v.icon }}</v-icon></v-list-item-icon>
-                <v-list-item-title>{{ v.name }}</v-list-item-title>
-              </template>
+        <template v-for="group in menu" >
+          <v-subheader v-bind:key="group">{{ group.groupname }}</v-subheader>
+          <template v-for="v in group.items">
+            <v-list-item v-bind:key="v.component" v-if="resolveAuthGroup(v.access_control)" @click="$emit('menuClicked',v.query)">
+              <v-list-item-icon><v-icon :color="v.color">{{ v.icon }}</v-icon></v-list-item-icon>
+              <v-list-item-title>{{ v.name }}</v-list-item-title>
             </v-list-item>
+          </template>
         </template>
       </v-list-item-group>
     </v-list>
@@ -50,12 +50,12 @@ const menu = [
     groupname: 'Tools',
     items: [
       { name: 'Atlas Browser', icon: 'mdi-pencil-box', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasBrowser' } },
-      { name: 'Atlas Viewer', icon: 'mdi-checkbox-multiple-marked', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasViewer' } },
+      { name: 'Atlas Viewer', icon: 'mdi-checkbox-multiple-marked', access_control: ['admin'], color: 'cyan', query: { component: 'AtlasViewer' } },
       { name: 'Atlas GX', icon: 'mdi-biohazard', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasG' } },
       { name: 'Atlas Compare', icon: 'mdi-compare', access_control: ['admin'], color: 'red', query: { component: 'AtlasCompare' } },
       // { name: 'Atlas Test', icon: 'mdi-test-tube', access_control: ['admin'], color: 'red', query: { component: 'AtlasTest' } },
-      { name: 'Atlas Analytics', icon: 'mdi-sigma', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasAnalytics' } },
-      { name: 'Atlas Uploader', icon: 'mdi-cloud-upload', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasUploader' } },
+      { name: 'Atlas Analytics', icon: 'mdi-sigma', access_control: ['admin'], color: 'cyan', query: { component: 'AtlasAnalytics' } },
+      { name: 'Atlas Uploader', icon: 'mdi-cloud-upload', access_control: ['admin'], color: 'cyan', query: { component: 'AtlasUploader' } },
     ],
   },
   {

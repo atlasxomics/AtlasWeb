@@ -97,22 +97,6 @@
               @change="onChangeScale"></v-slider>
             <v-list dense class="mt-n3 pt-0 pl-2">
               <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Orientation</v-subheader>
-              <v-btn
-              x-small
-              dense
-              color="primary"
-              :disabled="isCropMode || grid"
-              @click="horizontalFlip();loadImage()">
-              H.Flip
-              </v-btn>
-              <v-btn
-              x-small
-              color="primary"
-              dense
-              :disabled="isCropMode || grid"
-              @click="verticalFlip();loadImage()">
-              V.Flip
-              </v-btn>
               <v-text-field
                 v-model="orientation.rotation"
                 dense
@@ -238,16 +222,6 @@
       </v-col>
       <v-col cols="12" sm="9">
           <v-container fluid>
-            <template v-if="loading && !loadingMessage">
-              <div class="center-progress">
-                <v-progress-circular
-                  :size="100"
-                  :width="10"
-                  color="primary"
-                  indeterminate>
-                </v-progress-circular>
-              </div>
-            </template>
             <template v-if="loadingMessage">
               <v-dialog
                 value=true
@@ -258,6 +232,7 @@
                 <v-card
                   color="primary"
                   dark>
+                  <v-card-title>Progress</v-card-title>
                   <v-card-text>
                     Confirm cropping and orientation of images
                     <v-progress-linear
@@ -304,6 +279,7 @@
                 <v-card
                   color="primary"
                   dark>
+                  <v-card-title>Progress</v-card-title>
                   <v-card-text>
                     Generating h5ad file
                     <v-progress-linear
@@ -320,6 +296,16 @@
             </template>
             <v-row>
               <v-card :disabled="loading">
+                <template v-if="loading && !loadingMessage">
+                <div :style="{ 'position': 'absolute', 'z-index': 999, 'top': '43%', 'left': '47%'}">
+                  <v-progress-circular
+                    :size="100"
+                    :width="10"
+                    color="primary"
+                    indeterminate>
+                  </v-progress-circular>
+                </div>
+                </template>
                 <v-stage
                   ref="konvaStage"
                   class="mainStage"
@@ -494,8 +480,8 @@ export default defineComponent({
     const isEraseMode = ref(false);
     const brushSize = ref(20);
     const brushDown = ref(false);
-    const crop = ref<Crop>(new Crop(null));
-    const roi = ref<ROI>(new ROI(null));
+    const crop = ref<Crop>(new Crop([0, 0], 0.15));
+    const roi = ref<ROI>(new ROI([0, 0], 0.15));
     const lines = ref<Konva.Line[]>();
     const isMouseDown = ref(false);
     const stageWidth = ref(window.innerWidth);
@@ -554,8 +540,8 @@ export default defineComponent({
     });
     function initialize() {
       // current_image.value = null;
-      roi.value = new ROI(null);
-      crop.value = new Crop(null);
+      roi.value = new ROI([0, 0], scaleFactor.value);
+      crop.value = new Crop([0, 0], scaleFactor.value);
       roi.value.setScaleFactor(scaleFactor.value);
       crop.value.setScaleFactor(scaleFactor.value);
       isBrushMode.value = false;
@@ -577,6 +563,11 @@ export default defineComponent({
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
+    const checkTaskStatus = async (task_id: string) => {
+      if (!client.value) return;
+      taskStatus.value = await client.value.getTaskStatus(task_id);
+      taskStatush5.value = await client.value.getTaskStatus(task_id);
+    };
     // io
     async function loadMetadata() {
       if (!client.value) return;
@@ -595,6 +586,7 @@ export default defineComponent({
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       metadata.value = resp;
+      // await getMeta();
       const slimsData = await client.value.getMetadataFromRunId(`${run_id.value}`);
       metadata.value.organ = slimsData.Organ;
       metadata.value.species = slimsData.Species;
@@ -865,12 +857,8 @@ export default defineComponent({
         });
       };
       onChangeScale('');
+      roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
     }
-    const checkTaskStatus = async (task_id: string) => {
-      if (!client.value) return;
-      taskStatus.value = await client.value.getTaskStatus(task_id);
-      taskStatush5.value = await client.value.getTaskStatus(task_id);
-    };
     async function generateReport(ev: any) {
       //
     }
@@ -968,6 +956,55 @@ export default defineComponent({
         four.value = 0;
         snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
       }
+    }
+    async function getMeta() {
+      const root = 'data';
+      const task = 'creation.create_files';
+      const queue = 'creation_atlasbrowser';
+      const params = {
+        data: null,
+        path: `${root}/${run_id.value}`,
+        file_type: 'json',
+        file_name: 'metadata.json',
+      };
+      const args: any[] = [params];
+      const kwargs: any = {};
+      const name = `${root}/${run_id.value}/metadata.json`;
+      const jsonFileName = { params: { filename: name } };
+      const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
+      let slimsData: any;
+      if (!jsonBoolean) {
+        loading.value = true;
+        slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
+        params.data = slimsData;
+        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        /* eslint-disable no-await-in-loop */
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+          loading.value = false;
+          return;
+        }
+        loading.value = false;
+      } else {
+        slimsData = jsonBoolean;
+      }
+      loading.value = false;
+      metadata.value.organ = slimsData.Organ;
+      metadata.value.species = slimsData.Species;
+      metadata.value.type = slimsData['Tissue type'];
+      metadata.value.organ = slimsData.Organ;
+      metadata.value.species = slimsData.Species;
+      metadata.value.type = slimsData['Tissue type'];
     }
     async function generateSpatial() {
       if (!client.value) return;
@@ -1124,7 +1161,10 @@ export default defineComponent({
       await loadAll();
     });
     watch(current_image, (v) => {
-      if (current_image.value) onChangeScale(scaleFactor.value);
+      if (current_image.value) {
+        crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
+        onChangeScale(scaleFactor.value);
+      }
     });
     const submenu = [
       {
@@ -1252,6 +1292,7 @@ export default defineComponent({
       runIdFlag,
       metaFlag,
       imageh,
+      getMeta,
     };
   },
 });
@@ -1259,12 +1300,6 @@ export default defineComponent({
 </script>
 
 <style>
-.center-progress {
-  position: absolute;
-  z-index: 999;
-  top: 35%;
-  left: 45%;
-}
 .toolRow {
   height: 5vh;
 }
