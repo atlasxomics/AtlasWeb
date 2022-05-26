@@ -13,7 +13,7 @@
           active-class="deep-purple--text text--accent-4"
         >
         <template v-for="group in menu" >
-          <v-subheader v-bind:key="group">{{ group.groupname }}</v-subheader>
+          <v-subheader v-bind:key="group.groupname">{{ group.groupname }}</v-subheader>
           <template v-for="v in group.items">
             <v-list-item v-bind:key="v.component" v-if="resolveAuthGroup(v.access_control)" @click="$emit('menuClicked',v.query)">
               <v-list-item-icon><v-icon :color="v.color">{{ v.icon }}</v-icon></v-list-item-icon>

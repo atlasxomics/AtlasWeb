@@ -12,7 +12,7 @@
         </v-card>
       </v-col>
       <template v-for="item in tools">
-        <v-col cols="12" sm="6" v-if="resolveAuthGroup(item.access_control)" v-bind:key="item">
+        <v-col cols="12" sm="6" v-if="resolveAuthGroup(item.access_control)" v-bind:key="item.name">
           <v-card>
               <v-card-title>{{item.name}}</v-card-title>
               <v-card-text>{{item.text}}</v-card-text>
