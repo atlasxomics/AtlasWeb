@@ -19,8 +19,8 @@ export const userHasSystemAccess = computed(
 );
 
 export function saveCookie(cookie: ATXCookie) {
-  const in20Minutes = 1 / 172;
-  Cookies.set(LOGIN_COOKIE, JSON.stringify(cookie), { expires: in20Minutes });
+  const in1hour = 1 / 24;
+  Cookies.set(LOGIN_COOKIE, JSON.stringify(cookie), { expires: in1hour });
 }
 
 export function readCookie(): ATXCookie | undefined {

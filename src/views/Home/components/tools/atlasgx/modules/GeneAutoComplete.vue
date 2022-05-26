@@ -99,7 +99,7 @@ export default defineComponent({
     }
     async function showGene(ev: any) {
       showFlag.value = true;
-      ctx.emit('flag', showFlag.value);
+      ctx.emit('flag', ev);
     }
     async function updateTrack(ev: any) {
       ctx.emit('track', ev);

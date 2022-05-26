@@ -306,40 +306,25 @@ function colormapBounded(cmap: string[], values: number[]) {
   return output;
 }
 
-function pointInPolygon(point: number[], vs: any[]) { // point is like [5,5], vs is like [[1,2],[10,20],[100,200]]
-  const [x, y] = point;
-  let inside = false;
-  for (let i = 0, j = vs.length - 1; i < vs.length; j = i + 0, i += 1) {
-    const [xi, yi] = vs[i];
-    const [xj, yj] = vs[j];
-    const intersect = ((yi > y) !== (yj > y)) && (x < ((((xj - xi) * (y - yi)) / (yj - yi)) + xi));
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
-
 export default defineComponent({
-  name: 'AtxViewer',
-  props: ['query', 'filename', 'spatialdata', 'genelist', 'selected_genes', 'selected_tixels', 'heatmap', 'background', 'worker', 'queue', 'standalone', 'highlighted_cluster'],
+  name: 'AtxAtacViewer',
+  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
     const runId = ref<string | null>(null);
-    const filename = ref<string>('');
-    const filenameMotif = ref<string>('');
+    const filenameGene = ref<string>('');
     const filenameFromParent = computed(() => props.filename);
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
-    const currentTask = computed(() => props.worker);
+    const currentTask = computed(() => props.task);
     const currentQueue = computed(() => props.queue);
     const selected = ref<any>();
     const genes = ref<any[]>(props.genelist);
     const loading = ref<boolean>(false);
     const selectedGenes = ref<any[]>([]);
     const selectedGenesFromParent = computed(() => props.selected_genes);
-    const spatialData = ref<any | null>();
-    const spatialDataFromParent = computed(() => props.spatialdata);
-    const selectedTixelsFromParent = computed(() => props.selected_tixels);
+    const spatialData = ref<any | null>(null);
     const clusterItems = ref<any[] | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -352,7 +337,6 @@ export default defineComponent({
     const lowestCount = ref<number>(10000);
     const highestCount = ref<number>(0);
     const highlightedCluster = ref<any>();
-    const highlightedClusterFromParent = computed(() => props.highlighted_cluster);
     const tooltip = new Konva.Label({ visible: false });
     const tooltipRight = new Konva.Label({ visible: false });
     const tooltipTag = new Konva.Tag({
@@ -403,8 +387,8 @@ export default defineComponent({
     const colorBarmap = ref<string>('');
     const progressMessage = ref<string | null>(null);
     const geneNames = ref<any[]>([]);
-    const isDrawing = ref<boolean>(false);
-    const isDrawingRect = ref<boolean>(false);
+    const isDrawing = computed(() => (props.lasso));
+    const isDrawingRect = computed(() => (props.rect));
     const isClicked = ref<boolean>(false);
     const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'green', strokeWidth: 1 });
     const polygonUMAP = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'green', strokeWidth: 1 });
@@ -412,13 +396,13 @@ export default defineComponent({
     const rectangleUMAP = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'green', strokeWidth: 1, endPointx: 0, endPointy: 0 });
     const regions = ref<any>();
     const regionsUMAP = ref<any>();
-    const selectedTixels = ref<boolean[]>(props.selected_tixels);
     const geneMotif = ref<boolean>(false);
     const lassoSide = ref<string>();
     const colorbarText = ref<string>('white');
     const highlightIds = ref<any[]>([]);
     const topSelected = ref<any[]>([]);
     const highlightCount = ref<number>(0);
+    const spatialRun = ref<boolean>(false);
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
@@ -447,6 +431,33 @@ export default defineComponent({
         circlesSpatial.value[i].stroke = c.originalColor;
       });
       highlightedCluster.value = '';
+    }
+    function pointInPolygon(point: number[], vs: any[]) { // point is like [5,5], vs is like [[1,2],[10,20],[100,200]]
+      let inside = false;
+      if (isDrawing) {
+        const [x, y] = point;
+        for (let i = 0, j = vs.length - 1; i < vs.length; j = i + 0, i += 1) {
+          const [xi, yi] = vs[i];
+          const [xj, yj] = vs[j];
+          const intersect = ((yi > y) !== (yj > y)) && (x < ((((xj - xi) * (y - yi)) / (yj - yi)) + xi));
+          if (intersect) inside = !inside;
+        }
+      }
+      if (isDrawingRect) {
+        const [x, y] = point;
+        let info: any;
+        if (lassoSide.value === 'left') {
+          info = regions;
+        } else {
+          info = regionsUMAP;
+        }
+        if (x >= info.value[0].x && x <= info.value[0].endPointx) {
+          if (y >= info.value[0].y && y <= info.value[0].endPointy) {
+            inside = true;
+          }
+        }
+      }
+      return inside;
     }
     function highlightRegion() {
       highlightIds.value = [];
@@ -499,6 +510,11 @@ export default defineComponent({
       });
     }
     function highlightCluster(clusterName: string) {
+      if (backgroundColor.value === 'darkgrey') {
+        inactiveColor.value = 'white';
+      } else {
+        inactiveColor.value = 'darkgrey';
+      }
       lodash.each(circlesSpatial.value, (c: any, i: number) => {
         if (c.cluster !== clusterName) {
           circlesSpatial.value[i].fill = inactiveColor.value;
@@ -519,8 +535,6 @@ export default defineComponent({
       });
       highlightedCluster.value = clusterName;
       isHighlighted.value = true;
-      ctx.emit('cluster-highlighted', clusterName);
-      // highlightRegion(selectedTixels.value);
     }
     function makearray(stopValue: number, startValue: number) {
       if (highestCount.value === 0) return;
@@ -528,7 +542,7 @@ export default defineComponent({
       const steps = 5;
       const step = (stopValue - startValue) / (steps - 1);
       for (let i = 0; i < steps; i += 1) {
-        arr.push(Math.round((startValue + (step * i)) * 10) / 10);
+        arr.push(parseFloat((startValue + (step * i)).toFixed(2)));
       }
       stepArray.value = arr;
     }
@@ -710,21 +724,6 @@ export default defineComponent({
       circlesSpatialUMAP.value = circlesUMAP;
       highlightRegion();
     }
-    async function loadExpressions() {
-      if (!client.value) return;
-      if (!filename.value) return;
-      let resp: any;
-      if (props.query.public) {
-        if (geneMotif.value) {
-          resp = await client.value.getGeneExpressionsByToken(filenameMotif.value!);
-        } else {
-          resp = await client.value.getGeneExpressionsByToken(filename.value);
-        }
-      } else {
-        resp = await client.value.getGeneExpressions(filename.value);
-      }
-      genes.value = resp.map((v: string) => ({ name: v }));
-    }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = props.query.public ? await client.value.getPublicTaskStatus(task_id) : await client.value.getTaskStatus(task_id);
@@ -735,26 +734,17 @@ export default defineComponent({
       try {
         progressMessage.value = null;
         loading.value = true;
+        spatialRun.value = true;
         if (workerRequired) {
-          if (geneMotif.value && !props.query.public) {
-            const hold = filename.value.replace(/genes/i, 'motifs');
-            filename.value = hold;
-            if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
-              await loadExpressions();
-            }
-          } else {
-            const hold = filename.value.replace(/motifs/i, 'genes');
-            filename.value = hold;
-            if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
-              await loadExpressions();
-            }
-          }
           const task = currentTask.value;
           const queue = currentQueue.value;
-          const args = (!props.query.public) ? [filename.value, selectedGenes.value, highlightIds.value] : [(geneMotif.value) ? filenameMotif.value : filename.value, selectedGenes.value, highlightIds.value];
+          const args = [filenameGene.value, selectedGenes.value, highlightIds.value];
           const kwargs = {};
           const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
-          if (props.query.public) runId.value = taskObject.meta.run_id;
+          if (props.query.public && runId.value === null) {
+            runId.value = taskObject.meta.run_id;
+            ctx.emit('publicRun', runId.value);
+          }
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */
           while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -776,33 +766,24 @@ export default defineComponent({
           progressMessage.value = taskStatus.value.status;
           const resp = taskStatus.value.result;
           spatialData.value = resp;
-        } else {
-          loading.value = false;
-          spatialData.value = props.spatialdata;
           genes.value = props.genelist;
-          if (!spatialData.value) return;
+          if (highlightIds.value.length > 0) {
+            ctx.emit('highlightedId', highlightIds.value);
+          }
         }
         clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
         await updateCircles();
         await fitStageToParent();
-        loading.value = false;
+        spatialRun.value = false;
       } catch (error) {
+        ctx.emit('spatialFlag', false);
         console.log(error);
         loading.value = false;
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       } finally {
         loading.value = false;
       }
-    }
-    function resetScaleAndPos(ev: any) {
-      const stage = (ctx as any).refs.konvaStage.getNode();
-      const newPos = { x: 0, y: 0 };
-      stage.position(newPos);
-      scale.value = 0.95;
-    }
-    function onResize() {
-      fitStageToParent();
-      updateCircles();
+      ctx.emit('spatialFlag', spatialData.value);
     }
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {
@@ -993,8 +974,41 @@ export default defineComponent({
     function onFilesChanged(ev: any) {
       selectedFiles.value = ev;
     }
-    watch(selectedFiles, (v: any) => {
-      console.log(v);
+    function reScale() {
+      updateCircles();
+    }
+    function reScaleUMAP() {
+      updateCircles();
+    }
+    function resetScaleAndPos(ev: any) {
+      const stage = (ctx as any).refs.konvaStage.getNode();
+      const newPos = { x: 0, y: 0 };
+      stage.position(newPos);
+      scale.value = 0.75;
+    }
+    function resetScaleAndPosUMAP(ev: any) {
+      const stage = (ctx as any).refs.konvaStageRight.getNode();
+      const newPos = { x: 0, y: 0 };
+      stage.position(newPos);
+      scaleUMAP.value = 0.75;
+    }
+    function onResize() {
+      fitStageToParent();
+      updateCircles();
+    }
+    watch(isDrawing, (v: boolean) => {
+      setDraggable(!v);
+      removeRegions();
+      if (!isDrawing.value) {
+        unHighlighCluster();
+      }
+    });
+    watch(isDrawingRect, (v: boolean) => {
+      setDraggable(!v);
+      removeRegions();
+      if (!isDrawingRect.value) {
+        unHighlighCluster();
+      }
     });
     watch(heatMap, (v: string) => {
       if (v === 'picnic') {
@@ -1010,30 +1024,18 @@ export default defineComponent({
     });
     watch(filenameFromParent, (v: string) => {
       selectedGenes.value = [];
-      filename.value = v;
-      runSpatial(false);
-    });
-    watch(spatialDataFromParent, (nv: any, ov: any) => {
-      spatialData.value = nv;
-      console.log('Parent data changed');
-      console.log(spatialData.value);
-      runSpatial(false);
-    });
-    watch(selectedTixelsFromParent, (v: any) => {
-      selectedTixels.value = v;
-      highlightRegion();
-    });
-    watch(highlightedClusterFromParent, (v: any) => {
-      if (v) {
-        highlightCluster(v);
-      } else {
-        unHighlighCluster();
+      if (v === '') {
+        ctx.emit('spatialFlag', false);
       }
+      filenameGene.value = v;
+      console.log('1');
+      runSpatial(true);
     });
-    watch(scale, (v: number, ov: number) => {
-      const stage = (ctx as any).refs.konvaStage.getNode();
-      tooltipText.fontSize(15 / scale.value);
-      stage.scale({ x: scale.value, y: scale.value });
+    watch(scale, () => {
+      reScale();
+    });
+    watch(scaleUMAP, () => {
+      reScaleUMAP();
     });
     watch(isDrawing, (v: boolean) => {
       setDraggable(!v);
@@ -1041,31 +1043,37 @@ export default defineComponent({
       polygon.value.points = [];
     });
     watch(selectedGenes, (v: any[]) => {
-      if (selectedGenes.value.length > 0) {
-        runSpatial(true);
-        isClusterView.value = false;
-      } else {
+      if (selectedGenes.value.length === 0) {
         isClusterView.value = true;
+        stepArray.value = [];
+        updateCircles();
+      } else {
+        isClusterView.value = false;
+        removeRegions();
+        console.log('2');
+        runSpatial(true);
       }
-      updateCircles();
     });
     watch(selectedGenesFromParent, (v: any) => {
-      // console.log(v);
       selectedGenes.value = v;
+    });
+    watch(loading, (v: any) => {
+      ctx.emit('loading_value', v);
     });
     onMounted(async () => {
       await clientReady;
       tooltip.add(tooltipTag);
       tooltip.add(tooltipText);
+      tooltipRight.add(tooltipTagRight);
+      tooltipRight.add(tooltipTextRight);
       (ctx.refs.annotationLayer as any).getNode().add(tooltip);
-      updateCircles();
+      (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
     });
     return {
       get_uuid,
       scale,
       scaleUMAP,
-      filename,
-      filenameMotif,
+      filenameGene,
       filenameFromParent,
       headers,
       selected,
@@ -1084,6 +1092,8 @@ export default defineComponent({
       onResize,
       mouseMoveOnSpatial,
       mouseOutOnSpatial,
+      mouseMoveOnSpatialRight,
+      mouseOutOnSpatialRight,
       isClusterView,
       clusterItems,
       clusterColors,
@@ -1098,6 +1108,7 @@ export default defineComponent({
       lowestCount,
       geneNames,
       isDrawing,
+      isDrawingRect,
       mouseDownOnStageLeft,
       mouseDownOnStageRight,
       mouseMoveOnStageLeft,
@@ -1105,15 +1116,24 @@ export default defineComponent({
       mouseUpOnStageLeft,
       mouseUpOnStageRight,
       polygon,
+      polygonUMAP,
       regions,
+      regionsUMAP,
+      rectangle,
+      rectangleUMAP,
       removeRegions,
+      reScale,
+      reScaleUMAP,
       resetScaleAndPos,
+      resetScaleAndPosUMAP,
       runId,
       geneMotif,
       colorbarText,
       highlightIds,
       lassoSide,
       highlightCount,
+      spatialData,
+      spatialRun,
     };
   },
 });
