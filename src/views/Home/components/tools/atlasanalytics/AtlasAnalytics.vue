@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid>
+  <v-container v-if="resolveAuthGroup(['admin','user'])" fluid>
 <v-row>
         <v-col cols="12" sm="3">
           <v-card>
@@ -49,6 +49,7 @@ import lodash from 'lodash';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { generateRouteByQuery } from '@/utils';
+import { resolveAuthGroup } from '@/utils/auth';
 import TaskExecute from './TaskExecute.vue';
 
 const clientReady = new Promise((resolve) => {
@@ -143,6 +144,7 @@ export default defineComponent({
       selected,
       loading,
       selectAction,
+      resolveAuthGroup,
     };
   },
 });

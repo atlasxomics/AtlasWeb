@@ -1,5 +1,5 @@
 <template>
-    <v-container fluid>
+    <v-container v-if="resolveAuthGroup(['admin'])" fluid>
       <v-row no-gutters>
         <v-col cols="12" sm="12">
           <v-row>
@@ -22,6 +22,7 @@ import lodash from 'lodash';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
+import { resolveAuthGroup } from '@/utils/auth';
 import AtxDualGeneViewer from './modules/AtxDualGeneViewer.vue';
 
 const clientReady = new Promise((resolve) => {
@@ -60,7 +61,7 @@ export default defineComponent({
     onUnmounted(() => {
       store.commit.setSubmenu(null);
     });
-    return { dualGVIndex };
+    return { dualGVIndex, resolveAuthGroup };
   },
 });
 </script>

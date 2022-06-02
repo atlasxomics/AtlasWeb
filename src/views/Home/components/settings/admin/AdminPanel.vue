@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid>
+  <v-container v-if="resolveAuthGroup(['admin'])" fluid>
     <v-tabs
       v-model="tab"
       >
@@ -31,6 +31,7 @@ import lodash from 'lodash';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { generateRouteByQuery } from '@/utils';
+import { resolveAuthGroup } from '@/utils/auth';
 import ResetPassword from './modules/ResetPassword.vue';
 import WorkerStatus from './modules/WorkerStatus.vue';
 import AddRemoveGroup from './modules/AddRemoveGroup.vue';
@@ -68,6 +69,7 @@ export default defineComponent({
       tabs,
       tab,
       client,
+      resolveAuthGroup,
     };
   },
 });

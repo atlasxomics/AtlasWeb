@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid>
+  <v-container v-if="resolveAuthGroup(['admin'])" fluid>
     <v-row>
       <v-col cols="12">
         <v-tabs v-model="tab">
@@ -71,6 +71,7 @@ import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@
 import lodash from 'lodash';
 import store from '@/store';
 import { generateRouteByQuery } from '@/utils';
+import { resolveAuthGroup } from '@/utils/auth';
 import FileUploadDragDrop from './FileUploadDragDrop.vue';
 import NovogenTransfer from './NovogenTransfer.vue';
 import IlluminaTransfer from './IlluminaTransfer.vue';
@@ -120,6 +121,7 @@ export default defineComponent({
       NgId,
       generateSourceImageDestination,
       generateGeneMatrixDestination,
+      resolveAuthGroup,
     };
   },
 });

@@ -158,5 +158,45 @@ export default defineComponent({
 </script>
 
 <style>
-
+  .v-input {
+    align-items: flex-start;
+    display: flex;
+    flex: 1 1 auto;
+    font-size: 16px;
+    letter-spacing: normal;
+    max-width: 55%;
+    text-align: left;
+  }
+  .v-select__slot {
+    position: relative;
+    align-items: center;
+    display: flex;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+  .v-select__selections {
+    align-items: center;
+    display: unset;
+    flex: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    line-height: 18px;
+    width: 90%;
+    max-width: 90%;
+    min-width: 0;
+  }
+  .v-text-field .v-input__append-inner, .v-text-field .v-input__prepend-inner {
+    align-self: end;
+    display: grid;
+    margin-top: 4px;
+    line-height: 1;
+    width: 5%;
+    max-width: 5%;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
 </style>

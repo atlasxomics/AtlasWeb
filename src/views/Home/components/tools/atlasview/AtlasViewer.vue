@@ -1,5 +1,5 @@
 <template>
-    <v-container fluid>
+    <v-container v-if="resolveAuthGroup(['admin'])" fluid>
     <fresh-dialog
       v-model="uploadQcDirectoryMenu"
     >
@@ -111,6 +111,7 @@ import { defineComponent, ref, computed, onMounted, watch, watchEffect } from '@
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { objectToArray, generateRouteByQuery } from '@/utils';
+import { resolveAuthGroup } from '@/utils/auth';
 import FreshDialog from '@/components/FreshDialog.vue';
 import UploadQcDirectoryMenu from '@/filemenu/file/components/UploadQCDirectoryMenu.vue';
 import { uploadQcDirectoryMenu } from '@/filemenu/file/state';
@@ -268,6 +269,7 @@ export default defineComponent({
       images,
       metadata,
       uploadQcDirectoryMenu,
+      resolveAuthGroup,
     };
   },
 
