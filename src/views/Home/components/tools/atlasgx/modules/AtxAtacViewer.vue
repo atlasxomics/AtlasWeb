@@ -95,18 +95,11 @@
           <v-row>
             <v-col cols="12" sm="10">
               <template v-if="!isClusterView && !spatialRun">
-                <v-card
-                  class="rounded-0"
-                  flat
-                  :style="{ 'background-image': colorBarmap, 'overflow-x': 'None' }"
-                  height="3vh"
-                  width="100%">
-                  <v-row no-gutters>
-                    <v-col v-for="step in stepArray" v-bind:key="`${step}`" class="ma-0 pa-0">
-                    <p :style=" { 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold' } "  class="text-center">{{ step }}</p>
-                    </v-col>
-                  </v-row>
-                </v-card>
+                <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
+                  <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
+                  {{ step }}
+                  </div>
+                </div>
               </template>
               <template v-else>
                 <v-card
@@ -227,18 +220,11 @@
           <v-row>
             <v-col cols="12" sm="10">
               <template v-if="!isClusterView && !spatialRun">
-                <v-card
-                  class="rounded-0"
-                  flat
-                  :style="{ 'background-image': colorBarmap, 'overflow-x': 'None' }"
-                  height="3vh"
-                  width="100%">
-                  <v-row no-gutters>
-                    <v-col v-for="step in stepArray" v-bind:key="`${step}`" class="ma-0 pa-0">
-                    <p :style=" { 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold' } "  class="text-center">{{ step }}</p>
-                    </v-col>
-                  </v-row>
-                </v-card>
+                <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
+                  <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
+                  {{ step }}
+                  </div>
+                </div>
               </template>
               <template v-else>
                 <v-card
@@ -277,6 +263,7 @@ import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
+import template from '../../../_empty/template.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (

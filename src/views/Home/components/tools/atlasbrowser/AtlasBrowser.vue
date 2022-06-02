@@ -1,226 +1,227 @@
 <template>
 <!--     <v-card ref="mainCard"> -->
   <v-app class="main">
-    <v-row>
-      <v-dialog
-        v-if="runIdFlag"
-        :value="runIdFlag"
-        @click:outside="runIdFlag = !runIdFlag"
-        hide-overlay>
-        <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
-            :disabled="loading">
-          <v-card-title>
-            <v-text-field
-              v-model="search"
-              dense
-              prepend-inner-icon="mdi-magnify"
-              :value="searchInput"
-              @input="searchInput = $event; searchRuns(searchInput)"
-            />
-          </v-card-title>
-          <v-data-table
-            v-model="selected"
-            height="20vh"
-            width="20%"
-            dense
-            single-select
-            :loading="loading"
-            :items="itemsHolder"
-            :headers="headers"
-            hide-default-footer
-            sort-by="id"
-            @click:row="selectAction"
-          />
-        </v-card>
-      </v-dialog>
-      <v-dialog
-        v-if="metaFlag && ((!csvHolder && run_id) || optionFlag)"
-        :value="metaFlag"
-        @click:outside="metaFlag = !metaFlag"
-        hide-overlay>
-        <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left: 150px;px;"
-            :disabled="loading">
-          <v-card-title>
-            {{ run_id }}
-          </v-card-title>
-          <v-card-text>
-            <v-text-field
-              v-model="metadata.species"
-              dense
-              outlined
-              label="Species">
-            </v-text-field>
-            <v-text-field
-              v-model="metadata.organ"
-              dense
-              outlined
-              label="Organ">
-            </v-text-field>
-            <v-text-field
-              v-model="metadata.type"
-              dense
-              outlined
-              label="Type">
-            </v-text-field>
-            <v-select
-              v-model="metadata.assay"
-              :items="metaItemLists.assays"
-              dense
-              outlined
-              label="Assay">
-            </v-select>
-            <v-select
-              v-model="metadata.numChannels"
-              :items="metaItemLists.numChannels"
-              dense
-              outlined
-              label="Barcode"
-              @change="updateChannels">
-            </v-select>
-          </v-card-text>
-        </v-card>
-      </v-dialog>
-      <v-col cols="12" sm="2" class="pl-6 pt-3">
-        <template v-if="run_id && optionFlag">
-          <v-card>
-            <v-slider
-              v-model="scaleFactor"
-              class="pl-2"
-              dense
-              height="20"
-              label="Scale"
-              type="number"
-              min="0.1"
-              max=".7"
-              step="0.005"
-              :disabled="!current_image"
-              @change="onChangeScale"></v-slider>
-            <v-list dense class="mt-n3 pt-0 pl-2">
-              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Orientation</v-subheader>
+    <v-container v-if="resolveAuthGroup(['admin','user'])" fluid>
+      <v-row>
+        <v-dialog
+          v-if="runIdFlag"
+          :value="runIdFlag"
+          @click:outside="runIdFlag = !runIdFlag"
+          hide-overlay>
+          <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
+              :disabled="loading">
+            <v-card-title>
               <v-text-field
-                v-model="orientation.rotation"
+                v-model="search"
                 dense
-                style="width:100px"
-                class="mt-5 pt-0"
-                label="Rotation"
+                prepend-inner-icon="mdi-magnify"
+                :value="searchInput"
+                @input="searchInput = $event; searchRuns(searchInput)"
+              />
+            </v-card-title>
+            <v-data-table
+              v-model="selected"
+              height="20vh"
+              width="20%"
+              dense
+              single-select
+              :loading="loading"
+              :items="itemsHolder"
+              :headers="headers"
+              hide-default-footer
+              sort-by="id"
+              @click:row="selectAction"
+            />
+          </v-card>
+        </v-dialog>
+        <v-dialog
+          v-if="metaFlag && ((!csvHolder && run_id) || optionFlag)"
+          :value="metaFlag"
+          @click:outside="metaFlag = !metaFlag"
+          hide-overlay>
+          <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left: 150px;px;"
+              :disabled="loading">
+            <v-card-title>
+              {{ run_id }}
+            </v-card-title>
+            <v-card-text>
+              <v-text-field
+                v-model="metadata.species"
+                dense
+                outlined
+                label="Species">
+              </v-text-field>
+              <v-text-field
+                v-model="metadata.organ"
+                dense
+                outlined
+                label="Organ">
+              </v-text-field>
+              <v-text-field
+                v-model="metadata.type"
+                dense
+                outlined
+                label="Type">
+              </v-text-field>
+              <v-select
+                v-model="metadata.assay"
+                :items="metaItemLists.assays"
+                dense
+                outlined
+                label="Assay">
+              </v-select>
+              <v-select
+                v-model="metadata.numChannels"
+                :items="metaItemLists.numChannels"
+                dense
+                outlined
+                label="Barcode"
+                @change="updateChannels">
+              </v-select>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
+        <v-col cols="12" sm="2" class="pl-6 pt-3">
+          <template v-if="run_id && optionFlag">
+            <v-card>
+              <v-slider
+                v-model="scaleFactor"
+                class="pl-2"
+                dense
+                height="20"
+                label="Scale"
                 type="number"
-                min="0"
-                max="360"
-                step="90"
-                :disabled="!current_image || isCropMode || grid"
-                @input="loadImage()"/>
-            </v-list>
-            <v-list dense class="mt-n4 pt-0 pl-2">
-              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Cropping</v-subheader>
-              <v-btn
-                dense
-                color="primary"
-                x-small
-                @click="isCropMode=true"
-                :disabled="isCropMode || grid">
-                Activate
-              </v-btn>
-              <v-btn
-                :disabled="!current_image || !isCropMode || cropFlag"
-                x-small
-                dense
-                class="mt-0 pt-0"
-                color="primary"
-                @click="onCropButton">
-                Crop
-              </v-btn>
-            </v-list>
-            <v-list dense class="mt-n1 pt-0 pl-2">
-              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
-              <v-btn
-                dense
-                color="primary"
-                x-small
-                @click="grid=true"
-                :disabled="!current_image || grid || !cropFlag">
-                Activate
-              </v-btn>
-              <v-btn
-                :disabled="!current_image || !grid || spatial || optionUpdate"
-                x-small
-                dense
-                color="primary"
-                @click="onLatticeButton">
-                Grid
-              </v-btn>
-            </v-list>
-              <v-list dense class="mt-n1 pt-0 pl-2">
-                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
-                <v-checkbox dense v-model="atfilter" :disabled="!current_image || !grid || spatial" label="Threshold"/>
+                min="0.1"
+                max=".7"
+                step="0.005"
+                :disabled="!current_image"
+                @change="onChangeScale"></v-slider>
+              <v-list dense class="mt-n3 pt-0 pl-2">
+                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Orientation</v-subheader>
                 <v-text-field
-                  v-model="threshold"
-                  class="mt-0 pt-0"
-                  style="width:100px"
+                  v-model="orientation.rotation"
                   dense
-                  label="Thr"
+                  style="width:100px"
+                  class="mt-5 pt-0"
+                  label="Rotation"
                   type="number"
                   min="0"
-                  max="255"
-                  step="5"
-                  :disabled="!current_image || !grid || spatial || optionUpdate"
-                />
+                  max="360"
+                  step="90"
+                  :disabled="!current_image || isCropMode || grid"
+                  @input="loadImage()"/>
               </v-list>
-            <v-list dense class="pt-0 pl-2">
-              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
-              <v-btn
-              :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src || spatial || optionUpdate"
-              x-small
-              dense
-              color="primary"
-              @click="autoFill">
-              Autofill
-              </v-btn>
-              <v-checkbox dense v-model="isBrushMode" :value="isBrushMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Fill"/>
-              <v-checkbox dense v-model="isEraseMode" :value="isEraseMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Erase"/>
-              <v-text-field
-                v-model="brushSize"
-                style="width:100px"
-                dense
-                label="Br.Size"
-                type="number"
-                min="5.0"
-                max="100.0"
-                step="3.0"
-                :disabled="!current_image || !grid || spatial"
-              />
-              <template v-if="spatial && !loadingMessage && grid">
+              <v-list dense class="mt-n4 pt-0 pl-2">
+                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Cropping</v-subheader>
                 <v-btn
+                  dense
+                  color="primary"
+                  x-small
+                  @click="isCropMode=true"
+                  :disabled="isCropMode || grid">
+                  Activate
+                </v-btn>
+                <v-btn
+                  :disabled="!current_image || !isCropMode || cropFlag"
+                  x-small
+                  dense
+                  class="mt-0 pt-0"
+                  color="primary"
+                  @click="onCropButton">
+                  Crop
+                </v-btn>
+              </v-list>
+              <v-list dense class="mt-n1 pt-0 pl-2">
+                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
+                <v-btn
+                  dense
+                  color="primary"
+                  x-small
+                  @click="grid=true"
+                  :disabled="!current_image || grid || !cropFlag">
+                  Activate
+                </v-btn>
+                <v-btn
+                  :disabled="!current_image || !grid || spatial || optionUpdate"
+                  x-small
+                  dense
+                  color="primary"
+                  @click="onLatticeButton">
+                  Grid
+                </v-btn>
+              </v-list>
+                <v-list dense class="mt-n1 pt-0 pl-2">
+                  <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
+                  <v-checkbox dense v-model="atfilter" :disabled="!current_image || !grid || spatial" label="Threshold"/>
+                  <v-text-field
+                    v-model="threshold"
+                    class="mt-0 pt-0"
+                    style="width:100px"
+                    dense
+                    label="Thr"
+                    type="number"
+                    min="0"
+                    max="255"
+                    step="5"
+                    :disabled="!current_image || !grid || spatial || optionUpdate"
+                  />
+                </v-list>
+              <v-list dense class="pt-0 pl-2">
+                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
+                <v-btn
+                :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src || spatial || optionUpdate"
                 x-small
                 dense
                 color="primary"
-                @click="generateh5ad()">
-                Generate h5ad file
+                @click="autoFill">
+                Autofill
                 </v-btn>
-              </template>
-            </v-list>
+                <v-checkbox dense v-model="isBrushMode" :value="isBrushMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Fill"/>
+                <v-checkbox dense v-model="isEraseMode" :value="isEraseMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Erase"/>
+                <v-text-field
+                  v-model="brushSize"
+                  style="width:100px"
+                  dense
+                  label="Br.Size"
+                  type="number"
+                  min="5.0"
+                  max="100.0"
+                  step="3.0"
+                  :disabled="!current_image || !grid || spatial"
+                />
+                <template v-if="spatial && !loadingMessage && grid">
+                  <v-btn
+                  x-small
+                  dense
+                  color="primary"
+                  @click="generateh5ad()">
+                  Generate h5ad file
+                  </v-btn>
+                </template>
+              </v-list>
+            </v-card>
+          </template>
+          <v-card v-if="run_id && !loading && !optionFlag && csvHolder">
+            <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
+            <v-card-actions>
+              <v-btn
+                dense
+                color="primary"
+                @click="optionFlag=true;optionCreate=true;"
+                x-small>
+                Reprocess
+              </v-btn>
+              <v-btn
+                dense
+                color="primary"
+                @click="optionFlag=true;optionUpdate=true;loadImage();uploadingTixels()"
+                x-small>
+                Update
+              </v-btn>
+            </v-card-actions>
           </v-card>
-        </template>
-        <v-card v-if="run_id && !loading && !optionFlag && csvHolder">
-          <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
-          <v-card-actions>
-            <v-btn
-              dense
-              color="primary"
-              @click="optionFlag=true;optionCreate=true;"
-              x-small>
-              Reprocess
-            </v-btn>
-            <v-btn
-              dense
-              color="primary"
-              @click="optionFlag=true;optionUpdate=true;loadImage();uploadingTixels()"
-              x-small>
-              Update
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="9">
+        </v-col>
+        <v-col cols="12" sm="9">
           <v-container fluid>
             <template v-if="loadingMessage">
               <v-dialog
@@ -269,7 +270,7 @@
                 </v-card>
               </v-dialog>
             </template>
-             <template v-if="generating">
+              <template v-if="generating">
               <v-dialog
                 value=true
                 hide-overlay
@@ -353,7 +354,6 @@
                           @dragend="handleDragCenterEnd"
                           @dragmove="handleDragCenterMove"
                           :config="roi.getCenterAnchor()"/>
-                        />
                     </template>
                   </v-layer>
                     <v-layer
@@ -379,7 +379,6 @@
                             @dragend="handleDragCenterEnd_Crop"
                             @dragmove="handleDragCenterMove_Crop"
                             :config="crop.getCenterAnchor()"/>
-                        />
                       </template>
                     </v-layer>
                     <v-layer>
@@ -391,13 +390,12 @@
                       />
                     </v-layer>
                   </v-stage>
-                </v-card>
-                <v-spacer>
-                </v-spacer>
+              </v-card>
             </v-row>
           </v-container>
-      </v-col>
-    </v-row>
+        </v-col>
+      </v-row>
+    </v-container>
   </v-app>
 <!--     </v-card> -->
 </template>
@@ -414,6 +412,7 @@ import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
+import { resolveAuthGroup } from '@/utils/auth';
 import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
@@ -1293,6 +1292,7 @@ export default defineComponent({
       metaFlag,
       imageh,
       getMeta,
+      resolveAuthGroup,
     };
   },
 });

@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-container fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
+    <v-container v-if="resolveAuthGroup(['admin','user'])" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
           <v-tooltip bottom :disabled="metaFlag">
@@ -387,7 +387,7 @@ import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
-import { readCookie } from '@/utils/auth';
+import { readCookie, resolveAuthGroup } from '@/utils/auth';
 import { Console } from 'console';
 import html2canvas from 'html2canvas';
 import GeneAutoComplete from './modules/GeneAutoComplete.vue';
@@ -1060,6 +1060,7 @@ export default defineComponent({
       updateFilename,
       updateSelectors,
       getPublicId,
+      resolveAuthGroup,
     };
   },
 });
