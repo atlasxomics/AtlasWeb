@@ -731,7 +731,7 @@ export default defineComponent({
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [motifHold!.replace(/motifs/i, 'genes')], meta: { run_id: runId.value } });
           const { encoded: filenameTokenMotif } = await client.value.encodeLink({ args: [motifHold!.replace(/genes/i, 'motifs')], meta: { run_id: runId.value } });
           const { host } = window.location;
-          publicLink.value = `http://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true&token=JWT%20${split}`;
+          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true&token=JWT%20${split}`;
         }
       } catch (error) {
         console.log(error);
