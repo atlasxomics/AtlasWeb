@@ -7,7 +7,7 @@
       dense
       clearable
       placeholder=""
-      label="Enter ID:"
+      :label="labelValue"
       :allow-overflow="false"
       chips
       :cache-items="false"
@@ -17,8 +17,10 @@
       @input="acInputChanged"
       :search-input.sync="searchInput"
       :loading="autocompleteLoading"
-      :menu-props="{closeOnClick:true}"
+      :menu-props="{closeOnClick: true}"
       @change="onGenelistChanged"
+      @focus="focusFlag = true"
+      @blur="focusFlag = false"
       width="100%"
       small-chips>
       <template v-slot:selection="data">
@@ -76,6 +78,8 @@ export default defineComponent({
     const genes = ref<any[]>([]);
     const showFlag = ref<boolean>(false);
     const autocompleteLoading = ref(false);
+    const labelValue = ref<string>('Enter ID');
+    const focusFlag = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -103,6 +107,11 @@ export default defineComponent({
     }
     async function updateTrack(ev: any) {
       ctx.emit('track', ev);
+    }
+    function resetScroll() {
+      labelValue.value = '';
+      const inputBox = document.getElementsByClassName('v-select__selections');
+      inputBox[0].scrollTo(0, 0);
     }
     function remove(item: any) {
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
@@ -136,6 +145,14 @@ export default defineComponent({
         showFlag.value = false;
       }
     });
+    watch(focusFlag, (v: any) => {
+      labelValue.value = '';
+      if (v) {
+        resetScroll();
+      } else {
+        labelValue.value = 'Enter ID';
+      }
+    });
     onMounted(async () => {
       await clientReady;
     });
@@ -145,12 +162,15 @@ export default defineComponent({
       searchInput,
       autocompleteLoading,
       showFlag,
+      labelValue,
+      focusFlag,
       acInputChanged,
       querySelections,
       onGenelistChanged,
       remove,
       showGene,
       updateTrack,
+      resetScroll,
     };
   },
 });
@@ -166,6 +186,7 @@ export default defineComponent({
     letter-spacing: normal;
     max-width: 55%;
     text-align: left;
+    overflow: hidden;
   }
   .v-select__slot {
     position: relative;
@@ -179,9 +200,13 @@ export default defineComponent({
     align-items: center;
     display: unset;
     flex: none;
-    overflow-x: auto;
+    margin-bottom: -50px; /* maximum width of scrollbar */
+    padding-bottom: 50px; /* maximum width of scrollbar */
     overflow-y: hidden;
+    overflow-x: scroll;
     white-space: nowrap;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
     line-height: 18px;
     width: 90%;
     max-width: 90%;
@@ -198,5 +223,8 @@ export default defineComponent({
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+  }
+  ::-webkit-scrollbar {
+  display: none; /* for Chrome, Safari, and Opera */
   }
 </style>
