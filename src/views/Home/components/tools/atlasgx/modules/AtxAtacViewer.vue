@@ -769,8 +769,8 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       } finally {
         loading.value = false;
+        ctx.emit('spatialFlag', spatialData.value);
       }
-      ctx.emit('spatialFlag', spatialData.value);
     }
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {

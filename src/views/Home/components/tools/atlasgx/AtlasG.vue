@@ -517,8 +517,7 @@ export default defineComponent({
       if (shouldPush) router.push(newRoute);
     }
     function cleanRunId(rid: string) {
-      const lastDigitLocation = rid.search(/[0-9]\b/i) + 1;
-      return rid.slice(0, lastDigitLocation);
+      return rid.match('[A-Z]+[0-9]+')![0];
     }
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
@@ -651,7 +650,6 @@ export default defineComponent({
         geneNames.value = geneRank;
         lengthClust.value = clusterItems.value.length;
         topSelected.value = spatialData.value.top_selected;
-        updateCircles();
       }
     }
     function chooseHeatmap(ev: any) {
@@ -804,6 +802,7 @@ export default defineComponent({
       isDrawingRect.value = false;
       stepArray.value = [];
       await getMeta();
+      updateCircles();
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
