@@ -31,7 +31,7 @@
           close
           small
           color="warning"
-          @click="updateTrack(data.item.name)"
+          @click.stop="updateTrack(data.item.name)"
           @click:close="remove(data.item)"
         >{{ data.item.name }}
         </v-chip>
@@ -39,6 +39,7 @@
       <template v-slot:append-outer v-if="selectedGenes.length > 0">
         <v-btn
           color="primary"
+          class="mt-n1"
           medium
           text
           @click="showGene"
@@ -178,6 +179,9 @@ export default defineComponent({
 </script>
 
 <style scoped>
+  .noScroll {
+    margin-top: 10px;
+  }
   .noScroll >>> .v-input__control {
     align-items: flex-start;
     display: flex;
