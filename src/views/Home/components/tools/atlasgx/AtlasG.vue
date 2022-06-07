@@ -651,6 +651,7 @@ export default defineComponent({
         lengthClust.value = clusterItems.value.length;
         topSelected.value = spatialData.value.top_selected;
       }
+      await updateCircles();
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev.heat;
@@ -949,17 +950,18 @@ export default defineComponent({
       await clientReady;
       store.commit.setSubmenu(submenu);
       fitStageToParent();
-      if (props.query) {
-        if (!props.query.public) {
+      if (props.query && !props.query.public) {
+        await fetchFileList();
+        if (props.query.run_id) {
           // loadCandidateWorkers('AtlasGX');
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-          await fetchFileList();
+          await selectAction({ id: props.query.run_id });
         } else {
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query) {
-        if (props.query.run_id) {
+        if (props.query.run_id && props.query.public) {
           const mid = props.query.run_id.search(/motif/i);
           const end = props.query.run_id.length;
           const fn = props.query.run_id.slice(0, mid);

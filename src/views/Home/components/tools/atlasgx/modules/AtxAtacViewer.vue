@@ -1015,7 +1015,6 @@ export default defineComponent({
         ctx.emit('spatialFlag', false);
       }
       filenameGene.value = v;
-      console.log('1');
       runSpatial(true);
     });
     watch(scale, () => {
