@@ -618,7 +618,7 @@ export default defineComponent({
       }
       colorMap.value = cmap;
       if (!showFlag.value[0] && !loading.value) {
-        (ctx as any).refs.trackbrowser.reload(cleanRunId(runId.value!), colorMap.value);
+        (ctx as any).refs.trackbrowser.reload(runId.value!, colorMap.value);
       }
     }
     async function updateSpatial(ev: any) {
