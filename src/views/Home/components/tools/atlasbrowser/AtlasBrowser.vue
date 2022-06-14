@@ -3,6 +3,7 @@
   <v-app class="main">
     <v-container v-if="resolveAuthGroup(['admin','user'])" fluid>
       <v-row>
+        <!-- search funtionality on press of magnifying glass -->
         <v-dialog
           v-if="runIdFlag"
           :value="runIdFlag"
@@ -10,6 +11,7 @@
           hide-overlay>
           <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
               :disabled="loading">
+              <!-- Searching in text field -->
             <v-card-title>
               <v-text-field
                 v-model="search"
@@ -19,6 +21,7 @@
                 @input="searchInput = $event; searchRuns(searchInput)"
               />
             </v-card-title>
+            <!-- display of available runs for selection -->
             <v-data-table
               v-model="selected"
               height="20vh"
@@ -34,6 +37,8 @@
             />
           </v-card>
         </v-dialog>
+        <!-- metdata panel -->
+        <!-- to display must select icon and have either be csvHolder be empty and a runID selected or optionFlag be true. -->
         <v-dialog
           v-if="metaFlag && ((!csvHolder && run_id) || optionFlag)"
           :value="metaFlag"
@@ -42,7 +47,7 @@
           <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left: 150px;px;"
               :disabled="loading">
             <v-card-title>
-              {{ run_id }}
+              {{run_id}}
             </v-card-title>
             <v-card-text>
               <v-text-field
@@ -82,8 +87,10 @@
           </v-card>
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3">
+          <!-- workflow menu -->
           <template v-if="run_id && optionFlag">
             <v-card>
+              <!-- zoom slider -->
               <v-slider
                 v-model="scaleFactor"
                 class="pl-2"
@@ -96,6 +103,7 @@
                 step="0.005"
                 :disabled="!current_image"
                 @change="onChangeScale"></v-slider>
+                <!-- rotation box -->
               <v-list dense class="mt-n3 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Orientation</v-subheader>
                 <v-text-field
@@ -111,6 +119,7 @@
                   :disabled="!current_image || isCropMode || grid"
                   @input="loadImage()"/>
               </v-list>
+              <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Cropping</v-subheader>
                 <v-btn
@@ -131,6 +140,7 @@
                   Crop
                 </v-btn>
               </v-list>
+              <!-- ROI Location functionality -->
               <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
                 <v-btn
@@ -149,6 +159,7 @@
                   @click="onLatticeButton">
                   Grid
                 </v-btn>
+                <!-- thresholding -->
               </v-list>
                 <v-list dense class="mt-n1 pt-0 pl-2">
                   <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
@@ -221,8 +232,10 @@
             </v-card-actions>
           </v-card>
         </v-col>
+        <!-- right section of the screen where images and loading screens are displayed -->
         <v-col cols="12" sm="9">
-          <v-container fluid>
+          <v-container>
+            <!-- Loading message when saving spatial folder -->
             <template v-if="loadingMessage">
               <v-dialog
                 value=true
@@ -269,6 +282,7 @@
                   </v-card-text>
                 </v-card>
               </v-dialog>
+              <!-- when generating h5ad file -->
             </template>
               <template v-if="generating">
               <v-dialog
@@ -296,7 +310,7 @@
               </v-dialog>
             </template>
             <v-row>
-              <v-card :disabled="loading">
+              <v-card>
                 <template v-if="loading && !loadingMessage">
                 <div :style="{ 'position': 'absolute', 'z-index': 999, 'top': '43%', 'left': '47%'}">
                   <v-progress-circular
@@ -313,6 +327,26 @@
                   :config="konvaConfig"
                   v-resize="onResize"
                   @mousemove="handleMouseMoveStage">
+                <v-layer
+                  id="WelcomeLayer"
+                  v-if="welcome_screen">
+                  <v-text
+                  ref="text1"
+                  :config="{
+                    text: 'Welcome to AtlasXbrowser',
+                    fontSize: 30,
+                    align: 'center',
+                    width: 1100,
+                    padding: 25
+                }">
+                </v-text>
+                <v-image
+                ref="atlas_image"
+                :config="company_image"
+                >
+
+                </v-image>
+                </v-layer>
                   <v-layer
                     v-if="current_image"
                     ref="imageLayer"
@@ -458,7 +492,17 @@ export default defineComponent({
   components: {},
   name: 'AtlasBrowser',
   props: ['query'],
+  methods: {
+    check_vals() {
+      if (this.csvHolder) {
+        console.log('csv holder is true');
+      } else {
+        console.log('csv holder is false');
+      }
+    },
+  },
   setup(props, ctx) {
+    const welcome_screen = ref<boolean>(true);
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const allFiles = ref<any[]>([]);
@@ -514,6 +558,7 @@ export default defineComponent({
     const optionFlag = ref<boolean>(false);
     const generating = ref<boolean>(false);
     const runIdFlag = ref<boolean>(false);
+    const runIDSelected = ref<boolean>(false);
     const metaFlag = ref<boolean>(false);
     const imageh = ref<any>();
     const scaleFactor_json = ref<any>({
@@ -522,6 +567,25 @@ export default defineComponent({
       tissue_hires_scalef: null,
       tissue_lowres_scalef: null,
     });
+    const company_image = ref<any | null>(null);
+    // const company_image_obj = new window.Image();
+    // company_image_obj.src = '/public/company_logo.png';
+    // company_image.value = {
+    //   x: 0,
+    //   y: 0,
+    //   image: company_image_obj,
+    // };
+    // current_image.value = {
+    //   x: 0,
+    //   y: 0,
+    //   draggable: false,
+    //   scale: { x: scalefactor, y: scalefactor },
+    //   image: imgObj,
+    //   src: URL.createObjectURL(img),
+    //   original_src: URL.createObjectURL(img),
+    //   alternative_src: null,
+    // };
+    // company_image.src = '/public/company_logo.png';
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -646,6 +710,7 @@ export default defineComponent({
     }
 
     function searchRuns(ev: any) {
+      console.log('searching');
       const stringforRegex = ev;
       const updated = [];
       const regex = new RegExp(`${stringforRegex}[a-zA-z]*[0-9]*`);
@@ -916,7 +981,7 @@ export default defineComponent({
       if (!spatial.value) return;
       try {
         const task = 'atlasbrowser.generate_h5ad';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
@@ -1017,7 +1082,7 @@ export default defineComponent({
         loading.value = true;
         spatial.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         const cropCoords = crop.value.getCoordinatesOnImage();
         const points: number[] = [];
@@ -1108,6 +1173,7 @@ export default defineComponent({
       loading.value = false;
     }
     async function selectAction(ev: any) {
+      welcome_screen.value = false;
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
@@ -1156,6 +1222,8 @@ export default defineComponent({
       }
     });
     watch(run_id, async (v, ov) => {
+      console.log('runID changed');
+      runIDSelected.value = true;
       initialize();
       await loadAll();
     });
@@ -1182,6 +1250,10 @@ export default defineComponent({
         disabled: loading.value,
         click: () => {
           metaFlag.value = !metaFlag.value;
+          if (runIDSelected.value === false) {
+            console.log('error message');
+            snackbar.dispatch({ text: 'Must select a Run ID', options: { right: true, color: 'error' } });
+          }
         },
       },
       {
@@ -1293,6 +1365,8 @@ export default defineComponent({
       imageh,
       getMeta,
       resolveAuthGroup,
+      welcome_screen,
+      company_image,
     };
   },
 });
