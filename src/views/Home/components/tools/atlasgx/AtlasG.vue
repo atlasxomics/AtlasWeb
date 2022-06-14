@@ -517,8 +517,7 @@ export default defineComponent({
       if (shouldPush) router.push(newRoute);
     }
     function cleanRunId(rid: string) {
-      const lastDigitLocation = rid.search(/[0-9]\b/i) + 1;
-      return rid.slice(0, lastDigitLocation);
+      return rid.match('[A-Z]+[0-9]+')![0];
     }
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
@@ -619,7 +618,7 @@ export default defineComponent({
       }
       colorMap.value = cmap;
       if (!showFlag.value[0] && !loading.value) {
-        (ctx as any).refs.trackbrowser.reload(cleanRunId(runId.value!), colorMap.value);
+        (ctx as any).refs.trackbrowser.reload(runId.value!, colorMap.value);
       }
     }
     async function updateSpatial(ev: any) {
@@ -651,8 +650,8 @@ export default defineComponent({
         geneNames.value = geneRank;
         lengthClust.value = clusterItems.value.length;
         topSelected.value = spatialData.value.top_selected;
-        updateCircles();
       }
+      await updateCircles();
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev.heat;
@@ -804,6 +803,7 @@ export default defineComponent({
       isDrawingRect.value = false;
       stepArray.value = [];
       await getMeta();
+      updateCircles();
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
@@ -950,17 +950,18 @@ export default defineComponent({
       await clientReady;
       store.commit.setSubmenu(submenu);
       fitStageToParent();
-      if (props.query) {
-        if (!props.query.public) {
+      if (props.query && !props.query.public) {
+        await fetchFileList();
+        if (props.query.run_id) {
           // loadCandidateWorkers('AtlasGX');
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-          await fetchFileList();
+          await selectAction({ id: props.query.run_id });
         } else {
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query) {
-        if (props.query.run_id) {
+        if (props.query.run_id && props.query.public) {
           const mid = props.query.run_id.search(/motif/i);
           const end = props.query.run_id.length;
           const fn = props.query.run_id.slice(0, mid);

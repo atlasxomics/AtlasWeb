@@ -1,5 +1,6 @@
 <template>
     <v-autocomplete
+      class="noScroll"
       v-model="selectedGenes"
       :items="filteredGenes"
       :outlined="false"
@@ -30,7 +31,7 @@
           close
           small
           color="warning"
-          @click="updateTrack(data.item.name)"
+          @click.stop="updateTrack(data.item.name)"
           @click:close="remove(data.item)"
         >{{ data.item.name }}
         </v-chip>
@@ -38,6 +39,7 @@
       <template v-slot:append-outer v-if="selectedGenes.length > 0">
         <v-btn
           color="primary"
+          class="mt-n1"
           medium
           text
           @click="showGene"
@@ -47,7 +49,6 @@
 </template>
 
 <script lang='ts'>
-
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
 import lodash from 'lodash';
 import store from '@/store';
@@ -177,18 +178,21 @@ export default defineComponent({
 
 </script>
 
-<style>
-  .v-input {
+<style scoped>
+  .noScroll {
+    margin-top: 10px;
+  }
+  .noScroll >>> .v-input__control {
     align-items: flex-start;
     display: flex;
     flex: 1 1 auto;
     font-size: 16px;
     letter-spacing: normal;
-    max-width: 55%;
+    max-width: 700px;
     text-align: left;
     overflow: hidden;
   }
-  .v-select__slot {
+  .noScroll >>> .v-select__slot {
     position: relative;
     align-items: center;
     display: flex;
@@ -196,7 +200,7 @@ export default defineComponent({
     min-width: 0;
     width: 100%;
   }
-  .v-select__selections {
+  .noScroll >>> .v-select__selections {
     align-items: center;
     display: unset;
     flex: none;
@@ -212,7 +216,7 @@ export default defineComponent({
     max-width: 90%;
     min-width: 0;
   }
-  .v-text-field .v-input__append-inner, .v-text-field .v-input__prepend-inner {
+  .noScroll >>> .v-text-field .noScroll >>> .v-input__append-inner, .noScroll >>> .v-text-field .noScroll >>> .v-input__prepend-inner {
     align-self: end;
     display: grid;
     margin-top: 4px;
@@ -224,7 +228,7 @@ export default defineComponent({
     -ms-user-select: none;
     user-select: none;
   }
-  ::-webkit-scrollbar {
+  .noScroll >>> ::-webkit-scrollbar {
   display: none; /* for Chrome, Safari, and Opera */
   }
 </style>
