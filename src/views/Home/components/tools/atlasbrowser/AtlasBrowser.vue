@@ -160,12 +160,19 @@
                   Grid
                 </v-btn>
                 <!-- thresholding -->
+              <!-- <v-btn
+                dense
+                color="primary"
+                @click="optionFlag=true;optionCreate=true;"
+                x-small>
+                Reprocess
+              </v-btn> -->
               </v-list>
                 <v-list dense class="mt-n1 pt-0 pl-2">
                   <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
-                  <v-checkbox dense v-model="atfilter" :disabled="!current_image || !grid || spatial" label="Threshold"/>
+                  <!-- <v-checkbox dense v-model="atfilter" :disabled="!current_image || !grid || spatial" label="Threshold"/> -->
                   <v-text-field
-                    v-model="threshold"
+                    v-model="c_val"
                     class="mt-0 pt-0"
                     style="width:100px"
                     dense
@@ -176,6 +183,25 @@
                     step="5"
                     :disabled="!current_image || !grid || spatial || optionUpdate"
                   />
+                  <!-- <v-text-field
+                  v-model="neighbor_size"
+                  class="mt-0 pt-0"
+                  style="width:100px"
+                  dense
+                  label="Thr"
+                  type="number"
+                  min="0"
+                  max="100000"
+                  step="5">
+                  </v-text-field> -->
+                  <v-btn
+                  dense
+                  color="primary"
+                  @click="thresh_clicked"
+                  small
+                  :disabled="no_thresh">
+                  Threshold
+                  </v-btn>
                 </v-list>
               <v-list dense class="pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
@@ -538,6 +564,7 @@ export default defineComponent({
     const atfilter = ref(false);
     const atpixels = ref<any[] | null>([]);
     const threshold = ref(210);
+    const no_thresh = ref(true);
     const loading = ref<boolean>(false);
     const loadingMessage = ref<boolean>(false);
     const taskStatus = ref<any>();
@@ -561,6 +588,8 @@ export default defineComponent({
     const runIDSelected = ref<boolean>(false);
     const metaFlag = ref<boolean>(false);
     const imageh = ref<any>();
+    const c_val = ref<number>(7);
+    const neighbor_size = ref<number>(7);
     const scaleFactor_json = ref<any>({
       fiducial_diameter_fullres: null,
       spot_diameter_fullres: null,
@@ -568,24 +597,6 @@ export default defineComponent({
       tissue_lowres_scalef: null,
     });
     const company_image = ref<any | null>(null);
-    // const company_image_obj = new window.Image();
-    // company_image_obj.src = '/public/company_logo.png';
-    // company_image.value = {
-    //   x: 0,
-    //   y: 0,
-    //   image: company_image_obj,
-    // };
-    // current_image.value = {
-    //   x: 0,
-    //   y: 0,
-    //   draggable: false,
-    //   scale: { x: scalefactor, y: scalefactor },
-    //   image: imgObj,
-    //   src: URL.createObjectURL(img),
-    //   original_src: URL.createObjectURL(img),
-    //   alternative_src: null,
-    // };
-    // company_image.src = '/public/company_logo.png';
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -690,8 +701,8 @@ export default defineComponent({
               draggable: false,
               scale: { x: scalefactor, y: scalefactor },
               image: imgObj,
-              src: URL.createObjectURL(img),
-              original_src: URL.createObjectURL(img),
+              src: imgObj.src,
+              original_src: imgObj.src,
               alternative_src: null,
             };
           };
@@ -873,6 +884,7 @@ export default defineComponent({
     }
     function generateLattices(ev: any) {
       roi.value.polygons = roi.value.generatePolygons();
+      no_thresh.value = false;
     }
     function onResize(ev: any) {
       // console.log('OnResize');
@@ -922,6 +934,64 @@ export default defineComponent({
       };
       onChangeScale('');
       roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
+    }
+
+    function thresh_clicked() {
+      if (!current_image.value) return;
+      const sv = scaleFactor.value;
+      loading.value = true;
+      getPixels(current_image.value.src, async (err, pixels) => {
+        const compensation = Number(c_val.value);
+        const neighbor = Number(neighbor_size.value);
+        console.log(compensation);
+        console.log(neighbor);
+        const thresholded = adaptiveThreshold(pixels, { compensation, neighbor });
+        atpixels.value = thresholded;
+        const b = blobStream();
+        savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
+          const newsrc = b.toBlobURL('image/jpeg');
+          current_image.value.original_src = current_image.value.image.src;
+          current_image.value.image.src = newsrc;
+          current_image.value.image.alternative_src = newsrc;
+          current_image.value.scale = { x: sv, y: sv };
+          onChangeScale(sv);
+        });
+      });
+      loading.value = false;
+    // watch(atfilter, async (v, ov) => {
+    //   // if the current_image is empty retur
+    //   if (!current_image.value) return;
+    //   const sv = scaleFactor.value;
+    //   // if atfilter is now true
+    //   if (v) {
+    //     if (current_image.value.image.alternative_src) {
+    //       current_image.value.image.src = current_image.value.image.alternative_src;
+    //       // current_image.value.scale = { x: sv, y: sv };
+    //       onChangeScale(sv);
+    //     } else {
+    //       loading.value = true;
+    //       getPixels(current_image.value.src, async (err, pixels) => {
+    //         const thresholded = adaptiveThreshold(pixels);
+    //         atpixels.value = thresholded;
+    //         const b = blobStream();
+    //         loading.value = false;
+    //         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
+    //           const newsrc = b.toBlobURL('image/jpeg');
+    //           current_image.value.image.original_src = current_image.value.image.src;
+    //           current_image.value.image.src = newsrc;
+    //           current_image.value.image.alternative_src = newsrc;
+    //           current_image.value.scale = { x: sv, y: sv };
+    //           onChangeScale(sv);
+    //           loading.value = false;
+    //         });
+    //       });
+    //     }
+    //   } else {
+    //     current_image.value.image.src = current_image.value.image.original_src;
+    //     // current_image.value.scale = { x: sv, y: sv };
+    //     onChangeScale(sv);
+    //   }
+    // });
     }
     async function generateReport(ev: any) {
       //
@@ -1178,8 +1248,10 @@ export default defineComponent({
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
     watch(atfilter, async (v, ov) => {
+      // if the current_image is empty retur
       if (!current_image.value) return;
       const sv = scaleFactor.value;
+      // if atfilter is now true
       if (v) {
         if (current_image.value.image.alternative_src) {
           current_image.value.image.src = current_image.value.image.alternative_src;
@@ -1191,12 +1263,13 @@ export default defineComponent({
             const thresholded = adaptiveThreshold(pixels);
             atpixels.value = thresholded;
             const b = blobStream();
+            loading.value = false;
             savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
               const newsrc = b.toBlobURL('image/jpeg');
               current_image.value.image.original_src = current_image.value.image.src;
               current_image.value.image.src = newsrc;
               current_image.value.image.alternative_src = newsrc;
-              // current_image.value.scale = { x: sv, y: sv };
+              current_image.value.scale = { x: sv, y: sv };
               onChangeScale(sv);
               loading.value = false;
             });
@@ -1222,7 +1295,6 @@ export default defineComponent({
       }
     });
     watch(run_id, async (v, ov) => {
-      console.log('runID changed');
       runIDSelected.value = true;
       initialize();
       await loadAll();
@@ -1367,6 +1439,10 @@ export default defineComponent({
       resolveAuthGroup,
       welcome_screen,
       company_image,
+      thresh_clicked,
+      no_thresh,
+      c_val,
+      neighbor_size,
     };
   },
 });
