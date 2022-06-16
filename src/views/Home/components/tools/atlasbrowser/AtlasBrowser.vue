@@ -148,7 +148,7 @@
                   dense
                   color="primary"
                   x-small
-                  @click="grid=true; active_roi_available = false; roi_active = true; no_thresh = true"
+                  @click="finding_roi"
                   :disabled="!active_roi_available">
                   Activate
                 </v-btn>
@@ -702,7 +702,7 @@ export default defineComponent({
       try {
         const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
         imageh.value = img;
-        allFiles.value = await client.value.getFileList(filenameList);
+        // allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
         const scalefactor = 0.1;
@@ -723,9 +723,11 @@ export default defineComponent({
         loading.value = false;
         runIdFlag.value = false;
       } catch (error) {
+        console.log(error);
         loading.value = false;
         snackbar.dispatch({ text: 'Failed to load the image file', options: { color: 'error', right: true } });
       }
+      // console.log(current_image.value.original_src);
     }
     async function loadAll() {
       await loadMetadata();
@@ -916,6 +918,7 @@ export default defineComponent({
       crop.value.setScaleFactor(v);
     }
     function onCropButton(ev: any) {
+      console.log(current_image.value.original_src);
       cropFlag.value = true;
       isCropMode.value = true;
       active_roi_available.value = true;
@@ -949,6 +952,15 @@ export default defineComponent({
       onChangeScale('');
       roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
     }
+    function finding_roi() {
+      if (!no_thresh.value) {
+        current_image.value.image.src = current_image.value.original_src;
+      }
+      grid.value = true;
+      active_roi_available.value = false;
+      roi_active.value = true;
+      no_thresh.value = true;
+    }
 
     function thresh_clicked() {
       if (!current_image.value) return;
@@ -964,9 +976,9 @@ export default defineComponent({
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
-          current_image.value.original_src = current_image.value.image.src;
+          // current_image.value.original_src = current_image.value.image.src;
           current_image.value.image.src = newsrc;
-          current_image.value.image.alternative_src = newsrc;
+          // current_image.value.image.alternative_src = newsrc;
           current_image.value.scale = { x: sv, y: sv };
           onChangeScale(sv);
         });
@@ -1238,40 +1250,40 @@ export default defineComponent({
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
-    watch(atfilter, async (v, ov) => {
-      // if the current_image is empty retur
-      if (!current_image.value) return;
-      const sv = scaleFactor.value;
-      // if atfilter is now true
-      if (v) {
-        if (current_image.value.image.alternative_src) {
-          current_image.value.image.src = current_image.value.image.alternative_src;
-          // current_image.value.scale = { x: sv, y: sv };
-          onChangeScale(sv);
-        } else {
-          loading.value = true;
-          getPixels(current_image.value.src, async (err, pixels) => {
-            const thresholded = adaptiveThreshold(pixels);
-            atpixels.value = thresholded;
-            const b = blobStream();
-            loading.value = false;
-            savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
-              const newsrc = b.toBlobURL('image/jpeg');
-              current_image.value.image.original_src = current_image.value.image.src;
-              current_image.value.image.src = newsrc;
-              current_image.value.image.alternative_src = newsrc;
-              current_image.value.scale = { x: sv, y: sv };
-              onChangeScale(sv);
-              loading.value = false;
-            });
-          });
-        }
-      } else {
-        current_image.value.image.src = current_image.value.image.original_src;
-        // current_image.value.scale = { x: sv, y: sv };
-        onChangeScale(sv);
-      }
-    });
+    // watch(atfilter, async (v, ov) => {
+    //   // if the current_image is empty retur
+    //   if (!current_image.value) return;
+    //   const sv = scaleFactor.value;
+    //   // if atfilter is now true
+    //   if (v) {
+    //     if (current_image.value.image.alternative_src) {
+    //       current_image.value.image.src = current_image.value.image.alternative_src;
+    //       // current_image.value.scale = { x: sv, y: sv };
+    //       onChangeScale(sv);
+    //     } else {
+    //       loading.value = true;
+    //       getPixels(current_image.value.src, async (err, pixels) => {
+    //         const thresholded = adaptiveThreshold(pixels);
+    //         atpixels.value = thresholded;
+    //         const b = blobStream();
+    //         loading.value = false;
+    //         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
+    //           const newsrc = b.toBlobURL('image/jpeg');
+    //           current_image.value.image.original_src = current_image.value.image.src;
+    //           current_image.value.image.src = newsrc;
+    //           current_image.value.image.alternative_src = newsrc;
+    //           current_image.value.scale = { x: sv, y: sv };
+    //           onChangeScale(sv);
+    //           loading.value = false;
+    //         });
+    //       });
+    //     }
+    //   } else {
+    //     current_image.value.image.src = current_image.value.image.original_src;
+    //     // current_image.value.scale = { x: sv, y: sv };
+    //     onChangeScale(sv);
+    //   }
+    // });
     watch(brushSize, (v) => {
       brushConfig.value.radius = v;
     });
@@ -1437,6 +1449,7 @@ export default defineComponent({
       confirm_roi,
       active_roi_available,
       roi_active,
+      finding_roi,
     };
   },
 });
