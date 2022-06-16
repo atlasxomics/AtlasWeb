@@ -137,28 +137,38 @@
                   class="mt-0 pt-0"
                   color="primary"
                   @click="onCropButton">
-                  Crop
+                  Confirm
                 </v-btn>
               </v-list>
               <!-- ROI Location functionality -->
-              <v-list dense class="mt-n1 pt-0 pl-2">
+              <!-- <v-list dense class="mt-n1 pt-0 pl-2"> -->
+                <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
                 <v-btn
                   dense
                   color="primary"
                   x-small
-                  @click="grid=true"
-                  :disabled="!current_image || grid || !cropFlag">
+                  @click="grid=true; active_roi_available = false; roi_active = true; no_thresh = true"
+                  :disabled="!active_roi_available">
                   Activate
                 </v-btn>
                 <v-btn
+                  dense
+                  color = "primary"
+                  x-small
+                  @click="confirm_roi"
+                  :disabled="!roi_active"
+                  >
+                  Confirm
+                </v-btn>
+                <!-- <v-btn
                   :disabled="!current_image || !grid || spatial || optionUpdate"
                   x-small
                   dense
                   color="primary"
                   @click="onLatticeButton">
                   Grid
-                </v-btn>
+                </v-btn> -->
                 <!-- thresholding -->
               <!-- <v-btn
                 dense
@@ -181,7 +191,7 @@
                     min="0"
                     max="255"
                     step="5"
-                    :disabled="!current_image || !grid || spatial || optionUpdate"
+                    :disabled="!current_image || roi_active || spatial || optionUpdate"
                   />
                   <!-- <v-text-field
                   v-model="neighbor_size"
@@ -337,6 +347,7 @@
             </template>
             <v-row>
               <v-card>
+                <!-- loading circle displayed on screen -->
                 <template v-if="loading && !loadingMessage">
                 <div :style="{ 'position': 'absolute', 'z-index': 999, 'top': '43%', 'left': '47%'}">
                   <v-progress-circular
@@ -551,6 +562,8 @@ export default defineComponent({
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
     const roi = ref<ROI>(new ROI([0, 0], 0.15));
+    const roi_active = ref<boolean>(false);
+    const active_roi_available = ref<boolean>(false);
     const lines = ref<Konva.Line[]>();
     const isMouseDown = ref(false);
     const stageWidth = ref(window.innerWidth);
@@ -613,7 +626,6 @@ export default defineComponent({
       barcodes: 1,
     });
     function initialize() {
-      // current_image.value = null;
       roi.value = new ROI([0, 0], scaleFactor.value);
       crop.value = new Crop([0, 0], scaleFactor.value);
       roi.value.setScaleFactor(scaleFactor.value);
@@ -631,6 +643,7 @@ export default defineComponent({
       loading.value = false;
       imageh.value = null;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
+      // metaFlag.value = false;
     }
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
@@ -661,11 +674,11 @@ export default defineComponent({
       csvHolder.value = resp_pos;
       metadata.value = resp;
       // await getMeta();
-      const slimsData = await client.value.getMetadataFromRunId(`${run_id.value}`);
-      metadata.value.organ = slimsData.Organ;
-      metadata.value.species = slimsData.Species;
-      metadata.value.type = slimsData['Tissue type'];
-      metadata.value.numChannels = '50';
+      // const slimsData = await client.value.getMetadataFromRunId(`${run_id.value}`);
+      // metadata.value.organ = slimsData.Organ;
+      // metadata.value.species = slimsData.Species;
+      // metadata.value.type = slimsData['Tissue type'];
+      // metadata.value.numChannels = '50';
       if (resp) {
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
@@ -905,6 +918,7 @@ export default defineComponent({
     function onCropButton(ev: any) {
       cropFlag.value = true;
       isCropMode.value = true;
+      active_roi_available.value = true;
       const coords = crop.value.getCoordinatesOnImage();
       const imgObj = new window.Image();
       const newImage = new window.Image();
@@ -958,40 +972,6 @@ export default defineComponent({
         });
       });
       loading.value = false;
-    // watch(atfilter, async (v, ov) => {
-    //   // if the current_image is empty retur
-    //   if (!current_image.value) return;
-    //   const sv = scaleFactor.value;
-    //   // if atfilter is now true
-    //   if (v) {
-    //     if (current_image.value.image.alternative_src) {
-    //       current_image.value.image.src = current_image.value.image.alternative_src;
-    //       // current_image.value.scale = { x: sv, y: sv };
-    //       onChangeScale(sv);
-    //     } else {
-    //       loading.value = true;
-    //       getPixels(current_image.value.src, async (err, pixels) => {
-    //         const thresholded = adaptiveThreshold(pixels);
-    //         atpixels.value = thresholded;
-    //         const b = blobStream();
-    //         loading.value = false;
-    //         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
-    //           const newsrc = b.toBlobURL('image/jpeg');
-    //           current_image.value.image.original_src = current_image.value.image.src;
-    //           current_image.value.image.src = newsrc;
-    //           current_image.value.image.alternative_src = newsrc;
-    //           current_image.value.scale = { x: sv, y: sv };
-    //           onChangeScale(sv);
-    //           loading.value = false;
-    //         });
-    //       });
-    //     }
-    //   } else {
-    //     current_image.value.image.src = current_image.value.image.original_src;
-    //     // current_image.value.scale = { x: sv, y: sv };
-    //     onChangeScale(sv);
-    //   }
-    // });
     }
     async function generateReport(ev: any) {
       //
@@ -1144,6 +1124,7 @@ export default defineComponent({
       if (!client.value) return;
       if (!roi.value) return;
       try {
+        console.log('made it past');
         one.value = 0;
         two.value = 0;
         three.value = 0;
@@ -1184,10 +1165,12 @@ export default defineComponent({
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
+        console.log('1');
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
           if (taskStatus.value.status === 'PROGRESS') {
+            console.log('we have progress');
             await updateProgress(taskStatus.value.progress);
             progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
           }
@@ -1195,9 +1178,11 @@ export default defineComponent({
             taskTimeout.value = window.setTimeout(r, 1000);
           });
           taskTimeout.value = null;
+          console.log('2');
           await checkTaskStatus(taskObject._id);
         }
         /* eslint-disable no-await-in-loop */
+        console.log('3');
         if (taskStatus.value.status !== 'SUCCESS') {
           snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
           loading.value = false;
@@ -1222,6 +1207,12 @@ export default defineComponent({
         spatial.value = false;
         snackbar.dispatch({ text: 'Error generating spatial folder', options: { right: true, color: 'error' } });
       }
+    }
+    function confirm_roi() {
+      grid.value = false;
+      roi_active.value = false;
+      no_thresh.value = false;
+      active_roi_available.value = true;
     }
     function autoFill(ev: any) {
       roi.value.autoMask(atpixels.value, threshold.value);
@@ -1443,6 +1434,9 @@ export default defineComponent({
       no_thresh,
       c_val,
       neighbor_size,
+      confirm_roi,
+      active_roi_available,
+      roi_active,
     };
   },
 });
