@@ -402,7 +402,7 @@
 
 <script lang='ts'>
 
-import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
+import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import lodash, { pad, trim } from 'lodash';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
@@ -501,7 +501,7 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
-    const channels = ref(50);
+    const channels = ref('50');
     const barcodes = ref(1);
     const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
@@ -568,6 +568,51 @@ export default defineComponent({
       taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
     // io
+    async function getMeta() {
+      const root = 'data';
+      const task = 'creation.create_files';
+      const queue = 'creation_atlasbrowser';
+      const params = {
+        data: null,
+        path: `${root}/${run_id.value}`,
+        file_type: 'json',
+        file_name: 'metadata.json',
+      };
+      const args: any[] = [params];
+      const kwargs: any = {};
+      const name = `${root}/${run_id.value}/metadata.json`;
+      const jsonFileName = { params: { filename: name } };
+      const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
+      let slimsData: any;
+      if (!jsonBoolean) {
+        loading.value = true;
+        slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
+        params.data = slimsData;
+        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        /* eslint-disable no-await-in-loop */
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+          loading.value = false;
+          return;
+        }
+      } else {
+        slimsData = jsonBoolean;
+      }
+      loading.value = false;
+      metadata.value.organ = slimsData.Organ;
+      metadata.value.species = slimsData.Species;
+      metadata.value.type = slimsData['Tissue type'];
+    }
     async function loadMetadata() {
       if (!client.value) return;
       loading.value = true;
@@ -585,12 +630,6 @@ export default defineComponent({
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       metadata.value = resp;
-      // await getMeta();
-      const slimsData = await client.value.getMetadataFromRunId(`${run_id.value}`);
-      metadata.value.organ = slimsData.Organ;
-      metadata.value.species = slimsData.Species;
-      metadata.value.type = slimsData['Tissue type'];
-      metadata.value.numChannels = '50';
       if (resp) {
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
@@ -598,6 +637,7 @@ export default defineComponent({
         optionFlag.value = true;
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
+      await getMeta();
     }
     async function loadImage() {
       if (!client.value) return;
@@ -674,14 +714,11 @@ export default defineComponent({
     }
     function updateChannels(ev: any) {
       if (/50/.test(ev)) {
-        channels.value = 50;
+        channels.value = '50';
         barcodes.value = 1;
         if (/v2/.test(ev)) {
           barcodes.value = 2;
         }
-      } else {
-        barcodes.value = 1;
-        channels.value = 100;
       }
     }
     function handleResize(ev: any) {
@@ -956,55 +993,6 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
       }
     }
-    async function getMeta() {
-      const root = 'data';
-      const task = 'creation.create_files';
-      const queue = 'creation_atlasbrowser';
-      const params = {
-        data: null,
-        path: `${root}/${run_id.value}`,
-        file_type: 'json',
-        file_name: 'metadata.json',
-      };
-      const args: any[] = [params];
-      const kwargs: any = {};
-      const name = `${root}/${run_id.value}/metadata.json`;
-      const jsonFileName = { params: { filename: name } };
-      const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
-      let slimsData: any;
-      if (!jsonBoolean) {
-        loading.value = true;
-        slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
-        params.data = slimsData;
-        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
-        await checkTaskStatus(taskObject._id);
-        /* eslint-disable no-await-in-loop */
-        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
-          await new Promise((r) => {
-            taskTimeout.value = window.setTimeout(r, 1000);
-          });
-          taskTimeout.value = null;
-          await checkTaskStatus(taskObject._id);
-        }
-        /* eslint-disable no-await-in-loop */
-        if (taskStatus.value.status !== 'SUCCESS') {
-          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
-          loading.value = false;
-          return;
-        }
-        loading.value = false;
-      } else {
-        slimsData = jsonBoolean;
-      }
-      loading.value = false;
-      metadata.value.organ = slimsData.Organ;
-      metadata.value.species = slimsData.Species;
-      metadata.value.type = slimsData['Tissue type'];
-      metadata.value.organ = slimsData.Organ;
-      metadata.value.species = slimsData.Species;
-      metadata.value.type = slimsData['Tissue type'];
-    }
     async function generateSpatial() {
       if (!client.value) return;
       if (!roi.value) return;
@@ -1032,14 +1020,14 @@ export default defineComponent({
           threshold: threshold.value,
           numChannels: channels.value,
           orientation: orientation.value,
-          crop_area: crop.value.getCoordinatesOnImage(),
+          crop_area: cropCoords,
           barcodes: barcodes.value,
         });
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
           files: allFiles.value,
-          crop_area: crop.value.getCoordinatesOnImage(),
+          crop_area: cropCoords,
           mask: roi.value.getMask(cropCoords),
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
@@ -1160,7 +1148,7 @@ export default defineComponent({
       await loadAll();
     });
     watch(current_image, (v) => {
-      if (current_image.value) {
+      if (current_image.value && !isCropMode.value) {
         crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
         onChangeScale(scaleFactor.value);
       }
@@ -1204,6 +1192,9 @@ export default defineComponent({
           await selectAction({ id: props.query.run_id });
         }
       }
+    });
+    onUnmounted(async () => {
+      window.removeEventListener('resize', handleResize);
     });
     return {
       allFiles,

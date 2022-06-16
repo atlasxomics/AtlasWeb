@@ -746,7 +746,7 @@ export default defineComponent({
           }
           /* eslint-disable no-await-in-loop */
           if (taskStatus.value.status !== 'SUCCESS') {
-            snackbar.dispatch({ text: 'Worker failed in AtxViewer', options: { right: true, color: 'error' } });
+            snackbar.dispatch({ text: 'Worker failed in AtxAtacViewer', options: { right: true, color: 'error' } });
             loading.value = false;
             return;
           }

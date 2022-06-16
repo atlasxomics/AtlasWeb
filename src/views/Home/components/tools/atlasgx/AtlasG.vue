@@ -330,7 +330,7 @@
                 color="black"
                 icon
                 class="ml-4 mt-5"
-                :disabled="!spatialData || loading || geneMotif"
+                :disabled="!spatialData || loading"
                 @click="peakViewerFlag = true; featureTableFlag = false"
                 small>
                 <v-icon>mdi-chart-bar</v-icon>
@@ -366,10 +366,16 @@
               <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
-              <div id="capturePeak" :style="{ 'background-color': 'transparent' }">
-                <v-card class="mt-3" :style="{ visibility: visible }" v-show="spatialData && !loading">
-                  <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
-                </v-card>
+              <div id="capturePeak" :style="{ 'background-color': 'transparent' }" ref="peakContainer">
+                  <v-card class="mt-3" :style="{ visibility: visible }" v-show="spatialData && !loading" v-resize="onResize" ref="peakContainer">
+                    <template v-if="!geneMotif">
+                      <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[0]"/>
+                    </template>
+                    <template v-else>
+                      <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Nucleotides')}}</v-card-title>
+                      <bar-chart class="mt-3" :style="{ visibility: visible }" v-show="spatialData && !loading" ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
+                    </template>
+                  </v-card>
               </div>
             </v-col>
         </v-col>
@@ -394,6 +400,7 @@ import GeneAutoComplete from './modules/GeneAutoComplete.vue';
 import GeneDataTable from './modules/GeneDataTable.vue';
 import TrackBrowser from './modules/TrackBrowser.vue';
 import AtxAtacViewer from './modules/AtxAtacViewer.vue';
+import BarChart from './modules/BarChart.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -436,7 +443,7 @@ interface Metadata {
 
 export default defineComponent({
   name: 'AtlasG',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -511,6 +518,8 @@ export default defineComponent({
     const visible = ref<string>('hidden');
     const spatialRun = ref<boolean>(false);
     const colorMap = ref<any>({});
+    const seqLogoData = ref<any>();
+    const widthFromCard = ref<number>();
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -522,16 +531,6 @@ export default defineComponent({
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
-    }
-    async function fitStageToParent() {
-      const parent = document.querySelector('#stageParent');
-      if (!parent) return;
-      const parentWidth = (parent as any).offsetWidth;
-      const parentHeight = (parent as any).offsetHeight;
-      konvaConfigLeft.value.width = parentWidth;
-      konvaConfigLeft.value.height = parentHeight;
-      konvaConfigRight.value.width = parentWidth;
-      konvaConfigRight.value.height = parentHeight;
     }
     function updateLoading(ev: any) {
       loading.value = ev;
@@ -602,7 +601,7 @@ export default defineComponent({
       backgroundFlag.value = false;
     }
     async function updateCircles() {
-      if (spatialData.value === null) return;
+      if (!spatialData.value) return;
       isHighlighted.value = false;
       stepArray.value = [];
       const numClusters = lodash.uniq(spatialData.value.clusters).length;
@@ -617,7 +616,7 @@ export default defineComponent({
         cmap[cidx] = colors[i];
       }
       colorMap.value = cmap;
-      if (!showFlag.value[0] && !loading.value) {
+      if (!showFlag.value[0] && !loading.value && !geneMotif.value) {
         (ctx as any).refs.trackbrowser.reload(runId.value!, colorMap.value);
       }
     }
@@ -738,6 +737,39 @@ export default defineComponent({
         snackbar.dispatch({ text: `${error}`, options: { right: true, color: 'error' } });
       }
     }
+    async function seqlogo() {
+      const root = 'data';
+      const task = 'gene.seq_logo';
+      const { queue } = currentTask.value.queues;
+      const params = {
+        path: `${root}/${runId.value}/h5/obj/${runId.value}motifs.csv`,
+        motif: trackBrowserGenes.value[0],
+      };
+      const args: any[] = [params];
+      const kwargs: any = {};
+      const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue) : await client.value!.postTask(task, args, kwargs, queue);
+      await checkTaskStatus(taskObject._id);
+      /* eslint-disable no-await-in-loop */
+      while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+        if (taskStatus.value.status === 'PROGRESS') {
+          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+        }
+        await new Promise((r) => {
+          taskTimeout.value = window.setTimeout(r, 1000);
+        });
+        taskTimeout.value = null;
+        await checkTaskStatus(taskObject._id);
+      }
+      if (taskStatus.value.status !== 'SUCCESS') {
+        snackbar.dispatch({ text: 'Worker failed in AtlasGx', options: { right: true, color: 'error' } });
+        loading.value = false;
+      } else {
+        snackbar.dispatch({ text: `Motif ${trackBrowserGenes.value[0]} found`, options: { right: true, color: 'success' } });
+        progressMessage.value = taskStatus.value.status;
+        const resp = taskStatus.value.result;
+        seqLogoData.value = resp;
+      }
+    }
     async function getMeta() {
       const root = 'data';
       const task = 'creation.create_files';
@@ -814,7 +846,9 @@ export default defineComponent({
       }
     }
     function onResize() {
-      fitStageToParent();
+      const parent = (ctx as any).refs.peakContainer;
+      if (!parent) return;
+      widthFromCard.value = (ctx as any).refs.peakContainer.offsetWidth - 2;
     }
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = new GeneAutoCompleteClass({
@@ -832,10 +866,16 @@ export default defineComponent({
               childGenes.value.push(v);
             });
             trackBrowserGenes.value = [selectedGenes.value[selectedGenes.value.length - 1]];
+            if (geneMotif) {
+              seqlogo();
+            }
           }
         });
         this.$on('track', (ev: any) => {
           trackBrowserGenes.value = [ev];
+          if (geneMotif) {
+            seqlogo();
+          }
         });
       },
     });
@@ -847,10 +887,6 @@ export default defineComponent({
       }
     });
     watch(geneMotif, (v: any) => {
-      if (v) {
-        featureTableFlag.value = true;
-        peakViewerFlag.value = false;
-      }
       isClusterView.value = true;
       selectedGenes.value = [];
       showFlag.value = [false];
@@ -949,7 +985,6 @@ export default defineComponent({
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(submenu);
-      fitStageToParent();
       if (props.query && !props.query.public) {
         await fetchFileList();
         if (props.query.run_id) {
@@ -1062,6 +1097,9 @@ export default defineComponent({
       updateSelectors,
       getPublicId,
       resolveAuthGroup,
+      seqlogo,
+      seqLogoData,
+      widthFromCard,
     };
   },
 });
