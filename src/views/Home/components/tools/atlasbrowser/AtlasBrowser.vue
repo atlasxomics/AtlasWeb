@@ -153,6 +153,23 @@
                   Activate
                 </v-btn>
                 <v-btn
+                dense
+                color = "primary"
+                x-small
+                @click="generateLattices"
+                :disabled="no_thresh || roi.polygons.length > 0"
+                >
+                  Display Grid
+                </v-btn>
+                <v-btn
+                dense
+                color = "primary"
+                x-small
+                @click="roi.polygons = []"
+                :disabled="no_thresh || roi.polygons.length === 0">
+                  Hide Grid
+                </v-btn>
+                <!-- <v-btn
                   dense
                   color = "primary"
                   x-small
@@ -160,7 +177,7 @@
                   :disabled="!roi_active"
                   >
                   Confirm
-                </v-btn>
+                </v-btn> -->
                 <!-- <v-btn
                   :disabled="!current_image || !grid || spatial || optionUpdate"
                   x-small
@@ -191,7 +208,7 @@
                     min="0"
                     max="255"
                     step="5"
-                    :disabled="!current_image || roi_active || spatial || optionUpdate"
+                    :disabled="!current_image || no_thresh || spatial || optionUpdate"
                   />
                   <!-- <v-text-field
                   v-model="neighbor_size"
@@ -213,6 +230,15 @@
                   Threshold
                   </v-btn>
                 </v-list>
+              <v-list dense class="mt-n1 pt-0 pl-2">
+                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Background Image</v-subheader>
+                <v-btn
+                x-small
+                color="primary"
+                @click="onLatticeButton"
+                > BSA </v-btn>
+                <v-btn x-small> BW </v-btn>
+              </v-list>
               <v-list dense class="pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
                 <v-btn
@@ -393,6 +419,7 @@
                       :config="current_image"
                     />
                   </v-layer>
+                  <!-- ROI red box layer -->
                   <v-layer
                     v-if="grid"
                     ref="roiLayer"
@@ -562,7 +589,7 @@ export default defineComponent({
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
     const roi = ref<ROI>(new ROI([0, 0], 0.15));
-    const roi_active = ref<boolean>(false);
+    // const roi_active = ref<boolean>(false);
     const active_roi_available = ref<boolean>(false);
     const lines = ref<Konva.Line[]>();
     const isMouseDown = ref(false);
@@ -898,8 +925,10 @@ export default defineComponent({
       isBrushMode.value = tf;
     }
     function generateLattices(ev: any) {
+      console.log('generating lattices');
       roi.value.polygons = roi.value.generatePolygons();
-      no_thresh.value = false;
+      console.log(roi.value.polygons.length);
+      // no_thresh.value = false;
     }
     function onResize(ev: any) {
       // console.log('OnResize');
@@ -958,8 +987,8 @@ export default defineComponent({
       }
       grid.value = true;
       active_roi_available.value = false;
-      roi_active.value = true;
-      no_thresh.value = true;
+      // roi_active.value = true;
+      no_thresh.value = false;
     }
 
     function thresh_clicked() {
@@ -1221,10 +1250,10 @@ export default defineComponent({
       }
     }
     function confirm_roi() {
-      grid.value = false;
-      roi_active.value = false;
+      // grid.value = false;
+      // roi_active.value = false;
       no_thresh.value = false;
-      active_roi_available.value = true;
+      // active_roi_available.value = true;
     }
     function autoFill(ev: any) {
       roi.value.autoMask(atpixels.value, threshold.value);
@@ -1448,7 +1477,7 @@ export default defineComponent({
       neighbor_size,
       confirm_roi,
       active_roi_available,
-      roi_active,
+      // roi_active,
       finding_roi,
     };
   },
