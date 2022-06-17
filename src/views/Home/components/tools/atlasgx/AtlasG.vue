@@ -520,6 +520,7 @@ export default defineComponent({
     const colorMap = ref<any>({});
     const seqLogoData = ref<any>();
     const widthFromCard = ref<number>();
+    const publicSeqlogo = ref<any>();
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -738,36 +739,41 @@ export default defineComponent({
       }
     }
     async function seqlogo() {
-      const root = 'data';
-      const task = 'gene.seq_logo';
-      const { queue } = currentTask.value.queues;
-      const params = {
-        path: `${root}/${runId.value}/h5/obj/${runId.value}motifs.csv`,
-        motif: trackBrowserGenes.value[0],
-      };
-      const args: any[] = [params];
-      const kwargs: any = {};
-      const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue) : await client.value!.postTask(task, args, kwargs, queue);
-      await checkTaskStatus(taskObject._id);
-      /* eslint-disable no-await-in-loop */
-      while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-        if (taskStatus.value.status === 'PROGRESS') {
-          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+      try {
+        if (props.query.public) {
+          const { encoded: filenameToken } = await client.value?.encodeLink({ args: [`data/${runId.value}/h5/obj/${runId.value}motifs.csv`], meta: { run_id: runId.value } });
+          publicSeqlogo.value = filenameToken;
         }
-        await new Promise((r) => {
-          taskTimeout.value = window.setTimeout(r, 1000);
-        });
-        taskTimeout.value = null;
+        const root = 'data';
+        const task = 'gene.seq_logo';
+        const queue = 'joshua_gene';
+        const args = [props.query.public ? publicSeqlogo.value : `${root}/${runId.value}/h5/obj/${runId.value}motifs.csv`, trackBrowserGenes.value[0]];
+        const kwargs: any = {};
+        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue) : await client.value!.postTask(task, args, kwargs, queue);
+
         await checkTaskStatus(taskObject._id);
-      }
-      if (taskStatus.value.status !== 'SUCCESS') {
-        snackbar.dispatch({ text: 'Worker failed in AtlasGx', options: { right: true, color: 'error' } });
-        loading.value = false;
-      } else {
-        snackbar.dispatch({ text: `Motif ${trackBrowserGenes.value[0]} found`, options: { right: true, color: 'success' } });
-        progressMessage.value = taskStatus.value.status;
-        const resp = taskStatus.value.result;
-        seqLogoData.value = resp;
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          if (taskStatus.value.status === 'PROGRESS') {
+            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          }
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed in AtlasGx', options: { right: true, color: 'error' } });
+          loading.value = false;
+        } else {
+          snackbar.dispatch({ text: `Motif ${trackBrowserGenes.value[0]} found`, options: { right: true, color: 'success' } });
+          progressMessage.value = taskStatus.value.status;
+          const resp = taskStatus.value.result;
+          seqLogoData.value = resp;
+        }
+      } catch (error) {
+        console.log(error);
       }
     }
     async function getMeta() {
@@ -835,7 +841,6 @@ export default defineComponent({
       isDrawingRect.value = false;
       stepArray.value = [];
       await getMeta();
-      updateCircles();
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
@@ -866,14 +871,14 @@ export default defineComponent({
               childGenes.value.push(v);
             });
             trackBrowserGenes.value = [selectedGenes.value[selectedGenes.value.length - 1]];
-            if (geneMotif) {
+            if (geneMotif.value) {
               seqlogo();
             }
           }
         });
         this.$on('track', (ev: any) => {
           trackBrowserGenes.value = [ev];
-          if (geneMotif) {
+          if (geneMotif.value) {
             seqlogo();
           }
         });
@@ -1098,6 +1103,7 @@ export default defineComponent({
       getPublicId,
       resolveAuthGroup,
       seqlogo,
+      publicSeqlogo,
       seqLogoData,
       widthFromCard,
     };
