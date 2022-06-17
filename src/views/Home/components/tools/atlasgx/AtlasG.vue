@@ -741,13 +741,13 @@ export default defineComponent({
     async function seqlogo() {
       try {
         if (props.query.public) {
-          const { encoded: filenameToken } = await client.value?.encodeLink({ args: [`data/${runId.value}/h5/obj/${runId.value}motifs.csv`], meta: { run_id: runId.value } });
+          const { encoded: filenameToken } = await client.value?.encodeLink({ args: [`data/${runId.value}/h5/obj/motifs.csv`], meta: { run_id: runId.value } });
           publicSeqlogo.value = filenameToken;
         }
         const root = 'data';
         const task = 'gene.seq_logo';
-        const queue = 'joshua_gene';
-        const args = [props.query.public ? publicSeqlogo.value : `${root}/${runId.value}/h5/obj/${runId.value}motifs.csv`, trackBrowserGenes.value[0]];
+        const queue = 'atxcloud_gene';
+        const args = [props.query.public ? publicSeqlogo.value : `${root}/${runId.value}/h5/obj/motifs.csv`, trackBrowserGenes.value[0]];
         const kwargs: any = {};
         const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue) : await client.value!.postTask(task, args, kwargs, queue);
 
