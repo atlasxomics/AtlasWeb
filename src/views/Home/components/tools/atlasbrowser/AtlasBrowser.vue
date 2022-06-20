@@ -127,7 +127,7 @@
                   color="primary"
                   x-small
                   @click="isCropMode=true"
-                  :disabled="isCropMode || grid">
+                  :disabled="!current_image || isCropMode || grid">
                   Activate
                 </v-btn>
                 <v-btn
@@ -157,7 +157,7 @@
                 color = "primary"
                 x-small
                 @click="generateLattices"
-                :disabled="no_thresh || roi.polygons.length > 0"
+                :disabled="!roi_active|| roi.polygons.length > 0"
                 >
                   Display Grid
                 </v-btn>
@@ -166,34 +166,9 @@
                 color = "primary"
                 x-small
                 @click="roi.polygons = []"
-                :disabled="no_thresh || roi.polygons.length === 0">
+                :disabled="roi.polygons.length === 0">
                   Hide Grid
                 </v-btn>
-                <!-- <v-btn
-                  dense
-                  color = "primary"
-                  x-small
-                  @click="confirm_roi"
-                  :disabled="!roi_active"
-                  >
-                  Confirm
-                </v-btn> -->
-                <!-- <v-btn
-                  :disabled="!current_image || !grid || spatial || optionUpdate"
-                  x-small
-                  dense
-                  color="primary"
-                  @click="onLatticeButton">
-                  Grid
-                </v-btn> -->
-                <!-- thresholding -->
-              <!-- <v-btn
-                dense
-                color="primary"
-                @click="optionFlag=true;optionCreate=true;"
-                x-small>
-                Reprocess
-              </v-btn> -->
               </v-list>
                 <v-list dense class="mt-n1 pt-0 pl-2">
                   <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
@@ -207,8 +182,8 @@
                     type="number"
                     min="0"
                     max="255"
-                    step="5"
-                    :disabled="!current_image || no_thresh || spatial || optionUpdate"
+                    step="1"
+                    :disabled="!current_image || !roi_active || spatial || optionUpdate"
                   />
                   <!-- <v-text-field
                   v-model="neighbor_size"
@@ -226,7 +201,7 @@
                   color="primary"
                   @click="thresh_clicked"
                   small
-                  :disabled="no_thresh">
+                  :disabled="!current_image || !roi_active || spatial || optionUpdate || thresh_same">
                   Threshold
                   </v-btn>
                 </v-list>
@@ -235,22 +210,28 @@
                 <v-btn
                 x-small
                 color="primary"
-                @click="onLatticeButton"
+                @click="display_bsa"
+                :disabled="!thresh_image_created"
                 > BSA </v-btn>
-                <v-btn x-small> BW </v-btn>
+                <v-btn
+                x-small
+                color="primary"
+                @click="display_bw"
+                :disabled="!thresh_image_created"
+                > BW </v-btn>
               </v-list>
               <v-list dense class="pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
                 <v-btn
-                :disabled="!(atpixels && roi.polygons.length > 0) || !current_image.image.alternative_src || spatial || optionUpdate"
+                :disabled="!thresh_image_created || spatial || optionUpdate"
                 x-small
                 dense
                 color="primary"
                 @click="autoFill">
                 Autofill
                 </v-btn>
-                <v-checkbox dense v-model="isBrushMode" :value="isBrushMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Fill"/>
-                <v-checkbox dense v-model="isEraseMode" :value="isEraseMode" :disabled="roi.polygons.length < 1 || !onOff || spatial" label="Erase"/>
+                <v-checkbox dense v-model="isBrushMode" :value="isBrushMode" :disabled="!tixels_filled" label="Fill"/>
+                <v-checkbox dense v-model="isEraseMode" :value="isEraseMode" :disabled="!tixels_filled" label="Erase"/>
                 <v-text-field
                   v-model="brushSize"
                   style="width:100px"
@@ -260,7 +241,7 @@
                   min="5.0"
                   max="100.0"
                   step="3.0"
-                  :disabled="!current_image || !grid || spatial"
+                  :disabled="!tixels_filled"
                 />
                 <template v-if="spatial && !loadingMessage && grid">
                   <v-btn
@@ -582,6 +563,7 @@ export default defineComponent({
     const konvaConfig = ref<any>({ width, height });
     const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
+    const tixels_filled = ref<boolean>(false);
     const isBrushMode = ref(false);
     const isCropMode = ref(false);
     const isEraseMode = ref(false);
@@ -589,7 +571,7 @@ export default defineComponent({
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
     const roi = ref<ROI>(new ROI([0, 0], 0.15));
-    // const roi_active = ref<boolean>(false);
+    const roi_active = ref<boolean>(false);
     const active_roi_available = ref<boolean>(false);
     const lines = ref<Konva.Line[]>();
     const isMouseDown = ref(false);
@@ -605,6 +587,8 @@ export default defineComponent({
     const atpixels = ref<any[] | null>([]);
     const threshold = ref(210);
     const no_thresh = ref(true);
+    const thresh_image_created = ref<boolean>(false);
+    const thresh_same = ref<boolean>(false);
     const loading = ref<boolean>(false);
     const loadingMessage = ref<boolean>(false);
     const taskStatus = ref<any>();
@@ -636,6 +620,7 @@ export default defineComponent({
       tissue_hires_scalef: null,
       tissue_lowres_scalef: null,
     });
+    const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
     // Metadata
     const metadata = ref<Metadata>({
@@ -987,8 +972,8 @@ export default defineComponent({
       }
       grid.value = true;
       active_roi_available.value = false;
-      // roi_active.value = true;
-      no_thresh.value = false;
+      roi_active.value = true;
+      // no_thresh.value = false;
     }
 
     function thresh_clicked() {
@@ -1005,14 +990,17 @@ export default defineComponent({
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
-          // current_image.value.original_src = current_image.value.image.src;
+          current_image.value.original_src = current_image.value.image.src;
           current_image.value.image.src = newsrc;
+          bw_image.value = newsrc;
           // current_image.value.image.alternative_src = newsrc;
           current_image.value.scale = { x: sv, y: sv };
           onChangeScale(sv);
+          thresh_same.value = true;
         });
       });
       loading.value = false;
+      thresh_image_created.value = true;
     }
     async function generateReport(ev: any) {
       //
@@ -1249,15 +1237,21 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Error generating spatial folder', options: { right: true, color: 'error' } });
       }
     }
-    function confirm_roi() {
-      // grid.value = false;
-      // roi_active.value = false;
-      no_thresh.value = false;
-      // active_roi_available.value = true;
+    function display_bsa() {
+      const temp_val = current_image.value.original_src;
+      current_image.value.original_src = current_image.value.image.src;
+      current_image.value.image.src = temp_val;
+    }
+    function display_bw() {
+      current_image.value.image.src = bw_image;
     }
     function autoFill(ev: any) {
+      if (roi.value.polygons.length === 0) {
+        roi.value.generatePolygons();
+      }
       roi.value.autoMask(atpixels.value, threshold.value);
       onOff.value = true;
+      tixels_filled.value = true;
     }
     async function fetchFileList() {
       if (!client.value) {
@@ -1279,40 +1273,7 @@ export default defineComponent({
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
-    // watch(atfilter, async (v, ov) => {
-    //   // if the current_image is empty retur
-    //   if (!current_image.value) return;
-    //   const sv = scaleFactor.value;
-    //   // if atfilter is now true
-    //   if (v) {
-    //     if (current_image.value.image.alternative_src) {
-    //       current_image.value.image.src = current_image.value.image.alternative_src;
-    //       // current_image.value.scale = { x: sv, y: sv };
-    //       onChangeScale(sv);
-    //     } else {
-    //       loading.value = true;
-    //       getPixels(current_image.value.src, async (err, pixels) => {
-    //         const thresholded = adaptiveThreshold(pixels);
-    //         atpixels.value = thresholded;
-    //         const b = blobStream();
-    //         loading.value = false;
-    //         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
-    //           const newsrc = b.toBlobURL('image/jpeg');
-    //           current_image.value.image.original_src = current_image.value.image.src;
-    //           current_image.value.image.src = newsrc;
-    //           current_image.value.image.alternative_src = newsrc;
-    //           current_image.value.scale = { x: sv, y: sv };
-    //           onChangeScale(sv);
-    //           loading.value = false;
-    //         });
-    //       });
-    //     }
-    //   } else {
-    //     current_image.value.image.src = current_image.value.image.original_src;
-    //     // current_image.value.scale = { x: sv, y: sv };
-    //     onChangeScale(sv);
-    //   }
-    // });
+
     watch(brushSize, (v) => {
       brushConfig.value.radius = v;
     });
@@ -1335,6 +1296,11 @@ export default defineComponent({
       if (current_image.value) {
         crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
         onChangeScale(scaleFactor.value);
+      }
+    });
+    watch(c_val, (v, ov) => {
+      if (v !== ov) {
+        thresh_same.value = false;
       }
     });
     const submenu = [
@@ -1475,10 +1441,15 @@ export default defineComponent({
       no_thresh,
       c_val,
       neighbor_size,
-      confirm_roi,
       active_roi_available,
-      // roi_active,
+      roi_active,
       finding_roi,
+      thresh_image_created,
+      display_bsa,
+      bw_image,
+      display_bw,
+      thresh_same,
+      tixels_filled,
     };
   },
 });
