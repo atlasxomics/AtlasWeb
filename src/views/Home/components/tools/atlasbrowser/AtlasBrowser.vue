@@ -185,7 +185,7 @@
                     step="1"
                     :disabled="!current_image || !roi_active || spatial || optionUpdate"
                   />
-                  <!-- <v-text-field
+                  <v-text-field
                   v-model="neighbor_size"
                   class="mt-0 pt-0"
                   style="width:100px"
@@ -194,8 +194,10 @@
                   type="number"
                   min="0"
                   max="100000"
-                  step="5">
-                  </v-text-field> -->
+                  step="5"
+                  :disabled="!current_image || !roi_active || spatial || optionUpdate"
+                  >
+                  </v-text-field>
                   <v-btn
                   dense
                   color="primary"
@@ -982,10 +984,8 @@ export default defineComponent({
       loading.value = true;
       getPixels(current_image.value.src, async (err, pixels) => {
         const compensation = Number(c_val.value);
-        const neighbor = Number(neighbor_size.value);
-        console.log(compensation);
-        console.log(neighbor);
-        const thresholded = adaptiveThreshold(pixels, { compensation, neighbor });
+        const size = Number(neighbor_size.value);
+        const thresholded = adaptiveThreshold(pixels, { compensation, size });
         atpixels.value = thresholded;
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
@@ -993,13 +993,13 @@ export default defineComponent({
           current_image.value.original_src = current_image.value.image.src;
           current_image.value.image.src = newsrc;
           bw_image.value = newsrc;
-          // current_image.value.image.alternative_src = newsrc;
-          current_image.value.scale = { x: sv, y: sv };
+          current_image.value.image.alternative_src = newsrc;
+          // current_image.value.scale = { x: sv, y: sv };
           onChangeScale(sv);
           thresh_same.value = true;
+          loading.value = false;
         });
       });
-      loading.value = false;
       thresh_image_created.value = true;
     }
     async function generateReport(ev: any) {
@@ -1299,6 +1299,11 @@ export default defineComponent({
       }
     });
     watch(c_val, (v, ov) => {
+      if (v !== ov) {
+        thresh_same.value = false;
+      }
+    });
+    watch(neighbor_size, (v, ov) => {
       if (v !== ov) {
         thresh_same.value = false;
       }
