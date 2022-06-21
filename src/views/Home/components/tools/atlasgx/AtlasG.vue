@@ -366,16 +366,16 @@
               <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
-              <div id="capturePeak" :style="{ 'background-color': 'transparent' }" ref="peakContainer">
-                  <v-card class="mt-3" :style="{ visibility: visible }" v-show="spatialData && !loading" v-resize="onResize" ref="peakContainer">
-                    <template v-if="!geneMotif">
-                      <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[0]"/>
-                    </template>
-                    <template v-else>
-                      <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Nucleotides')}}</v-card-title>
-                      <bar-chart class="mt-3" :style="{ visibility: visible }" v-show="spatialData && !loading" ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
-                    </template>
-                  </v-card>
+              <div id="capturePeak" :style="{ 'background-color': 'transparent', visibility: visible  }" ref="peakContainer">
+                <v-card class="mt-3" v-show="spatialData && !loading" v-resize="onResize" ref="peakContainer">
+                  <template v-if="!geneMotif">
+                    <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[0]"/>
+                  </template>
+                  <template v-else>
+                    <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Nucleotides')}}</v-card-title>
+                    <bar-chart v-show="spatialData && !loading" ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
+                  </template>
+                </v-card>
               </div>
             </v-col>
         </v-col>
@@ -567,7 +567,11 @@ export default defineComponent({
           const base64image = canvas.toDataURL('image/png');
           const pom = document.createElement('a');
           pom.href = base64image;
-          pom.setAttribute('download', `${runId.value}/peaks.png`);
+          let end: string;
+          if (geneMotif) {
+            end = 'seqlogo';
+          } else end = 'peaks';
+          pom.setAttribute('download', `${runId.value}/${end}.png`);
           pom.click();
         });
       }
@@ -617,7 +621,7 @@ export default defineComponent({
         cmap[cidx] = colors[i];
       }
       colorMap.value = cmap;
-      if (!showFlag.value[0] && !loading.value && !geneMotif.value) {
+      if (!showFlag.value[0] && !geneMotif.value) {
         (ctx as any).refs.trackbrowser.reload(runId.value!, colorMap.value);
       }
     }
