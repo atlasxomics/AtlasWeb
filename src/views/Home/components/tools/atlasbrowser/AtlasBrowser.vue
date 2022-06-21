@@ -222,13 +222,13 @@
                 x-small
                 color="primary"
                 @click="display_bsa"
-                :disabled="!thresh_image_created"
+                :disabled="!thresh_image_created || bsa_image_disp"
                 > BSA </v-btn>
                 <v-btn
                 x-small
                 color="primary"
                 @click="display_bw"
-                :disabled="!thresh_image_created"
+                :disabled="!thresh_image_created || !bsa_image_disp"
                 > BW </v-btn>
               </v-list>
               <v-list dense class="pt-0 pl-2">
@@ -587,8 +587,7 @@ export default defineComponent({
     const isMouseDown = ref(false);
     const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
-    let current_image = ref<any | null>(null);
-    let other_image = ref<any | null>(null);
+    const current_image = ref<any | null>(null);
     const scaleFactor = ref(0.15);
     const one = ref(0);
     const two = ref(0);
@@ -625,6 +624,7 @@ export default defineComponent({
     const imageh = ref<any>();
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
+    const bsa_image_disp = ref<boolean>(true);
     const scaleFactor_json = ref<any>({
       fiducial_diameter_fullres: null,
       spot_diameter_fullres: null,
@@ -991,22 +991,30 @@ export default defineComponent({
       if (!current_image.value) return;
       const sv = scaleFactor.value;
       loading.value = true;
-      getPixels(current_image.value.src, async (err, pixels) => {
+      let img_src = current_image.value.image.original_src;
+      if (bsa_image_disp.value) {
+        img_src = current_image.value.image.src;
+        console.log('bsa image displayed');
+      }
+      getPixels(img_src, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
         atpixels.value = thresholded;
         const b = blobStream();
-        other_image = current_image;
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
-          current_image.value.original_src = current_image.value.image.src;
+          if (bsa_image_disp.value) {
+            current_image.value.image.original_src = current_image.value.image.src;
+            console.log('bsa image displayed');
+          }
           current_image.value.image.src = newsrc;
           current_image.value.image.alternative_src = newsrc;
           // current_image.value.scale = { x: sv, y: sv };
           onChangeScale(sv);
           thresh_same.value = true;
           loading.value = false;
+          bsa_image_disp.value = false;
         });
       });
       thresh_image_created.value = true;
@@ -1247,12 +1255,12 @@ export default defineComponent({
       }
     }
     function display_bsa() {
-      current_image.value.image.src = current_image.value.original_src;
+      current_image.value.image.src = current_image.value.image.original_src;
+      bsa_image_disp.value = true;
     }
     function display_bw() {
-      const temp = other_image;
-      other_image = current_image;
-      current_image = temp;
+      current_image.value.image.src = current_image.value.image.alternative_src;
+      bsa_image_disp.value = false;
     }
     function autoFill(ev: any) {
       if (roi.value.polygons.length === 0) {
@@ -1401,7 +1409,6 @@ export default defineComponent({
       objectToArray,
       generateLattices,
       current_image,
-      other_image,
       loadImage,
       searchRuns,
       onResize,
@@ -1465,6 +1472,7 @@ export default defineComponent({
       display_bw,
       thresh_same,
       tixels_filled,
+      bsa_image_disp,
     };
   },
 });
