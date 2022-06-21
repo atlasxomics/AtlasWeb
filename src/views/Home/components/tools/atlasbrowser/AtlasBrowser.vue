@@ -106,13 +106,16 @@
                 <!-- rotation box -->
               <v-list dense class="mt-n3 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Orientation</v-subheader>
-                <!-- <v-btn
+                <v-btn
                 :disabled="!current_image || isCropMode || grid"
-                @click="LoadImage()"
-                > -->
-                  Left
-                <!-- </v-btn> -->
-                <v-text-field
+                @click="orientation.rotation = orientation.rotation + 270; loadImage()">
+                Left
+                </v-btn>
+                <v-btn
+                :disabled="!current_image || isCropMode || grid"
+                @click="orientation.rotation = orientation.rotation + 90; loadImage()">
+                Right</v-btn>
+                <!-- <v-text-field
                   v-model="orientation.rotation"
                   dense
                   style="width:100px"
@@ -123,7 +126,7 @@
                   max="360"
                   step="90"
                   :disabled="!current_image || isCropMode || grid"
-                  @input="loadImage()"/>
+                  @input="loadImage()"/> -->
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -542,7 +545,6 @@ interface Metadata {
 }
 
 export default defineComponent({
-  components: {},
   name: 'AtlasBrowser',
   props: ['query'],
   methods: {
@@ -585,7 +587,8 @@ export default defineComponent({
     const isMouseDown = ref(false);
     const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
-    const current_image = ref<any | null>(null);
+    let current_image = ref<any | null>(null);
+    let other_image = ref<any | null>(null);
     const scaleFactor = ref(0.15);
     const one = ref(0);
     const two = ref(0);
@@ -994,11 +997,11 @@ export default defineComponent({
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
         atpixels.value = thresholded;
         const b = blobStream();
+        other_image = current_image;
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
           current_image.value.original_src = current_image.value.image.src;
           current_image.value.image.src = newsrc;
-          bw_image.value = newsrc;
           current_image.value.image.alternative_src = newsrc;
           // current_image.value.scale = { x: sv, y: sv };
           onChangeScale(sv);
@@ -1244,12 +1247,12 @@ export default defineComponent({
       }
     }
     function display_bsa() {
-      const temp_val = current_image.value.original_src;
-      current_image.value.original_src = current_image.value.image.src;
-      current_image.value.image.src = temp_val;
+      current_image.value.image.src = current_image.value.original_src;
     }
     function display_bw() {
-      current_image.value.image.src = bw_image;
+      const temp = other_image;
+      other_image = current_image;
+      current_image = temp;
     }
     function autoFill(ev: any) {
       if (roi.value.polygons.length === 0) {
@@ -1398,6 +1401,7 @@ export default defineComponent({
       objectToArray,
       generateLattices,
       current_image,
+      other_image,
       loadImage,
       searchRuns,
       onResize,
