@@ -1,6 +1,6 @@
 <template>
 <div style="width: 100%">
-  <canvas ref="logo"></canvas>
+  <canvas id="logo" ref="logo"></canvas>
 </div>
 </template>
 
@@ -37,7 +37,7 @@ export default defineComponent({
     async function beginGraph() {
       /* eslint-disable no-param-reassign */
       const controller = (ctx as any).refs.logo.getContext('2d');
-      controller.clearRect(0, 0, widthFromParent.value, 355);
+      controller.clearRect(0, 0, widthFromParent.value, 300);
     }
 
     async function checker(data: any[]) {
@@ -59,16 +59,16 @@ export default defineComponent({
       const controller = (ctx as any).refs.logo.getContext('2d');
       controller.save();
       const width = widthFromParent.value;
-      const height = 355;
+      const height = 300;
       (ctx as any).refs.logo.width = width;
       (ctx as any).refs.logo.height = height;
-      controller.fillStyle = settings.bgcolor;
+      // controller.fillStyle = settings.bgcolor;
       controller.fillRect(0, 0, width, height);
 
-      const valuesA = ['A', 'red'];
-      const valuesT = ['C', 'blue'];
-      const valuesC = ['G', 'green'];
-      const valuesG = ['T', 'yellow'];
+      const valuesA = ['A', '#0d9647'];
+      const valuesT = ['C', '#255c9a'];
+      const valuesC = ['G', '#f7b32b'];
+      const valuesG = ['T', '#d6273a'];
       for (let i = 0; i <= data.length; i += 1) {
         if (data[i]) {
           for (let j = 0; j <= data[i].length; j += 1) {
@@ -169,11 +169,11 @@ export default defineComponent({
       controller.textBaseline = 'top';
       controller.fillText('2 -', settings.border - settings.padding, 64);
       controller.textBaseline = 'top';
-      controller.fillText('1.5 -', settings.border - settings.padding, 123);
+      controller.fillText('1.5 -', settings.border - settings.padding, 113);
       controller.textBaseline = 'center';
-      controller.fillText('1 -', settings.border - settings.padding, (height / 2) + 9);
+      controller.fillText('1 -', settings.border - settings.padding, (height / 2) + 11);
       controller.textBaseline = 'bottom';
-      controller.fillText('.5 -', settings.border - settings.padding, height - 88);
+      controller.fillText('.5 -', settings.border - settings.padding, height - 74);
       controller.textBaseline = 'bottom';
       controller.fillText('0 -', settings.border - settings.padding, height - 27);
 
