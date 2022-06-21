@@ -106,6 +106,12 @@
                 <!-- rotation box -->
               <v-list dense class="mt-n3 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Orientation</v-subheader>
+                <!-- <v-btn
+                :disabled="!current_image || isCropMode || grid"
+                @click="LoadImage()"
+                > -->
+                  Left
+                <!-- </v-btn> -->
                 <v-text-field
                   v-model="orientation.rotation"
                   dense
@@ -145,6 +151,7 @@
                 <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
                 <v-btn
+                  class="mr-8"
                   dense
                   color="primary"
                   x-small
@@ -153,7 +160,6 @@
                   Activate
                 </v-btn>
                 <v-btn
-                dense
                 color = "primary"
                 x-small
                 @click="generateLattices"
@@ -1462,6 +1468,7 @@ export default defineComponent({
 </script>
 
 <style>
+
 .toolRow {
   height: 5vh;
 }
