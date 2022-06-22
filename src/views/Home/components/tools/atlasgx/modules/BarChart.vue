@@ -62,7 +62,7 @@ export default defineComponent({
       const height = 300;
       (ctx as any).refs.logo.width = width;
       (ctx as any).refs.logo.height = height;
-      // controller.fillStyle = settings.bgcolor;
+      controller.fillStyle = settings.bgcolor;
       controller.fillRect(0, 0, width, height);
 
       const valuesA = ['A', '#0d9647'];
