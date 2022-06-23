@@ -66,9 +66,10 @@ export default defineComponent({
       controller.fillRect(0, 0, width, height);
 
       const valuesA = ['A', '#0d9647'];
-      const valuesT = ['C', '#255c9a'];
-      const valuesC = ['G', '#f7b32b'];
-      const valuesG = ['T', '#d6273a'];
+      const valuesC = ['C', '#255c9a'];
+      const valuesG = ['G', '#f7b32b'];
+      const valuesT = ['T', '#d6273a'];
+      console.log(data);
       for (let i = 0; i <= data.length; i += 1) {
         if (data[i]) {
           for (let j = 0; j <= data[i].length; j += 1) {
@@ -76,14 +77,14 @@ export default defineComponent({
               if (data[i][j].includes('A')) {
                 valuesA.push(data[i][j][1]);
               }
-              if (data[i][j].includes('T')) {
-                valuesT.push(data[i][j][1]);
-              }
               if (data[i][j].includes('C')) {
                 valuesC.push(data[i][j][1]);
               }
               if (data[i][j].includes('G')) {
                 valuesG.push(data[i][j][1]);
+              }
+              if (data[i][j].includes('T')) {
+                valuesT.push(data[i][j][1]);
               }
             }
           }

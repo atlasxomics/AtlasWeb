@@ -298,6 +298,7 @@
                 color="black"
                 class="ml-4 mt-5"
                 small
+                @click="linkAlert"
                 v-clipboard:copy="publicLink">
                 <v-icon>mdi-content-copy</v-icon>
               </v-btn>
@@ -366,7 +367,7 @@
               <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
-              <div id="capturePeak" :style="{ 'background-color': 'transparent', visibility: visible  }" ref="peakContainer">
+              <div id="capturePeak" :style="{ visibility: visible }" ref="peakContainer">
                 <v-card class="mt-3" v-show="spatialData && !loading" v-resize="onResize" ref="peakContainer">
                   <template v-if="!geneMotif">
                     <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[0]"/>
@@ -539,6 +540,9 @@ export default defineComponent({
     function updateSelectors(ev: any) {
       highlightIds.value = ev;
     }
+    function linkAlert() {
+      snackbar.dispatch({ text: 'Public link copied to clipboard', options: { left: true, color: 'success' } });
+    }
     function saveTxt() {
       listId.value = false;
       const ids = highlightIds.value.join();
@@ -568,10 +572,11 @@ export default defineComponent({
           const pom = document.createElement('a');
           pom.href = base64image;
           let end: string;
-          if (geneMotif) {
-            end = 'seqlogo';
-          } else end = 'peaks';
-          pom.setAttribute('download', `${runId.value}/${end}.png`);
+          if (geneMotif.value) {
+            end = `${runId.value}_${trackBrowserGenes.value[0]}_seqlogo`;
+          } else end = `${runId.value}_${trackBrowserGenes.value[0]}_peaks`;
+          console.log(end);
+          pom.setAttribute('download', `${end}.png`);
           pom.click();
         });
       }
@@ -1110,6 +1115,7 @@ export default defineComponent({
       publicSeqlogo,
       seqLogoData,
       widthFromCard,
+      linkAlert,
     };
   },
 });
