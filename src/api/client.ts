@@ -278,6 +278,7 @@ export default class Client {
       args,
       kwargs,
     };
+    console.log(payload);
     const resp = await this.axios.post(endpoint, payload);
     return resp.data;
   }
@@ -289,7 +290,11 @@ export default class Client {
       args,
       kwargs,
     };
+    console.log(endpoint);
+    console.log(payload);
     const resp = await this.axios.post(endpoint, payload);
+    console.log('resp recieced');
+    console.log(resp.data._id);
     return resp.data;
   }
 

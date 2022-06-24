@@ -86,7 +86,8 @@
             </v-card-text>
           </v-card>
         </v-dialog>
-        <v-col cols="12" sm="2" class="pl-6 pt-3">
+        <v-col cols="12" sm="2" class="pl-6 pt-3"
+        >
           <!-- workflow menu -->
           <template v-if="run_id && optionFlag">
             <v-card>
@@ -105,41 +106,43 @@
                 @change="onChangeScale"></v-slider>
                 <!-- rotation box -->
               <v-list dense class="mt-n3 pt-0 pl-2">
-                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Orientation</v-subheader>
+                <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Rotation</v-subheader>
                 <v-btn
+                color="grey"
                 :disabled="!current_image || isCropMode || grid"
-                @click="orientation.rotation = orientation.rotation + 270; loadImage()">
-                Left
+                @click="orientation.rotation = orientation.rotation + 90; loadImage()"
+                small
+                >
+                <img src="@/assets/images/rotate_left.png"
+                width="24"
+                height="24"/>
                 </v-btn>
                 <v-btn
+                color="grey"
+                class="spaced_btn"
                 :disabled="!current_image || isCropMode || grid"
-                @click="orientation.rotation = orientation.rotation + 90; loadImage()">
-                Right</v-btn>
-                <!-- <v-text-field
-                  v-model="orientation.rotation"
-                  dense
-                  style="width:100px"
-                  class="mt-5 pt-0"
-                  label="Rotation"
-                  type="number"
-                  min="0"
-                  max="360"
-                  step="90"
-                  :disabled="!current_image || isCropMode || grid"
-                  @input="loadImage()"/> -->
+                @click="orientation.rotation = orientation.rotation + 270; loadImage()"
+                small
+                >
+                <img src="@/assets/images/rotate_right.png"
+                width="24"
+                height="24"/>
+                </v-btn>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Cropping</v-subheader>
                 <v-btn
-                  dense
+                  outlined
                   color="primary"
+                  dense
                   x-small
                   @click="isCropMode=true"
                   :disabled="!current_image || isCropMode || grid">
                   Activate
                 </v-btn>
                 <v-btn
+                  outlined
                   :disabled="!current_image || !isCropMode || cropFlag"
                   x-small
                   dense
@@ -154,6 +157,7 @@
                 <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
                 <v-btn
+                  outlined
                   class="mr-8"
                   dense
                   color="primary"
@@ -163,6 +167,8 @@
                   Activate
                 </v-btn>
                 <v-btn
+                dense
+                outlined
                 color = "primary"
                 x-small
                 @click="generateLattices"
@@ -171,69 +177,71 @@
                   Display Grid
                 </v-btn>
                 <v-btn
+                outlined
                 dense
                 color = "primary"
                 x-small
                 @click="roi.polygons = []"
-                :disabled="roi.polygons.length === 0">
+                :disabled="roi.polygons.length === 0 || tixels_filled">
                   Hide Grid
                 </v-btn>
               </v-list>
-                <v-list dense class="mt-n1 pt-0 pl-2">
+                <v-list dense>
                   <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
                   <!-- <v-checkbox dense v-model="atfilter" :disabled="!current_image || !grid || spatial" label="Threshold"/> -->
-                  <v-text-field
-                    v-model="c_val"
-                    class="mt-0 pt-0"
-                    style="width:100px"
-                    dense
-                    label="Thr"
-                    type="number"
-                    min="0"
-                    max="255"
-                    step="1"
-                    :disabled="!current_image || !roi_active || spatial || optionUpdate"
-                  />
-                  <v-text-field
-                  v-model="neighbor_size"
-                  class="mt-0 pt-0"
-                  style="width:100px"
-                  dense
-                  label="Thr"
-                  type="number"
+                  C value: {{ c_val }}
+                   <v-slider
+                  v-model="c_val"
+                  class="slider"
+                  step="1"
                   min="0"
-                  max="100000"
-                  step="5"
+                  max="25"
                   :disabled="!current_image || !roi_active || spatial || optionUpdate"
                   >
-                  </v-text-field>
+                  </v-slider>
+                   Neighborhood: {{ neighbor_size }}
+                  <v-slider
+                  :disabled="!current_image || !roi_active || spatial || optionUpdate"
+                  v-model="neighbor_size"
+                  class="slider"
+                  step="1"
+                  min="0"
+                  max="25"
+                  >
+                  </v-slider>
                   <v-btn
+                  outlined
                   dense
                   color="primary"
                   @click="thresh_clicked"
                   small
-                  :disabled="!current_image || !roi_active || spatial || optionUpdate || thresh_same">
+                  :disabled="!current_image || !roi_active || spatial || optionUpdate || thresh_same"
+                  >
                   Threshold
                   </v-btn>
                 </v-list>
               <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Background Image</v-subheader>
                 <v-btn
+                outlined
                 x-small
                 color="primary"
                 @click="display_bsa"
-                :disabled="!thresh_image_created || bsa_image_disp"
+                :disabled="!thresh_image_created || bsa_image_disp || spatial"
                 > BSA </v-btn>
                 <v-btn
+                class="spaced_btn"
+                outlined
                 x-small
                 color="primary"
                 @click="display_bw"
-                :disabled="!thresh_image_created || !bsa_image_disp"
+                :disabled="!thresh_image_created || !bsa_image_disp || spatial"
                 > BW </v-btn>
               </v-list>
               <v-list dense class="pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
                 <v-btn
+                outlined
                 :disabled="!thresh_image_created || spatial || optionUpdate"
                 x-small
                 dense
@@ -256,6 +264,7 @@
                 />
                 <template v-if="spatial && !loadingMessage && grid">
                   <v-btn
+                  outlined
                   x-small
                   dense
                   color="primary"
@@ -270,6 +279,7 @@
             <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
             <v-card-actions>
               <v-btn
+                outlined
                 dense
                 color="primary"
                 @click="optionFlag=true;optionCreate=true;"
@@ -277,9 +287,10 @@
                 Reprocess
               </v-btn>
               <v-btn
+                outlined
                 dense
                 color="primary"
-                @click="optionFlag=true;optionUpdate=true;loadImage();uploadingTixels()"
+                @click="optionFlag=true;optionUpdate=true;loadImage(); uploadingTixels()"
                 x-small>
                 Update
               </v-btn>
@@ -395,12 +406,6 @@
                     padding: 25
                 }">
                 </v-text>
-                <v-image
-                ref="atlas_image"
-                :config="company_image"
-                >
-
-                </v-image>
                 </v-layer>
                   <v-layer
                     v-if="current_image"
@@ -429,7 +434,7 @@
                         @mousedown="handleMouseDown"
                         @mouseover="handleMouseOver"/>
                         <v-transformer ref="transformer" />
-                        <template v-if="!isBrushMode && !isEraseMode && !optionUpdate">
+                        <template v-if="!isBrushMode && !isEraseMode && !optionUpdate && !tixels_filled">
                           <v-circle
                             v-for="c in roi.getAnchors()"
                             v-bind:key="c.id"
@@ -438,7 +443,7 @@
                             @dragmove="handleDragMove"
                             :config="c"/>
                         </template>
-                        <v-circle v-if="!isBrushMode && !isEraseMode && !optionUpdate"
+                        <v-circle v-if="!isBrushMode && !isEraseMode && !optionUpdate && !tixels_filled"
                           v-bind:key="roi.getCenterAnchor().id"
                           @dragstart="handleDragCenterStart"
                           @dragend="handleDragCenterEnd"
@@ -697,11 +702,11 @@ export default defineComponent({
       csvHolder.value = resp_pos;
       metadata.value = resp;
       // await getMeta();
-      // const slimsData = await client.value.getMetadataFromRunId(`${run_id.value}`);
-      // metadata.value.organ = slimsData.Organ;
-      // metadata.value.species = slimsData.Species;
-      // metadata.value.type = slimsData['Tissue type'];
-      // metadata.value.numChannels = '50';
+      const slimsData = await client.value.getMetadataFromRunId(`${run_id.value}`);
+      metadata.value.organ = slimsData.Organ;
+      metadata.value.species = slimsData.Species;
+      metadata.value.type = slimsData['Tissue type'];
+      metadata.value.numChannels = '50';
       if (resp) {
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
@@ -710,6 +715,11 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
     }
+
+    async function rotate_image(degrees: number) {
+      document.querySelector(current_image).style.transform = 'rotate(90deg)';
+    }
+
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
@@ -994,7 +1004,6 @@ export default defineComponent({
       let img_src = current_image.value.image.original_src;
       if (bsa_image_disp.value) {
         img_src = current_image.value.image.src;
-        console.log('bsa image displayed');
       }
       getPixels(img_src, async (err, pixels) => {
         const compensation = Number(c_val.value);
@@ -1087,12 +1096,24 @@ export default defineComponent({
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
         generating.value = true;
         await checkTaskStatus(taskObject._id);
+        console.log('1');
+        console.log(taskStatush5.value.status);
+        console.log(taskStatush5.value.position);
+        console.log(taskStatush5.value.status);
+        console.log(taskStatush5.value.progress);
         /* eslint-disable no-await-in-loop */
         while (taskStatush5.value.status !== 'SUCCESS' && taskStatush5.value.status !== 'FAILURE') {
           if (taskStatush5.value.status === 'PROGRESS') {
             await updateH5ad(taskStatus.value.progress);
+            console.log('2');
+            console.log(taskStatush5.value.position);
+            console.log(taskStatush5.value.progress);
             progressMessage.value = `${taskStatush5.value.progress}% - ${taskStatush5.value.position}`;
           }
+          console.log('3');
+          console.log(taskStatush5.value.position);
+          console.log(taskStatush5.value.progress);
+
           await new Promise((r) => {
             taskTimeout.value = window.setTimeout(r, 1000);
           });
@@ -1168,9 +1189,7 @@ export default defineComponent({
     }
     async function generateSpatial() {
       if (!client.value) return;
-      if (!roi.value) return;
       try {
-        console.log('made it past');
         one.value = 0;
         two.value = 0;
         three.value = 0;
@@ -1208,15 +1227,14 @@ export default defineComponent({
           orientation: orientation.value,
           barcodes: barcodes.value,
         };
+
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
-        console.log('1');
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
           if (taskStatus.value.status === 'PROGRESS') {
-            console.log('we have progress');
             await updateProgress(taskStatus.value.progress);
             progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
           }
@@ -1224,12 +1242,11 @@ export default defineComponent({
             taskTimeout.value = window.setTimeout(r, 1000);
           });
           taskTimeout.value = null;
-          console.log('2');
           await checkTaskStatus(taskObject._id);
         }
         /* eslint-disable no-await-in-loop */
-        console.log('3');
         if (taskStatus.value.status !== 'SUCCESS') {
+          console.log('failed');
           snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
           loading.value = false;
           loadingMessage.value = false;
@@ -1252,6 +1269,16 @@ export default defineComponent({
         three.value = 0;
         spatial.value = false;
         snackbar.dispatch({ text: 'Error generating spatial folder', options: { right: true, color: 'error' } });
+      }
+    }
+    function handle_spatial_call() {
+      console.log(orientation.value);
+      if (!client.value) {
+        snackbar.dispatch({ text: 'Client is not initialized', options: { right: true, color: 'error' } });
+      } else if (!tixels_filled.value) {
+        snackbar.dispatch({ text: 'Must complete image processing before genereating spatial folder', options: { right: true, color: 'error' } });
+      } else {
+        generateSpatial();
       }
     }
     function display_bsa() {
@@ -1354,7 +1381,7 @@ export default defineComponent({
         color: 'primary',
         tooltip: 'Save spatial data',
         click: () => {
-          generateSpatial();
+          handle_spatial_call();
         },
       },
     ];
@@ -1473,14 +1500,17 @@ export default defineComponent({
       thresh_same,
       tixels_filled,
       bsa_image_disp,
+      handle_spatial_call,
+      rotate_image,
     };
   },
 });
 
 </script>
-
-<style>
-
+<style scoped>
+.spaced_btn {
+  margin-left: 10px;
+}
 .toolRow {
   height: 5vh;
 }
