@@ -42,44 +42,44 @@
         <v-dialog
           v-if="metaFlag && ((!csvHolder && run_id) || optionFlag)"
           :value="metaFlag"
-          @click:outside="metaFlag = !metaFlag"
-          hide-overlay>
-          <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left: 150px;px;"
-              :disabled="loading">
-            <v-card-title>
-              {{run_id}}
+          @click:outside="metaFlag = !metaFlag">
+          <v-card  :disabled="loading"
+          >
+            <v-card-title
+            class="justify-center">
+              Run ID: {{run_id}}
             </v-card-title>
             <v-card-text>
               <v-text-field
                 v-model="metadata.species"
-                dense
                 outlined
+                dense
                 label="Species">
               </v-text-field>
               <v-text-field
                 v-model="metadata.organ"
-                dense
                 outlined
+                dense
                 label="Organ">
               </v-text-field>
               <v-text-field
                 v-model="metadata.type"
-                dense
                 outlined
+                dense
                 label="Type">
               </v-text-field>
               <v-select
                 v-model="metadata.assay"
+                outlined
                 :items="metaItemLists.assays"
                 dense
-                outlined
                 label="Assay">
               </v-select>
               <v-select
                 v-model="metadata.numChannels"
+                outlined
                 :items="metaItemLists.numChannels"
                 dense
-                outlined
                 label="Barcode"
                 @change="updateChannels">
               </v-select>
@@ -1508,6 +1508,7 @@ export default defineComponent({
 
 </script>
 <style scoped>
+
 .spaced_btn {
   margin-left: 10px;
 }
