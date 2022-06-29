@@ -18,7 +18,7 @@
       @input="acInputChanged"
       :search-input.sync="searchInput"
       :loading="autocompleteLoading"
-      :menu-props="{closeOnClick: true}"
+      :menu-props="{closeOnClick: false}"
       @change="onGenelistChanged"
       @focus="focusFlag = true"
       @blur="focusFlag = false"
@@ -44,6 +44,14 @@
           text
           @click="showGene"
           >Show</v-btn>
+        <div class="customCheck">
+          <v-tooltip bottom>
+          <template v-slot:activator="{ on, attrs }">
+            <v-simple-checkbox v-bind="attrs" v-on="on" v-model="singleSum" label="" color="secondary" hide-details dense />
+          </template>
+          <span>Summation/Single</span>
+          </v-tooltip>
+        </div>
       </template>
     </v-autocomplete>
 </template>
@@ -81,13 +89,14 @@ export default defineComponent({
     const autocompleteLoading = ref(false);
     const labelValue = ref<string>('Enter ID');
     const focusFlag = ref<boolean>(false);
+    const singleSum = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
     async function acInputChanged() { // autocomplete input event handler;
-      filteredGenes.value = filteredGenes.value.filter((v: any) => selectedGenes.value.includes(v.name));
+      filteredGenes.value = genes.value;
       searchInput.value = null;
     }
     async function querySelections(v: string) {
@@ -124,6 +133,9 @@ export default defineComponent({
       if (v) {
         querySelections(v);
       }
+    });
+    watch(singleSum, (v: any) => {
+      ctx.emit('options', v);
     });
     watch(geneList.value, (v: any[]) => {
       genes.value = v;
@@ -165,6 +177,7 @@ export default defineComponent({
       showFlag,
       labelValue,
       focusFlag,
+      singleSum,
       acInputChanged,
       querySelections,
       onGenelistChanged,
@@ -180,7 +193,7 @@ export default defineComponent({
 
 <style scoped>
   .noScroll {
-    margin-top: 10px;
+    margin-top: 12px;
   }
   .noScroll >>> .v-input__control {
     align-items: flex-start;
@@ -230,5 +243,20 @@ export default defineComponent({
   }
   .noScroll >>> ::-webkit-scrollbar {
   display: none; /* for Chrome, Safari, and Opera */
+  }
+  .customCheck {
+    color: white;
+  }
+  .customCheck >>> .input__slot {
+    color: none;
+  }
+  .customCheck >>> .theme--light.v-icon {
+    color: rgba(0,0,0,1);
+  }
+  .customCheck >>> .theme--light.v-input, .customCheck >>> .theme--light.v-input input, .customCheck >>> .theme--light.v-input textarea {
+    color: white;
+  }
+  .customCheck .v-simple-checkbox {
+    padding-top: 3px;
   }
 </style>

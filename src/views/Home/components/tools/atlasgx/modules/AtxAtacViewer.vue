@@ -1029,19 +1029,21 @@ export default defineComponent({
       polygon.value.points = [];
     });
     watch(selectedGenes, (v: any[]) => {
-      if (selectedGenes.value.length === 0) {
+      if (v && selectedGenes.value.length === 0) {
         isClusterView.value = true;
         stepArray.value = [];
         updateCircles();
       } else {
         isClusterView.value = false;
         removeRegions();
-        console.log('2');
         runSpatial(true);
       }
     });
     watch(selectedGenesFromParent, (v: any) => {
-      selectedGenes.value = v;
+      let gene = v;
+      if (typeof v === 'undefined') gene = [];
+      if (typeof v === 'string') gene = [gene];
+      selectedGenes.value = gene;
     });
     watch(loading, (v: any) => {
       ctx.emit('loading_value', v);
