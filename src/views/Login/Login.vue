@@ -68,38 +68,6 @@
                     Sign In
                   </v-btn>
                 </v-card-actions>
-                <v-card
-                  flat
-                >
-                  <v-row
-                    no-gutters
-                    align="center"
-                  >
-                    <v-btn
-                      icon
-                      left
-                      plain
-                      @click="showAdvanced = !showAdvanced"
-                    >
-                      <v-icon>
-                        {{ showAdvanced ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
-                      </v-icon>
-                    </v-btn>
-                    <v-card-subtitle class="pl-0">
-                      Advanced
-                    </v-card-subtitle>
-                  </v-row>
-                  <v-card-text
-                    v-show="showAdvanced"
-                    class="pt-0 mt-0"
-                  >
-                    <v-checkbox
-                      v-model="useTestServer"
-                      class="pt-0 mt-0"
-                      label="Use Test Server"
-                    />
-                  </v-card-text>
-                </v-card>
               </v-col>
             </v-row>
           </v-card>
@@ -134,16 +102,11 @@ export default defineComponent({
     async function loginUser() {
       if (username.value && password.value) {
         loading.value = true;
-        const serverUrl = useTestServer.value ? TEST_SERVER_URL : PROD_SERVER_URL;
+        const serverUrl = PROD_SERVER_URL;
         const resp = await login(serverUrl, username.value, password.value);
         if (isClient(resp)) {
           saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
           store.commit.setClient(resp);
-          const clients = store.state.client;
-          /*
-          const val = await clients!.getRunIdList();
-          store.commit.setSlimsData(val);
-          */
         } else {
           loginErrorMessage.value = resp;
         }
@@ -156,6 +119,7 @@ export default defineComponent({
     // Will re-route as soon as user is logged in
     watchEffect(() => {
       if (loggedIn.value && !loading.value) {
+        store.commit.setComponent({ component: null });
         router.push('/');
       }
     });
