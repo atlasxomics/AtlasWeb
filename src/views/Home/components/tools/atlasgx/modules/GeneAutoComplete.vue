@@ -49,7 +49,7 @@
           <template v-slot:activator="{ on, attrs }">
             <v-simple-checkbox v-bind="attrs" v-on="on" v-model="singleSum" label="" color="secondary" hide-details dense />
           </template>
-          <span>Summation/Single</span>
+          <span>Sum</span>
           </v-tooltip>
         </div>
       </template>
