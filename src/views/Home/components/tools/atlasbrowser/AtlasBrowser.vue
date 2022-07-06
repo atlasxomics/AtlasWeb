@@ -172,7 +172,7 @@
                 color = "primary"
                 x-small
                 @click="generateLattices"
-                :disabled="(!roi_active && !optionUpdate)|| roi.polygons.length > 0 || optionUpdate">
+                :disabled="(!roi_active && !optionUpdate)|| roi.polygons.length > 0">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -180,14 +180,13 @@
                 dense
                 color = "primary"
                 x-small
-                @click="roi.polygons = hide_grid()"
-                :disabled="roi.polygons.length === 0 || !tixels_filled || optionUpdate">
+                @click="hide_grid()"
+                :disabled="roi.polygons.length === 0 || !grid">
                   Hide Grid
                 </v-btn>
               </v-list>
                 <v-list dense>
                   <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
-                  <!-- <v-checkbox dense v-model="atfilter" :disabled="!current_image || !grid || spatial" label="Threshold"/> -->
                   C value: {{ c_val }}
                    <v-slider
                   v-model="c_val"
@@ -929,8 +928,17 @@ export default defineComponent({
     function setBrushMode(tf: boolean) {
       isBrushMode.value = tf;
     }
+    function load_tixel_state() {
+      for (let i = 0; i < roi.value.polygons.length; i += 1) {
+        roi.value.polygons[i].fill = saved_grid_state.value[i] ? 'red' : null;
+      }
+    }
+
     function generateLattices(ev: any) {
       roi.value.polygons = roi.value.generatePolygons();
+      if (tixels_filled.value) {
+        load_tixel_state();
+      }
     }
     function onResize(ev: any) {
       // console.log('OnResize');
@@ -940,6 +948,14 @@ export default defineComponent({
     }
     function hide_grid() {
       if (tixels_filled.value) {
+        for (let i = 0; i < roi.value.polygons.length; i += 1) {
+          const polygon = roi.value.polygons[i];
+          if (polygon.fill === 'red') {
+            saved_grid_state.value.push(true);
+          } else {
+            saved_grid_state.value.push(false);
+          }
+        }
         roi.value.polygons = [];
       } else {
         roi.value.polygons = [];
@@ -1000,6 +1016,12 @@ export default defineComponent({
       // no_thresh.value = false;
     }
 
+    function clear_filled_tixels() {
+      for (let i = 0; i < roi.value.polygons.length; i += 1) {
+        roi.value.polygons[i].fill = null;
+      }
+    }
+
     function thresh_clicked() {
       if (!current_image.value) return;
       const sv = scaleFactor.value;
@@ -1030,6 +1052,9 @@ export default defineComponent({
         });
       });
       thresh_image_created.value = true;
+      // setting the filled grid back to default state
+      tixels_filled.value = false;
+      clear_filled_tixels();
     }
     async function generateReport(ev: any) {
       //
@@ -1507,6 +1532,8 @@ export default defineComponent({
       rotate_image,
       saved_grid_state,
       hide_grid,
+      load_tixel_state,
+      clear_filled_tixels,
     };
   },
 });
