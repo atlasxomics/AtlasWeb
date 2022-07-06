@@ -172,8 +172,7 @@
                 color = "primary"
                 x-small
                 @click="generateLattices"
-                :disabled="!roi_active|| roi.polygons.length > 0"
-                >
+                :disabled="(!roi_active && !optionUpdate)|| roi.polygons.length > 0 || optionUpdate">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -182,7 +181,7 @@
                 color = "primary"
                 x-small
                 @click="roi.polygons = []"
-                :disabled="roi.polygons.length === 0 || tixels_filled">
+                :disabled="roi.polygons.length === 0 || !tixels_filled || optionUpdate">
                   Hide Grid
                 </v-btn>
               </v-list>
@@ -196,12 +195,12 @@
                   step="1"
                   min="0"
                   max="25"
-                  :disabled="!current_image || !roi_active || spatial || optionUpdate"
+                  :disabled="!current_image || (!roi_active && !optionUpdate) || spatial"
                   >
                   </v-slider>
                    Neighborhood: {{ neighbor_size }}
                   <v-slider
-                  :disabled="!current_image || !roi_active || spatial || optionUpdate"
+                  :disabled="!current_image || (!roi_active && !optionUpdate) || spatial"
                   v-model="neighbor_size"
                   class="slider"
                   step="1"
@@ -215,7 +214,7 @@
                   color="primary"
                   @click="thresh_clicked"
                   small
-                  :disabled="!current_image || !roi_active || spatial || optionUpdate || thresh_same"
+                  :disabled="!current_image || (!roi_active && !optionUpdate) || spatial || thresh_same"
                   >
                   Threshold
                   </v-btn>
@@ -242,7 +241,7 @@
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
                 <v-btn
                 outlined
-                :disabled="!thresh_image_created || spatial || optionUpdate"
+                :disabled="!thresh_image_created || spatial"
                 x-small
                 dense
                 color="primary"
@@ -735,7 +734,7 @@ export default defineComponent({
       try {
         const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
         imageh.value = img;
-        // allFiles.value = await client.value.getFileList(filenameList);
+        allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
         const scalefactor = 0.1;
@@ -769,7 +768,6 @@ export default defineComponent({
     }
 
     function searchRuns(ev: any) {
-      console.log('searching');
       const stringforRegex = ev;
       const updated = [];
       const regex = new RegExp(`${stringforRegex}[a-zA-z]*[0-9]*`);
@@ -931,10 +929,7 @@ export default defineComponent({
       isBrushMode.value = tf;
     }
     function generateLattices(ev: any) {
-      console.log('generating lattices');
       roi.value.polygons = roi.value.generatePolygons();
-      console.log(roi.value.polygons.length);
-      // no_thresh.value = false;
     }
     function onResize(ev: any) {
       // console.log('OnResize');
