@@ -602,7 +602,7 @@ export default defineComponent({
     const no_thresh = ref(true);
     const thresh_image_created = ref<boolean>(false);
     const thresh_same = ref<boolean>(false);
-    const saved_grid_state = ref<boolean[]>([]);
+    const saved_grid_state = ref<Map<string, boolean>>(new Map<string, boolean>());
     const loading = ref<boolean>(false);
     const loadingMessage = ref<boolean>(false);
     const taskStatus = ref<any>();
@@ -930,7 +930,10 @@ export default defineComponent({
     }
     function load_tixel_state() {
       for (let i = 0; i < roi.value.polygons.length; i += 1) {
-        roi.value.polygons[i].fill = saved_grid_state.value[i] ? 'red' : null;
+        const ID = roi.value.polygons[i].id;
+        console.log(ID);
+        console.log(saved_grid_state.value?.get(ID));
+        roi.value.polygons[i].fill = saved_grid_state.value?.get(ID) ? 'red' : null;
       }
     }
 
@@ -950,10 +953,11 @@ export default defineComponent({
       if (tixels_filled.value) {
         for (let i = 0; i < roi.value.polygons.length; i += 1) {
           const polygon = roi.value.polygons[i];
+          const ID = polygon.id;
           if (polygon.fill === 'red') {
-            saved_grid_state.value.push(true);
+            const assigned = saved_grid_state.value?.set(ID, true);
           } else {
-            saved_grid_state.value.push(false);
+            const assigned = saved_grid_state.value?.set(ID, false);
           }
         }
         roi.value.polygons = [];
@@ -1019,6 +1023,7 @@ export default defineComponent({
     function clear_filled_tixels() {
       for (let i = 0; i < roi.value.polygons.length; i += 1) {
         roi.value.polygons[i].fill = null;
+        const cleared = saved_grid_state.value?.clear();
       }
     }
 
@@ -1053,8 +1058,11 @@ export default defineComponent({
       });
       thresh_image_created.value = true;
       // setting the filled grid back to default state
+      if (tixels_filled.value) {
+        clear_filled_tixels();
+        tixels_filled.value = false;
+      }
       tixels_filled.value = false;
-      clear_filled_tixels();
     }
     async function generateReport(ev: any) {
       //

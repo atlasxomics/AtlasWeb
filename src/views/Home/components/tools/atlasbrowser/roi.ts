@@ -249,6 +249,7 @@ export class ROI {
         const topRC = [tR[0], tR[1]];
         const botLC = [bL[0], bL[1]];
         const botRC = [bR[0], bR[1]];
+        const ID = (i * this.channels) + j;
         const value = tixel_array[(i * this.channels) + j];
         const [ge, f, r, c, x, y] = value;
         const polyConfig = {
@@ -263,7 +264,7 @@ export class ROI {
             // special Konva.js method
             context.fillStrokeShape(shape);
           },
-          id: get_uuid(),
+          id: ID.toString(),
           fill: (f === '1') ? 'red' : null,
           centerx: center[1],
           centery: center[0],
@@ -330,6 +331,7 @@ export class ROI {
         const topRC = [tR[0], tR[1]];
         const botLC = [bL[0], bL[1]];
         const botRC = [bR[0], bR[1]];
+        const ID = (i * this.channels) + j;
         const polyConfig = {
           sceneFunc: (context: any, shape: any) => {
             context.beginPath();
@@ -342,7 +344,7 @@ export class ROI {
             // special Konva.js method
             context.fillStrokeShape(shape);
           },
-          id: get_uuid(),
+          id: ID.toString(),
           fill: null,
           centerx: center[1],
           centery: center[0],
