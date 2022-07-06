@@ -180,7 +180,7 @@
                 dense
                 color = "primary"
                 x-small
-                @click="roi.polygons = []"
+                @click="roi.polygons = hide_grid()"
                 :disabled="roi.polygons.length === 0 || !tixels_filled || optionUpdate">
                   Hide Grid
                 </v-btn>
@@ -603,6 +603,7 @@ export default defineComponent({
     const no_thresh = ref(true);
     const thresh_image_created = ref<boolean>(false);
     const thresh_same = ref<boolean>(false);
+    const saved_grid_state = ref<boolean[]>([]);
     const loading = ref<boolean>(false);
     const loadingMessage = ref<boolean>(false);
     const taskStatus = ref<any>();
@@ -936,6 +937,13 @@ export default defineComponent({
     }
     function onLatticeButton(ev: any) {
       generateLattices(ev);
+    }
+    function hide_grid() {
+      if (tixels_filled.value) {
+        roi.value.polygons = [];
+      } else {
+        roi.value.polygons = [];
+      }
     }
     function onChangeScale(ev: any) {
       const v = scaleFactor.value;
@@ -1497,6 +1505,8 @@ export default defineComponent({
       bsa_image_disp,
       handle_spatial_call,
       rotate_image,
+      saved_grid_state,
+      hide_grid,
     };
   },
 });
