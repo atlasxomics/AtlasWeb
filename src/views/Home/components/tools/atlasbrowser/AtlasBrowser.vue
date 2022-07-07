@@ -494,8 +494,7 @@
 </template>
 
 <script lang='ts'>
-
-import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
+import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import lodash, { pad, trim } from 'lodash';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
@@ -682,6 +681,57 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
       taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
+    async function getMeta() {
+      try {
+        const root = 'data';
+        const task = 'creation.create_files';
+        const queue = 'jonah_browser';
+        const params = {
+          data: null,
+          path: `${root}/${run_id.value}`,
+          file_type: 'json',
+          file_name: 'metadata.json',
+        };
+        const args: any[] = [params];
+        const kwargs: any = {};
+        const name = `${root}/${run_id.value}/metadata.json`;
+        const jsonFileName = { params: { filename: name } };
+        const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
+        let slimsData: any;
+        if (!jsonBoolean) {
+          loading.value = true;
+          slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
+          params.data = slimsData;
+          const taskObject = await client.value!.postTask(task, args, kwargs, queue);
+          await checkTaskStatus(taskObject._id);
+          /* eslint-disable no-await-in-loop */
+          while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+            await new Promise((r) => {
+              taskTimeout.value = window.setTimeout(r, 1000);
+            });
+            taskTimeout.value = null;
+            await checkTaskStatus(taskObject._id);
+          }
+          /* eslint-disable no-await-in-loop */
+          if (taskStatus.value.status !== 'SUCCESS') {
+            snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+            loading.value = false;
+            return;
+          }
+        } else {
+          slimsData = jsonBoolean;
+        }
+        loading.value = false;
+        metadata.value.organ = slimsData.Organ;
+        metadata.value.species = slimsData.Species;
+        metadata.value.type = slimsData['Tissue type'];
+      } catch (error) {
+        console.log(error);
+        loading.value = false;
+        snackbar.dispatch({ text: 'Failed to create metadata', options: { color: 'error', right: true } });
+      }
+    }
     // io
     async function loadMetadata() {
       if (!client.value) return;
@@ -699,20 +749,15 @@ export default defineComponent({
       const scale_pos = await client.value.getJsonFile(scale_payload);
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
-      metadata.value = resp;
-      // await getMeta();
-      const slimsData = await client.value.getMetadataFromRunId(`${run_id.value}`);
-      metadata.value.organ = slimsData.Organ;
-      metadata.value.species = slimsData.Species;
-      metadata.value.type = slimsData['Tissue type'];
-      metadata.value.numChannels = '50';
       if (resp) {
+        metadata.value = resp;
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
       } else {
         optionFlag.value = true;
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
+      await getMeta();
     }
 
     async function rotate_image(degrees: number) {
@@ -1166,55 +1211,6 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
       }
     }
-    async function getMeta() {
-      const root = 'data';
-      const task = 'creation.create_files';
-      const queue = 'creation_atlasbrowser';
-      const params = {
-        data: null,
-        path: `${root}/${run_id.value}`,
-        file_type: 'json',
-        file_name: 'metadata.json',
-      };
-      const args: any[] = [params];
-      const kwargs: any = {};
-      const name = `${root}/${run_id.value}/metadata.json`;
-      const jsonFileName = { params: { filename: name } };
-      const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
-      let slimsData: any;
-      if (!jsonBoolean) {
-        loading.value = true;
-        slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
-        params.data = slimsData;
-        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
-        await checkTaskStatus(taskObject._id);
-        /* eslint-disable no-await-in-loop */
-        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
-          await new Promise((r) => {
-            taskTimeout.value = window.setTimeout(r, 1000);
-          });
-          taskTimeout.value = null;
-          await checkTaskStatus(taskObject._id);
-        }
-        /* eslint-disable no-await-in-loop */
-        if (taskStatus.value.status !== 'SUCCESS') {
-          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
-          loading.value = false;
-          return;
-        }
-        loading.value = false;
-      } else {
-        slimsData = jsonBoolean;
-      }
-      loading.value = false;
-      metadata.value.organ = slimsData.Organ;
-      metadata.value.species = slimsData.Species;
-      metadata.value.type = slimsData['Tissue type'];
-      metadata.value.organ = slimsData.Organ;
-      metadata.value.species = slimsData.Species;
-      metadata.value.type = slimsData['Tissue type'];
-    }
     async function generateSpatial() {
       if (!client.value) return;
       try {
@@ -1365,7 +1361,7 @@ export default defineComponent({
       await loadAll();
     });
     watch(current_image, (v) => {
-      if (current_image.value) {
+      if (current_image.value && !isCropMode.value) {
         crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
         onChangeScale(scaleFactor.value);
       }
@@ -1423,6 +1419,9 @@ export default defineComponent({
           await selectAction({ id: props.query.run_id });
         }
       }
+    });
+    onUnmounted(async () => {
+      window.removeEventListener('resize', handleResize);
     });
     return {
       allFiles,
