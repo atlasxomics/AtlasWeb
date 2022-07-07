@@ -110,7 +110,7 @@
                 <v-btn
                 color="grey"
                 :disabled="!current_image || isCropMode || grid"
-                @click="orientation.rotation = orientation.rotation + 90; loadImage()"
+                @click="orientation.rotation = orientation.rotation + 270; loadImage()"
                 small
                 >
                 <img src="@/assets/images/rotate_left.png"
@@ -121,7 +121,7 @@
                 color="grey"
                 class="spaced_btn"
                 :disabled="!current_image || isCropMode || grid"
-                @click="orientation.rotation = orientation.rotation + 270; loadImage()"
+                @click="orientation.rotation = orientation.rotation + 90; loadImage()"
                 small
                 >
                 <img src="@/assets/images/rotate_right.png"
