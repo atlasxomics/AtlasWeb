@@ -1,6 +1,7 @@
 <template>
     <v-autocomplete
       class="noScroll"
+      id ="noScrollId"
       v-model="selectedGenes"
       :items="filteredGenes"
       :outlined="false"
@@ -20,21 +21,23 @@
       :loading="autocompleteLoading"
       :menu-props="{closeOnClick: false}"
       @change="onGenelistChanged"
-      @focus="focusFlag = true"
-      @blur="focusFlag = false"
       width="100%"
       small-chips>
       <template v-slot:selection="data">
+      <v-chip-group column>
         <v-chip
+          :key="data.item.name"
           v-bind="data.attrs"
-          :input-value="data.selected"
+          :input-value="active"
           close
           small
           color="warning"
+          outlined
           @click.stop="updateTrack(data.item.name)"
           @click:close="remove(data.item)"
         >{{ data.item.name }}
         </v-chip>
+        </v-chip-group>
       </template>
       <template v-slot:append-outer v-if="selectedGenes.length > 0">
         <v-btn
@@ -47,9 +50,9 @@
         <div class="customCheck">
           <v-tooltip bottom>
           <template v-slot:activator="{ on, attrs }">
-            <v-simple-checkbox v-bind="attrs" v-on="on" v-model="singleSum" label="" color="secondary" hide-details dense />
+            <v-simple-checkbox v-bind="attrs" v-on="on" v-model="de_select" label="" color="secondary" hide-details dense />
           </template>
-          <span>Summation/Single</span>
+          <span>(De)Select All</span>
           </v-tooltip>
         </div>
       </template>
@@ -88,8 +91,12 @@ export default defineComponent({
     const showFlag = ref<boolean>(false);
     const autocompleteLoading = ref(false);
     const labelValue = ref<string>('Enter ID');
-    const focusFlag = ref<boolean>(false);
-    const singleSum = ref<boolean>(false);
+    const de_select = ref<boolean>(false);
+    const clicked = ref<boolean>(false);
+    const paddingValue = ref<number>(32);
+    const newRowCounter = ref<number>(0);
+    const active = ref<boolean>(false);
+    const autoGenes = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -109,19 +116,41 @@ export default defineComponent({
     }
     async function onGenelistChanged(ev: any) {
       ctx.emit('changed', ev);
-      // TODO to send signal to the parent
+      if (ev.length > 0) {
+        const clientHeighte = document.querySelector('.noScroll') as HTMLElement;
+        const childElementInner = clientHeighte.querySelector('.v-select__slot') as HTMLElement;
+        const childElementOuter = clientHeighte.querySelector('.v-input__append-outer') as HTMLElement;
+        let holder = childElementInner?.clientHeight || 0;
+        if (holder > paddingValue.value) {
+          newRowCounter.value += 1;
+          childElementInner.style.paddingTop = `${25 * newRowCounter.value}px`;
+          childElementOuter.style.paddingTop = `${25 * newRowCounter.value}px`;
+          holder = childElementInner?.clientHeight || 0;
+          paddingValue.value = holder;
+        }
+      } else {
+        const clientHeighte = document.querySelector('.noScroll') as HTMLElement;
+        const childElementInner = clientHeighte.querySelector('.v-select__slot') as HTMLElement;
+        const childElementOuter = clientHeighte.querySelector('.v-input__append-outer') as HTMLElement;
+        childElementOuter.style.paddingTop = '0';
+        childElementInner.style.paddingTop = '0';
+        paddingValue.value = 32;
+      }
     }
     async function showGene(ev: any) {
       showFlag.value = true;
-      ctx.emit('flag', ev);
+      ctx.emit('sentgenes', autoGenes.value);
     }
     async function updateTrack(ev: any) {
-      ctx.emit('track', ev);
+      if (!autoGenes.value.includes(ev)) {
+        autoGenes.value.push(ev);
+      } else {
+        const index = autoGenes.value.indexOf(ev);
+        if (index > -1) autoGenes.value.splice(index, 1);
+      }
     }
     function resetScroll() {
       labelValue.value = '';
-      const inputBox = document.getElementsByClassName('v-select__selections');
-      inputBox[0].scrollTo(0, 0);
     }
     function remove(item: any) {
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
@@ -134,8 +163,11 @@ export default defineComponent({
         querySelections(v);
       }
     });
-    watch(singleSum, (v: any) => {
-      ctx.emit('options', v);
+    watch(de_select, (v: any) => {
+      active.value = v;
+      if (v) {
+        autoGenes.value = selectedGenes.value;
+      } else autoGenes.value = [];
     });
     watch(geneList.value, (v: any[]) => {
       genes.value = v;
@@ -155,16 +187,10 @@ export default defineComponent({
     watch(selectedGenes, (v: any[]) => {
       if (selectedGenes.value.length === 0) {
         filteredGenes.value = [];
+        autoGenes.value = [];
         showFlag.value = false;
-      }
-    });
-    watch(focusFlag, (v: any) => {
-      labelValue.value = '';
-      if (v) {
-        resetScroll();
-      } else {
         labelValue.value = 'Enter ID';
-      }
+      } else labelValue.value = '';
     });
     onMounted(async () => {
       await clientReady;
@@ -176,8 +202,12 @@ export default defineComponent({
       autocompleteLoading,
       showFlag,
       labelValue,
-      focusFlag,
-      singleSum,
+      de_select,
+      clicked,
+      paddingValue,
+      newRowCounter,
+      active,
+      autoGenes,
       acInputChanged,
       querySelections,
       onGenelistChanged,
@@ -193,56 +223,10 @@ export default defineComponent({
 
 <style scoped>
   .noScroll {
-    margin-top: 12px;
+    margin-top: 18px;
   }
-  .noScroll >>> .v-input__control {
-    align-items: flex-start;
-    display: flex;
-    flex: 1 1 auto;
-    font-size: 16px;
-    letter-spacing: normal;
-    max-width: 700px;
-    text-align: left;
-    overflow: hidden;
-  }
-  .noScroll >>> .v-select__slot {
-    position: relative;
-    align-items: center;
-    display: flex;
-    max-width: 100%;
-    min-width: 0;
-    width: 100%;
-  }
-  .noScroll >>> .v-select__selections {
-    align-items: center;
-    display: unset;
-    flex: none;
-    margin-bottom: -50px; /* maximum width of scrollbar */
-    padding-bottom: 50px; /* maximum width of scrollbar */
-    overflow-y: hidden;
-    overflow-x: scroll;
-    white-space: nowrap;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-    line-height: 18px;
-    width: 90%;
-    max-width: 90%;
-    min-width: 0;
-  }
-  .noScroll >>> .v-text-field .noScroll >>> .v-input__append-inner, .noScroll >>> .v-text-field .noScroll >>> .v-input__prepend-inner {
-    align-self: end;
-    display: grid;
-    margin-top: 4px;
-    line-height: 1;
-    width: 5%;
-    max-width: 5%;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-  .noScroll >>> ::-webkit-scrollbar {
-  display: none; /* for Chrome, Safari, and Opera */
+  .noScroll >>> .v-input__slot {
+    background-color: #f5f5f5;
   }
   .customCheck {
     color: white;

@@ -102,7 +102,7 @@ export default defineComponent({
     }
     // Login Existing User
     onBeforeMount(async () => {
-      // await loginExisting();
+      await loginExisting();
       if (!loggedIn.value) {
         redirectToLogin();
       }
