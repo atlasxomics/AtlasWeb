@@ -368,7 +368,7 @@
               :genelist="genes"
               :standalone="false"
               :selected_tixels="topSelected"
-              :selected_genes="(singleSum ? childGenes : childGenes[childGenes.length - 1])"
+              :selected_genes="childGenes"
               :background="backgroundColor"
               :heatmap="heatMap"
               :task="'gene.compute_qc'"
@@ -539,8 +539,6 @@ export default defineComponent({
     const seqLogoData = ref<any>();
     const widthFromCard = ref<number>();
     const publicSeqlogo = ref<any>();
-    const singleSum = ref<boolean>(false);
-    const singleSumHolder = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -738,7 +736,6 @@ export default defineComponent({
             }
           } else {
             filename.value = holdGene.value;
-            console.log(filename.value);
             if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
               await loadExpressions();
             }
@@ -894,28 +891,23 @@ export default defineComponent({
         this.$on('changed', (ev: any[]) => {
           selectedGenes.value = ev;
         });
-        this.$on('flag', (ev: any) => {
-          if (ev) {
+        this.$on('sentgenes', (ev: any) => {
+          if (ev.length > 0) {
             isClusterView.value = false;
             childGenes.value = [];
-            singleSum.value = singleSumHolder.value;
-            selectedGenes.value.forEach((v: string, i: number) => {
+            trackBrowserGenes.value = [];
+            ev.forEach((v: string, i: number) => {
               childGenes.value.push(v);
             });
-            if (!singleSum.value) {
-              trackBrowserGenes.value = [selectedGenes.value[selectedGenes.value.length - 1]];
+            if (ev.length === 1) {
+              ev.forEach((v: string, i: number) => {
+                trackBrowserGenes.value.push(v);
+              });
+              if (geneMotif.value) {
+                seqlogo();
+              }
             }
           }
-        });
-        this.$on('track', (ev: any) => {
-          trackBrowserGenes.value = [ev];
-          childGenes.value = [ev];
-          if (geneMotif.value) {
-            seqlogo();
-          }
-        });
-        this.$on('options', (ev: any) => {
-          singleSumHolder.value = ev;
         });
       },
     });
@@ -927,7 +919,6 @@ export default defineComponent({
       }
     });
     watch(geneMotif, (v: any) => {
-      console.log(v);
       featureTableFlag.value = true;
       peakViewerFlag.value = false;
       geneMotifFlag.value = false;
@@ -937,6 +928,7 @@ export default defineComponent({
       stepArray.value = [];
       geneButton.value = [];
       childGenes.value = [];
+      trackBrowserGenes.value = [];
       updateFilename();
     });
     watch(isDrawing, (v: boolean) => {
@@ -1147,8 +1139,6 @@ export default defineComponent({
       seqLogoData,
       widthFromCard,
       linkAlert,
-      singleSum,
-      singleSumHolder,
       holdGene,
       holdMotif,
     };

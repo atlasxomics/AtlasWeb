@@ -69,7 +69,6 @@ export default defineComponent({
       const valuesC = ['C', '#255c9a'];
       const valuesG = ['G', '#f7b32b'];
       const valuesT = ['T', '#d6273a'];
-      console.log(data);
       for (let i = 0; i <= data.length; i += 1) {
         if (data[i]) {
           for (let j = 0; j <= data[i].length; j += 1) {
