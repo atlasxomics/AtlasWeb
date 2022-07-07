@@ -1,258 +1,256 @@
 <template>
-    <v-container fixed>
-      <v-row no-gutters>
-        <v-col cols="12" sm="1">
-          <v-card
-          class="rounded-0"
-          flat
-          :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-          height="50vh">
-            <v-card-text style="margin-left:4vw">
-              <v-row>
-                <v-btn
-                small
-                icon
-                color="primary"
-                :disabled="!spatialData"
-                @click="resetScaleAndPos"
-                ><v-icon small>mdi-arrow-expand</v-icon>
-                </v-btn>
-              </v-row>
-              <v-row>
-                <v-btn
-                  small
-                  icon
-                  color="primary"
-                  :disabled="!spatialData"
-                  @click="scale=scale*1.1"
-                  ><v-icon small>mdi-magnify-plus</v-icon>
-                </v-btn>
-              </v-row>
-              <v-row>
-                <v-btn
-                  small
-                  icon
-                  color="primary"
-                  :disabled="!spatialData"
-                  @click="scale=scale*0.9"
-                  ><v-icon small>mdi-magnify-minus</v-icon>
-                </v-btn>
-              </v-row>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" sm="5">
-          <v-card id="stageParent"
-            class="rounded-0"
-            v-resize="onResize"
-            flat
-            :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
-            height="50vh"
-            align="center">
-            <v-stage
-              ref="konvaStage"
-              class="mainStage"
-              :config="konvaConfigLeft"
-              :style="{ 'overflow': 'hidden' }"
-              @mousedown="mouseDownOnStageLeft"
-              @mousemove="mouseMoveOnStageLeft"
-              @mouseup="mouseUpOnStageLeft"
-              >
-              <v-layer
-                ref="spatialLayer"
-                id="spatialLayer">
-                <v-circle v-for="p in circlesSpatial"
-                  :config="p"
-                  v-bind:key="p.id"
-                  @mouseover="mouseMoveOnSpatial"
-                  @mouseout="mouseOutOnSpatial"/>
-              </v-layer>
-              <v-layer
-                ref="annotationLayer"
-                />
-              <v-layer
-                ref="drawingLayer"
-                id="drawingLayer"
-                v-if="isDrawing">
-                <template
-                  v-for="poly in regions">
-                  <v-line
-                    v-bind:key="poly.id"
-                    :config="poly"/>
-                </template>
-                <v-line
-                  :config="polygon"/>
-              </v-layer>
-              <v-layer
-                v-if="isDrawingRect"
-                ref="drawingLayerRect"
-                id="drawingLayerRect">
-                <v-rect
-                  :config="rectangle"/>
-              </v-layer>
-            </v-stage>
-          </v-card>
+  <v-row no-gutters>
+    <v-col cols="12" sm="1">
+      <v-card
+      class="rounded-0"
+      flat
+      :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
+      height="50vh">
+        <v-card-text style="margin-left:4vw">
           <v-row>
-            <v-col cols="12" sm="10">
-              <template v-if="!isClusterView && !spatialRun">
-                <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
-                  <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
-                  {{ step }}
-                  </div>
-                </div>
-              </template>
-              <template v-else>
-                <v-card
-                  flat
-                  :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
-                  height="3vh"
-                  width="100%">
-                  <v-row no-gutters>
-                    <v-col v-if="!clusterItems">
-                        No clusters
-                    </v-col>
-                    <v-col v-for="item in clusterItems" v-bind:key="`${item.name}`" class="ma-0 pa-0 text-center">
-                      <v-btn
-                      small
-                      icon
-                      :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
-                      @click="mouseOverClusterItem(item)"
-                      >{{ item.name }}
-                      </v-btn>
-                    </v-col>
-                  </v-row>
-                </v-card>
-              </template>
-            </v-col>
+            <v-btn
+            small
+            icon
+            color="primary"
+            :disabled="!spatialData"
+            @click="resetScaleAndPos"
+            ><v-icon small>mdi-arrow-expand</v-icon>
+            </v-btn>
           </v-row>
-        </v-col>
-        <v-col cols="12" sm="1">
-          <v-card
-          class="rounded-0"
-          flat
-          :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-          height="50vh"
-          width="100%">
-            <v-card-text style="margin-left:4vw">
-              <v-row>
-                <v-btn
-                small
-                icon
-                color="primary"
-                :disabled="!spatialData"
-                @click="resetScaleAndPosUMAP"
-                ><v-icon small>mdi-arrow-expand</v-icon>
-                </v-btn>
-              </v-row>
-              <v-row>
-                <v-btn
-                  small
-                  icon
-                  color="primary"
-                  :disabled="!spatialData"
-                  @click="scaleUMAP=scaleUMAP*1.1"
-                  ><v-icon small>mdi-magnify-plus</v-icon>
-                </v-btn>
-              </v-row>
-              <v-row>
-                <v-btn
-                  small
-                  icon
-                  color="primary"
-                  :disabled="!spatialData"
-                  @click="scaleUMAP=scaleUMAP*0.9"
-                  ><v-icon small>mdi-magnify-minus</v-icon>
-                </v-btn>
-              </v-row>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" sm="5">
-          <v-card id="stageParentRight"
-            class="rounded-0"
-            flat
-            v-resize="onResize"
-            :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-            height="50vh">
-            <v-stage
-              ref="konvaStageRight"
-              class="mainStage"
-              :config="konvaConfigRight"
-              @mousedown="mouseDownOnStageRight"
-              @mousemove="mouseMoveOnStageRight"
-              @mouseup="mouseUpOnStageRight"
-              :style="{ 'overflow': 'hidden' }"
-              >
-              <v-layer
-                ref="spatialLayerRight"
-                id="spatialLayerRight">
-                <v-circle v-for="p in circlesSpatialUMAP"
-                  :config="p"
-                  v-bind:key="p.id"
-                  @mousemove="mouseMoveOnSpatialRight"
-                  @mouseout="mouseOutOnSpatialRight"/>
-              </v-layer>
-              <v-layer
-                ref="annotationLayerRight"
-                />
-              <v-layer
-                ref="drawingLayerRight"
-                id="drawingLayerRight"
-                v-if="isDrawing">
-                <template
-                  v-for="poly in regionsUMAP">
-                  <v-line
-                    v-bind:key="poly.id"
-                    :config="poly"/>
-                </template>
-                <v-line
-                  :config="polygonUMAP"/>
-              </v-layer>
-              <v-layer
-                v-if="isDrawingRect"
-                ref="drawingLayerRightRect"
-                id="drawingLayerRightRect">
-                <v-rect
-                  :config="rectangleUMAP"/>
-              </v-layer>
-            </v-stage>
-          </v-card>
           <v-row>
-            <v-col cols="12" sm="10">
-              <template v-if="!isClusterView && !spatialRun">
-                <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
-                  <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
-                  {{ step }}
-                  </div>
-                </div>
-              </template>
-              <template v-else>
-                <v-card
-                  flat
-                  :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
-                  height="3vh"
-                  width="100%">
-                  <v-row no-gutters>
-                    <v-col v-if="!clusterItems">
-                        No clusters
-                    </v-col>
-                    <v-col v-for="item in clusterItems" v-bind:key="`${item.name}`" class="ma-0 pa-0 text-center">
-                      <v-btn
-                      small
-                      icon
-                      :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
-                      @click="mouseOverClusterItem(item)"
-                      >{{ item.name }}
-                      </v-btn>
-                    </v-col>
-                  </v-row>
-                </v-card>
-              </template>
-            </v-col>
+            <v-btn
+              small
+              icon
+              color="primary"
+              :disabled="!spatialData"
+              @click="scale=scale*1.1"
+              ><v-icon small>mdi-magnify-plus</v-icon>
+            </v-btn>
           </v-row>
+          <v-row>
+            <v-btn
+              small
+              icon
+              color="primary"
+              :disabled="!spatialData"
+              @click="scale=scale*0.9"
+              ><v-icon small>mdi-magnify-minus</v-icon>
+            </v-btn>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-col>
+    <v-col cols="12" sm="5">
+      <v-card id="stageParent"
+        class="rounded-0"
+        v-resize="onResize"
+        flat
+        :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
+        height="50vh"
+        align="center">
+        <v-stage
+          ref="konvaStage"
+          class="mainStage"
+          :config="konvaConfigLeft"
+          :style="{ 'overflow': 'hidden' }"
+          @mousedown="mouseDownOnStageLeft"
+          @mousemove="mouseMoveOnStageLeft"
+          @mouseup="mouseUpOnStageLeft"
+          >
+          <v-layer
+            ref="spatialLayer"
+            id="spatialLayer">
+            <v-circle v-for="p in circlesSpatial"
+              :config="p"
+              v-bind:key="p.id"
+              @mouseover="mouseMoveOnSpatial"
+              @mouseout="mouseOutOnSpatial"/>
+          </v-layer>
+          <v-layer
+            ref="annotationLayer"
+            />
+          <v-layer
+            ref="drawingLayer"
+            id="drawingLayer"
+            v-if="isDrawing">
+            <template
+              v-for="poly in regions">
+              <v-line
+                v-bind:key="poly.id"
+                :config="poly"/>
+            </template>
+            <v-line
+              :config="polygon"/>
+          </v-layer>
+          <v-layer
+            v-if="isDrawingRect"
+            ref="drawingLayerRect"
+            id="drawingLayerRect">
+            <v-rect
+              :config="rectangle"/>
+          </v-layer>
+        </v-stage>
+      </v-card>
+      <v-row>
+        <v-col cols="12" sm="10">
+          <template v-if="!isClusterView && !spatialRun">
+            <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
+              <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
+              {{ step }}
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <v-card
+              flat
+              :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
+              height="3vh"
+              width="100%">
+              <v-row no-gutters>
+                <v-col v-if="!clusterItems">
+                    No clusters
+                </v-col>
+                <v-col v-for="item in clusterItems" v-bind:key="`${item.name}`" class="ma-0 pa-0 text-center">
+                  <v-btn
+                  small
+                  icon
+                  :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
+                  @click="mouseOverClusterItem(item)"
+                  >{{ item.name }}
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-card>
+          </template>
         </v-col>
       </v-row>
-    </v-container>
+    </v-col>
+    <v-col cols="12" sm="1">
+      <v-card
+      class="rounded-0"
+      flat
+      :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
+      height="50vh"
+      width="100%">
+        <v-card-text style="margin-left:4vw">
+          <v-row>
+            <v-btn
+            small
+            icon
+            color="primary"
+            :disabled="!spatialData"
+            @click="resetScaleAndPosUMAP"
+            ><v-icon small>mdi-arrow-expand</v-icon>
+            </v-btn>
+          </v-row>
+          <v-row>
+            <v-btn
+              small
+              icon
+              color="primary"
+              :disabled="!spatialData"
+              @click="scaleUMAP=scaleUMAP*1.1"
+              ><v-icon small>mdi-magnify-plus</v-icon>
+            </v-btn>
+          </v-row>
+          <v-row>
+            <v-btn
+              small
+              icon
+              color="primary"
+              :disabled="!spatialData"
+              @click="scaleUMAP=scaleUMAP*0.9"
+              ><v-icon small>mdi-magnify-minus</v-icon>
+            </v-btn>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-col>
+    <v-col cols="12" sm="5">
+      <v-card id="stageParentRight"
+        class="rounded-0"
+        flat
+        v-resize="onResize"
+        :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
+        height="50vh">
+        <v-stage
+          ref="konvaStageRight"
+          class="mainStage"
+          :config="konvaConfigRight"
+          @mousedown="mouseDownOnStageRight"
+          @mousemove="mouseMoveOnStageRight"
+          @mouseup="mouseUpOnStageRight"
+          :style="{ 'overflow': 'hidden' }"
+          >
+          <v-layer
+            ref="spatialLayerRight"
+            id="spatialLayerRight">
+            <v-circle v-for="p in circlesSpatialUMAP"
+              :config="p"
+              v-bind:key="p.id"
+              @mousemove="mouseMoveOnSpatialRight"
+              @mouseout="mouseOutOnSpatialRight"/>
+          </v-layer>
+          <v-layer
+            ref="annotationLayerRight"
+            />
+          <v-layer
+            ref="drawingLayerRight"
+            id="drawingLayerRight"
+            v-if="isDrawing">
+            <template
+              v-for="poly in regionsUMAP">
+              <v-line
+                v-bind:key="poly.id"
+                :config="poly"/>
+            </template>
+            <v-line
+              :config="polygonUMAP"/>
+          </v-layer>
+          <v-layer
+            v-if="isDrawingRect"
+            ref="drawingLayerRightRect"
+            id="drawingLayerRightRect">
+            <v-rect
+              :config="rectangleUMAP"/>
+          </v-layer>
+        </v-stage>
+      </v-card>
+      <v-row>
+        <v-col cols="12" sm="10">
+          <template v-if="!isClusterView && !spatialRun">
+            <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
+              <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
+              {{ step }}
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <v-card
+              flat
+              :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
+              height="3vh"
+              width="100%">
+              <v-row no-gutters>
+                <v-col v-if="!clusterItems">
+                    No clusters
+                </v-col>
+                <v-col v-for="item in clusterItems" v-bind:key="`${item.name}`" class="ma-0 pa-0 text-center">
+                  <v-btn
+                  small
+                  icon
+                  :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
+                  @click="mouseOverClusterItem(item)"
+                  >{{ item.name }}
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-card>
+          </template>
+        </v-col>
+      </v-row>
+    </v-col>
+  </v-row>
 </template>
 
 <script lang='ts'>

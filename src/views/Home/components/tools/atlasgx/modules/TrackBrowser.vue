@@ -1,11 +1,9 @@
 <template>
-    <v-container fluid>
-      <v-card flat>
-        <v-card-text>
-          <div :id="pageId"></div>
-        </v-card-text>
-      </v-card>
-    </v-container>
+  <v-card flat>
+    <v-card-text>
+      <div :id="pageId"></div>
+    </v-card-text>
+  </v-card>
 </template>
 <script lang='ts'>
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';

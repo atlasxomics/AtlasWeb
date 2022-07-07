@@ -19,7 +19,7 @@
 import { computed, defineComponent, onBeforeMount, watch, onMounted, watchEffect, ref } from '@vue/composition-api';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
-import { loginExisting, loggedIn } from '@/utils/auth';
+import { loginExisting, loggedIn, readCookie } from '@/utils/auth';
 import { generateRouteByQuery } from '@/utils';
 import Appbar from '@/components/Appbar/Appbar.vue';
 import MainMenu from './components/menu/MainMenu.vue';
@@ -123,7 +123,7 @@ export default defineComponent({
     });
     onMounted(() => {
       const route = currentRoute.value;
-      if (route.query.component) store.commit.setComponent(route.query);
+      if (readCookie()) store.commit.setComponent(route.query);
       else store.commit.setComponent({ component: null });
     });
     return {
