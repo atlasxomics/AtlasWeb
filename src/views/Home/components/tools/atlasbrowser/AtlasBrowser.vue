@@ -608,7 +608,7 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
-    const channels = ref(50);
+    const channels = ref('50');
     const barcodes = ref(1);
     const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
@@ -680,7 +680,7 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
       taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
-    async function getMeta() {
+     async function getMeta() {
       try {
         const root = 'data';
         const task = 'creation.create_files';
@@ -732,6 +732,7 @@ export default defineComponent({
       }
     }
     // io
+
     async function loadMetadata() {
       if (!client.value) return;
       loading.value = true;
@@ -837,7 +838,7 @@ export default defineComponent({
     }
     function updateChannels(ev: any) {
       if (/50/.test(ev)) {
-        channels.value = 50;
+        channels.value = '50';
         barcodes.value = 1;
         if (/v2/.test(ev)) {
           barcodes.value = 2;
