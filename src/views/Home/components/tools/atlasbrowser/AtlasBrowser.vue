@@ -545,7 +545,6 @@ interface Metadata {
   barcodes: number | null;
   organ: string | null;
 }
-
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
@@ -759,11 +758,9 @@ export default defineComponent({
       }
       await getMeta();
     }
-
     async function rotate_image(degrees: number) {
       document.querySelector(current_image).style.transform = 'rotate(90deg)';
     }
-
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
@@ -771,7 +768,7 @@ export default defineComponent({
       const root = 'data';
       let filename: any;
       if (optionUpdate.value) {
-        filename = `${root}/${run_id.value}/images/spatial/figure/postB_BSA.tif`;
+        filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
       } else {
         filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
       }
@@ -811,7 +808,6 @@ export default defineComponent({
       await loadImage();
       loading.value = false;
     }
-
     function searchRuns(ev: any) {
       const stringforRegex = ev;
       const updated = [];
@@ -846,9 +842,6 @@ export default defineComponent({
         if (/v2/.test(ev)) {
           barcodes.value = 2;
         }
-      } else {
-        barcodes.value = 1;
-        channels.value = 100;
       }
     }
     function handleResize(ev: any) {
@@ -978,7 +971,6 @@ export default defineComponent({
         roi.value.polygons[i].fill = saved_grid_state.value[i] ? 'red' : null;
       }
     }
-
     function generateLattices(ev: any) {
       roi.value.polygons = roi.value.generatePolygons();
       if (tixels_filled.value) {
@@ -1060,13 +1052,11 @@ export default defineComponent({
       roi_active.value = true;
       // no_thresh.value = false;
     }
-
     function clear_filled_tixels() {
       for (let i = 0; i < roi.value.polygons.length; i += 1) {
         roi.value.polygons[i].fill = null;
       }
     }
-
     function thresh_clicked() {
       if (!current_image.value) return;
       const sv = scaleFactor.value;
@@ -1117,7 +1107,6 @@ export default defineComponent({
           one.value += 50;
         }, 1000);
       }
-
       if (value > 40 && value < 80 && two.value <= 100) {
         valuetwo = setTimeout(() => {
           if (two.value === 100) {
@@ -1126,7 +1115,6 @@ export default defineComponent({
           two.value += 50;
         }, 1000);
       }
-
       if (value >= 80 && three.value <= 100) {
         valuethree = setTimeout(() => {
           if (three.value === 100) {
@@ -1159,7 +1147,7 @@ export default defineComponent({
       if (!spatial.value) return;
       try {
         const task = 'atlasbrowser.generate_h5ad';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
@@ -1186,7 +1174,6 @@ export default defineComponent({
           console.log('3');
           console.log(taskStatush5.value.position);
           console.log(taskStatush5.value.progress);
-
           await new Promise((r) => {
             taskTimeout.value = window.setTimeout(r, 1000);
           });
@@ -1222,7 +1209,7 @@ export default defineComponent({
         loading.value = true;
         spatial.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const cropCoords = crop.value.getCoordinatesOnImage();
         const points: number[] = [];
@@ -1237,21 +1224,20 @@ export default defineComponent({
           threshold: threshold.value,
           numChannels: channels.value,
           orientation: orientation.value,
-          crop_area: crop.value.getCoordinatesOnImage(),
+          crop_area: cropCoords,
           barcodes: barcodes.value,
         });
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
           files: allFiles.value,
-          crop_area: crop.value.getCoordinatesOnImage(),
+          crop_area: cropCoords,
           mask: roi.value.getMask(cropCoords),
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
           barcodes: barcodes.value,
         };
-
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -1341,7 +1327,6 @@ export default defineComponent({
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
-
     watch(brushSize, (v) => {
       brushConfig.value.radius = v;
     });
@@ -1536,10 +1521,8 @@ export default defineComponent({
     };
   },
 });
-
 </script>
 <style scoped>
-
 .spaced_btn {
   margin-left: 10px;
 }
