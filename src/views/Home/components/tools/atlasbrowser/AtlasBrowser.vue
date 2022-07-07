@@ -680,7 +680,7 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
       taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
-     async function getMeta() {
+    async function getMeta() {
       try {
         const root = 'data';
         const task = 'creation.create_files';
