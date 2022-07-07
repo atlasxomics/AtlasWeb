@@ -12,7 +12,7 @@
                 icon
                 class="ml-1"
                 medium
-                :disabled="!spatialData || loading || !isClusterView || (isDrawing || isDrawingRect)"
+                :disabled="!spatialData || loading"
                 @click="metaFlag = !metaFlag">
                 <v-icon>mdi-filter-variant</v-icon>
               </v-btn>
@@ -28,8 +28,8 @@
                 icon
                 class="ml-1"
                 medium
-                :disabled="!spatialData || loading || !isClusterView || (isDrawing || isDrawingRect)"
-                @click="geneMotif = !geneMotif">
+                :disabled="!spatialData || loading"
+                @click="geneMotifFlag = !geneMotifFlag">
                 <v-icon>mdi-teamviewer</v-icon>
               </v-btn>
             </template>
@@ -170,7 +170,22 @@
               </v-text-field>
             </v-card-text>
           </v-card>
-      </v-dialog>
+        </v-dialog>
+        <v-dialog
+          v-if="geneMotifFlag"
+          :value="geneMotifFlag"
+          @click:outside="geneMotifFlag = !geneMotifFlag"
+          hide-overlay>
+          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:150px;"
+            :disabled="loading">
+            <v-simple-table>
+              <tbody>
+                <tr><v-btn id="no-background-hover" text x-small @click="geneMotif = false">Genes</v-btn></tr>
+                <tr><v-btn id="no-background-hover" text x-small @click="geneMotif = true">Motifs</v-btn></tr>
+              </tbody>
+            </v-simple-table>
+          </v-card>
+        </v-dialog>
         <v-col cols="2" sm="1">
           <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'250px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
             <v-tooltip right :disabled="isDrawing">
@@ -298,6 +313,7 @@
                 color="black"
                 class="ml-4 mt-5"
                 small
+                @click="linkAlert"
                 v-clipboard:copy="publicLink">
                 <v-icon>mdi-content-copy</v-icon>
               </v-btn>
@@ -330,7 +346,7 @@
                 color="black"
                 icon
                 class="ml-4 mt-5"
-                :disabled="!spatialData || loading || geneMotif"
+                :disabled="!spatialData || loading"
                 @click="peakViewerFlag = true; featureTableFlag = false"
                 small>
                 <v-icon>mdi-chart-bar</v-icon>
@@ -366,9 +382,15 @@
               <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" v-on:toParent="sendGene"/>
               </v-card>
-              <div id="capturePeak" :style="{ 'background-color': 'transparent' }">
-                <v-card class="mt-3" :style="{ visibility: visible }" v-show="spatialData && !loading">
-                  <track-browser ref="trackbrowser" :run_id="runId" :colormap="colorMap" :search_key="trackBrowserGenes[trackBrowserGenes.length - 1]"/>
+              <div id="capturePeak" ref="peakContainer" :style="{ visibility: visible }">
+                <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading">
+                  <template v-if="!geneMotif">
+                      <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]"/>
+                  </template>
+                  <template v-else>
+                    <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
+                    <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
+                  </template>
                 </v-card>
               </div>
             </v-col>
@@ -394,6 +416,7 @@ import GeneAutoComplete from './modules/GeneAutoComplete.vue';
 import GeneDataTable from './modules/GeneDataTable.vue';
 import TrackBrowser from './modules/TrackBrowser.vue';
 import AtxAtacViewer from './modules/AtxAtacViewer.vue';
+import BarChart from './modules/BarChart.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -436,7 +459,7 @@ interface Metadata {
 
 export default defineComponent({
   name: 'AtlasG',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -445,7 +468,8 @@ export default defineComponent({
     const workers = computed(() => store.state.client?.workers);
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
-    const filenameMotif = ref<string | null>(null);
+    const holdMotif = ref<string | null>(null);
+    const holdGene = ref<string | null>(null);
     const runId = ref<string | null>(null);
     const publicLink = ref<string | null>(null);
     const items = ref<any[]>();
@@ -495,6 +519,7 @@ export default defineComponent({
     const backgroundFlag = ref<boolean>(false);
     const heatmapFlag = ref<boolean>(false);
     const autoCompleteFlag = ref<boolean>(false);
+    const geneMotifFlag = ref<boolean>(false);
     const listId = ref<boolean>(false);
     const lassoSide = ref<string>();
     const colorOnOff = ref<string>('black');
@@ -511,34 +536,29 @@ export default defineComponent({
     const visible = ref<string>('hidden');
     const spatialRun = ref<boolean>(false);
     const colorMap = ref<any>({});
+    const seqLogoData = ref<any>();
+    const widthFromCard = ref<number>();
+    const publicSeqlogo = ref<any>();
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
     function cleanRunId(rid: string) {
-      const lastDigitLocation = rid.search(/[0-9]\b/i) + 1;
-      return rid.slice(0, lastDigitLocation);
+      return rid.match('[A-Z]+[0-9]+')![0];
     }
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
-    }
-    async function fitStageToParent() {
-      const parent = document.querySelector('#stageParent');
-      if (!parent) return;
-      const parentWidth = (parent as any).offsetWidth;
-      const parentHeight = (parent as any).offsetHeight;
-      konvaConfigLeft.value.width = parentWidth;
-      konvaConfigLeft.value.height = parentHeight;
-      konvaConfigRight.value.width = parentWidth;
-      konvaConfigRight.value.height = parentHeight;
     }
     function updateLoading(ev: any) {
       loading.value = ev;
     }
     function updateSelectors(ev: any) {
       highlightIds.value = ev;
+    }
+    function linkAlert() {
+      snackbar.dispatch({ text: 'Public link copied to clipboard', options: { left: true, color: 'success' } });
     }
     function saveTxt() {
       listId.value = false;
@@ -553,6 +573,7 @@ export default defineComponent({
       pom.click();
     }
     function captureScreen(background: string) {
+      displayFlag.value = false;
       const el = document.getElementById('screenCapture')!;
       html2canvas(el, { backgroundColor: background }).then((canvas) => {
         const base64image = canvas.toDataURL('image/png');
@@ -568,7 +589,11 @@ export default defineComponent({
           const base64image = canvas.toDataURL('image/png');
           const pom = document.createElement('a');
           pom.href = base64image;
-          pom.setAttribute('download', `${runId.value}/peaks.png`);
+          let end: string;
+          if (geneMotif.value) {
+            end = `${runId.value}_${trackBrowserGenes.value[0]}_seqlogo`;
+          } else end = `${runId.value}_${trackBrowserGenes.value[0]}_peaks`;
+          pom.setAttribute('download', `${end}.png`);
           pom.click();
         });
       }
@@ -585,7 +610,7 @@ export default defineComponent({
       let resp: any;
       if (props.query.public) {
         if (geneMotif.value) {
-          resp = await client.value.getGeneExpressionsByToken(filenameMotif.value!);
+          resp = await client.value.getGeneExpressionsByToken(holdMotif.value!);
         } else {
           resp = await client.value.getGeneExpressionsByToken(filename.value);
         }
@@ -603,7 +628,7 @@ export default defineComponent({
       backgroundFlag.value = false;
     }
     async function updateCircles() {
-      if (spatialData.value === null) return;
+      if (!spatialData.value) return;
       isHighlighted.value = false;
       stepArray.value = [];
       const numClusters = lodash.uniq(spatialData.value.clusters).length;
@@ -618,13 +643,13 @@ export default defineComponent({
         cmap[cidx] = colors[i];
       }
       colorMap.value = cmap;
-      if (!showFlag.value[0] && !loading.value) {
-        (ctx as any).refs.trackbrowser.reload(cleanRunId(runId.value!), colorMap.value);
+      if (!geneMotif.value) {
+        (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
     }
     async function updateSpatial(ev: any) {
-      if (ev) {
-        spatialData.value = ev;
+      spatialData.value = ev;
+      if (Object.keys(spatialData.value.genes).length === 0) {
         const geneRank: any[] = [];
         const tableHeaders: any[] = [];
         clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
@@ -651,7 +676,8 @@ export default defineComponent({
         geneNames.value = geneRank;
         lengthClust.value = clusterItems.value.length;
         topSelected.value = spatialData.value.top_selected;
-        updateCircles();
+        loading.value = false;
+        await updateCircles();
       }
     }
     function chooseHeatmap(ev: any) {
@@ -686,6 +712,7 @@ export default defineComponent({
       loading.value = false;
     }
     async function updateFilename() {
+      /* eslint-disable no-lonely-if */
       try {
         if (!props.query.public) {
           if (geneMotif.value) {
@@ -702,15 +729,13 @@ export default defineComponent({
             }
           }
         } else {
-          const hold = filename.value;
-          const holdMotif = filenameMotif.value;
           if (geneMotif.value) {
-            filename.value = holdMotif;
+            filename.value = holdMotif.value;
             if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
               await loadExpressions();
             }
           } else {
-            filename.value = hold;
+            filename.value = holdGene.value;
             if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
               await loadExpressions();
             }
@@ -737,6 +762,44 @@ export default defineComponent({
         console.log(error);
         loading.value = false;
         snackbar.dispatch({ text: `${error}`, options: { right: true, color: 'error' } });
+      }
+    }
+    async function seqlogo() {
+      try {
+        if (props.query.public) {
+          const { encoded: filenameToken } = await client.value?.encodeLink({ args: [`data/${runId.value}/h5/obj/motifs.csv`], meta: { run_id: runId.value } });
+          publicSeqlogo.value = filenameToken;
+        }
+        const root = 'data';
+        const task = 'gene.seq_logo';
+        const queue = 'atxcloud_gene';
+        const args = [props.query.public ? publicSeqlogo.value : `${root}/${runId.value}/h5/obj/motifs.csv`, trackBrowserGenes.value[0]];
+        const kwargs: any = {};
+        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue) : await client.value!.postTask(task, args, kwargs, queue);
+
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          if (taskStatus.value.status === 'PROGRESS') {
+            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          }
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed in AtlasGx', options: { right: true, color: 'error' } });
+          loading.value = false;
+        } else {
+          snackbar.dispatch({ text: `Motif ${trackBrowserGenes.value[0]} found`, options: { right: true, color: 'success' } });
+          progressMessage.value = taskStatus.value.status;
+          const resp = taskStatus.value.result;
+          seqLogoData.value = resp;
+        }
+      } catch (error) {
+        console.log(error);
       }
     }
     async function getMeta() {
@@ -790,10 +853,12 @@ export default defineComponent({
       if (!props.query.public) {
         const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
-        filenameMotif.value = '';
+        holdMotif.value = '';
         runId.value = ev.id;
         pushByQuery({ component: 'AtlasG', run_id: ev.id });
         selectedGenes.value = [];
+        featureTableFlag.value = true;
+        peakViewerFlag.value = false;
       }
       await runSpatial('begin');
       await loadExpressions();
@@ -814,7 +879,9 @@ export default defineComponent({
       }
     }
     function onResize() {
-      fitStageToParent();
+      const parent = (ctx as any).refs.peakContainer;
+      if (!parent) return;
+      widthFromCard.value = (ctx as any).refs.peakContainer.offsetWidth - 2;
     }
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = new GeneAutoCompleteClass({
@@ -824,18 +891,23 @@ export default defineComponent({
         this.$on('changed', (ev: any[]) => {
           selectedGenes.value = ev;
         });
-        this.$on('flag', (ev: any) => {
-          if (ev) {
+        this.$on('sentgenes', (ev: any) => {
+          if (ev.length > 0) {
             isClusterView.value = false;
             childGenes.value = [];
-            selectedGenes.value.forEach((v: string, i: number) => {
+            trackBrowserGenes.value = [];
+            ev.forEach((v: string, i: number) => {
               childGenes.value.push(v);
             });
-            trackBrowserGenes.value = [selectedGenes.value[selectedGenes.value.length - 1]];
+            if (ev.length === 1) {
+              ev.forEach((v: string, i: number) => {
+                trackBrowserGenes.value.push(v);
+              });
+              if (geneMotif.value) {
+                seqlogo();
+              }
+            }
           }
-        });
-        this.$on('track', (ev: any) => {
-          trackBrowserGenes.value = [ev];
         });
       },
     });
@@ -847,16 +919,16 @@ export default defineComponent({
       }
     });
     watch(geneMotif, (v: any) => {
-      if (v) {
-        featureTableFlag.value = true;
-        peakViewerFlag.value = false;
-      }
+      featureTableFlag.value = true;
+      peakViewerFlag.value = false;
+      geneMotifFlag.value = false;
       isClusterView.value = true;
       selectedGenes.value = [];
       showFlag.value = [false];
       stepArray.value = [];
       geneButton.value = [];
       childGenes.value = [];
+      trackBrowserGenes.value = [];
       updateFilename();
     });
     watch(isDrawing, (v: boolean) => {
@@ -920,7 +992,7 @@ export default defineComponent({
         tooltip: 'Gene/Motif',
         disabled: loading.value,
         click: () => {
-          geneMotif.value = !geneMotif.value;
+          geneMotifFlag.value = !geneMotifFlag.value;
         },
       },
       {
@@ -949,24 +1021,25 @@ export default defineComponent({
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(submenu);
-      fitStageToParent();
-      if (props.query) {
-        if (!props.query.public) {
+      if (props.query && !props.query.public) {
+        await fetchFileList();
+        if (props.query.run_id) {
           // loadCandidateWorkers('AtlasGX');
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-          await fetchFileList();
+          await selectAction({ id: props.query.run_id });
         } else {
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query) {
-        if (props.query.run_id) {
+        if (props.query.run_id && props.query.public) {
           const mid = props.query.run_id.search(/motif/i);
           const end = props.query.run_id.length;
           const fn = props.query.run_id.slice(0, mid);
           const fn2 = props.query.run_id.slice(mid + 5, end);
+          holdGene.value = fn;
+          holdMotif.value = fn2;
           filename.value = fn;
-          filenameMotif.value = fn2;
         }
       }
       acInstance.$mount('#geneac');
@@ -980,7 +1053,6 @@ export default defineComponent({
       scale,
       scaleUMAP,
       filename,
-      filenameMotif,
       publicLink,
       items,
       headers,
@@ -1030,6 +1102,7 @@ export default defineComponent({
       chooseBackground,
       chooseHeatmap,
       heatmapFlag,
+      geneMotifFlag,
       lassoSide,
       colorOnOff,
       colorOnOffRect,
@@ -1061,6 +1134,13 @@ export default defineComponent({
       updateSelectors,
       getPublicId,
       resolveAuthGroup,
+      seqlogo,
+      publicSeqlogo,
+      seqLogoData,
+      widthFromCard,
+      linkAlert,
+      holdGene,
+      holdMotif,
     };
   },
 });

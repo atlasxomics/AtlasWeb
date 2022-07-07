@@ -746,7 +746,7 @@ export default defineComponent({
           }
           /* eslint-disable no-await-in-loop */
           if (taskStatus.value.status !== 'SUCCESS') {
-            snackbar.dispatch({ text: 'Worker failed in AtxViewer', options: { right: true, color: 'error' } });
+            snackbar.dispatch({ text: 'Worker failed in AtxAtacViewer', options: { right: true, color: 'error' } });
             loading.value = false;
             return;
           }
@@ -769,8 +769,8 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       } finally {
         loading.value = false;
+        ctx.emit('spatialFlag', spatialData.value);
       }
-      ctx.emit('spatialFlag', spatialData.value);
     }
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {
@@ -1015,7 +1015,6 @@ export default defineComponent({
         ctx.emit('spatialFlag', false);
       }
       filenameGene.value = v;
-      console.log('1');
       runSpatial(true);
     });
     watch(scale, () => {
@@ -1030,19 +1029,21 @@ export default defineComponent({
       polygon.value.points = [];
     });
     watch(selectedGenes, (v: any[]) => {
-      if (selectedGenes.value.length === 0) {
+      if (v && selectedGenes.value.length === 0) {
         isClusterView.value = true;
         stepArray.value = [];
         updateCircles();
       } else {
         isClusterView.value = false;
         removeRegions();
-        console.log('2');
         runSpatial(true);
       }
     });
     watch(selectedGenesFromParent, (v: any) => {
-      selectedGenes.value = v;
+      let gene = v;
+      if (typeof v === 'undefined') gene = [];
+      if (typeof v === 'string') gene = [gene];
+      selectedGenes.value = gene;
     });
     watch(loading, (v: any) => {
       ctx.emit('loading_value', v);

@@ -609,7 +609,7 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
-    const channels = ref(50);
+    const channels = ref('50');
     const barcodes = ref(1);
     const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
@@ -681,7 +681,7 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
       taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
-    async function getMeta() {
+     async function getMeta() {
       try {
         const root = 'data';
         const task = 'creation.create_files';
@@ -733,6 +733,7 @@ export default defineComponent({
       }
     }
     // io
+
     async function loadMetadata() {
       if (!client.value) return;
       loading.value = true;
@@ -771,7 +772,7 @@ export default defineComponent({
       const root = 'data';
       let filename: any;
       if (optionUpdate.value) {
-        filename = `${root}/${run_id.value}/images/spatial/figure/postB_BSA.tif`;
+        filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
       } else {
         filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
       }
@@ -841,14 +842,11 @@ export default defineComponent({
     }
     function updateChannels(ev: any) {
       if (/50/.test(ev)) {
-        channels.value = 50;
+        channels.value = '50';
         barcodes.value = 1;
         if (/v2/.test(ev)) {
           barcodes.value = 2;
         }
-      } else {
-        barcodes.value = 1;
-        channels.value = 100;
       }
     }
     function handleResize(ev: any) {
@@ -1159,7 +1157,7 @@ export default defineComponent({
       if (!spatial.value) return;
       try {
         const task = 'atlasbrowser.generate_h5ad';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
@@ -1222,7 +1220,7 @@ export default defineComponent({
         loading.value = true;
         spatial.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         const cropCoords = crop.value.getCoordinatesOnImage();
         const points: number[] = [];
@@ -1237,14 +1235,14 @@ export default defineComponent({
           threshold: threshold.value,
           numChannels: channels.value,
           orientation: orientation.value,
-          crop_area: crop.value.getCoordinatesOnImage(),
+          crop_area: cropCoords,
           barcodes: barcodes.value,
         });
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
           files: allFiles.value,
-          crop_area: crop.value.getCoordinatesOnImage(),
+          crop_area: cropCoords,
           mask: roi.value.getMask(cropCoords),
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),

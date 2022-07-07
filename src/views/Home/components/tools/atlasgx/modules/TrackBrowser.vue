@@ -31,22 +31,12 @@ export default defineComponent({
       required: false,
       default: null,
     },
-    run_id: {
-      type: String,
-      required: false,
-      default: null,
-    },
     search_key: {
       type: String,
       required: false,
       default: null,
     },
     params: {
-      type: Object,
-      required: false,
-      default: null,
-    },
-    colormap: {
       type: Object,
       required: false,
       default: null,
@@ -61,9 +51,8 @@ export default defineComponent({
     const searchKeyFromParents = computed(() => props.search_key);
     const sourceLinks = ref<any[]>([]);
     const trackSources = ref<any[]>([]);
-    const runId = computed(() => props.run_id);
-    const colorMap = ref<any>();
-    const colorMapFromParents = computed(() => props.colormap);
+    const runId = ref<string | null>(null);
+    const colorMap = ref<any>({});
     const pageId = `svgHolder-${get_uuid()}`;
     const selectedSpecies = ref<any | null>();
     const trackBrowserParams = ref<any>();
@@ -127,7 +116,7 @@ export default defineComponent({
             name: alid,
             desc: v.key,
             bwgURI: v.href,
-            style: [{ type: 'default', style: { glyph: 'HISTOGRAM', FGCOLOR: props.colormap[alid], BGCOLOR: props.colormap[alid], HEIGHT: 30, id: 'style1' } }],
+            style: [{ type: 'default', style: { glyph: 'HISTOGRAM', FGCOLOR: colorMap.value[alid], BGCOLOR: colorMap.value[alid], HEIGHT: 30, id: 'style1' } }],
             noDownsample: true,
             tier_type: 'bw',
           };
@@ -211,7 +200,7 @@ export default defineComponent({
         }
       }, {});
     }
-    async function reload(rid = props.run_id, cmap = colorMapFromParents.value) {
+    async function reload(rid: any, cmap: any) {
       await generateTrackParams(rid);
       mapColors(cmap);
       trackBrowser.value = await new (window as any).Browser(trackBrowserParams.value);
@@ -220,13 +209,6 @@ export default defineComponent({
     watch(searchKeyFromParents, (v: string) => {
       search.value = v;
       onClickSearch(null);
-    });
-    watch(runId, async (v: string) => {
-      if (v) reload(v);
-    });
-    watch(colorMapFromParents, async (v: any) => {
-      mapColors(v);
-      if (trackBrowser.value) trackBrowser.value.drawOverlays();
     });
     onMounted(async () => {
       await clientReady;
