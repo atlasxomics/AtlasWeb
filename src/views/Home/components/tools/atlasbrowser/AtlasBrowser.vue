@@ -83,13 +83,22 @@
                 label="Assay">
               </v-select>
               <v-select
-              v-model="metadata.disease_state"
+              v-model="metadata.diseaseState"
               outlined
               dense
               :items="metaItemLists.diseaseState"
               label="Disease State"
+              @change="changeDiseaseState"
               >
               </v-select>
+              <v-text-field
+              outlined
+              dense
+              label="Disease Name"
+              v-model="metadata.diseaseName"
+              v-if="metadata.diseaseState === 'Disease'"
+              >
+              </v-text-field>
               <v-select
                 v-model="metadata.numChannels"
                 outlined
@@ -575,7 +584,8 @@ interface Metadata {
   crop_area: any | null;
   barcodes: number | null;
   organ: string | null;
-  disease_state: string | null;
+  diseaseState: string | null;
+  diseaseName: string | null;
   collaborator: string | null;
   chip_resolution: number | null;
   notes: string | null;
@@ -686,7 +696,8 @@ export default defineComponent({
       crop_area: null,
       barcodes: 1,
       chip_resolution: null,
-      disease_state: null,
+      diseaseState: null,
+      diseaseName: null,
       collaborator: null,
       notes: null,
     });
@@ -709,6 +720,11 @@ export default defineComponent({
       imageh.value = null;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       // metaFlag.value = false;
+    }
+    function changeDiseaseState() {
+      if (metadata.value.diseaseState === 'Normal') {
+        metadata.value.diseaseName = '';
+      }
     }
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
@@ -756,6 +772,7 @@ export default defineComponent({
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */
           while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+            console.log(args);
             progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
             await new Promise((r) => {
               taskTimeout.value = window.setTimeout(r, 1000);
@@ -1624,6 +1641,7 @@ export default defineComponent({
       hide_grid,
       load_tixel_state,
       clear_filled_tixels,
+      changeDiseaseState,
     };
   },
 });
