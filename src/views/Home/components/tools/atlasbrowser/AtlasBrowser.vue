@@ -63,11 +63,18 @@
                 label="Organ">
               </v-text-field>
               <v-text-field
+              v-model="metadata.collaborator"
+              label="Collaborator"
+              dense
+              outlined
+              >
+              </v-text-field>
+              <!-- <v-text-field
                 v-model="metadata.type"
                 outlined
                 dense
                 label="Type">
-              </v-text-field>
+              </v-text-field> -->
               <v-select
                 v-model="metadata.assay"
                 outlined
@@ -76,13 +83,34 @@
                 label="Assay">
               </v-select>
               <v-select
+              v-model="metadata.disease_state"
+              outlined
+              dense
+              :items="metaItemLists.diseaseState"
+              label="Disease State"
+              >
+              </v-select>
+              <v-select
                 v-model="metadata.numChannels"
                 outlined
-                :items="metaItemLists.numChannels"
+                :items="metaItemLists.barcode_file"
                 dense
                 label="Barcode"
                 @change="updateChannels">
               </v-select>
+              <v-select
+              v-model="metadata.chip_resolution"
+              outlined
+              dense
+              label="Chip Resolution"
+              :items="metaItemLists.resolution">
+              </v-select>
+              <v-text-field
+              v-model="metadata.notes"
+              label="Notes"
+              outlined
+              dense>
+              </v-text-field>
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -530,7 +558,9 @@ const metaItemLists = {
   species: [],
   organ: [],
   assays: ['mRNA', 'Protein', 'ATAC', 'H3K27me3', 'H3K4me3', 'H3K27ac'],
-  numChannels: ['50', '50 v2'],
+  barcode_file: ['1 (Normal)', '2 (Flipped B)', '3 (Flipped A)', '4 (Flipped A and B)'],
+  resolution: ['10', '25', '50'],
+  diseaseState: ['Normal', 'Disease'],
 };
 interface Metadata {
   points: number[] | any;
@@ -545,6 +575,10 @@ interface Metadata {
   crop_area: any | null;
   barcodes: number | null;
   organ: string | null;
+  disease_state: string | null;
+  collaborator: string | null;
+  chip_resolution: number | null;
+  notes: string | null;
 }
 
 export default defineComponent({
@@ -651,6 +685,10 @@ export default defineComponent({
       orientation: null,
       crop_area: null,
       barcodes: 1,
+      chip_resolution: null,
+      disease_state: null,
+      collaborator: null,
+      notes: null,
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
