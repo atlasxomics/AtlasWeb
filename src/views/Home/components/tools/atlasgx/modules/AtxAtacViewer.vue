@@ -102,6 +102,7 @@
           </template>
           <template v-else>
             <v-card
+              :loading="loading"
               flat
               :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
               height="3vh"
@@ -227,6 +228,7 @@
           </template>
           <template v-else>
             <v-card
+              :loading="loading"
               flat
               :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
               height="3vh"
@@ -258,6 +260,7 @@ import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@
 import Konva from 'konva';
 import lodash from 'lodash';
 import colormap from 'colormap';
+import { rainbow } from '@indot/rainbowvis';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
@@ -293,13 +296,14 @@ function colormapBounded(cmap: string[], values: number[]) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect'],
+  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
     const runId = ref<string | null>(null);
     const filenameGene = ref<string>('');
     const filenameFromParent = computed(() => props.filename);
+    const colorFromParent = computed(() => props.manualColor);
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
     const currentTask = computed(() => props.task);
@@ -521,15 +525,15 @@ export default defineComponent({
       highlightedCluster.value = clusterName;
       isHighlighted.value = true;
     }
-    function makearray(stopValue: number, startValue: number) {
-      if (highestCount.value === 0) return;
+    function makearray(stopValue: number, startValue: number): any[] {
+      if (highestCount.value === 0) return [];
       const arr = [];
       const steps = 5;
       const step = (stopValue - startValue) / (steps - 1);
       for (let i = 0; i < steps; i += 1) {
         arr.push(parseFloat((startValue + (step * i)).toFixed(2)));
       }
-      stepArray.value = arr;
+      return arr;
     }
     async function updateCircles() {
       if (spatialData.value === null) return;
@@ -538,20 +542,35 @@ export default defineComponent({
       const circles: any[] = [];
       const circlesUMAP: any[] = [];
       stepArray.value = [];
-      const numClusters = lodash.uniq(spatialData.value.clusters).length;
-      const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
       const colors: any[] = [];
-      colors_raw.forEach((v: any, i: number) => {
-        if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
-      });
-      clusterColors.value = colors;
-      const cmap: any = {};
-      for (let i = 0; i < clusterColors.value.length; i += 1) {
-        const cidx = `C${i + 1}`;
-        cmap[cidx] = clusterColors.value[i];
+      let colors_intensity: any[] = [];
+      const numClusters = lodash.uniq(spatialData.value.clusters).length;
+      if (!colorFromParent.value) {
+        const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
+        colors_raw.forEach((v: any, i: number) => {
+          if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
+        });
+        colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
+        colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
+      } else {
+        let linearString = 'linear-gradient(to right,';
+        lodash.each(heatMap.value, (value: any, key: any) => {
+          colors.push(value);
+          linearString += `${value},`;
+        });
+        let holder = linearString.slice(0, -1);
+        holder += ')';
+        colorBarmap.value = holder;
+        const numberOfItems = 64;
+        const rb = rainbow();
+        rb.setNumberRange(1, numberOfItems);
+        rb.setSpectrum(...colors);
+        for (let i = 1; i <= numberOfItems; i += 1) {
+          let hash = '#';
+          colors_intensity.push(hash += rb.colourAt(i));
+        }
       }
-      const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
-      colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
+      clusterColors.value = colors;
       const spatialCoord = spatialData.value.coordinates;
       const spatialCoordUMAP = spatialData.value.coordinates_umap.map((v: number[]) => ([v[0], -v[1]]));
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
@@ -678,7 +697,7 @@ export default defineComponent({
           });
           circlesUMAP.push(c);
         });
-        makearray(highestCount.value, lowestCount.value);
+        stepArray.value = makearray(highestCount.value, lowestCount.value);
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
@@ -998,12 +1017,12 @@ export default defineComponent({
     watch(heatMap, (v: string) => {
       if (v === 'picnic') {
         colorbarText.value = 'black';
-      } else if (v === 'jet' || v === 'inferno') {
-        colorbarText.value = 'white';
+      } else if (v === 'bone') {
+        colorbarText.value = 'brown';
       } else if (v === 'hot') {
         colorbarText.value = 'grey';
       } else {
-        colorbarText.value = 'brown';
+        colorbarText.value = 'white';
       }
       updateCircles();
     });
@@ -1120,6 +1139,7 @@ export default defineComponent({
       highlightCount,
       spatialData,
       spatialRun,
+      colorFromParent,
     };
   },
 });

@@ -187,7 +187,7 @@
           </v-card>
         </v-dialog>
         <v-col cols="2" sm="1">
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'250px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'300px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
             <v-tooltip right :disabled="isDrawing">
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -274,6 +274,123 @@
               </v-card>
             </v-dialog>
             <v-dialog
+            v-if="clusterColorFlag"
+            :value="clusterColorFlag"
+            @click:outside="clusterColorFlag = !clusterColorFlag">
+              <v-card style="width:600px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);z-index: 999;">
+                <v-card-title>Color Configuration</v-card-title>
+                <v-card-text>
+                  <v-divider/>
+                  <v-row no-gutters>
+                    <v-col cols="12" sm="6">
+                      <v-card-title>Current Cluster Colors</v-card-title>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <v-card-title>Customized Colors</v-card-title>
+                    </v-col>
+                  </v-row>
+                  <v-row no-gutters>
+                    <v-col cols="12" sm="6" class="d-flex justify-center align-center">
+                      <table>
+                        <tbody>
+                          <tr v-for="(value, cluster) in colorMap" v-bind:key="value"><b>{{ cluster }}</b>
+                            <td style="padding-left:50px; padding-bottom: 10px;">
+                              <v-tooltip color="black" right>
+                              <template v-slot:activator="{ on, attrs }">
+                              <v-btn
+                              v-on="on"
+                              v-bind="attrs"
+                              class="round_chip"
+                              :color="value"
+                              @click="copyToClip(value)"/>
+                              </template>
+                              <span>{{ value }}</span>
+                              </v-tooltip>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </v-col>
+                    <v-divider vertical />
+                    <v-col cols="12" sm="6" class="d-flex justify-center align-center">
+                      <table>
+                        <tbody>
+                          <tr v-for="(value, cluster) in defaultClusters" v-bind:key="cluster"><b>{{ cluster }}</b>
+                            <td style="padding-left:50px; padding-bottom: 10px;">
+                              <v-tooltip color="black" right>
+                              <template v-slot:activator="{ on, attrs }">
+                              <v-btn
+                              v-on="on"
+                              v-bind="attrs"
+                              class="round_chip"
+                              :color="value"
+                              @click="updateClusterLabel(cluster)"/>
+                              </template>
+                              <span>{{ value }}</span>
+                              </v-tooltip>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+                <div style="width:100%; height:20px"></div>
+                <v-divider />
+                <v-card-text>
+                  <v-row no-gutters>
+                    <v-col cols="12" sm="7" class="pt-6">
+                      <v-color-picker value="hex" mode="hexa" hide-mode-switch></v-color-picker>
+                    </v-col>
+                    <v-col cols="12" sm="5" class="pt-6">
+                      <v-col cols="12" sm="6" style="max-width:70%">
+                        <v-text-field
+                        :value="clickedCluster"
+                        clearable
+                        label="Cluster Num"/>
+                      </v-col>
+                      <v-col cols="12" sm="6" style="max-width:70%">
+                        <v-text-field
+                        clearable
+                        :rules="colorRules"
+                        v-model="userSelectedColor"
+                        label="Color Choice"/>
+                      </v-col>
+                    </v-col>
+                    <v-col cols="12" sm="125qw  `" align="right">
+                      <v-btn
+                      outlined
+                      color="blue"
+                      @click="updateClusters"
+                      :disabled="userSelectedColor.length === 0 || clickedCluster.length === 0"
+                      >Update</v-btn>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+                <div style="width:100%; height:20px"></div>
+                <v-divider />
+                <v-card-text>
+                  <v-row no-gutters>
+                    <v-col cols="12" sm="12"  class="pt-6" align="right">
+                        <v-btn
+                        color="red"
+                        outlined
+                        @click="clearClusterColor">
+                        Cancel
+                      </v-btn>
+                      <v-btn
+                        class="pl-5"
+                        color="blue"
+                        outlined
+                        @click="changeClusterColor">
+                        Apply
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+              </v-card>
+            </v-dialog>
+            <v-dialog
             v-if="displayFlag"
             :value="displayFlag"
             @click:outside="displayFlag = !displayFlag"
@@ -287,6 +404,23 @@
                 </v-simple-table>
               </v-card>
             </v-dialog>
+            <v-tooltip right :disabled="clusterColorFlag">
+            <template v-slot:activator="{ on, attrs }">
+            <v-btn
+              v-bind="attrs"
+              v-on="on"
+              class="ml-4 mt-5"
+              icon
+              v-model="isDrawing"
+              color="black"
+              :disabled="!spatialData || loading || !isClusterView"
+              @click="clusterColorFlag = !clusterColorFlag"
+              small>
+            <v-icon>mdi-eyedropper-variant</v-icon>
+            </v-btn>
+            </template>
+            <span>Cluster Color</span>
+            </v-tooltip>
             <v-tooltip right :disabled="displayFlag">
             <template v-slot:activator="{ on, attrs }">
             <v-btn
@@ -371,6 +505,7 @@
               :selected_genes="childGenes"
               :background="backgroundColor"
               :heatmap="heatMap"
+              :manualColor="manualClusterFlag"
               :task="'gene.compute_qc'"
               :queue="'atxcloud_gene'"
               :lasso="isDrawing"
@@ -450,6 +585,10 @@ const heatmapOptions = [
   { heat: 'picnic' },
   { heat: 'bone' },
 ];
+const colorRules = [
+  // (v: any) => !!v || 'Name is required',
+  (v: any) => (v && v.length === 7) || 'Hex Code must have a length of 7',
+];
 interface Metadata {
   run: string | null;
   type: string | null;
@@ -493,7 +632,6 @@ export default defineComponent({
     const isHighlighted = ref(false);
     const highestCount = ref<number>(0);
     const lowestCount = ref<number>(10000);
-    const stepArray = ref<any[]>([]);
     const colorBarmap = ref<string>('');
     const metaFlag = ref<boolean>(false);
     // Metadata
@@ -533,12 +671,17 @@ export default defineComponent({
     const featureTableFlag = ref<boolean>(true);
     const peakViewerFlag = ref<boolean>(false);
     const displayFlag = ref<boolean>(false);
+    const clusterColorFlag = ref<boolean>(false);
     const visible = ref<string>('hidden');
     const spatialRun = ref<boolean>(false);
     const colorMap = ref<any>({});
     const seqLogoData = ref<any>();
     const widthFromCard = ref<number>();
     const publicSeqlogo = ref<any>();
+    const clickedCluster = ref<string>('');
+    const userSelectedColor = ref<string>('');
+    const defaultClusters = ref<any>({});
+    const manualClusterFlag = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -559,6 +702,40 @@ export default defineComponent({
     }
     function linkAlert() {
       snackbar.dispatch({ text: 'Public link copied to clipboard', options: { left: true, color: 'success' } });
+    }
+    function copyToClip(ev: any) {
+      navigator.clipboard.writeText(ev);
+    }
+    function updateClusterLabel(ev: any) {
+      clickedCluster.value = ev;
+    }
+    function updateClusters(ev: any) {
+      defaultClusters.value[clickedCluster.value] = userSelectedColor.value;
+    }
+    function changeClusterColor() {
+      manualClusterFlag.value = true;
+      clusterColorFlag.value = false;
+      const cmap: any = {};
+      const defaultCmap: any = {};
+      lodash.each(defaultClusters.value, (value: any, key: any) => {
+        cmap[key] = value;
+        defaultCmap[key] = '#C0C0C0';
+      });
+      heatMap.value = cmap;
+      colorMap.value = cmap;
+      defaultClusters.value = defaultCmap;
+      if (!geneMotif.value) {
+        loading.value = true;
+        (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+        loading.value = false;
+      }
+    }
+    function clearClusterColor() {
+      const defaultCmap: any = {};
+      lodash.each(defaultClusters.value, (value: any, key: any) => {
+        defaultCmap[key] = '#C0C0C0';
+      });
+      defaultClusters.value = defaultCmap;
     }
     function saveTxt() {
       listId.value = false;
@@ -630,7 +807,6 @@ export default defineComponent({
     async function updateCircles() {
       if (!spatialData.value) return;
       isHighlighted.value = false;
-      stepArray.value = [];
       const numClusters = lodash.uniq(spatialData.value.clusters).length;
       const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
       const colors: any[] = [];
@@ -638,13 +814,18 @@ export default defineComponent({
         if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
       });
       const cmap: any = {};
+      const defaultCmap: any = {};
       for (let i = 0; i < colors.length; i += 1) {
         const cidx = `C${i + 1}`;
         cmap[cidx] = colors[i];
+        defaultCmap[cidx] = '#C0C0C0';
       }
       colorMap.value = cmap;
-      if (!geneMotif.value) {
+      defaultClusters.value = defaultCmap;
+      if (!geneMotif.value && selectedGenes.value.length === 0) {
+        loading.value = true;
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+        loading.value = false;
       }
     }
     async function updateSpatial(ev: any) {
@@ -683,6 +864,7 @@ export default defineComponent({
     function chooseHeatmap(ev: any) {
       heatMap.value = ev.heat;
       heatmapFlag.value = false;
+      manualClusterFlag.value = false;
       if (ev.heat === 'picnic') {
         colorbarText.value = 'black';
       } else if (ev.heat === 'jet' || ev.heat === 'inferno') {
@@ -867,7 +1049,6 @@ export default defineComponent({
       isClusterView.value = true;
       isDrawing.value = false;
       isDrawingRect.value = false;
-      stepArray.value = [];
       await getMeta();
     }
     async function getPublicId(ev: any) {
@@ -925,7 +1106,6 @@ export default defineComponent({
       isClusterView.value = true;
       selectedGenes.value = [];
       showFlag.value = [false];
-      stepArray.value = [];
       geneButton.value = [];
       childGenes.value = [];
       trackBrowserGenes.value = [];
@@ -951,7 +1131,6 @@ export default defineComponent({
       if (selectedGenes.value.length === 0) {
         isClusterView.value = true;
         showFlag.value = [false];
-        stepArray.value = [];
         trackBrowserGenes.value = [];
         childGenes.value = [];
       } else {
@@ -965,6 +1144,12 @@ export default defineComponent({
         isClusterView.value = true;
         geneButton.value = [];
         spatialRun.value = true;
+      }
+    });
+    watch(clusterColorFlag, (v: any) => {
+      if (!v) {
+        userSelectedColor.value = '';
+        clickedCluster.value = '';
       }
     });
     const submenu = [
@@ -1087,7 +1272,6 @@ export default defineComponent({
       currentTask,
       highestCount,
       lowestCount,
-      stepArray,
       topHeaders,
       geneNames,
       isDrawing,
@@ -1125,6 +1309,7 @@ export default defineComponent({
       metadata,
       metaFlag,
       displayFlag,
+      clusterColorFlag,
       getMeta,
       cleanRunId,
       childGenes,
@@ -1141,6 +1326,16 @@ export default defineComponent({
       linkAlert,
       holdGene,
       holdMotif,
+      copyToClip,
+      updateClusterLabel,
+      clickedCluster,
+      userSelectedColor,
+      colorRules,
+      defaultClusters,
+      updateClusters,
+      changeClusterColor,
+      manualClusterFlag,
+      clearClusterColor,
     };
   },
 });
@@ -1159,5 +1354,16 @@ export default defineComponent({
   }
   .dalliance.dalliance-root {
     max-height: 800px;
+  }
+  .round_chip {
+    width: 27px !important;
+    height: 27px !important;
+    border-radius: 50% !important;
+    pointer-events: all !important;
+    padding: 0 !important;
+    min-width: 27px !important;
+  }
+  .round_chip_active {
+    opacity: 0.5;
   }
 </style>
