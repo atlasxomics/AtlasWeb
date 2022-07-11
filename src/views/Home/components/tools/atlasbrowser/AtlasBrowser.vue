@@ -110,7 +110,7 @@
                 <v-btn
                 color="grey"
                 :disabled="!current_image || isCropMode || grid"
-                @click="orientation.rotation = orientation.rotation + 270; loadImage()"
+                @click="rotate_image(270)"
                 small
                 >
                 <img src="@/assets/images/rotate_left.png"
@@ -121,7 +121,7 @@
                 color="grey"
                 class="spaced_btn"
                 :disabled="!current_image || isCropMode || grid"
-                @click="orientation.rotation = orientation.rotation + 90; loadImage()"
+                @click="rotate_image(90)"
                 small
                 >
                 <img src="@/assets/images/rotate_right.png"
@@ -682,6 +682,17 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
       taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
+
+    function onChangeScale(ev: any) {
+      const v = scaleFactor.value;
+      current_image.value.scale = { x: v, y: v };
+      konvaConfig.value.width = v * current_image.value.image.width;
+      konvaConfig.value.height = v * current_image.value.image.height;
+      stageWidth.value = konvaConfig.value.width;
+      stageHeight.value = konvaConfig.value.height;
+      roi.value.setScaleFactor(v);
+      crop.value.setScaleFactor(v);
+    }
     async function getMeta() {
       try {
         const root = 'data';
@@ -761,7 +772,48 @@ export default defineComponent({
       }
     }
     async function rotate_image(degrees: number) {
-      document.querySelector(current_image).style.transform = 'rotate(90deg)';
+      console.log(degrees);
+      const imgObj = new window.Image();
+      const newImage = new window.Image();
+      imgObj.src = URL.createObjectURL(imageh.value);
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      imgObj.onload = (v: any) => {
+        URL.revokeObjectURL(imgObj.src);
+        canvas.width = konvaConfig.value.width;
+        canvas.height = konvaConfig.value.height;
+        // canvas.width = current_image.value.image.width;
+        // canvas.height = current_image.value.image.height;
+        console.log(canvas.width);
+        console.log(canvas.height);
+        // context!.save();
+        // context!.translate(canvas.width / 2, canvas.height / 2);
+        // context!.rotate((Math.PI * 90) / 180);
+        // context!.translate(-canvas.width / 2, -canvas.height / 2);
+        context!.drawImage(imgObj, 0, 0);
+        // context!.restore();
+        console.log(canvas.width);
+        console.log(canvas.height);
+        canvas.toBlob((blob: any) => {
+          console.log(blob);
+          newImage.src = URL.createObjectURL(blob);
+          newImage.onload = (e: any) => {
+            current_image.value = {
+              x: 0,
+              y: 0,
+              draggable: false,
+              scale: { x: scaleFactor.value, y: scaleFactor.value },
+              image: newImage,
+              src: URL.createObjectURL(blob),
+              original_src: URL.createObjectURL(blob),
+              alternative_src: null,
+            };
+          };
+        });
+      };
+      console.log(canvas.width);
+      console.log(canvas.height);
+      onChangeScale('');
     }
 
     async function loadImage() {
@@ -1008,16 +1060,6 @@ export default defineComponent({
       } else {
         roi.value.polygons = [];
       }
-    }
-    function onChangeScale(ev: any) {
-      const v = scaleFactor.value;
-      current_image.value.scale = { x: v, y: v };
-      konvaConfig.value.width = v * current_image.value.image.width;
-      konvaConfig.value.height = v * current_image.value.image.height;
-      stageWidth.value = konvaConfig.value.width;
-      stageHeight.value = konvaConfig.value.height;
-      roi.value.setScaleFactor(v);
-      crop.value.setScaleFactor(v);
     }
     function onCropButton(ev: any) {
       console.log(current_image.value.original_src);
@@ -1369,6 +1411,7 @@ export default defineComponent({
     });
     watch(current_image, (v) => {
       if (current_image.value && !isCropMode.value) {
+        console.log('in loop');
         crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
         onChangeScale(scaleFactor.value);
       }
@@ -1382,6 +1425,9 @@ export default defineComponent({
       if (v !== ov) {
         thresh_same.value = false;
       }
+    });
+    watch(konvaConfig, (v, ov) => {
+      console.log('konva stage changed');
     });
     const submenu = [
       {
