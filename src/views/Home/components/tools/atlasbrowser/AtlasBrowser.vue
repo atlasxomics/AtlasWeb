@@ -325,7 +325,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="optionFlag=true;optionUpdate=true;loadImage(); uploadingTixels()"
+                @click="optionFlag=true;optionUpdate=true;tixels_filled=true; loadImage(); uploadingTixels()"
                 x-small>
                 Update
               </v-btn>
@@ -540,6 +540,7 @@ import savePixels from 'save-pixels';
 import blobStream from 'blob-stream';
 import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
+import Jimp from 'jimp';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
 import { resolveAuthGroup } from '@/utils/auth';
@@ -819,6 +820,7 @@ export default defineComponent({
       if (resp) {
         metadata.value = resp;
         optionFlag.value = false;
+        console.log(metadata);
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
       } else {
         await getMeta();
@@ -827,48 +829,14 @@ export default defineComponent({
       }
     }
     async function rotate_image(degrees: number) {
-      console.log(degrees);
+      // console.log(degrees);
       const imgObj = new window.Image();
-      const newImage = new window.Image();
+      // const newImage = new window.Image();
       imgObj.src = URL.createObjectURL(imageh.value);
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      imgObj.onload = (v: any) => {
-        URL.revokeObjectURL(imgObj.src);
-        canvas.width = konvaConfig.value.width;
-        canvas.height = konvaConfig.value.height;
-        // canvas.width = current_image.value.image.width;
-        // canvas.height = current_image.value.image.height;
-        console.log(canvas.width);
-        console.log(canvas.height);
-        // context!.save();
-        // context!.translate(canvas.width / 2, canvas.height / 2);
-        // context!.rotate((Math.PI * 90) / 180);
-        // context!.translate(-canvas.width / 2, -canvas.height / 2);
-        context!.drawImage(imgObj, 0, 0);
-        // context!.restore();
-        console.log(canvas.width);
-        console.log(canvas.height);
-        canvas.toBlob((blob: any) => {
-          console.log(blob);
-          newImage.src = URL.createObjectURL(blob);
-          newImage.onload = (e: any) => {
-            current_image.value = {
-              x: 0,
-              y: 0,
-              draggable: false,
-              scale: { x: scaleFactor.value, y: scaleFactor.value },
-              image: newImage,
-              src: URL.createObjectURL(blob),
-              original_src: URL.createObjectURL(blob),
-              alternative_src: null,
-            };
-          };
-        });
-      };
-      console.log(canvas.width);
-      console.log(canvas.height);
-      onChangeScale('');
+      // Jimp.read(imgObj.src).then((image) => {
+      //   current_image.value.image.src = image.rotate(90);
+      //   console.log('image has been procesed with JIMP');
+      // });
     }
 
     async function loadImage() {
@@ -1117,7 +1085,6 @@ export default defineComponent({
       }
     }
     function onCropButton(ev: any) {
-      console.log(current_image.value.original_src);
       cropFlag.value = true;
       isCropMode.value = true;
       active_roi_available.value = true;
@@ -1170,6 +1137,7 @@ export default defineComponent({
 
     function thresh_clicked() {
       if (!current_image.value) return;
+      thresh_image_created.value = true;
       const sv = scaleFactor.value;
       loading.value = true;
       let img_src = current_image.value.image.original_src;
@@ -1197,7 +1165,6 @@ export default defineComponent({
           bsa_image_disp.value = false;
         });
       });
-      thresh_image_created.value = true;
       // setting the filled grid back to default state
       if (tixels_filled.value) {
         clear_filled_tixels();
@@ -1328,7 +1295,11 @@ export default defineComponent({
         const task = 'atlasbrowser.generate_spatial';
         const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
-        const cropCoords = crop.value.getCoordinatesOnImage();
+        let cropCoords = crop.value.getCoordinatesOnImage();
+        if (optionUpdate.value) {
+          cropCoords = metadata.value.crop_area;
+        }
+        console.log(cropCoords);
         const points: number[] = [];
         coords.forEach((v, i) => {
           points.push(v.x);
@@ -1466,7 +1437,7 @@ export default defineComponent({
     });
     watch(current_image, (v) => {
       if (current_image.value && !isCropMode.value) {
-        console.log('in loop');
+        console.log('Cropping going on');
         crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
         onChangeScale(scaleFactor.value);
       }
