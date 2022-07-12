@@ -100,29 +100,6 @@
               </div>
             </div>
           </template>
-          <template v-else>
-            <v-card
-              :loading="loading"
-              flat
-              :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
-              height="3vh"
-              width="100%">
-              <v-row no-gutters>
-                <v-col v-if="!clusterItems">
-                    No clusters
-                </v-col>
-                <v-col v-for="item in clusterItems" v-bind:key="`${item.name}`" class="ma-0 pa-0 text-center">
-                  <v-btn
-                  small
-                  icon
-                  :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
-                  @click="mouseOverClusterItem(item)"
-                  >{{ item.name }}
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </v-card>
-          </template>
         </v-col>
       </v-row>
     </v-col>
@@ -226,29 +203,6 @@
               </div>
             </div>
           </template>
-          <template v-else>
-            <v-card
-              :loading="loading"
-              flat
-              :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
-              height="3vh"
-              width="100%">
-              <v-row no-gutters>
-                <v-col v-if="!clusterItems">
-                    No clusters
-                </v-col>
-                <v-col v-for="item in clusterItems" v-bind:key="`${item.name}`" class="ma-0 pa-0 text-center">
-                  <v-btn
-                  small
-                  icon
-                  :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
-                  @click="mouseOverClusterItem(item)"
-                  >{{ item.name }}
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </v-card>
-          </template>
         </v-col>
       </v-row>
     </v-col>
@@ -296,7 +250,7 @@ function colormapBounded(cmap: string[], values: number[]) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor'],
+  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -392,6 +346,7 @@ export default defineComponent({
     const topSelected = ref<any[]>([]);
     const highlightCount = ref<number>(0);
     const spatialRun = ref<boolean>(false);
+    const clickedClusterFromParent = computed(() => (props.clickedCluster));
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
@@ -1014,6 +969,9 @@ export default defineComponent({
         unHighlighCluster();
       }
     });
+    watch(clickedClusterFromParent, (v: any) => {
+      mouseOverClusterItem({ name: `${v}` });
+    });
     watch(heatMap, (v: string) => {
       if (v === 'picnic') {
         colorbarText.value = 'black';
@@ -1140,6 +1098,7 @@ export default defineComponent({
       spatialData,
       spatialRun,
       colorFromParent,
+      clickedClusterFromParent,
     };
   },
 });
