@@ -686,7 +686,7 @@ export default defineComponent({
       try {
         const root = 'data';
         const task = 'creation.create_files';
-        const queue = 'create_worker';
+        const queue = 'creation_worker';
         const params = {
           data: null,
           path: `${root}/${run_id.value}`,

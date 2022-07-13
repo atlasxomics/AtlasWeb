@@ -42,6 +42,7 @@
     </v-col>
     <v-col cols="12" sm="5">
       <v-card id="stageParent"
+        :loading="loading"
         class="rounded-0"
         v-resize="onResize"
         flat
@@ -146,6 +147,7 @@
     </v-col>
     <v-col cols="12" sm="5">
       <v-card id="stageParentRight"
+        :loading="loading"
         class="rounded-0"
         flat
         v-resize="onResize"
@@ -528,6 +530,7 @@ export default defineComponent({
       clusterColors.value = colors;
       const spatialCoord = spatialData.value.coordinates;
       const spatialCoordUMAP = spatialData.value.coordinates_umap.map((v: number[]) => ([v[0], -v[1]]));
+      const plusTEN = 10;
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
       const minY = Math.min(...spatialCoord.map((a: number[]) => a[1]));
       const maxX = Math.max(...spatialCoord.map((a: number[]) => a[0]));
@@ -561,7 +564,7 @@ export default defineComponent({
             stroke: colors[match],
             strokeWidth: 1.0,
             cluster: v,
-            total: geneSum[i],
+            total: geneSum[i] + 10,
             inactive: false,
             genes: { },
           };
@@ -587,7 +590,7 @@ export default defineComponent({
             stroke: colors[match],
             strokeWidth: 1.0,
             cluster: v,
-            total: geneSum[i],
+            total: geneSum[i] + 10,
             inactive: false,
             genes: { },
           };
@@ -617,12 +620,12 @@ export default defineComponent({
             stroke: clr,
             strokeWidth: 1.0,
             cluster: v,
-            total: geneSum[i],
+            total: geneSum[i] + 10,
             inactive: false,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
-            (c.genes as any)[k] = val[i];
+            (c.genes as any)[k] = val[i] + 10;
           });
           circles.push(c);
         });
@@ -643,41 +646,16 @@ export default defineComponent({
             stroke: clr,
             strokeWidth: 1.0,
             cluster: v,
-            total: geneSum[i],
+            total: geneSum[i] + 10,
             inactive: false,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
-            (c.genes as any)[k] = val[i];
+            (c.genes as any)[k] = val[i] + 10;
           });
           circlesUMAP.push(c);
         });
-        stepArray.value = makearray(highestCount.value, lowestCount.value);
-        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
-          const [ax, ay] = spatialCoordUMAP[i];
-          const x = ax - minX_UMAP;
-          const y = ay - minY_UMAP;
-          const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
-          const rd = (geneSum[i] > 0) ? 1 : 1;
-          const c = {
-            id: get_uuid(),
-            x: x * scaleUMAP.value * viewScaleUMAP + paddingX,
-            y: y * scaleUMAP.value * viewScaleUMAP + paddingY,
-            radius,
-            originalColor: clr,
-            fill: clr,
-            stroke: clr,
-            strokeWidth: 1.0,
-            cluster: v,
-            total: geneSum[i],
-            inactive: false,
-            genes: { },
-          };
-          lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
-            (c.genes as any)[k] = val[i];
-          });
-          circlesUMAP.push(c);
-        });
+        stepArray.value = makearray(highestCount.value + 10, lowestCount.value + 10);
       }
       circlesSpatial.value = circles;
       circlesSpatialUMAP.value = circlesUMAP;
@@ -747,6 +725,7 @@ export default defineComponent({
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {
       const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
+      const plusTEN = 10;
       const item = ev.target.attrs;
       tooltip.position({
         x: mousePos.x,
@@ -775,6 +754,7 @@ export default defineComponent({
     async function mouseMoveOnSpatialRight(ev: any) {
       const mousePosRight = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
       const item = ev.target.attrs;
+      const plusTEN = 10;
       tooltipRight.position({
         x: mousePosRight.x,
         y: mousePosRight.y,

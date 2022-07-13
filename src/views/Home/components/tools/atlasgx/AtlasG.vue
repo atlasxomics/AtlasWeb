@@ -81,6 +81,7 @@
               style="width: 190px;"
               prepend-icon="mdi-magnify"/>
             <v-data-table
+            class="thickBorder"
             v-model="selected"
             height="20vh"
             width="20%"
@@ -101,6 +102,7 @@
           hide-overlay>
           <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:210px;">
             <v-data-table
+            class="thickBorder"
             v-model="selected"
             width="20%"
             dense
@@ -120,6 +122,7 @@
           hide-overlay>
           <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:250px;">
             <v-data-table
+            class="thickBorder"
             v-model="selected"
             width="20%"
             dense
@@ -128,9 +131,20 @@
             hide-default-header
             :disabled="!spatialData || loading"
             :items="heatmapOptions"
-            :headers="heatmapHeader"
-            @click:row="chooseHeatmap"
-            />
+            :headers="heatmapHeader">
+              <template v-slot:item="row">
+                <template v-if="row.item['heat'] != 'custom'">
+                  <tr @click="chooseHeatmap(row.item['heat'])">
+                  <td>{{row.item['heat']}}</td>
+                  </tr>
+                </template>
+                <template v-else>
+                  <tr @click="clusterColorFlag = true ; heatmapFlag = false">
+                    <td>customize</td>
+                  </tr>
+                </template>
+              </template>
+            </v-data-table>
           </v-card>
         </v-dialog>
         <v-dialog
@@ -348,6 +362,68 @@
               </v-card>
             </v-dialog>
             <v-dialog
+            v-if="cellTypeFlag"
+            :value="cellTypeFlag"
+            :scrollable="true"
+            @click:outside="cellTypeFlagg = !cellTypeFlag">
+              <v-card style="width:600px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);z-index: 999">
+                <v-card-title>Cell Type Configuration</v-card-title>
+                <v-card-text>
+                  <v-divider/>
+                  <div style="width:100%; height:20px"></div>
+                  <v-row no-gutters>
+                    <v-col cols="12" sm="12" class="d-flex justify-center align-center">
+                      <table style="margin-bottom: 0;">
+                        <tbody>
+                          <tr v-for="(value, cluster) in colorMapCopy" v-bind:key="cluster"><b>{{ cluster }}</b>
+                            <td style="padding-left: 50px; vertical-align: top;">
+                              <v-tooltip color="black" right>
+                              <template v-slot:activator="{ on, attrs }">
+                              <v-btn
+                              v-on="on"
+                              v-bind="attrs"
+                              class="round_chip"
+                              :color="value"/>
+                              </template>
+                              <span>{{ value }}</span>
+                              </v-tooltip>
+                            </td>
+                            <td style="padding-left: 80px;">
+                              <v-text-field
+                              :value="cellTypeMapCopy[cluster]"
+                              class="ma-0 pa-0"
+                              clearable
+                              @blur="checkFieldCell(cluster, $event)"
+                              label="Cell Type"/>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+                <v-card-text>
+                  <v-row no-gutters>
+                    <v-col cols="12" sm="12"  class="pt-6" align="right">
+                        <v-btn
+                        color="red"
+                        outlined
+                        @click="clearCellType">
+                        Cancel
+                      </v-btn>
+                      <v-btn
+                        class="pl-5"
+                        color="blue"
+                        outlined
+                        @click="changeCellType">
+                        Apply
+                      </v-btn>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+              </v-card>
+            </v-dialog>
+            <v-dialog
             v-if="displayFlag"
             :value="displayFlag"
             @click:outside="displayFlag = !displayFlag"
@@ -361,7 +437,7 @@
                 </v-simple-table>
               </v-card>
             </v-dialog>
-            <v-tooltip right :disabled="clusterColorFlag">
+            <v-tooltip right :disabled="cellTypeFlag">
             <template v-slot:activator="{ on, attrs }">
             <v-btn
               v-bind="attrs"
@@ -371,12 +447,12 @@
               v-model="isDrawing"
               color="black"
               :disabled="!spatialData || loading || !isClusterView"
-              @click="clusterColorFlag = !clusterColorFlag"
+              @click="cellTypeFlag = !cellTypeFlag"
               small>
             <v-icon>mdi-eyedropper-variant</v-icon>
             </v-btn>
             </template>
-            <span>Cluster Color</span>
+            <span>Cell Type</span>
             </v-tooltip>
             <v-tooltip right :disabled="displayFlag">
             <template v-slot:activator="{ on, attrs }">
@@ -475,16 +551,25 @@
             <v-col cols="12" sm="2">
               <table style="margin-bottom: 0; width: 100%;">
                 <tbody>
-                  <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'color': colorMap[cluster]}"><b>{{ cluster }}</b>
-                    <td style="padding-left: 20px;">
-                      <v-text-field
-                      :dark="backgroundColor == 'white' ? false : true"
-                      :value="value"
-                      class="ma-0 pa-0"
-                      clearable
-                      @blur="checkFieldCell(cluster, $event)"
-                      placeholder="Cell Type"/>
-                    </td>
+                  <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'color': colorMap[cluster]}">
+                    <template v-if="value.length > 0">
+                      <v-btn
+                      class="round_chip2"
+                      :color="colorMap[cluster]"/>
+                    </template>
+                    <template v-else>
+                      <b>{{ cluster }}</b>
+                    </template>
+                    <template v-if="value.length > 0">
+                      <td style="padding-left: 20px;" >
+                        <v-text-field
+                        class="bold-disabled-Text"
+                        :dark="backgroundColor == 'white' ? false : true"
+                        :value="value"
+                        :success="true"
+                        disabled/>
+                      </td>
+                    </template>
                   </tr>
                 </tbody>
               </table>
@@ -498,7 +583,7 @@
               <div id="capturePeak" ref="peakContainer" :style="{ visibility: visible }">
                 <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading">
                   <template v-if="!geneMotif">
-                      <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]"/>
+                      <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
                   </template>
                   <template v-else>
                     <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
@@ -562,6 +647,7 @@ const heatmapOptions = [
   { heat: 'inferno' },
   { heat: 'picnic' },
   { heat: 'bone' },
+  { heat: 'custom' },
 ];
 const colorRules = [
   // (v: any) => !!v || 'Name is required',
@@ -651,11 +737,13 @@ export default defineComponent({
     const peakViewerFlag = ref<boolean>(false);
     const displayFlag = ref<boolean>(false);
     const clusterColorFlag = ref<boolean>(false);
+    const cellTypeFlag = ref<boolean>(false);
     const visible = ref<string>('hidden');
     const spatialRun = ref<boolean>(false);
     const colorMap = ref<any>({});
     const colorMapCopy = ref<any>({});
     const cellTypeMap = ref<any>({});
+    const cellTypeMapCopy = ref<any>({});
     const seqLogoData = ref<any>();
     const widthFromCard = ref<number>();
     const publicSeqlogo = ref<any>();
@@ -702,7 +790,24 @@ export default defineComponent({
       }
     }
     function checkFieldCell(cluster: any, ev: any) {
-      cellTypeMap.value[cluster] = ev.srcElement._value;
+      const name = typeof ev.srcElement._value !== 'string' ? '' : ev.srcElement._value;
+      cellTypeMapCopy.value[cluster] = name;
+    }
+    function clearCellType() {
+      cellTypeFlag.value = false;
+      const defaultCmap: any = {};
+      lodash.each(cellTypeMap.value, (value: any, key: any) => {
+        defaultCmap[key] = value;
+      });
+      cellTypeMapCopy.value = defaultCmap;
+    }
+    function changeCellType() {
+      cellTypeFlag.value = false;
+      const cell: any = {};
+      lodash.each(cellTypeMapCopy.value, (value: any, key: any) => {
+        cell[key] = value;
+      });
+      cellTypeMap.value = cell;
     }
     function changeClusterColor() {
       clusterColorFlag.value = false;
@@ -804,28 +909,31 @@ export default defineComponent({
     async function updateCircles() {
       if (!spatialData.value) return;
       isHighlighted.value = false;
-      const numClusters = lodash.uniq(spatialData.value.clusters).length;
-      const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
-      const colors: any[] = [];
-      colors_raw.forEach((v: any, i: number) => {
-        if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
-      });
       const cmap: any = {};
       const cellmap: any = {};
+      const cellmapCopy: any = {};
       const cmapCopy: any = {};
-      for (let i = 0; i < colors.length; i += 1) {
-        const cidx = `C${i + 1}`;
-        cmap[cidx] = colors[i];
-        cmapCopy[cidx] = colors[i];
-        cellmap[cidx] = '';
+      const colors: any[] = [];
+      const numClusters = lodash.uniq(spatialData.value.clusters).length;
+      if (!manualClusterFlag.value) {
+        const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
+        colors_raw.forEach((v: any, i: number) => {
+          if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
+        });
+        for (let i = 0; i < colors.length; i += 1) {
+          const cidx = `C${i + 1}`;
+          cmap[cidx] = colors[i];
+          cmapCopy[cidx] = colors[i];
+          cellmap[cidx] = '';
+          cellmapCopy[cidx] = '';
+        }
+        colorMap.value = cmap;
+        colorMapCopy.value = cmapCopy;
+        cellTypeMap.value = cellmap;
+        cellTypeMapCopy.value = cellmapCopy;
       }
-      colorMap.value = cmap;
-      colorMapCopy.value = cmapCopy;
-      cellTypeMap.value = cellmap;
       if (!geneMotif.value && selectedGenes.value.length === 0) {
-        loading.value = true;
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
-        loading.value = false;
       }
     }
     async function updateSpatial(ev: any) {
@@ -862,14 +970,14 @@ export default defineComponent({
       }
     }
     function chooseHeatmap(ev: any) {
-      heatMap.value = ev.heat;
+      heatMap.value = ev;
       heatmapFlag.value = false;
       manualClusterFlag.value = false;
-      if (ev.heat === 'picnic') {
+      if (ev === 'picnic') {
         colorbarText.value = 'black';
-      } else if (ev.heat === 'jet' || ev.heat === 'inferno') {
+      } else if (ev === 'jet' || ev === 'inferno') {
         colorbarText.value = 'white';
-      } else if (ev.heat === 'hot') {
+      } else if (ev === 'hot') {
         colorbarText.value = 'grey';
       } else {
         colorbarText.value = 'brown';
@@ -1313,6 +1421,7 @@ export default defineComponent({
       metaFlag,
       displayFlag,
       clusterColorFlag,
+      cellTypeFlag,
       getMeta,
       cleanRunId,
       childGenes,
@@ -1339,9 +1448,12 @@ export default defineComponent({
       clearClusterColor,
       checkFieldColor,
       checkFieldCell,
+      clearCellType,
+      changeCellType,
       colorMapCopy,
       clickedClusterFromChild,
       cellTypeMap,
+      cellTypeMapCopy,
     };
   },
 });
@@ -1369,7 +1481,29 @@ export default defineComponent({
     padding: 0 !important;
     min-width: 27px !important;
   }
+  .round_chip2 {
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 50% !important;
+    pointer-events: all !important;
+    padding: 0 !important;
+    min-width: 20px !important;
+  }
   .round_chip_active {
     opacity: 0.5;
+  }
+  .thickBorder td{
+    border-bottom-width: 2px !important;
+  }
+  .bold-disabled-Text{
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    border-style: none !important;
+  }
+  .bold-disabled-Text .theme--light.v-input--is-disabled, .theme--light.v-input--is-disabled input, .theme--light.v-input--is-disabled textarea {
+    color: rgba(0,0,0,1) !important;
+  }
+  .bold-disabled-Text .theme--dark.v-input--is-disabled, .theme--dark.v-input--is-disabled input, .theme--dark.v-input--is-disabled textarea {
+    color: hsla(0,0%,100%,1) !important;
   }
 </style>

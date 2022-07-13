@@ -56,6 +56,7 @@ export default defineComponent({
     const trackBrowserParams = ref<any>();
     const speciesMap: any = { human: 'h19', 'Rattus norvegicus': 'rn6', 'Mus musculus': 'mm10' };
     const species: string[] = [];
+    const loading = ref<boolean>(false);
     lodash.forIn(speciesMap, (v: string, k: string) => {
       species.push(k);
     });
@@ -199,14 +200,19 @@ export default defineComponent({
       }, {});
     }
     async function reload(rid: any, cmap: any) {
+      loading.value = true;
       await generateTrackParams(rid);
       mapColors(cmap);
       trackBrowser.value = await new (window as any).Browser(trackBrowserParams.value);
+      loading.value = false;
       // if (search.value) onClickSearch(null);
     }
     watch(searchKeyFromParents, (v: string) => {
       search.value = v;
       onClickSearch(null);
+    });
+    watch(loading, (v: any) => {
+      ctx.emit('loading_value', v);
     });
     onMounted(async () => {
       await clientReady;
@@ -217,6 +223,7 @@ export default defineComponent({
       selectedSpecies,
       pageId,
       search,
+      loading,
       onClickSearch,
       reload,
     };
