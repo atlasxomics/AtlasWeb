@@ -1,18 +1,23 @@
 <template>
   <v-data-table
+    class="dataTable"
     dense
     :items-per-page="999"
     hide-default-footer
+    hide-default-header
     :items="gene"
     :headers="clusters"
     :loading="loading"
     >
-  <template v-slot:item="row">
-    <tr>
-    <td>{{row.item['id']}}</td>
-    <td v-for="num in lengthClust" :key="num.toString()"><v-btn text x-small dense @click="sendGene(row.item['C'+num])">{{row.item['C'+num]}}</v-btn></td>
-    </tr>
-  </template>
+    <template v-slot:header="{ props }">
+      <th v-for="clust in props.headers" :key="clust.text"><v-btn text dense :color="colormap[clust.text]" :disabled="clust.text == 'Rank' ? true : false" @click="sendCluster(clust.text)">{{clust.text}}</v-btn></th>
+    </template>
+    <template v-slot:item="row">
+      <tr>
+      <td>{{row.item['id']}}</td>
+      <td v-for="num in lengthClust" :key="num.toString()"><v-btn text x-small dense @click="sendGene(row.item['C'+num])">{{row.item['C'+num]}}</v-btn></td>
+      </tr>
+    </template>
   </v-data-table>
 </template>
 
@@ -35,7 +40,7 @@ const clientReady = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'GeneDataTable',
-  props: ['gene', 'clusters', 'lengthClust', 'loading'],
+  props: ['gene', 'clusters', 'lengthClust', 'loading', 'colormap'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
@@ -44,6 +49,7 @@ export default defineComponent({
     const clusters = computed(() => props.clusters);
     const lengthClust = computed(() => props.lengthClust);
     const loading = computed(() => props.loading);
+    const colormap = computed(() => props.colormap);
 
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
@@ -51,17 +57,32 @@ export default defineComponent({
       if (shouldPush) router.push(newRoute);
     }
     async function sendGene(ev: any) {
-      ctx.emit('toParent', ev);
+      ctx.emit('sentGene', ev);
+    }
+    async function sendCluster(ev: any) {
+      ctx.emit('sentCluster', ev);
     }
     onMounted(async () => {
       await clientReady;
     });
-    return { sendGene };
+    return { sendGene, sendCluster };
   },
 });
 
 </script>
 
-<style>
+<style scoped>
+  .dataTable {
+    background-color: #EAEAEA !important;
+  }
+  .dataTable >>> th {
+    padding: 4px !important;
+    border-bottom: 1px solid black;
+    text-align: left !important;
+    font-weight: bolder !important;
+  }
 
+  .dataTable >>> tr:hover {
+    background-color: transparent !important;
+  }
 </style>

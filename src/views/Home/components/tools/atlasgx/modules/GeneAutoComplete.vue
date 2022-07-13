@@ -24,15 +24,14 @@
       width="100%"
       small-chips>
       <template v-slot:selection="data">
-      <v-chip-group column>
+      <v-chip-group column active-class="warning">
         <v-chip
           :key="data.item.name"
           v-bind="data.attrs"
           :input-value="active"
           close
           small
-          color="warning"
-          outlined
+          color="rgb(0, 0, 0, .05)"
           @click.stop="updateTrack(data.item.name)"
           @click:close="remove(data.item)"
         >{{ data.item.name }}
