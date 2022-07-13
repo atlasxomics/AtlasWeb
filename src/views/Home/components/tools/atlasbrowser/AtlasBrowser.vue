@@ -165,6 +165,11 @@
                 width="24"
                 height="24"/>
                 </v-btn>
+                <v-switch class="toggle_switch"
+                label="45°"
+                @change="toggleRotationSwitch"
+                >
+                </v-switch>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -540,7 +545,6 @@ import savePixels from 'save-pixels';
 import blobStream from 'blob-stream';
 import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
-import Jimp from 'jimp';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
 import { resolveAuthGroup } from '@/utils/auth';
@@ -674,6 +678,7 @@ export default defineComponent({
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
     const bsa_image_disp = ref<boolean>(true);
+    const degreeBoolean45 = ref<boolean>(false);
     const scaleFactor_json = ref<any>({
       fiducial_diameter_fullres: null,
       spot_diameter_fullres: null,
@@ -1613,6 +1618,7 @@ export default defineComponent({
       load_tixel_state,
       clear_filled_tixels,
       changeDiseaseState,
+      degreeBoolean45,
     };
   },
 });
@@ -1622,6 +1628,10 @@ export default defineComponent({
 
 .spaced_btn {
   margin-left: 10px;
+}
+.toggle_switch {
+  padding: 0;
+  margin: 1;
 }
 .toolRow {
   height: 5vh;
