@@ -655,7 +655,7 @@ export default defineComponent({
           });
           circlesUMAP.push(c);
         });
-        stepArray.value = makearray(highestCount.value + 10, lowestCount.value + 10);
+        stepArray.value = makearray(highestCount.value, lowestCount.value);
       }
       circlesSpatial.value = circles;
       circlesSpatialUMAP.value = circlesUMAP;
@@ -733,9 +733,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (item.total > 0 && selectedGenes.value.length > 0) {
-        text = `${text}\nSum: ${item.total}`;
+        text = `${text}\nSum: ${item.total - 10}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          if (v > 0) text = `${text}\n${k}: ${v}`;
+          if (v > 0) text = `${text}\n${k}: ${v - 10}`;
         });
       }
       tooltipText.text(text);
@@ -761,9 +761,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (item.total > 0 && selectedGenes.value.length > 0) {
-        text = `${text}\nSum: ${item.total}`;
+        text = `${text}\nSum: ${item.total - 10}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          if (v > 0) text = `${text}\n${k}: ${v}`;
+          if (v > 0) text = `${text}\n${k}: ${v - 10}`;
         });
       }
       tooltipTextRight.text(text);

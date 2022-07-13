@@ -550,28 +550,27 @@
             </v-col>
             <v-col cols="12" sm="2">
               <table style="margin-bottom: 0; width: 100%;">
-                <tbody>
-                  <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'color': colorMap[cluster]}">
+                  <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'color': colorMap[cluster], 'vertical-align': 'baseline'}">
                     <template v-if="value.length > 0">
-                      <v-btn
-                      class="round_chip2"
-                      :color="colorMap[cluster]"/>
+                      <td>
+                        <v-btn
+                        class="round_chip2"
+                        :color="colorMap[cluster]"/>
+                      </td>
                     </template>
                     <template v-else>
-                      <b>{{ cluster }}</b>
+                      <td><b>{{ cluster }}</b></td>
                     </template>
                     <template v-if="value.length > 0">
-                      <td style="padding-left: 20px;" >
+                      <td class="bold-disabled-Text" style="padding-left: 20px;">
                         <v-text-field
-                        class="bold-disabled-Text"
                         :dark="backgroundColor == 'white' ? false : true"
                         :value="value"
-                        :success="true"
+                        solo
                         disabled/>
                       </td>
                     </template>
                   </tr>
-                </tbody>
               </table>
             </v-col>
           </v-row>
@@ -1486,6 +1485,7 @@ export default defineComponent({
     height: 20px !important;
     border-radius: 50% !important;
     pointer-events: all !important;
+    margin: 0 !important;
     padding: 0 !important;
     min-width: 20px !important;
   }
@@ -1496,8 +1496,8 @@ export default defineComponent({
     border-bottom-width: 2px !important;
   }
   .bold-disabled-Text{
-    padding-top: 0 !important;
-    margin-top: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
     border-style: none !important;
   }
   .bold-disabled-Text .theme--light.v-input--is-disabled, .theme--light.v-input--is-disabled input, .theme--light.v-input--is-disabled textarea {
@@ -1505,5 +1505,25 @@ export default defineComponent({
   }
   .bold-disabled-Text .theme--dark.v-input--is-disabled, .theme--dark.v-input--is-disabled input, .theme--dark.v-input--is-disabled textarea {
     color: hsla(0,0%,100%,1) !important;
+  }
+  .bold-disabled-Text .theme--dark.v-text-field--solo, .v-input__control .v-input__slot {
+    background: transparent !important;
+  }
+  .bold-disabled-Text .v-text-field.v-text-field--enclosed .v-text-field__details {
+    margin-bottom: 0 !important;
+  }
+  .bold-disabled-Text #screenCapture > div > div.col-sm-2.col-12 > table > tr:nth-child(1) > td:nth-child(2) > div > div > div.v-input__slot {
+    margin-bottom: 0px !important;
+  }
+  .v-text-field.v-text-field--solo .v-input__control {
+    min-height: auto !important;
+    padding: 0;
+    padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+  }
+  .v-input__slot {
+    margin-bottom: 0px !important;
   }
 </style>
