@@ -733,10 +733,10 @@ export default defineComponent({
         y: mousePos.y,
       });
       let text = `Cluster: ${item.cluster}`;
-      if (item.total > 0 && selectedGenes.value.length > 0) {
+      if (selectedGenes.value.length > 0) {
         text = `${text}\nSum: ${item.total}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          if (v > 0) text = `${text}\n${k}: ${v}`;
+          text = `${text}\n${k}: ${v}`;
         });
       }
       tooltipText.text(text);
@@ -761,10 +761,10 @@ export default defineComponent({
         y: mousePosRight.y,
       });
       let text = `Cluster: ${item.cluster}`;
-      if (item.total > 0 && selectedGenes.value.length > 0) {
+      if (selectedGenes.value.length > 0) {
         text = `${text}\nSum: ${item.total}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          if (v > 0) text = `${text}\n${k}: ${v}`;
+          text = `${text}\n${k}: ${v}`;
         });
       }
       tooltipTextRight.text(text);
