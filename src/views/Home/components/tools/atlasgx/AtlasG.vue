@@ -129,7 +129,7 @@
             single-select
             hide-default-footer
             hide-default-header
-            :disabled="!spatialData || loading"
+            :disabled="!spatialData || loading || !isClusterView"
             :items="heatmapOptions"
             :headers="heatmapHeader">
               <template v-slot:item="row">
@@ -192,12 +192,28 @@
           hide-overlay>
           <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:150px;"
             :disabled="loading">
-            <v-simple-table>
-              <tbody>
-                <tr><v-btn id="no-background-hover" text x-small @click="geneMotif = false">Genes</v-btn></tr>
-                <tr><v-btn id="no-background-hover" text x-small @click="geneMotif = true">Motifs</v-btn></tr>
-              </tbody>
-            </v-simple-table>
+            <v-data-table
+            class="thickBorder"
+            v-model="selected"
+            width="20%"
+            dense
+            single-select
+            hide-default-footer
+            hide-default-header
+            :items="['Genes', 'Motifs']">
+              <template v-slot:item="row">
+                <template v-if="row.item == 'Genes'">
+                  <tr @click="geneMotif = false">
+                    <td>{{row.item}}</td>
+                  </tr>
+                </template>
+                <template v-else>
+                  <tr @click="geneMotif = true">
+                    <td>{{row.item}}</td>
+                  </tr>
+                </template>
+              </template>
+            </v-data-table>
           </v-card>
         </v-dialog>
         <v-col cols="2" sm="1">
@@ -428,13 +444,29 @@
             :value="displayFlag"
             @click:outside="displayFlag = !displayFlag"
             hide-overlay>
-              <v-card style="width:100px;position:absolute;z-index:999;top:210px;left:65px;">
-                <v-simple-table>
-                  <tbody>
-                    <tr><v-btn id="no-background-hover" text x-small @click="captureScreen('null')">Transparent</v-btn></tr>
-                    <tr><v-btn id="no-background-hover" text x-small @click="captureScreen(backgroundColor)">Opaque</v-btn></tr>
-                  </tbody>
-                </v-simple-table>
+              <v-card style="width:100px;position:absolute;z-index:999;top:240px;left:65px;">
+                <v-data-table
+                class="thickBorder"
+                v-model="selected"
+                width="20%"
+                dense
+                single-select
+                hide-default-footer
+                hide-default-header
+                :items="['Transparent', 'Opaque']">
+                  <template v-slot:item="row">
+                    <template v-if="row.item == 'Genes'">
+                      <tr @click="captureScreen('null')">
+                        <td>{{row.item}}</td>
+                      </tr>
+                    </template>
+                    <template v-else>
+                      <tr @click="captureScreen(backgroundColor)">
+                        <td>{{row.item}}</td>
+                      </tr>
+                    </template>
+                  </template>
+                </v-data-table>
               </v-card>
             </v-dialog>
             <v-tooltip right :disabled="cellTypeFlag">
@@ -446,7 +478,7 @@
               icon
               v-model="isDrawing"
               color="black"
-              :disabled="!spatialData || loading || !isClusterView"
+              :disabled="!spatialData || loading"
               @click="cellTypeFlag = !cellTypeFlag"
               small>
             <v-icon>mdi-eyedropper-variant</v-icon>
@@ -575,7 +607,7 @@
             </v-col>
           </v-row>
           </div>
-            <v-col cols="12" sm="12">
+            <v-col cols="12" sm="11">
               <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
               </v-card>
@@ -1512,10 +1544,7 @@ export default defineComponent({
   .bold-disabled-Text .v-text-field.v-text-field--enclosed .v-text-field__details {
     margin-bottom: 0 !important;
   }
-  .bold-disabled-Text #screenCapture > div > div.col-sm-2.col-12 > table > tr:nth-child(1) > td:nth-child(2) > div > div > div.v-input__slot {
-    margin-bottom: 0px !important;
-  }
-  .v-text-field.v-text-field--solo .v-input__control {
+  .bold-disabled-Text .v-text-field.v-text-field--solo .v-input__control {
     min-height: auto !important;
     padding: 0;
     padding-top: 0px;
@@ -1523,7 +1552,7 @@ export default defineComponent({
     padding-bottom: 0px;
     padding-left: 0px;
   }
-  .v-input__slot {
+   .bold-disabled-Text .v-input__slot {
     margin-bottom: 0px !important;
   }
 </style>

@@ -237,13 +237,14 @@ const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
 ];
 function colormapBounded(cmap: string[], values: number[]) {
-  const min_v = Math.min(...values);
-  const max_v = Math.max(...values);
+  const min_v = Math.min(...values) + 10;
+  const max_v = Math.max(...values) + 10;
   // if (min_v === max_v) return null;
   const nshades = cmap.length;
   const output: string[] = [];
   lodash.each(values, (v: number) => {
-    const normalized = ((v - min_v) / (max_v - min_v)) * (nshades - 1);
+    const plusTen = v + 10;
+    const normalized = ((plusTen - min_v) / (max_v - min_v)) * (nshades - 1);
     const colidx = Math.trunc(normalized);
     output.push(cmap[colidx]);
   });
@@ -564,7 +565,7 @@ export default defineComponent({
             stroke: colors[match],
             strokeWidth: 1.0,
             cluster: v,
-            total: geneSum[i] + 10,
+            total: geneSum[i],
             inactive: false,
             genes: { },
           };
@@ -590,7 +591,7 @@ export default defineComponent({
             stroke: colors[match],
             strokeWidth: 1.0,
             cluster: v,
-            total: geneSum[i] + 10,
+            total: geneSum[i],
             inactive: false,
             genes: { },
           };
@@ -607,7 +608,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
-          const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
+          const clr = (geneSum[i] + 10 > 0) ? geneColors[i] : inactiveColor.value;
           highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
           lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
@@ -620,12 +621,12 @@ export default defineComponent({
             stroke: clr,
             strokeWidth: 1.0,
             cluster: v,
-            total: geneSum[i] + 10,
+            total: geneSum[i],
             inactive: false,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
-            (c.genes as any)[k] = val[i] + 10;
+            (c.genes as any)[k] = val[i];
           });
           circles.push(c);
         });
@@ -633,7 +634,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
-          const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
+          const clr = (geneSum[i] + 10 > 0) ? geneColors[i] : inactiveColor.value;
           highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
           lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
@@ -646,12 +647,12 @@ export default defineComponent({
             stroke: clr,
             strokeWidth: 1.0,
             cluster: v,
-            total: geneSum[i] + 10,
+            total: geneSum[i],
             inactive: false,
             genes: { },
           };
           lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
-            (c.genes as any)[k] = val[i] + 10;
+            (c.genes as any)[k] = val[i];
           });
           circlesUMAP.push(c);
         });
@@ -733,9 +734,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (item.total > 0 && selectedGenes.value.length > 0) {
-        text = `${text}\nSum: ${item.total - 10}`;
+        text = `${text}\nSum: ${item.total}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          if (v > 0) text = `${text}\n${k}: ${v - 10}`;
+          if (v > 0) text = `${text}\n${k}: ${v}`;
         });
       }
       tooltipText.text(text);
@@ -761,9 +762,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (item.total > 0 && selectedGenes.value.length > 0) {
-        text = `${text}\nSum: ${item.total - 10}`;
+        text = `${text}\nSum: ${item.total}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          if (v > 0) text = `${text}\n${k}: ${v - 10}`;
+          if (v > 0) text = `${text}\n${k}: ${v}`;
         });
       }
       tooltipTextRight.text(text);
