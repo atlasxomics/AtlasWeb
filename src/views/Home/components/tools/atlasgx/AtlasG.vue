@@ -307,7 +307,7 @@
             v-if="clusterColorFlag"
             :value="clusterColorFlag"
             :scrollable="true"
-            @click:outside="clusterColorFlag = !clusterColorFlag">
+            @click:outside="clearClusterColor">
               <v-card style="width:600px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);z-index: 999; height: 90vh;">
                 <v-card-title>Color Configuration</v-card-title>
                 <v-card-text>
