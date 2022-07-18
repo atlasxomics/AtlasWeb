@@ -764,6 +764,15 @@ export default defineComponent({
         metadata.value.diseaseState = 'Healthy';
       }
       metadata.value.barcodes = 'A Normal';
+      if (metadata.value.barcodes === '1 (normal)') {
+        barcodes.value = 1;
+      } else if (metadata.value.barcodes === '2 (reverseB)') {
+        barcodes.value = 2;
+      } else if (metadata.value.barcodes === '3 (reverseAB)') {
+        barcodes.value = 4;
+      } else {
+        barcodes.value = 3;
+      }
     }
 
     async function getMeta() {
@@ -904,12 +913,12 @@ export default defineComponent({
       if (choice === 0) {
         console.log(degreeBoolean45.value);
         if (degreeBoolean45.value) {
-          orientation.value.rotation += 315;
+          orientation.value.rotation += 45;
         } else {
-          orientation.value.rotation += 270;
+          orientation.value.rotation += 90;
         }
       } else {
-        orientation.value.rotation += 90;
+        orientation.value.rotation += 270;
       }
       loadImage();
     }
