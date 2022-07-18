@@ -54,71 +54,72 @@
                 v-model="metadata.species"
                 outlined
                 dense
-                label="Species">
+                label="Species"
+                readonly
+                >
               </v-text-field>
               <v-text-field
                 v-model="metadata.organ"
                 outlined
                 dense
-                label="Organ">
+                label="Organ"
+                readonly>
               </v-text-field>
               <v-text-field
               v-model="metadata.collaborator"
               label="Collaborator"
+              readonly
               dense
               outlined
               >
               </v-text-field>
-              <!-- <v-text-field
+              <v-text-field
                 v-model="metadata.type"
                 outlined
                 dense
-                label="Type">
-              </v-text-field> -->
-              <v-select
+                label="Type"
+                readonly
+                >
+              </v-text-field>
+              <v-text-field
                 v-model="metadata.assay"
                 outlined
-                :items="metaItemLists.assays"
                 dense
-                label="Assay">
-              </v-select>
-              <v-select
+                label="Assay"
+                readonly>
+              </v-text-field>
+              <v-text-field
               v-model="metadata.diseaseState"
               outlined
               dense
-              :items="metaItemLists.diseaseState"
               label="Disease State"
               @change="changeDiseaseState"
+              readonly
               >
-              </v-select>
+              </v-text-field>
               <v-text-field
               outlined
               dense
               label="Disease Name"
               v-model="metadata.diseaseName"
               v-if="metadata.diseaseState === 'Disease'"
+              readonly
               >
               </v-text-field>
-              <v-select
+              <v-text-field
                 v-model="metadata.numChannels"
                 outlined
-                :items="metaItemLists.barcode_file"
                 dense
                 label="Barcode"
-                @change="updateChannels">
-              </v-select>
-              <v-select
+                @change="updateChannels"
+                readonly>
+              </v-text-field>
+              <v-text-field
               v-model="metadata.chip_resolution"
               outlined
               dense
               label="Chip Resolution"
-              :items="metaItemLists.resolution">
-              </v-select>
-              <v-text-field
-              v-model="metadata.notes"
-              label="Notes"
-              outlined
-              dense>
+              readonly>
               </v-text-field>
             </v-card-text>
           </v-card>
@@ -147,7 +148,7 @@
                 <v-btn
                 color="grey"
                 :disabled="!current_image || isCropMode || grid"
-                @click="rotate_image(270)"
+                @click="rotate_image(0)"
                 small
                 >
                 <img src="@/assets/images/rotate_left.png"
@@ -158,7 +159,7 @@
                 color="grey"
                 class="spaced_btn"
                 :disabled="!current_image || isCropMode || grid"
-                @click="rotate_image(90)"
+                @click="rotate_image(1)"
                 small
                 >
                 <img src="@/assets/images/rotate_right.png"
@@ -168,6 +169,7 @@
                 <v-switch class="toggle_switch"
                 label="45°"
                 @change="toggleRotationSwitch"
+                v-model = "degreeBoolean45"
                 >
                 </v-switch>
               </v-list>
@@ -587,13 +589,12 @@ interface Metadata {
   numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
-  barcodes: number | null;
+  barcodes: string | null;
   organ: string | null;
   diseaseState: string | null;
   diseaseName: string | null;
   collaborator: string | null;
   chip_resolution: number | null;
-  notes: string | null;
 }
 
 export default defineComponent({
@@ -700,12 +701,11 @@ export default defineComponent({
       organ: null,
       orientation: null,
       crop_area: null,
-      barcodes: 1,
+      barcodes: 'Normal',
       chip_resolution: null,
       diseaseState: null,
       diseaseName: null,
       collaborator: null,
-      notes: null,
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -753,11 +753,24 @@ export default defineComponent({
       roi.value.setScaleFactor(v);
       crop.value.setScaleFactor(v);
     }
+    function assignMetadata(slimsData: any) {
+      metadata.value.organ = slimsData.cntn_cf_fk_organ;
+      metadata.value.species = slimsData.cntn_cf_fk_species;
+      metadata.value.chip_resolution = slimsData.Resolution;
+      metadata.value.collaborator = slimsData.cntn_cf_source;
+      metadata.value.assay = slimsData.cntn_cf_fk_workflow;
+      metadata.value.diseaseName = slimsData.cntn_cf_disease;
+      if (metadata.value.diseaseName == null) {
+        metadata.value.diseaseState = 'Healthy';
+      }
+      metadata.value.barcodes = 'A Normal';
+    }
+
     async function getMeta() {
       try {
         const root = 'data';
         const task = 'creation.create_files';
-        const queue = 'create_worker';
+        const queue = 'creation_worker';
         const params = {
           data: null,
           path: `${root}/${run_id.value}`,
@@ -770,6 +783,7 @@ export default defineComponent({
         const jsonFileName = { params: { filename: name } };
         const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
         let slimsData: any;
+        // if the json folder cannot be obtained from local server query slims
         if (!jsonBoolean) {
           loading.value = true;
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
@@ -792,13 +806,13 @@ export default defineComponent({
             loading.value = false;
             return;
           }
+          // if the metadata is able to be retrieved locally, assign it to slimsData
         } else {
           slimsData = jsonBoolean;
         }
+        // function to assign the local metadata values to the slimsData object fields
         loading.value = false;
-        metadata.value.organ = slimsData.Organ;
-        metadata.value.species = slimsData.Species;
-        metadata.value.type = slimsData['Tissue type'];
+        assignMetadata(slimsData);
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -822,11 +836,12 @@ export default defineComponent({
       const scale_pos = await client.value.getJsonFile(scale_payload);
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
+      // if the json file is retrieved from server use that as metadata
       if (resp) {
         metadata.value = resp;
         optionFlag.value = false;
-        console.log(metadata);
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
+        // otherwise call getMeta to query the API
       } else {
         await getMeta();
         optionFlag.value = true;
@@ -1304,7 +1319,6 @@ export default defineComponent({
         if (optionUpdate.value) {
           cropCoords = metadata.value.crop_area;
         }
-        console.log(cropCoords);
         const points: number[] = [];
         coords.forEach((v, i) => {
           points.push(v.x);
@@ -1619,6 +1633,8 @@ export default defineComponent({
       clear_filled_tixels,
       changeDiseaseState,
       degreeBoolean45,
+      toggleRotationSwitch,
+      assignMetadata,
     };
   },
 });

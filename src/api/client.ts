@@ -362,10 +362,10 @@ export default class Client {
     return resp.data;
   }
   // SLIMS
-  async getMetadataFromRunId(rid: string, cntn_type = 'NGS Library'): Promise<any> {
+  async getMetadataFromRunId(rid: string): Promise<any> {
     const uri = '/api/v1/dataset/slimstest_runid';
     const run_id = `D${padzeros(Number(rid.split('D')[1]), 5)}`;
-    const payload = { params: { run_id, cntn_type } };
+    const payload = { params: { run_id } };
     const resp = await this.axios.get(uri, payload);
     return resp.data;
   }
