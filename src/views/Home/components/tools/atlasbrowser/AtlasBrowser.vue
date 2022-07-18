@@ -848,15 +848,8 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
     }
-    async function rotate_image(degrees: number) {
-      // console.log(degrees);
-      const imgObj = new window.Image();
-      // const newImage = new window.Image();
-      imgObj.src = URL.createObjectURL(imageh.value);
-      // Jimp.read(imgObj.src).then((image) => {
-      //   current_image.value.image.src = image.rotate(90);
-      //   console.log('image has been procesed with JIMP');
-      // });
+    function toggleRotationSwitch() {
+      console.log('rotation pressed');
     }
 
     async function loadImage() {
@@ -865,7 +858,6 @@ export default defineComponent({
       loadingMessage.value = false;
       const root = 'data';
       let filename: any;
-      console.log(optionUpdate.value);
       if (optionUpdate.value) {
         filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
       } else {
@@ -873,7 +865,7 @@ export default defineComponent({
       }
       const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
       try {
-        const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
+        const img = await client.value.getImageAsJPG({ params: { filename, rotation: orientation.value.rotation } });
         imageh.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
@@ -906,6 +898,20 @@ export default defineComponent({
       await loadMetadata();
       await loadImage();
       loading.value = false;
+    }
+
+    function rotate_image(choice: number) {
+      if (choice === 0) {
+        console.log(degreeBoolean45.value);
+        if (degreeBoolean45.value) {
+          orientation.value.rotation += 315;
+        } else {
+          orientation.value.rotation += 270;
+        }
+      } else {
+        orientation.value.rotation += 90;
+      }
+      loadImage();
     }
 
     function searchRuns(ev: any) {
