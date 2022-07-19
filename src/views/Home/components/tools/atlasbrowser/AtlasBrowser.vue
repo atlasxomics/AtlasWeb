@@ -73,14 +73,14 @@
               outlined
               >
               </v-text-field>
-              <v-text-field
+              <!-- <v-text-field
                 v-model="metadata.type"
                 outlined
                 dense
                 label="Type"
                 readonly
                 >
-              </v-text-field>
+              </v-text-field> -->
               <v-text-field
                 v-model="metadata.assay"
                 outlined
@@ -107,7 +107,7 @@
               >
               </v-text-field>
               <v-text-field
-                v-model="metadata.numChannels"
+                v-model="metadata.barcodes"
                 outlined
                 dense
                 label="Barcode"
@@ -168,8 +168,8 @@
                 </v-btn>
                 <v-switch class="toggle_switch"
                 label="45°"
-                @change="toggleRotationSwitch"
                 v-model = "degreeBoolean45"
+                :disabled="!current_image || isCropMode || grid"
                 >
                 </v-switch>
               </v-list>
@@ -600,15 +600,6 @@ interface Metadata {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  methods: {
-    check_vals() {
-      if (this.csvHolder) {
-        console.log('csv holder is true');
-      } else {
-        console.log('csv holder is false');
-      }
-    },
-  },
   setup(props, ctx) {
     const welcome_screen = ref<boolean>(true);
     const router = ctx.root.$router;
@@ -754,6 +745,7 @@ export default defineComponent({
       crop.value.setScaleFactor(v);
     }
     function assignMetadata(slimsData: any) {
+      console.log(slimsData);
       metadata.value.organ = slimsData.cntn_cf_fk_organ;
       metadata.value.species = slimsData.cntn_cf_fk_species;
       metadata.value.chip_resolution = slimsData.Resolution;
@@ -763,7 +755,7 @@ export default defineComponent({
       if (metadata.value.diseaseName == null) {
         metadata.value.diseaseState = 'Healthy';
       }
-      metadata.value.barcodes = 'A Normal';
+      metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
       if (metadata.value.barcodes === '1 (normal)') {
         barcodes.value = 1;
       } else if (metadata.value.barcodes === '2 (reverseB)') {
@@ -801,7 +793,7 @@ export default defineComponent({
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */
           while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-            console.log(args);
+            // console.log(args);
             progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
             await new Promise((r) => {
               taskTimeout.value = window.setTimeout(r, 1000);
@@ -848,6 +840,7 @@ export default defineComponent({
       // if the json file is retrieved from server use that as metadata
       if (resp) {
         metadata.value = resp;
+        // console.log(resp);
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
@@ -857,9 +850,6 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
     }
-    function toggleRotationSwitch() {
-      console.log('rotation pressed');
-    }
 
     async function loadImage() {
       if (!client.value) return;
@@ -867,6 +857,7 @@ export default defineComponent({
       loadingMessage.value = false;
       const root = 'data';
       let filename: any;
+      // console.log(orientation.value.rotation);
       if (optionUpdate.value) {
         filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
       } else {
@@ -911,7 +902,7 @@ export default defineComponent({
 
     function rotate_image(choice: number) {
       if (choice === 0) {
-        console.log(degreeBoolean45.value);
+        // console.log(degreeBoolean45.value);
         if (degreeBoolean45.value) {
           orientation.value.rotation += 45;
         } else {
@@ -948,6 +939,7 @@ export default defineComponent({
       const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
+      // console.log(orientation.value.rotation);
       roi.value.loadTixels(csvHolder.value);
     }
     function updateChannels(ev: any) {
@@ -1189,7 +1181,6 @@ export default defineComponent({
           const newsrc = b.toBlobURL('image/jpeg');
           if (bsa_image_disp.value) {
             current_image.value.image.original_src = current_image.value.image.src;
-            console.log('bsa image displayed');
           }
           current_image.value.image.src = newsrc;
           current_image.value.image.alternative_src = newsrc;
@@ -1275,24 +1266,12 @@ export default defineComponent({
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
         generating.value = true;
         await checkTaskStatus(taskObject._id);
-        console.log('1');
-        console.log(taskStatush5.value.status);
-        console.log(taskStatush5.value.position);
-        console.log(taskStatush5.value.status);
-        console.log(taskStatush5.value.progress);
         /* eslint-disable no-await-in-loop */
         while (taskStatush5.value.status !== 'SUCCESS' && taskStatush5.value.status !== 'FAILURE') {
           if (taskStatush5.value.status === 'PROGRESS') {
             await updateH5ad(taskStatus.value.progress);
-            console.log('2');
-            console.log(taskStatush5.value.position);
-            console.log(taskStatush5.value.progress);
             progressMessage.value = `${taskStatush5.value.progress}% - ${taskStatush5.value.position}`;
           }
-          console.log('3');
-          console.log(taskStatush5.value.position);
-          console.log(taskStatush5.value.progress);
-
           await new Promise((r) => {
             taskTimeout.value = window.setTimeout(r, 1000);
           });
@@ -1405,7 +1384,6 @@ export default defineComponent({
       }
     }
     function handle_spatial_call() {
-      console.log(orientation.value);
       if (!client.value) {
         snackbar.dispatch({ text: 'Client is not initialized', options: { right: true, color: 'error' } });
       } else if (!tixels_filled.value) {
@@ -1648,7 +1626,6 @@ export default defineComponent({
       clear_filled_tixels,
       changeDiseaseState,
       degreeBoolean45,
-      toggleRotationSwitch,
       assignMetadata,
     };
   },
