@@ -28,7 +28,7 @@
         <v-chip
           :key="data.item.name"
           v-bind="data.attrs"
-          :input-value="active"
+          :input-value="de_select"
           close
           small
           color="rgb(0, 0, 0, .05)"
@@ -94,7 +94,6 @@ export default defineComponent({
     const clicked = ref<boolean>(false);
     const paddingValue = ref<number>(32);
     const newRowCounter = ref<number>(0);
-    const active = ref<boolean>(false);
     const autoGenes = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
@@ -163,9 +162,10 @@ export default defineComponent({
       }
     });
     watch(de_select, (v: any) => {
-      active.value = v;
       if (v) {
-        autoGenes.value = selectedGenes.value;
+        selectedGenes.value.forEach((q: string, i: number) => {
+          autoGenes.value.push(q);
+        });
       } else autoGenes.value = [];
     });
     watch(geneList.value, (v: any[]) => {
@@ -205,7 +205,6 @@ export default defineComponent({
       clicked,
       paddingValue,
       newRowCounter,
-      active,
       autoGenes,
       acInputChanged,
       querySelections,

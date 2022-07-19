@@ -132,7 +132,7 @@ export default defineComponent({
       const name = `data/${rid}/metadata.json`;
       const jsonFileName = { params: { filename: name } };
       const metadata = await client.value?.getJsonFile(jsonFileName);
-      selectedSpecies.value = metadata.Species;
+      selectedSpecies.value = metadata.cntn_cf_fk_species;
       trackBrowserParams.value = {
         chr: '1',
         viewStart: 0,
