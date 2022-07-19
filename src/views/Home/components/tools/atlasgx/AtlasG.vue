@@ -252,7 +252,7 @@
             </template>
             <span>Quad Select</span>
             </v-tooltip>
-            <v-tooltip right :disabled="isDrawing || isDrawingRect">
+            <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
                 class="ml-4 mt-5"
@@ -455,7 +455,7 @@
                 hide-default-header
                 :items="['Transparent', 'Opaque']">
                   <template v-slot:item="row">
-                    <template v-if="row.item == 'Genes'">
+                    <template v-if="row.item == 'Transparent'">
                       <tr @click="captureScreen('null')">
                         <td>{{row.item}}</td>
                       </tr>
@@ -781,7 +781,7 @@ export default defineComponent({
     const clickedCluster = ref<string>('');
     const userSelectedColor = ref<string>('');
     const manualClusterFlag = ref<boolean>(false);
-    const clickedClusterFromChild = ref<string>('');
+    const clickedClusterFromChild = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -912,7 +912,7 @@ export default defineComponent({
       isClusterView.value = false;
     }
     function sendCluster(ev: any) {
-      clickedClusterFromChild.value = ev;
+      clickedClusterFromChild.value = [ev];
     }
     async function loadExpressions() {
       if (!client.value) return;
@@ -1165,9 +1165,9 @@ export default defineComponent({
         slimsData = jsonBoolean;
       }
       loading.value = false;
-      metadata.value.organ = slimsData.Organ;
-      metadata.value.species = slimsData.Species;
-      metadata.value.type = slimsData['Tissue type'];
+      metadata.value.organ = slimsData.cntn_cf_fk_organ;
+      metadata.value.species = slimsData.cntn_cf_fk_species;
+      metadata.value.type = slimsData.cntn_cf_fk_tissueType;
     }
     async function selectAction(ev: any) {
       const root = 'data';

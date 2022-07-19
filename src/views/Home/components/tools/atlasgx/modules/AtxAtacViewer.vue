@@ -951,7 +951,7 @@ export default defineComponent({
       }
     });
     watch(clickedClusterFromParent, (v: any) => {
-      mouseOverClusterItem({ name: `${v}` });
+      mouseOverClusterItem({ name: `${v[0]}` });
     });
     watch(heatMap, (v: string) => {
       if (v === 'picnic') {
