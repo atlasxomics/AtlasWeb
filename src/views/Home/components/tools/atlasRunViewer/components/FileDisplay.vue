@@ -3,6 +3,8 @@
         <v-img
         v-if="isImage"
         :src="imageURL"
+        width="400"
+        height="400"
         >
         </v-img>
     </v-col>
@@ -16,6 +18,7 @@ export default defineComponent({
   props: {
     fileName: { type: String, required: true },
     imageURL: { type: String, required: true },
+    jsonContents: { type: Object, required: true },
   },
   setup(props, ctxe) {
     const isImage = ref<boolean>(false);
@@ -30,11 +33,14 @@ export default defineComponent({
       const path_parts = newValue.split('.');
       const extension = path_parts[path_parts.length - 1];
       // check if the file we have been passed is an iamge
-      if (extension === 'tif' || extension === 'jpg') {
+      if (extension === 'tif' || extension === 'png') {
         console.log('image');
         this.isImage = true;
-      } else if (extension === 'json') {
+      } else {
+        this.isImage = false;
+      } if (extension === 'json') {
         console.log('json');
+        console.log(this.jsonContents);
       } else if (extension === 'csv') {
         console.log('csv');
       }
