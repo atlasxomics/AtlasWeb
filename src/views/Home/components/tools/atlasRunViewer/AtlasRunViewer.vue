@@ -16,6 +16,12 @@
             {{file}}
             </button>
           </v-col>
+          <v-col>
+            <v-img
+            :src="currentDisplayedImage"
+            >
+            </v-img>
+          </v-col>
         </v-row>
     </v-container>
 </template>
@@ -35,6 +41,8 @@ export default defineComponent({
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const availableFiles = ref<any[]>([]);
+    const currentDisplayedImage = ref<any>();
+    const test = ref<boolean>(false);
     // getRunFiles
     async function getRunFiles(runID: string) {
       if (!client.value) {
@@ -43,6 +51,7 @@ export default defineComponent({
       // const runID = 'D223';
       const folder_path = 'data/'.concat(runID);
       const file_payload = { params: { path: folder_path } };
+
       const run_files = await client.value.getFileList(file_payload);
       availableFiles.value = run_files;
       if (availableFiles.value.length === 0) {
@@ -50,12 +59,26 @@ export default defineComponent({
       }
       console.log(availableFiles);
     }
+    async function loadDisplayImage(filename: string) {
+      try {
+        const image = await client.value?.getImageAsJPG({ params: { filename } });
+        console.log(image);
+        if (image) {
+          currentDisplayedImage.value = URL.createObjectURL(image);
+          test.value = true;
+          console.log(currentDisplayedImage.value);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
     function loadFile(filename: string) {
       const file_array = filename.split('.');
-      const suffix = file_array.at(file_array.length - 1);
+      const suffix = file_array[file_array.length - 1];
       console.log(suffix);
       if (suffix === 'tif' || suffix === 'png') {
         console.log('image');
+        loadDisplayImage(filename);
       }
       console.log(file_array);
     }
@@ -63,6 +86,9 @@ export default defineComponent({
       getRunFiles,
       availableFiles,
       loadFile,
+      loadDisplayImage,
+      currentDisplayedImage,
+      test,
     };
   },
 });
