@@ -1,33 +1,19 @@
 <template>
     <v-container>
         <v-row>
+            <RunIdList :availableRunsPassed="availableRuns" @run-selected=getRunFiles> </RunIdList>
           <v-col>
-            <h1> Run IDs </h1>
-            <v-spacer></v-spacer>
-            <p v-for="run in availableRuns" :key="run">
-              <v-btn @click="getRunFiles(run)">
-                {{run}}
-              </v-btn>
-            </p>
-            <!-- <button v-for="run in availableRuns" :key="run" @click="getRunFiles(run)"> -->
-            {{run}}
-            <v-spacer></v-spacer>
-          </v-col>
-          <v-col>
-            <h1>
-              Options
-            </h1>
-            <button v-for="file in availableFiles" :key="file"
-            @click="loadFile(file)"
-            >
-            {{file}}
-            </button>
+            <AvailableFileList :fileList="availableFiles" @file-selected=loadFile> </AvailableFileList>
           </v-col>
           <v-col>
             <v-img
+            v-if="image_selected"
             :src="currentDisplayedImage"
+            width="300"
+            height="300"
             >
             </v-img>
+
           </v-col>
         </v-row>
     </v-container>
@@ -35,7 +21,10 @@
 
 <script lang='ts'>
 import { defineComponent, computed, ref, onMounted } from '@vue/composition-api';
+import Vue from 'vue';
 import store from '../../../../../store';
+import RunIdList from './components/RunIdList.vue';
+import AvailableFileList from './components/AvailableFileList.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -45,11 +34,16 @@ const clientReady = new Promise((resolve) => {
 export default defineComponent({
   name: 'AtlasRunViewer',
   props: ['query'],
+  components: {
+    RunIdList,
+    AvailableFileList,
+  },
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const availableFiles = ref<any[]>([]);
     const currentDisplayedImage = ref<any>();
     const availableRuns = ref<any[]>([]);
+    const image_selected = ref<boolean>(false);
     async function getRunFiles(runID: string) {
       if (!client.value) {
         return;
@@ -67,6 +61,7 @@ export default defineComponent({
     }
     async function loadDisplayImage(filename: string) {
       try {
+        image_selected.value = true;
         const image = await client.value?.getImageAsJPG({ params: { filename } });
         console.log(image);
         if (image) {
@@ -116,6 +111,7 @@ export default defineComponent({
       currentDisplayedImage,
       availableRuns,
       loadRunIds,
+      image_selected,
     };
   },
 });
