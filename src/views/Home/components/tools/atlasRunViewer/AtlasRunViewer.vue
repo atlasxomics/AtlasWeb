@@ -4,7 +4,14 @@
           <v-col>
             <h1> Run IDs </h1>
             <v-spacer></v-spacer>
-            <button @click="getRunFiles('D223')">D223</button>
+            <p v-for="run in availableRuns" :key="run">
+              <v-btn @click="getRunFiles(run)">
+                {{run}}
+              </v-btn>
+            </p>
+            <!-- <button v-for="run in availableRuns" :key="run" @click="getRunFiles(run)"> -->
+            {{run}}
+            <v-spacer></v-spacer>
           </v-col>
           <v-col>
             <h1>
@@ -27,7 +34,7 @@
 </template>
 
 <script lang='ts'>
-import { defineComponent, computed, ref } from '@vue/composition-api';
+import { defineComponent, computed, ref, onMounted } from '@vue/composition-api';
 import store from '../../../../../store';
 
 const clientReady = new Promise((resolve) => {
@@ -42,13 +49,12 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const availableFiles = ref<any[]>([]);
     const currentDisplayedImage = ref<any>();
-    const test = ref<boolean>(false);
-    // getRunFiles
+    const availableRuns = ref<any[]>([]);
     async function getRunFiles(runID: string) {
       if (!client.value) {
         return;
       }
-      // const runID = 'D223';
+      console.log(runID);
       const folder_path = 'data/'.concat(runID);
       const file_payload = { params: { path: folder_path } };
 
@@ -65,7 +71,6 @@ export default defineComponent({
         console.log(image);
         if (image) {
           currentDisplayedImage.value = URL.createObjectURL(image);
-          test.value = true;
           console.log(currentDisplayedImage.value);
         }
       } catch (error) {
@@ -80,15 +85,37 @@ export default defineComponent({
         console.log('image');
         loadDisplayImage(filename);
       }
-      console.log(file_array);
     }
+    async function loadRunIds() {
+      console.log('fetching available runs');
+      const uniqueRuns = new Set();
+      const payload = { params: { path: 'data/' } };
+      const allData = await client.value?.getFileList(payload);
+      try {
+        allData.forEach((file: any) => {
+          const current_id = file.split('/')[1];
+          if (!uniqueRuns.has(current_id)) {
+            uniqueRuns.add(current_id);
+            console.log(current_id);
+            availableRuns.value.push(current_id);
+          }
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    onMounted(() => {
+      console.log('mounted');
+      loadRunIds();
+    });
     return {
       getRunFiles,
       availableFiles,
       loadFile,
       loadDisplayImage,
       currentDisplayedImage,
-      test,
+      availableRuns,
+      loadRunIds,
     };
   },
 });
