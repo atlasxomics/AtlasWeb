@@ -51,7 +51,13 @@ export default defineComponent({
       console.log(availableFiles);
     }
     function loadFile(filename: string) {
-      console.log('loading'.concat(filename));
+      const file_array = filename.split('.');
+      const suffix = file_array.at(file_array.length - 1);
+      console.log(suffix);
+      if (suffix === 'tif' || suffix === 'png') {
+        console.log('image');
+      }
+      console.log(file_array);
     }
     return {
       getRunFiles,
