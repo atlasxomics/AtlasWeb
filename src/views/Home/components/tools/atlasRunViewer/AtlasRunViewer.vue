@@ -1,8 +1,8 @@
 <template>
     <v-container>
         <v-row>
-            <RunIdList :availableRunsPassed="availableRuns" @run-selected=getRunFiles> </RunIdList>
-            <AvailableFileList :fileList="availableFiles" @file-selected=handleFileSelection> </AvailableFileList>
+            <RunIdList :availableRunsPassed="availableRuns" @run-selected=handleRunSelection> </RunIdList>
+            <AvailableFileList :fileList="availableFiles" :runID="selectedRunID" @file-selected=handleFileSelection> </AvailableFileList>
             <FileDisplay
             :fileName="file_selected"
             :imageURL="selectedImageURL_array"
@@ -48,6 +48,7 @@ export default defineComponent({
     const selectedImage = ref<any>({});
     const csvPretty = ref<string>('');
     const csvPretty_array = ref<any[]>([]);
+    const selectedRunID = ref<string>('');
     // method to obtain all the files associated with a particular run from aws
     async function getRunFiles(runID: string) {
       if (!client.value) {
@@ -61,6 +62,10 @@ export default defineComponent({
       if (availableFiles.value.length === 0) {
         availableFiles.value.push('Run '.concat(runID).concat(' has no associated files.'));
       }
+    }
+    function handleRunSelection(runID: string) {
+      selectedRunID.value = runID;
+      getRunFiles(runID);
     }
     // method
     async function loadDisplayImage(filename: string) {
@@ -147,6 +152,8 @@ export default defineComponent({
       selectedImage,
       csvPretty,
       csvPretty_array,
+      selectedRunID,
+      handleRunSelection,
     };
   },
 });

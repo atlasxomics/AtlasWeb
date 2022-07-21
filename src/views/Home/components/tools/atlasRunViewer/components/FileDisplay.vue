@@ -51,7 +51,7 @@ export default defineComponent({
     const textConfig = ref<any>({ text: '' });
     const textLayerConfig = ref<any>({
       width: 1000,
-      height: 1000,
+      height: 10000,
     });
     // convert the image url passed to the component into konva compatible format
     function configureImage() {
@@ -85,44 +85,49 @@ export default defineComponent({
     };
   },
   watch: {
-    fileName(newValue, oldValue) {
-      const path_parts = newValue.split('.');
-      const extension = path_parts[path_parts.length - 1];
-      // check if the file we have been passed is an iamge
-      if (extension === 'tif' || extension === 'png') {
-        console.log('image');
-        this.isImage = true;
-        this.jsonDisplay = false;
-        // this.configureImage();
-      } else {
-        this.isImage = false;
-      } if (extension === 'json') {
-        this.jsonDisplay = true;
-      } else if (extension === 'csv') {
-        this.jsonDisplay = true;
-      }
-      console.log('the selcted file has changed');
-    },
+    // fileName(newValue, oldValue) {
+    //   const path_parts = newValue.split('.');
+    //   const extension = path_parts[path_parts.length - 1];
+    //   // check if the file we have been passed is an iamge
+    //   if (extension === 'tif' || extension === 'png') {
+    //     console.log('image');
+    //     this.isImage = true;
+    //     this.jsonDisplay = false;
+    //     // this.configureImage();
+    //   } else {
+    //     this.isImage = false;
+    //   } if (extension === 'json') {
+    //     this.jsonDisplay = true;
+    //   } else if (extension === 'csv') {
+    //     this.jsonDisplay = true;
+    //   }
+    //   console.log('the selcted file has changed');
+    // },
     imageURL(newValue) {
       console.log('here');
       const [temp] = newValue;
       this.localImageURL = temp;
       this.configureImage();
+      this.isImage = true;
+      this.jsonDisplay = false;
     },
     jsonStringContents(newValue) {
       console.log('json changed');
       const [temp] = newValue;
       console.log(temp);
-      console.log('logged');
       this.textConfig = {
         text: temp,
         wrap: 'word',
       };
+      this.isImage = false;
+      this.jsonDisplay = true;
     },
     csvStringContents(newValue) {
       console.log('csv changed');
       const [temp] = newValue;
       this.textConfig = { text: temp };
+      this.isImage = false;
+      this.jsonDisplay = true;
     },
   },
 });

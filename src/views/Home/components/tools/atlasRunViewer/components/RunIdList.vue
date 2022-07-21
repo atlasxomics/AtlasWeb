@@ -1,9 +1,11 @@
 <template>
     <v-col>
+      <h1> Run Ids </h1>
         <p v-for="run in availableRunsPassed" :key="run">
           <v-btn
           class="{'white': !clicked, 'blue': clicked}"
-          @click="$emit('run-selected', run); clicked != clicked">
+          @click="$emit('run-selected', run)"
+          >
             {{ run }}
           </v-btn>
         </p>

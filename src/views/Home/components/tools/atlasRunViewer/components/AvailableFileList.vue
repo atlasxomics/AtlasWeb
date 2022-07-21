@@ -1,6 +1,6 @@
 <template>
     <v-col>
-        <p> {{ runID }} </p>
+        <h1> {{ runID }} </h1>
         <p v-for="file in fileList" :key="file">
             <v-btn @click="$emit('file-selected', file)">
                 {{ file }}
@@ -16,7 +16,7 @@ export default defineComponent({
   name: 'AvailableFileList',
   props: {
     fileList: { required: true, type: Array },
-    runID: String,
+    runID: { required: true, type: String },
   },
 });
 </script>
