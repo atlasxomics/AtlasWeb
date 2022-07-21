@@ -7,6 +7,7 @@
             :fileName="file_selected"
             :imageURL="selectedImageURL"
             :jsonStringContents="jsonString"
+            :jsonContents="jsonPackage"
             > </FileDisplay>
         </v-row>
     </v-container>
@@ -78,7 +79,7 @@ export default defineComponent({
       const payload = { params: { filename: input_filename } };
       const resp = await client.value?.getJsonFile(payload);
       jsonPackage.value = resp;
-      jsonString.value = JSON.stringify(resp);
+      jsonString.value = JSON.stringify(resp, null, 4);
     }
     // method to handle a user request to get a file
     function loadFile(filename: string) {

@@ -13,6 +13,7 @@
     </v-layer>
     <v-layer
     v-if="jsonDisplay"
+    :config="textLayerConfig"
     >
     <v-text
     :config="textConfig"
@@ -20,21 +21,9 @@
     </v-text>
     </v-layer>
  </v-stage>
-<!--
-    <v-col>
-        <v-img
-        v-if="isImage"
-        :src="imageURL"
-        width="400"
-        height="400"
-        >
-        </v-img>
-        <div
-        v-if="jsonDisplay"
-        >
-            {{jsonStringContents}}
-        </div>
-    </v-col> -->
+    <!-- <pre id='formattedJSON'>
+        {{ jsonStringContents }}
+    </pre> -->
 </template>
 
 <script lang="ts">
@@ -47,9 +36,14 @@ export default defineComponent({
     fileName: { type: String, required: true },
     imageURL: { type: String, required: true },
     // displayedImage: { type: HTMLImageElement, required: true },
-    // jsonContents: { type: Object, required: true },
+    jsonContents: { type: Object, required: true },
     jsonStringContents: { type: String, required: true },
   },
+  //   filters: {
+  //     // pretty(jsonStr: string) {
+  //     // //   return JSON.stringify(this.jsonContents);
+  //     // },
+  //   },
   setup(props, ctxe) {
     const isImage = ref<boolean>(false);
     const currentDisplayedImage = ref<any>();
@@ -59,11 +53,15 @@ export default defineComponent({
     const localImageURL = ref<string>('');
     const konvaConfiguration = ref<any>({
       width: 400,
-      height: 400,
+      height: 1000,
       x: 0,
       y: 100,
     });
     const textConfig = ref<any>({ text: '' });
+    const textLayerConfig = ref<any>({
+      width: 1000,
+      height: 1000,
+    });
     // convert the image url passed to the component into konva compatible format
     function configureImage() {
       console.log(localImageURL.value);
@@ -77,8 +75,8 @@ export default defineComponent({
             draggable: false,
             image: imgObj,
             src: imgObj.src,
-            width: 400,
-            height: 400,
+            width: 300,
+            height: 300,
           };
         };
       }
@@ -92,6 +90,7 @@ export default defineComponent({
       localImageURL,
       konvaConfiguration,
       textConfig,
+      textLayerConfig,
     };
   },
   watch: {
@@ -120,7 +119,10 @@ export default defineComponent({
     },
     jsonStringContents(newValue) {
       console.log(newValue);
-      this.textConfig = { text: newValue };
+      this.textConfig = {
+        text: newValue,
+        wrap: 'word',
+      };
     },
   },
 });
