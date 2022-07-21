@@ -6,7 +6,7 @@
             <FileDisplay
             :fileName="file_selected"
             :imageURL="selectedImageURL"
-            :jsonContents="jsonPackage"
+            :jsonStringContents="jsonString"
             > </FileDisplay>
         </v-row>
     </v-container>
@@ -40,6 +40,8 @@ export default defineComponent({
     const image_selected = ref<boolean>(false);
     const file_selected = ref<string>('');
     const jsonPackage = ref<Record<string, any>>({});
+    const jsonString = ref<string>('');
+    const selectedImage = ref<any>({});
     // method to obtain all the files associated with a particular run from aws
     async function getRunFiles(runID: string) {
       if (!client.value) {
@@ -66,12 +68,19 @@ export default defineComponent({
         console.log(error);
       }
     }
+    async function loadCSVFile(input_filename: string) {
+      const payload = { params: { filename: input_filename } };
+      const resp = await client.value?.getCsvFile(payload);
+      console.log(resp);
+    }
+    // method called to load a json file into compotnent
     async function loadJSONFile(input_filename: string) {
       const payload = { params: { filename: input_filename } };
       const resp = await client.value?.getJsonFile(payload);
       jsonPackage.value = resp;
+      jsonString.value = JSON.stringify(resp);
     }
-    // method
+    // method to handle a user request to get a file
     function loadFile(filename: string) {
       const file_array = filename.split('.');
       const suffix = file_array[file_array.length - 1];
@@ -80,6 +89,8 @@ export default defineComponent({
         loadDisplayImage(filename);
       } else if (suffix === 'json') {
         loadJSONFile(filename);
+      } else if (suffix === 'csv') {
+        loadCSVFile(filename);
       }
     }
     function handleFileSelection(filename: string) {
@@ -118,6 +129,9 @@ export default defineComponent({
       handleFileSelection,
       file_selected,
       jsonPackage,
+      jsonString,
+      loadCSVFile,
+      selectedImage,
     };
   },
 });
