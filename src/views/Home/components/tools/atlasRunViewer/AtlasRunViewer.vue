@@ -8,6 +8,7 @@
             :imageURL="selectedImageURL"
             :jsonStringContents="jsonString"
             :jsonContents="jsonPackage"
+            :csvStringContents="csvPretty"
             > </FileDisplay>
         </v-row>
     </v-container>
@@ -43,6 +44,7 @@ export default defineComponent({
     const jsonPackage = ref<Record<string, any>>({});
     const jsonString = ref<string>('');
     const selectedImage = ref<any>({});
+    const csvPretty = ref<string>('');
     // method to obtain all the files associated with a particular run from aws
     async function getRunFiles(runID: string) {
       if (!client.value) {
@@ -73,6 +75,8 @@ export default defineComponent({
       const payload = { params: { filename: input_filename } };
       const resp = await client.value?.getCsvFile(payload);
       console.log(resp);
+      csvPretty.value = JSON.stringify(resp, null, 4);
+      console.log(csvPretty);
     }
     // method called to load a json file into compotnent
     async function loadJSONFile(input_filename: string) {
@@ -133,6 +137,7 @@ export default defineComponent({
       jsonString,
       loadCSVFile,
       selectedImage,
+      csvPretty,
     };
   },
 });

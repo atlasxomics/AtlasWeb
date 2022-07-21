@@ -38,6 +38,7 @@ export default defineComponent({
     // displayedImage: { type: HTMLImageElement, required: true },
     jsonContents: { type: Object, required: true },
     jsonStringContents: { type: String, required: true },
+    csvStringContents: { type: String, required: true },
   },
   //   filters: {
   //     // pretty(jsonStr: string) {
@@ -108,6 +109,7 @@ export default defineComponent({
       } if (extension === 'json') {
         this.jsonDisplay = true;
       } else if (extension === 'csv') {
+        this.jsonDisplay = true;
         console.log('csv');
       }
       console.log('the selcted file has changed');
@@ -123,6 +125,9 @@ export default defineComponent({
         text: newValue,
         wrap: 'word',
       };
+    },
+    csvStringContents(newValue) {
+      this.textConfig = { text: newValue };
     },
   },
 });
