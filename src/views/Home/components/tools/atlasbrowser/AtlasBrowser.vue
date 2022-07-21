@@ -275,7 +275,6 @@
                 :disabled="!thresh_image_created || bsa_image_disp || spatial"
                 > BSA </v-btn>
                 <v-btn
-                class="spaced_btn"
                 outlined
                 x-small
                 color="primary"
@@ -307,14 +306,15 @@
                   step="3.0"
                   :disabled="!tixels_filled"
                 />
-                <template v-if="spatial && !loadingMessage && grid">
+                <template>
                   <v-btn
+                  :disabled="!tixels_filled"
                   outlined
                   x-small
                   dense
                   color="primary"
-                  @click="generateh5ad()">
-                  Generate h5ad file
+                  @click="handle_spatial_call()">
+                  Generate Spatial Folder
                   </v-btn>
                 </template>
               </v-list>
@@ -736,7 +736,6 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
       taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
-
     function onChangeScale(ev: any) {
       const v = scaleFactor.value;
       current_image.value.scale = { x: v, y: v };
