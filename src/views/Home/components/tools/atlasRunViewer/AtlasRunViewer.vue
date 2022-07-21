@@ -5,10 +5,10 @@
             <AvailableFileList :fileList="availableFiles" @file-selected=handleFileSelection> </AvailableFileList>
             <FileDisplay
             :fileName="file_selected"
-            :imageURL="selectedImageURL"
-            :jsonStringContents="jsonString"
+            :imageURL="selectedImageURL_array"
+            :jsonStringContents="jsonString_array"
             :jsonContents="jsonPackage"
-            :csvStringContents="csvPretty"
+            :csvStringContents="csvPretty_array"
             > </FileDisplay>
         </v-row>
     </v-container>
@@ -38,13 +38,16 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const availableFiles = ref<any[]>([]);
     const selectedImageURL = ref<string>('');
+    const selectedImageURL_array = ref<any[]>([]);
     const availableRuns = ref<any[]>([]);
     const image_selected = ref<boolean>(false);
     const file_selected = ref<string>('');
     const jsonPackage = ref<Record<string, any>>({});
     const jsonString = ref<string>('');
+    const jsonString_array = ref<any[]>([]);
     const selectedImage = ref<any>({});
     const csvPretty = ref<string>('');
+    const csvPretty_array = ref<any[]>([]);
     // method to obtain all the files associated with a particular run from aws
     async function getRunFiles(runID: string) {
       if (!client.value) {
@@ -66,6 +69,7 @@ export default defineComponent({
         const image = await client.value?.getImageAsJPG({ params: { filename } });
         if (image) {
           selectedImageURL.value = URL.createObjectURL(image);
+          selectedImageURL_array.value = [selectedImageURL.value];
         }
       } catch (error) {
         console.log(error);
@@ -76,6 +80,7 @@ export default defineComponent({
       const resp = await client.value?.getCsvFile(payload);
       console.log(resp);
       csvPretty.value = JSON.stringify(resp, null, 4);
+      csvPretty_array.value = [csvPretty.value];
       console.log(csvPretty);
     }
     // method called to load a json file into compotnent
@@ -84,6 +89,7 @@ export default defineComponent({
       const resp = await client.value?.getJsonFile(payload);
       jsonPackage.value = resp;
       jsonString.value = JSON.stringify(resp, null, 4);
+      jsonString_array.value = [jsonString.value];
     }
     // method to handle a user request to get a file
     function loadFile(filename: string) {
@@ -99,8 +105,8 @@ export default defineComponent({
       }
     }
     function handleFileSelection(filename: string) {
-      file_selected.value = filename;
       loadFile(filename);
+      file_selected.value = filename;
     }
     // method to obtain a list of all unique run Ids with data present in AWS
     async function loadRunIds() {
@@ -128,6 +134,7 @@ export default defineComponent({
       loadFile,
       loadDisplayImage,
       selectedImageURL,
+      selectedImageURL_array,
       availableRuns,
       loadRunIds,
       image_selected,
@@ -135,9 +142,11 @@ export default defineComponent({
       file_selected,
       jsonPackage,
       jsonString,
+      jsonString_array,
       loadCSVFile,
       selectedImage,
       csvPretty,
+      csvPretty_array,
     };
   },
 });

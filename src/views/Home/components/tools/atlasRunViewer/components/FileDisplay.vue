@@ -21,9 +21,6 @@
     </v-text>
     </v-layer>
  </v-stage>
-    <!-- <pre id='formattedJSON'>
-        {{ jsonStringContents }}
-    </pre> -->
 </template>
 
 <script lang="ts">
@@ -34,21 +31,14 @@ export default defineComponent({
   name: 'FileDisplay',
   props: {
     fileName: { type: String, required: true },
-    imageURL: { type: String, required: true },
-    // displayedImage: { type: HTMLImageElement, required: true },
+    imageURL: { type: Array, required: true },
     jsonContents: { type: Object, required: true },
-    jsonStringContents: { type: String, required: true },
-    csvStringContents: { type: String, required: true },
+    jsonStringContents: { type: Array, required: true },
+    csvStringContents: { type: Array, required: true },
   },
-  //   filters: {
-  //     // pretty(jsonStr: string) {
-  //     // //   return JSON.stringify(this.jsonContents);
-  //     // },
-  //   },
   setup(props, ctxe) {
     const isImage = ref<boolean>(false);
     const currentDisplayedImage = ref<any>();
-    // const jsonStringContents = ref<string>();
     const jsonDisplay = ref<boolean>(false);
     const displayedImage = ref<any>();
     const localImageURL = ref<string>('');
@@ -110,24 +100,29 @@ export default defineComponent({
         this.jsonDisplay = true;
       } else if (extension === 'csv') {
         this.jsonDisplay = true;
-        console.log('csv');
       }
       console.log('the selcted file has changed');
     },
     imageURL(newValue) {
-      console.log(newValue);
-      this.localImageURL = newValue;
+      console.log('here');
+      const [temp] = newValue;
+      this.localImageURL = temp;
       this.configureImage();
     },
     jsonStringContents(newValue) {
-      console.log(newValue);
+      console.log('json changed');
+      const [temp] = newValue;
+      console.log(temp);
+      console.log('logged');
       this.textConfig = {
-        text: newValue,
+        text: temp,
         wrap: 'word',
       };
     },
     csvStringContents(newValue) {
-      this.textConfig = { text: newValue };
+      console.log('csv changed');
+      const [temp] = newValue;
+      this.textConfig = { text: temp };
     },
   },
 });
