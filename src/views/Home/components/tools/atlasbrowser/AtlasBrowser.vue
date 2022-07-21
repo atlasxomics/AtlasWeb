@@ -147,6 +147,7 @@
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Rotation</v-subheader>
                 <v-btn
                 color="grey"
+                class="leftRotate"
                 :disabled="!current_image || isCropMode || grid"
                 @click="rotate_image(0)"
                 small
@@ -158,7 +159,7 @@
                 <v-btn
                 color="grey"
                 class="spaced_btn"
-                :disabled="!current_image || isCropMode || grid"
+                :disabled="!current_image || isCropMode || grid || degreeRotation == '45'"
                 @click="rotate_image(1)"
                 small
                 >
@@ -166,12 +167,14 @@
                 width="24"
                 height="24"/>
                 </v-btn>
-                <v-switch class="toggle_switch"
+                <!-- <v-switch class="toggle_switch"
                 label="45°"
                 v-model = "degreeBoolean45"
                 :disabled="!current_image || isCropMode || grid"
                 >
-                </v-switch>
+                </v-switch> -->
+                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90'>90</label>
+                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45'>45</label>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -540,7 +543,7 @@
 <script lang='ts'>
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
-import lodash, { pad, trim } from 'lodash';
+import lodash, { pad, toInteger, trim } from 'lodash';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
@@ -670,7 +673,7 @@ export default defineComponent({
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
     const bsa_image_disp = ref<boolean>(true);
-    const degreeBoolean45 = ref<boolean>(false);
+    const degreeRotation = ref<string>('90');
     const scaleFactor_json = ref<any>({
       fiducial_diameter_fullres: null,
       spot_diameter_fullres: null,
@@ -902,12 +905,9 @@ export default defineComponent({
 
     function rotate_image(choice: number) {
       if (choice === 0) {
-        // console.log(degreeBoolean45.value);
-        if (degreeBoolean45.value) {
-          orientation.value.rotation += 45;
-        } else {
-          orientation.value.rotation += 90;
-        }
+        console.log(degreeRotation);
+        const rotationAmount = parseInt(degreeRotation.value, 10);
+        orientation.value.rotation += rotationAmount;
       } else {
         orientation.value.rotation += 270;
       }
@@ -1142,8 +1142,9 @@ export default defineComponent({
           };
         });
       };
-      onChangeScale('');
+      // onChangeScale('');
       roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
+      onChangeScale('');
     }
     function finding_roi() {
       if (!no_thresh.value) {
@@ -1625,7 +1626,7 @@ export default defineComponent({
       load_tixel_state,
       clear_filled_tixels,
       changeDiseaseState,
-      degreeBoolean45,
+      degreeRotation,
       assignMetadata,
     };
   },
@@ -1633,9 +1634,23 @@ export default defineComponent({
 
 </script>
 <style scoped>
-
+.leftRotate {
+  margin-bottom: 50px;
+}
 .spaced_btn {
   margin-left: 10px;
+  margin-bottom: 50px;
+}
+.radio1 {
+  position: relative;
+  top: 12px;
+  right: 95px;
+}
+.radio2 {
+  position: relative;
+  top: 35px;
+  right: 125px;
+
 }
 .toggle_switch {
   padding: 0;
