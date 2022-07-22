@@ -556,6 +556,7 @@ import { resolveAuthGroup } from '@/utils/auth';
 import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
+// import { resolve } from 'dns';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -680,6 +681,9 @@ export default defineComponent({
       tissue_hires_scalef: null,
       tissue_lowres_scalef: null,
     });
+    const imageChannels = ref<Record<string, any>>();
+    const missingGreen = ref<Uint8ClampedArray>(new Uint8ClampedArray(1));
+    const imageDataObj = ref<ImageData>({ data: new Uint8ClampedArray([1]), width: 1, height: 1 });
     const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
     // Metadata
@@ -1110,6 +1114,14 @@ export default defineComponent({
         roi.value.polygons = [];
       }
     }
+    function extractChannels() {
+      for (let i = 1; i < imageDataObj.value.data.length; i += 4) {
+        if (i < imageDataObj.value.data.length) {
+          imageDataObj.value.data.set([0], i);
+        }
+      }
+      // imageDataObj.value.data = missingGreen.value;
+    }
     function onCropButton(ev: any) {
       cropFlag.value = true;
       isCropMode.value = true;
@@ -1125,6 +1137,10 @@ export default defineComponent({
         canvas.width = coords[2] - coords[0];
         canvas.height = coords[3] - coords[1];
         ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
+        imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
+        // missingGreen.value = imageDataObj.value.data;
+        console.log(missingGreen);
+        extractChannels();
         canvas.toBlob((blob: any) => {
           newImage.src = URL.createObjectURL(blob);
           newImage.onload = (e: any) => {
@@ -1134,8 +1150,8 @@ export default defineComponent({
               draggable: false,
               scale: { x: scaleFactor.value, y: scaleFactor.value },
               image: newImage,
-              src: URL.createObjectURL(blob),
-              original_src: URL.createObjectURL(blob),
+              src: newImage.src,
+              original_src: newImage.src,
               alternative_src: null,
             };
           };
@@ -1162,16 +1178,34 @@ export default defineComponent({
       }
     }
 
+    function imageDataToBlob() {
+      console.log('here');
+      const w = imageDataObj.value.width;
+      const h = imageDataObj.value.height;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const context = canvas.getContext('2d');
+      context!.putImageData(imageDataObj.value, 0, 0);
+      return canvas.toDataURL();
+      // return new Promise((resolve) => {
+      //   canvas.toBlob(resolve);
+      // })
+    }
     function thresh_clicked() {
       if (!current_image.value) return;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
-      loading.value = true;
+      // loading.value = true;
       let img_src = current_image.value.image.original_src;
       if (bsa_image_disp.value) {
         img_src = current_image.value.image.src;
       }
-      getPixels(img_src, async (err, pixels) => {
+      const blob = imageDataToBlob();
+      console.log(blob);
+      current_image.value.image.src = blob;
+      current_image.value.alternative_src = blob;
+      getPixels(blob, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
@@ -1179,12 +1213,12 @@ export default defineComponent({
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
-          if (bsa_image_disp.value) {
-            current_image.value.image.original_src = current_image.value.image.src;
-          }
+          // if (bsa_image_disp.value) {
+          //   current_image.value.image.original_src = current_image.value.image.src;
+          // }
           current_image.value.image.src = newsrc;
           current_image.value.image.alternative_src = newsrc;
-          // current_image.value.scale = { x: sv, y: sv };
+          current_image.value.scale = { x: sv, y: sv };
           onChangeScale(sv);
           thresh_same.value = true;
           loading.value = false;
@@ -1554,6 +1588,9 @@ export default defineComponent({
       objectToArray,
       generateLattices,
       current_image,
+      imageChannels,
+      missingGreen,
+      imageDataObj,
       loadImage,
       searchRuns,
       onResize,
@@ -1627,6 +1664,7 @@ export default defineComponent({
       changeDiseaseState,
       degreeRotation,
       assignMetadata,
+      imageDataToBlob,
     };
   },
 });
