@@ -580,7 +580,7 @@
                 :clickedCluster="clickedClusterFromChild"
                 ref="mainAtxViewer"/>
             </v-col>
-            <v-col cols="12" sm="2">
+            <v-col cols="12" sm="2" v-if="isClusterView">
               <table style="margin-bottom: 0; width: 100%;">
                   <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'color': colorMap[cluster], 'vertical-align': 'baseline'}">
                     <template v-if="value.length > 0">
@@ -852,7 +852,7 @@ export default defineComponent({
         });
         heatMap.value = heatcmap;
         colorMap.value = cmap;
-        if (!geneMotif.value) {
+        if (!geneMotif.value && isClusterView.value) {
           loading.value = true;
           (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
           loading.value = false;
@@ -886,7 +886,7 @@ export default defineComponent({
         const base64image = canvas.toDataURL('image/png');
         const pom = document.createElement('a');
         pom.href = base64image;
-        const listGene = selectedGenes.value.join();
+        const listGene = childGenes.value.join();
         pom.setAttribute('download', `${runId.value}/${listGene}.png`);
         pom.click();
       });
@@ -963,7 +963,7 @@ export default defineComponent({
         cellTypeMap.value = cellmap;
         cellTypeMapCopy.value = cellmapCopy;
       }
-      if (!geneMotif.value && selectedGenes.value.length === 0) {
+      if (!geneMotif.value && isClusterView.value) {
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
     }
