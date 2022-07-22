@@ -1,258 +1,214 @@
 <template>
-    <v-container fixed>
-      <v-row no-gutters>
-        <v-col cols="12" sm="1">
-          <v-card
-          class="rounded-0"
-          flat
-          :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-          height="50vh">
-            <v-card-text style="margin-left:4vw">
-              <v-row>
-                <v-btn
-                small
-                icon
-                color="primary"
-                :disabled="!spatialData"
-                @click="resetScaleAndPos"
-                ><v-icon small>mdi-arrow-expand</v-icon>
-                </v-btn>
-              </v-row>
-              <v-row>
-                <v-btn
-                  small
-                  icon
-                  color="primary"
-                  :disabled="!spatialData"
-                  @click="scale=scale*1.1"
-                  ><v-icon small>mdi-magnify-plus</v-icon>
-                </v-btn>
-              </v-row>
-              <v-row>
-                <v-btn
-                  small
-                  icon
-                  color="primary"
-                  :disabled="!spatialData"
-                  @click="scale=scale*0.9"
-                  ><v-icon small>mdi-magnify-minus</v-icon>
-                </v-btn>
-              </v-row>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" sm="5">
-          <v-card id="stageParent"
-            class="rounded-0"
-            v-resize="onResize"
-            flat
-            :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
-            height="50vh"
-            align="center">
-            <v-stage
-              ref="konvaStage"
-              class="mainStage"
-              :config="konvaConfigLeft"
-              :style="{ 'overflow': 'hidden' }"
-              @mousedown="mouseDownOnStageLeft"
-              @mousemove="mouseMoveOnStageLeft"
-              @mouseup="mouseUpOnStageLeft"
-              >
-              <v-layer
-                ref="spatialLayer"
-                id="spatialLayer">
-                <v-circle v-for="p in circlesSpatial"
-                  :config="p"
-                  v-bind:key="p.id"
-                  @mouseover="mouseMoveOnSpatial"
-                  @mouseout="mouseOutOnSpatial"/>
-              </v-layer>
-              <v-layer
-                ref="annotationLayer"
-                />
-              <v-layer
-                ref="drawingLayer"
-                id="drawingLayer"
-                v-if="isDrawing">
-                <template
-                  v-for="poly in regions">
-                  <v-line
-                    v-bind:key="poly.id"
-                    :config="poly"/>
-                </template>
-                <v-line
-                  :config="polygon"/>
-              </v-layer>
-              <v-layer
-                v-if="isDrawingRect"
-                ref="drawingLayerRect"
-                id="drawingLayerRect">
-                <v-rect
-                  :config="rectangle"/>
-              </v-layer>
-            </v-stage>
-          </v-card>
+  <v-row no-gutters>
+    <v-col cols="12" sm="1">
+      <v-card
+      class="rounded-0"
+      flat
+      :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
+      height="50vh">
+        <v-card-text style="margin-left:4vw">
           <v-row>
-            <v-col cols="12" sm="10">
-              <template v-if="!isClusterView && !spatialRun">
-                <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
-                  <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
-                  {{ step }}
-                  </div>
-                </div>
-              </template>
-              <template v-else>
-                <v-card
-                  flat
-                  :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
-                  height="3vh"
-                  width="100%">
-                  <v-row no-gutters>
-                    <v-col v-if="!clusterItems">
-                        No clusters
-                    </v-col>
-                    <v-col v-for="item in clusterItems" v-bind:key="`${item.name}`" class="ma-0 pa-0 text-center">
-                      <v-btn
-                      small
-                      icon
-                      :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
-                      @click="mouseOverClusterItem(item)"
-                      >{{ item.name }}
-                      </v-btn>
-                    </v-col>
-                  </v-row>
-                </v-card>
-              </template>
-            </v-col>
+            <v-btn
+            small
+            icon
+            color="primary"
+            :disabled="!spatialData"
+            @click="resetScaleAndPos"
+            ><v-icon small>mdi-arrow-expand</v-icon>
+            </v-btn>
           </v-row>
-        </v-col>
-        <v-col cols="12" sm="1">
-          <v-card
-          class="rounded-0"
-          flat
-          :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-          height="50vh"
-          width="100%">
-            <v-card-text style="margin-left:4vw">
-              <v-row>
-                <v-btn
-                small
-                icon
-                color="primary"
-                :disabled="!spatialData"
-                @click="resetScaleAndPosUMAP"
-                ><v-icon small>mdi-arrow-expand</v-icon>
-                </v-btn>
-              </v-row>
-              <v-row>
-                <v-btn
-                  small
-                  icon
-                  color="primary"
-                  :disabled="!spatialData"
-                  @click="scaleUMAP=scaleUMAP*1.1"
-                  ><v-icon small>mdi-magnify-plus</v-icon>
-                </v-btn>
-              </v-row>
-              <v-row>
-                <v-btn
-                  small
-                  icon
-                  color="primary"
-                  :disabled="!spatialData"
-                  @click="scaleUMAP=scaleUMAP*0.9"
-                  ><v-icon small>mdi-magnify-minus</v-icon>
-                </v-btn>
-              </v-row>
-            </v-card-text>
-          </v-card>
-        </v-col>
-        <v-col cols="12" sm="5">
-          <v-card id="stageParentRight"
-            class="rounded-0"
-            flat
-            v-resize="onResize"
-            :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-            height="50vh">
-            <v-stage
-              ref="konvaStageRight"
-              class="mainStage"
-              :config="konvaConfigRight"
-              @mousedown="mouseDownOnStageRight"
-              @mousemove="mouseMoveOnStageRight"
-              @mouseup="mouseUpOnStageRight"
-              :style="{ 'overflow': 'hidden' }"
-              >
-              <v-layer
-                ref="spatialLayerRight"
-                id="spatialLayerRight">
-                <v-circle v-for="p in circlesSpatialUMAP"
-                  :config="p"
-                  v-bind:key="p.id"
-                  @mousemove="mouseMoveOnSpatialRight"
-                  @mouseout="mouseOutOnSpatialRight"/>
-              </v-layer>
-              <v-layer
-                ref="annotationLayerRight"
-                />
-              <v-layer
-                ref="drawingLayerRight"
-                id="drawingLayerRight"
-                v-if="isDrawing">
-                <template
-                  v-for="poly in regionsUMAP">
-                  <v-line
-                    v-bind:key="poly.id"
-                    :config="poly"/>
-                </template>
-                <v-line
-                  :config="polygonUMAP"/>
-              </v-layer>
-              <v-layer
-                v-if="isDrawingRect"
-                ref="drawingLayerRightRect"
-                id="drawingLayerRightRect">
-                <v-rect
-                  :config="rectangleUMAP"/>
-              </v-layer>
-            </v-stage>
-          </v-card>
           <v-row>
-            <v-col cols="12" sm="10">
-              <template v-if="!isClusterView && !spatialRun">
-                <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
-                  <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
-                  {{ step }}
-                  </div>
-                </div>
-              </template>
-              <template v-else>
-                <v-card
-                  flat
-                  :style="{'background-color': 'transparent', 'overflow-x': 'None'}"
-                  height="3vh"
-                  width="100%">
-                  <v-row no-gutters>
-                    <v-col v-if="!clusterItems">
-                        No clusters
-                    </v-col>
-                    <v-col v-for="item in clusterItems" v-bind:key="`${item.name}`" class="ma-0 pa-0 text-center">
-                      <v-btn
-                      small
-                      icon
-                      :color="clusterColors[Number(item.name.toString().replace('C', ''))-1]"
-                      @click="mouseOverClusterItem(item)"
-                      >{{ item.name }}
-                      </v-btn>
-                    </v-col>
-                  </v-row>
-                </v-card>
-              </template>
-            </v-col>
+            <v-btn
+              small
+              icon
+              color="primary"
+              :disabled="!spatialData"
+              @click="scale=scale*1.1"
+              ><v-icon small>mdi-magnify-plus</v-icon>
+            </v-btn>
           </v-row>
+          <v-row>
+            <v-btn
+              small
+              icon
+              color="primary"
+              :disabled="!spatialData"
+              @click="scale=scale*0.9"
+              ><v-icon small>mdi-magnify-minus</v-icon>
+            </v-btn>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-col>
+    <v-col cols="12" sm="5">
+      <v-card id="stageParent"
+        :loading="loading"
+        class="rounded-0"
+        v-resize="onResize"
+        flat
+        :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
+        height="50vh"
+        align="center">
+        <v-stage
+          ref="konvaStage"
+          class="mainStage"
+          :config="konvaConfigLeft"
+          :style="{ 'overflow': 'hidden' }"
+          @mousedown="mouseDownOnStageLeft"
+          @mousemove="mouseMoveOnStageLeft"
+          @mouseup="mouseUpOnStageLeft"
+          >
+          <v-layer
+            ref="spatialLayer"
+            id="spatialLayer">
+            <v-circle v-for="p in circlesSpatial"
+              :config="p"
+              v-bind:key="p.id"
+              @mouseover="mouseMoveOnSpatial"
+              @mouseout="mouseOutOnSpatial"/>
+          </v-layer>
+          <v-layer
+            ref="annotationLayer"
+            />
+          <v-layer
+            ref="drawingLayer"
+            id="drawingLayer"
+            v-if="isDrawing">
+            <template
+              v-for="poly in regions">
+              <v-line
+                v-bind:key="poly.id"
+                :config="poly"/>
+            </template>
+            <v-line
+              :config="polygon"/>
+          </v-layer>
+          <v-layer
+            v-if="isDrawingRect"
+            ref="drawingLayerRect"
+            id="drawingLayerRect">
+            <v-rect
+              :config="rectangle"/>
+          </v-layer>
+        </v-stage>
+      </v-card>
+      <v-row>
+        <v-col cols="12" sm="10">
+          <template v-if="!isClusterView && !spatialRun">
+            <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
+              <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
+              {{ step }}
+              </div>
+            </div>
+          </template>
         </v-col>
       </v-row>
-    </v-container>
+    </v-col>
+    <v-col cols="12" sm="1">
+      <v-card
+      class="rounded-0"
+      flat
+      :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
+      height="50vh"
+      width="100%">
+        <v-card-text style="margin-left:4vw">
+          <v-row>
+            <v-btn
+            small
+            icon
+            color="primary"
+            :disabled="!spatialData"
+            @click="resetScaleAndPosUMAP"
+            ><v-icon small>mdi-arrow-expand</v-icon>
+            </v-btn>
+          </v-row>
+          <v-row>
+            <v-btn
+              small
+              icon
+              color="primary"
+              :disabled="!spatialData"
+              @click="scaleUMAP=scaleUMAP*1.1"
+              ><v-icon small>mdi-magnify-plus</v-icon>
+            </v-btn>
+          </v-row>
+          <v-row>
+            <v-btn
+              small
+              icon
+              color="primary"
+              :disabled="!spatialData"
+              @click="scaleUMAP=scaleUMAP*0.9"
+              ><v-icon small>mdi-magnify-minus</v-icon>
+            </v-btn>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-col>
+    <v-col cols="12" sm="5">
+      <v-card id="stageParentRight"
+        :loading="loading"
+        class="rounded-0"
+        flat
+        v-resize="onResize"
+        :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
+        height="50vh">
+        <v-stage
+          ref="konvaStageRight"
+          class="mainStage"
+          :config="konvaConfigRight"
+          @mousedown="mouseDownOnStageRight"
+          @mousemove="mouseMoveOnStageRight"
+          @mouseup="mouseUpOnStageRight"
+          :style="{ 'overflow': 'hidden' }"
+          >
+          <v-layer
+            ref="spatialLayerRight"
+            id="spatialLayerRight">
+            <v-circle v-for="p in circlesSpatialUMAP"
+              :config="p"
+              v-bind:key="p.id"
+              @mousemove="mouseMoveOnSpatialRight"
+              @mouseout="mouseOutOnSpatialRight"/>
+          </v-layer>
+          <v-layer
+            ref="annotationLayerRight"
+            />
+          <v-layer
+            ref="drawingLayerRight"
+            id="drawingLayerRight"
+            v-if="isDrawing">
+            <template
+              v-for="poly in regionsUMAP">
+              <v-line
+                v-bind:key="poly.id"
+                :config="poly"/>
+            </template>
+            <v-line
+              :config="polygonUMAP"/>
+          </v-layer>
+          <v-layer
+            v-if="isDrawingRect"
+            ref="drawingLayerRightRect"
+            id="drawingLayerRightRect">
+            <v-rect
+              :config="rectangleUMAP"/>
+          </v-layer>
+        </v-stage>
+      </v-card>
+      <v-row>
+        <v-col cols="12" sm="10">
+          <template v-if="!isClusterView && !spatialRun">
+            <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
+              <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
+              {{ step }}
+              </div>
+            </div>
+          </template>
+        </v-col>
+      </v-row>
+    </v-col>
+  </v-row>
 </template>
 
 <script lang='ts'>
@@ -260,6 +216,7 @@ import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@
 import Konva from 'konva';
 import lodash from 'lodash';
 import colormap from 'colormap';
+import { rainbow } from '@indot/rainbowvis';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
@@ -280,13 +237,14 @@ const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
 ];
 function colormapBounded(cmap: string[], values: number[]) {
-  const min_v = Math.min(...values);
-  const max_v = Math.max(...values);
+  const min_v = Math.min(...values) + 10;
+  const max_v = Math.max(...values) + 10;
   // if (min_v === max_v) return null;
   const nshades = cmap.length;
   const output: string[] = [];
   lodash.each(values, (v: number) => {
-    const normalized = ((v - min_v) / (max_v - min_v)) * (nshades - 1);
+    const plusTen = v + 10;
+    const normalized = ((plusTen - min_v) / (max_v - min_v)) * (nshades - 1);
     const colidx = Math.trunc(normalized);
     output.push(cmap[colidx]);
   });
@@ -295,13 +253,14 @@ function colormapBounded(cmap: string[], values: number[]) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect'],
+  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
     const runId = ref<string | null>(null);
     const filenameGene = ref<string>('');
     const filenameFromParent = computed(() => props.filename);
+    const colorFromParent = computed(() => props.manualColor);
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
     const currentTask = computed(() => props.task);
@@ -390,6 +349,7 @@ export default defineComponent({
     const topSelected = ref<any[]>([]);
     const highlightCount = ref<number>(0);
     const spatialRun = ref<boolean>(false);
+    const clickedClusterFromParent = computed(() => (props.clickedCluster));
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
@@ -523,15 +483,15 @@ export default defineComponent({
       highlightedCluster.value = clusterName;
       isHighlighted.value = true;
     }
-    function makearray(stopValue: number, startValue: number) {
-      if (highestCount.value === 0) return;
+    function makearray(stopValue: number, startValue: number): any[] {
+      if (highestCount.value === 0) return [];
       const arr = [];
       const steps = 5;
       const step = (stopValue - startValue) / (steps - 1);
       for (let i = 0; i < steps; i += 1) {
         arr.push(parseFloat((startValue + (step * i)).toFixed(2)));
       }
-      stepArray.value = arr;
+      return arr;
     }
     async function updateCircles() {
       if (spatialData.value === null) return;
@@ -540,22 +500,38 @@ export default defineComponent({
       const circles: any[] = [];
       const circlesUMAP: any[] = [];
       stepArray.value = [];
-      const numClusters = lodash.uniq(spatialData.value.clusters).length;
-      const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
       const colors: any[] = [];
-      colors_raw.forEach((v: any, i: number) => {
-        if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
-      });
-      clusterColors.value = colors;
-      const cmap: any = {};
-      for (let i = 0; i < clusterColors.value.length; i += 1) {
-        const cidx = `C${i + 1}`;
-        cmap[cidx] = clusterColors.value[i];
+      let colors_intensity: any[] = [];
+      const numClusters = lodash.uniq(spatialData.value.clusters).length;
+      if (!colorFromParent.value) {
+        const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
+        colors_raw.forEach((v: any, i: number) => {
+          if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
+        });
+        colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
+        colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
+      } else {
+        let linearString = 'linear-gradient(to right,';
+        lodash.each(heatMap.value, (value: any, key: any) => {
+          colors.push(value);
+          linearString += `${value},`;
+        });
+        let holder = linearString.slice(0, -1);
+        holder += ')';
+        colorBarmap.value = holder;
+        const numberOfItems = 64;
+        const rb = rainbow();
+        rb.setNumberRange(1, numberOfItems);
+        rb.setSpectrum(...colors);
+        for (let i = 1; i <= numberOfItems; i += 1) {
+          let hash = '#';
+          colors_intensity.push(hash += rb.colourAt(i));
+        }
       }
-      const colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
-      colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
+      clusterColors.value = colors;
       const spatialCoord = spatialData.value.coordinates;
       const spatialCoordUMAP = spatialData.value.coordinates_umap.map((v: number[]) => ([v[0], -v[1]]));
+      const plusTEN = 10;
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
       const minY = Math.min(...spatialCoord.map((a: number[]) => a[1]));
       const maxX = Math.max(...spatialCoord.map((a: number[]) => a[0]));
@@ -632,7 +608,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
-          const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
+          const clr = (geneSum[i] + 10 > 0) ? geneColors[i] : inactiveColor.value;
           highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
           lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
@@ -658,7 +634,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
-          const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
+          const clr = (geneSum[i] + 10 > 0) ? geneColors[i] : inactiveColor.value;
           highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
           lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
@@ -680,32 +656,7 @@ export default defineComponent({
           });
           circlesUMAP.push(c);
         });
-        makearray(highestCount.value, lowestCount.value);
-        lodash.each(spatialData.value.clusters, (v: string, i: number) => {
-          const [ax, ay] = spatialCoordUMAP[i];
-          const x = ax - minX_UMAP;
-          const y = ay - minY_UMAP;
-          const clr = (geneSum[i] > 0) ? geneColors[i] : inactiveColor.value;
-          const rd = (geneSum[i] > 0) ? 1 : 1;
-          const c = {
-            id: get_uuid(),
-            x: x * scaleUMAP.value * viewScaleUMAP + paddingX,
-            y: y * scaleUMAP.value * viewScaleUMAP + paddingY,
-            radius,
-            originalColor: clr,
-            fill: clr,
-            stroke: clr,
-            strokeWidth: 1.0,
-            cluster: v,
-            total: geneSum[i],
-            inactive: false,
-            genes: { },
-          };
-          lodash.forIn(spatialData.value.genes, (val: number[], k: string) => {
-            (c.genes as any)[k] = val[i];
-          });
-          circlesUMAP.push(c);
-        });
+        stepArray.value = makearray(highestCount.value, lowestCount.value);
       }
       circlesSpatial.value = circles;
       circlesSpatialUMAP.value = circlesUMAP;
@@ -775,16 +726,17 @@ export default defineComponent({
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {
       const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
+      const plusTEN = 10;
       const item = ev.target.attrs;
       tooltip.position({
         x: mousePos.x,
         y: mousePos.y,
       });
       let text = `Cluster: ${item.cluster}`;
-      if (item.total > 0 && selectedGenes.value.length > 0) {
+      if (selectedGenes.value.length > 0) {
         text = `${text}\nSum: ${item.total}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          if (v > 0) text = `${text}\n${k}: ${v}`;
+          text = `${text}\n${k}: ${v}`;
         });
       }
       tooltipText.text(text);
@@ -803,15 +755,16 @@ export default defineComponent({
     async function mouseMoveOnSpatialRight(ev: any) {
       const mousePosRight = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
       const item = ev.target.attrs;
+      const plusTEN = 10;
       tooltipRight.position({
         x: mousePosRight.x,
         y: mousePosRight.y,
       });
       let text = `Cluster: ${item.cluster}`;
-      if (item.total > 0 && selectedGenes.value.length > 0) {
+      if (selectedGenes.value.length > 0) {
         text = `${text}\nSum: ${item.total}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          if (v > 0) text = `${text}\n${k}: ${v}`;
+          text = `${text}\n${k}: ${v}`;
         });
       }
       tooltipTextRight.text(text);
@@ -997,15 +950,18 @@ export default defineComponent({
         unHighlighCluster();
       }
     });
+    watch(clickedClusterFromParent, (v: any) => {
+      mouseOverClusterItem({ name: `${v[0]}` });
+    });
     watch(heatMap, (v: string) => {
       if (v === 'picnic') {
         colorbarText.value = 'black';
-      } else if (v === 'jet' || v === 'inferno') {
-        colorbarText.value = 'white';
+      } else if (v === 'bone') {
+        colorbarText.value = 'brown';
       } else if (v === 'hot') {
         colorbarText.value = 'grey';
       } else {
-        colorbarText.value = 'brown';
+        colorbarText.value = 'white';
       }
       updateCircles();
     });
@@ -1122,6 +1078,8 @@ export default defineComponent({
       highlightCount,
       spatialData,
       spatialRun,
+      colorFromParent,
+      clickedClusterFromParent,
     };
   },
 });

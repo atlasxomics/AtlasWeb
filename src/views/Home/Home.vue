@@ -19,7 +19,7 @@
 import { computed, defineComponent, onBeforeMount, watch, onMounted, watchEffect, ref } from '@vue/composition-api';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
-import { loginExisting, loggedIn } from '@/utils/auth';
+import { loginExisting, loggedIn, readCookie } from '@/utils/auth';
 import { generateRouteByQuery } from '@/utils';
 import Appbar from '@/components/Appbar/Appbar.vue';
 import MainMenu from './components/menu/MainMenu.vue';
@@ -38,6 +38,7 @@ import AtlasViewer from './components/tools/atlasview/AtlasViewer.vue';
 import AtlasUploader from './components/tools/filetools/AtlasUploader.vue';
 import AdminPanel from './components/settings/admin/AdminPanel.vue';
 import UserSettings from './components/settings/users/UserSettings.vue';
+import AtlasRunViewer from './components/tools/atlasRunViewer/AtlasRunViewer.vue';
 
 const appReadyForClient = new Promise((resolve) => {
   const ready = computed(() => (
@@ -69,6 +70,7 @@ export default defineComponent({
     AtlasUploader,
     AdminPanel,
     UserSettings,
+    AtlasRunViewer,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -123,7 +125,7 @@ export default defineComponent({
     });
     onMounted(() => {
       const route = currentRoute.value;
-      if (route.query.component) store.commit.setComponent(route.query);
+      if (readCookie()) store.commit.setComponent(route.query);
       else store.commit.setComponent({ component: null });
     });
     return {

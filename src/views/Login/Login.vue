@@ -81,7 +81,7 @@
 import { defineComponent, ref, watchEffect } from '@vue/composition-api';
 
 import { login, isClient } from '@/api';
-import { loggedIn, saveCookie } from '@/utils/auth';
+import { loggedIn, saveCookie, readCookie, logout } from '@/utils/auth';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 
@@ -105,6 +105,10 @@ export default defineComponent({
         const serverUrl = PROD_SERVER_URL;
         const resp = await login(serverUrl, username.value, password.value);
         if (isClient(resp)) {
+          const existingCookie = readCookie();
+          if (existingCookie) {
+            logout();
+          }
           saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
           store.commit.setClient(resp);
         } else {

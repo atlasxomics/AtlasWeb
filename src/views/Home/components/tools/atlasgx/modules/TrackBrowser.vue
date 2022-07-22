@@ -1,11 +1,9 @@
 <template>
-    <v-container fluid>
-      <v-card flat>
-        <v-card-text>
-          <div :id="pageId"></div>
-        </v-card-text>
-      </v-card>
-    </v-container>
+  <v-card flat>
+    <v-card-text>
+      <div :id="pageId"></div>
+    </v-card-text>
+  </v-card>
 </template>
 <script lang='ts'>
 import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
@@ -58,6 +56,7 @@ export default defineComponent({
     const trackBrowserParams = ref<any>();
     const speciesMap: any = { human: 'h19', 'Rattus norvegicus': 'rn6', 'Mus musculus': 'mm10' };
     const species: string[] = [];
+    const loading = ref<boolean>(false);
     lodash.forIn(speciesMap, (v: string, k: string) => {
       species.push(k);
     });
@@ -133,7 +132,7 @@ export default defineComponent({
       const name = `data/${rid}/metadata.json`;
       const jsonFileName = { params: { filename: name } };
       const metadata = await client.value?.getJsonFile(jsonFileName);
-      selectedSpecies.value = metadata.Species;
+      selectedSpecies.value = metadata.cntn_cf_fk_species;
       trackBrowserParams.value = {
         chr: '1',
         viewStart: 0,
@@ -201,14 +200,19 @@ export default defineComponent({
       }, {});
     }
     async function reload(rid: any, cmap: any) {
+      loading.value = true;
       await generateTrackParams(rid);
       mapColors(cmap);
       trackBrowser.value = await new (window as any).Browser(trackBrowserParams.value);
+      loading.value = false;
       // if (search.value) onClickSearch(null);
     }
     watch(searchKeyFromParents, (v: string) => {
       search.value = v;
       onClickSearch(null);
+    });
+    watch(loading, (v: any) => {
+      ctx.emit('loading_value', v);
     });
     onMounted(async () => {
       await clientReady;
@@ -219,6 +223,7 @@ export default defineComponent({
       selectedSpecies,
       pageId,
       search,
+      loading,
       onClickSearch,
       reload,
     };
