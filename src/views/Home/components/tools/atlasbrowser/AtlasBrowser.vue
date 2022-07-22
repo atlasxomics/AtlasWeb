@@ -316,6 +316,14 @@
                   @click="handle_spatial_call()">
                   Generate Spatial Folder
                   </v-btn>
+                  <v-btn
+                  :disabled="!tixels_filled"
+                  outlined
+                  x-small
+                  dense
+                  color="primary"
+                  @click="showSpatialFolder">
+                  </v-btn>
                 </template>
               </v-list>
             </v-card>
@@ -392,32 +400,6 @@
                   </v-card-text>
                 </v-card>
               </v-dialog>
-              <!-- when generating h5ad file -->
-            </template>
-              <template v-if="generating">
-              <v-dialog
-                value=true
-                hide-overlay
-                persistent
-                width="600"
-                height=200>
-                <v-card
-                  color="primary"
-                  dark>
-                  <v-card-title>Progress</v-card-title>
-                  <v-card-text>
-                    Generating h5ad file
-                    <v-progress-linear
-                      v-model="four"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                </v-card>
-              </v-dialog>
             </template>
             <v-row>
               <v-card>
@@ -433,12 +415,13 @@
                 </div>
                 </template>
                 <v-stage
+                  v-if="!checkSpatial"
                   ref="konvaStage"
                   class="mainStage"
                   :config="konvaConfig"
                   v-resize="onResize"
                   @mousemove="handleMouseMoveStage">
-                <v-layer
+                  <v-layer
                   id="WelcomeLayer"
                   v-if="welcome_screen">
                   <v-text
@@ -449,9 +432,9 @@
                     align: 'center',
                     width: 1100,
                     padding: 25
-                }">
-                </v-text>
-                </v-layer>
+                  }">
+                  </v-text>
+                  </v-layer>
                   <v-layer
                     v-if="current_image"
                     ref="imageLayer"
@@ -529,7 +512,7 @@
                         @mouseup="handleMouseUpBrush"
                       />
                     </v-layer>
-                  </v-stage>
+                </v-stage>
               </v-card>
             </v-row>
           </v-container>
@@ -681,6 +664,7 @@ export default defineComponent({
       tissue_hires_scalef: null,
       tissue_lowres_scalef: null,
     });
+    const checkSpatial = ref<boolean>(false);
     const imageChannels = ref<Record<string, any>>();
     const missingGreen = ref<Uint8ClampedArray>(new Uint8ClampedArray(1));
     const imageDataObj = ref<ImageData>({ data: new Uint8ClampedArray([1]), width: 1, height: 1 });
@@ -1330,6 +1314,9 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
       }
     }
+    function showSpatialFolder() {
+      checkSpatial.value = true;
+    }
     async function generateSpatial() {
       if (!client.value) return;
       try {
@@ -1665,6 +1652,8 @@ export default defineComponent({
       degreeRotation,
       assignMetadata,
       imageDataToBlob,
+      checkSpatial,
+      showSpatialFolder,
     };
   },
 });
