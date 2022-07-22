@@ -1117,7 +1117,9 @@ export default defineComponent({
     function extractChannels() {
       for (let i = 1; i < imageDataObj.value.data.length; i += 4) {
         if (i < imageDataObj.value.data.length) {
+          // console.log(imageDataObj.value.data[i]);
           imageDataObj.value.data.set([0], i);
+          // imageDataObj.value.data.set([0], i+1)
         }
       }
       // imageDataObj.value.data = missingGreen.value;
@@ -1201,11 +1203,9 @@ export default defineComponent({
       if (bsa_image_disp.value) {
         img_src = current_image.value.image.src;
       }
-      const blob = imageDataToBlob();
-      console.log(blob);
-      current_image.value.image.src = blob;
-      current_image.value.alternative_src = blob;
-      getPixels(blob, async (err, pixels) => {
+      const url = imageDataToBlob();
+      // console.log(blob);
+      getPixels(url, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
@@ -1213,9 +1213,9 @@ export default defineComponent({
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
-          // if (bsa_image_disp.value) {
-          //   current_image.value.image.original_src = current_image.value.image.src;
-          // }
+          if (bsa_image_disp.value) {
+            current_image.value.image.original_src = current_image.value.image.src;
+          }
           current_image.value.image.src = newsrc;
           current_image.value.image.alternative_src = newsrc;
           current_image.value.scale = { x: sv, y: sv };
