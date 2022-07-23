@@ -236,14 +236,14 @@ const headers = [
 const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
 ];
-function colormapBounded(cmap: string[], values: number[]) {
-  const min_v = Math.min(...values) + 10;
-  const max_v = Math.max(...values) + 10;
+function colormapBounded(cmap: string[], values: number[], amount: number) {
+  const min_v = Math.min(...values) + (10 * amount);
+  const max_v = Math.max(...values) + (10 * amount);
   // if (min_v === max_v) return null;
   const nshades = cmap.length;
   const output: string[] = [];
   lodash.each(values, (v: number) => {
-    const plusTen = v + 10;
+    const plusTen = v + (10 * amount);
     const normalized = ((plusTen - min_v) / (max_v - min_v)) * (nshades - 1);
     const colidx = Math.trunc(normalized);
     output.push(cmap[colidx]);
@@ -603,7 +603,7 @@ export default defineComponent({
       } else {
         highestCount.value = 0;
         lowestCount.value = 10000;
-        const geneColors = colormapBounded(colors_intensity, geneSum);
+        const geneColors = colormapBounded(colors_intensity, geneSum, selectedGenes.value.length);
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
@@ -726,7 +726,6 @@ export default defineComponent({
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {
       const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
-      const plusTEN = 10;
       const item = ev.target.attrs;
       tooltip.position({
         x: mousePos.x,
@@ -747,15 +746,48 @@ export default defineComponent({
       }
     }
     async function mouseOutOnSpatial(ev: any) {
+      const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
+      if (ev) {
+        if (selectedGenes.value.length > 0) {
+          tooltip.hide();
+          tooltipRight.hide();
+        }
+        return;
+      }
+      const first = circlesSpatial.value[0];
+      const second = circlesSpatial.value[49];
+      const third = circlesSpatial.value[circlesSpatial.value.length - 50];
+      const end = circlesSpatial.value[circlesSpatial.value.length - 1];
+      const boundaries = [first, second, third, end];
+      let leftmost = 1000;
+      let bottommost = 0;
+      let rightmost = 0;
+      let topmost = 1000;
+      boundaries.forEach((v: any, i: number) => {
+        if (v.x > rightmost) {
+          rightmost = v.x;
+        }
+        if (v.x < leftmost) {
+          leftmost = v.x;
+        }
+        if (v.y > bottommost) {
+          bottommost = v.y;
+        }
+        if (v.y < topmost) {
+          topmost = v.y;
+        }
+      });
+      const finale = [leftmost - Math.round(boundaries[0].radius), topmost - Math.round(boundaries[0].radius), rightmost + Math.round(boundaries[0].radius), bottommost + Math.round(boundaries[0].radius)];
       isHighlighted.value = false;
-      tooltip.hide();
-      tooltipRight.hide();
-      if ((!isDrawing.value && !isDrawingRect.value)) unHighlighCluster();
+      if ((mousePos.x < finale[0] || mousePos.y < finale[1] || mousePos.x > finale[2] || mousePos.y > finale[3])) {
+        tooltip.hide();
+        tooltipRight.hide();
+        unHighlighCluster();
+      }
     }
     async function mouseMoveOnSpatialRight(ev: any) {
       const mousePosRight = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
       const item = ev.target.attrs;
-      const plusTEN = 10;
       tooltipRight.position({
         x: mousePosRight.x,
         y: mousePosRight.y,
@@ -778,7 +810,7 @@ export default defineComponent({
       isHighlighted.value = false;
       tooltip.hide();
       tooltipRight.hide();
-      if (!isDrawing.value && !isDrawingRect.value) unHighlighCluster();
+      if ((!isDrawing.value && !isDrawingRect.value)) unHighlighCluster();
     }
     // Drawing Region
     function removeRegions() {
@@ -846,6 +878,9 @@ export default defineComponent({
           rectangle.value.endPointy = mousePos.y;
           (ctx as any).refs.drawingLayerRect.getNode().batchDraw(); // forced update since due to pointer issue
         }
+      }
+      if (!isDrawingRect.value && !isDrawing.value && !isClicked.value && spatialData.value) {
+        mouseOutOnSpatial(null);
       }
     }
     function mouseMoveOnStageRight(ev: any) {

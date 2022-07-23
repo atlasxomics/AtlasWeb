@@ -26,20 +26,24 @@
       <template v-slot:selection="data">
       <v-chip-group column active-class="warning">
         <v-chip
+          :ref="data.item.name"
           :key="data.item.name"
+          :value="data.item"
           v-bind="data.attrs"
-          :input-value="de_select"
           close
           small
           color="rgb(0, 0, 0, .05)"
           @click.stop="updateTrack(data.item.name)"
+          @toggle="updateTrack(data.item.name)"
           @click:close="remove(data.item)"
         >{{ data.item.name }}
         </v-chip>
         </v-chip-group>
       </template>
-      <template v-slot:append-outer v-if="selectedGenes.length > 0">
+      <template v-slot:append-outer>
         <v-btn
+          v-show="selectedGenes.length > 0"
+          id="no-background-hover"
           color="primary"
           class="mt-n1"
           medium
@@ -49,7 +53,7 @@
         <div class="customCheck">
           <v-tooltip bottom>
           <template v-slot:activator="{ on, attrs }">
-            <v-simple-checkbox v-bind="attrs" v-on="on" v-model="de_select" label="" color="secondary" hide-details dense />
+            <v-simple-checkbox v-show="selectedGenes.length > 0" v-bind="attrs" v-on="on" v-model="de_select" label="" color="secondary" hide-details dense />
           </template>
           <span>(De)Select All</span>
           </v-tooltip>
@@ -95,6 +99,8 @@ export default defineComponent({
     const paddingValue = ref<number>(32);
     const newRowCounter = ref<number>(0);
     const autoGenes = ref<any[]>([]);
+    const valueCollapse = ref<boolean>(false);
+    const fileContent = ref<any>();
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -114,26 +120,6 @@ export default defineComponent({
     }
     async function onGenelistChanged(ev: any) {
       ctx.emit('changed', ev);
-      if (ev.length > 0) {
-        const clientHeighte = document.querySelector('.noScroll') as HTMLElement;
-        const childElementInner = clientHeighte.querySelector('.v-select__slot') as HTMLElement;
-        const childElementOuter = clientHeighte.querySelector('.v-input__append-outer') as HTMLElement;
-        let holder = childElementInner?.clientHeight || 0;
-        if (holder > paddingValue.value) {
-          newRowCounter.value += 1;
-          childElementInner.style.paddingTop = `${25 * newRowCounter.value}px`;
-          childElementOuter.style.paddingTop = `${25 * newRowCounter.value}px`;
-          holder = childElementInner?.clientHeight || 0;
-          paddingValue.value = holder;
-        }
-      } else {
-        const clientHeighte = document.querySelector('.noScroll') as HTMLElement;
-        const childElementInner = clientHeighte.querySelector('.v-select__slot') as HTMLElement;
-        const childElementOuter = clientHeighte.querySelector('.v-input__append-outer') as HTMLElement;
-        childElementOuter.style.paddingTop = '0';
-        childElementInner.style.paddingTop = '0';
-        paddingValue.value = 32;
-      }
     }
     async function showGene(ev: any) {
       showFlag.value = true;
@@ -151,10 +137,43 @@ export default defineComponent({
       labelValue.value = '';
     }
     function remove(item: any) {
+      if (autoGenes.value.includes(item.name)) {
+        const index = autoGenes.value.indexOf(item.name);
+        if (index > -1) autoGenes.value.splice(index, 1);
+      }
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
       selectedGenes.value = newArr;
       searchInput.value = '';
       onGenelistChanged(selectedGenes.value);
+    }
+    function collapseGene() {
+      valueCollapse.value = !valueCollapse.value;
+      const clientHeighte = document.querySelector('.noScroll') as HTMLElement;
+      const childElementInner = clientHeighte.querySelector('.v-select__selections') as HTMLElement;
+      if (valueCollapse.value) {
+        childElementInner.style.height = '32px';
+        childElementInner.style.overflow = 'auto';
+      } else {
+        childElementInner.style.height = 'auto';
+        childElementInner.style.overflow = 'none';
+      }
+    }
+    function readFile() {
+      const theFile = (ctx as any).refs.file.files[0];
+      const reader = new FileReader();
+      if (theFile.type.includes('csv')) {
+        reader.onload = (res) => {
+          fileContent.value = res.target!.result;
+        };
+        reader.onerror = (err) => console.log(err);
+        reader.readAsText(theFile);
+      } else {
+        snackbar.dispatch({ text: 'Wrong file type must be csv', options: { right: true, color: 'error' } });
+      }
+    }
+    function resetFile(ev: any) {
+      const element = ev.target as HTMLInputElement;
+      element.value = '';
     }
     watch(searchInput, (v: any) => {
       if (v) {
@@ -164,9 +183,19 @@ export default defineComponent({
     watch(de_select, (v: any) => {
       if (v) {
         selectedGenes.value.forEach((q: string, i: number) => {
+          if (!autoGenes.value.includes(q)) {
+            (ctx as any).refs[q].toggle();
+          }
           autoGenes.value.push(q);
         });
-      } else autoGenes.value = [];
+      } else {
+        selectedGenes.value.forEach((q: string, i: number) => {
+          if (autoGenes.value.includes(q)) {
+            (ctx as any).refs[q].toggle();
+          }
+        });
+        autoGenes.value = [];
+      }
     });
     watch(geneList.value, (v: any[]) => {
       genes.value = v;
@@ -191,6 +220,18 @@ export default defineComponent({
         labelValue.value = 'Enter ID';
       } else labelValue.value = '';
     });
+    watch(fileContent, (value: any) => {
+      const array = value.split(',');
+      array.forEach((v: string, i: number) => {
+        const lower = v.toLowerCase();
+        const stringFormat = lower.charAt(0).toUpperCase() + lower.slice(1);
+        if (!selectedGenes.value.includes(stringFormat)) {
+          searchInput.value = stringFormat;
+          selectedGenes.value.push(stringFormat);
+        }
+      });
+      onGenelistChanged(selectedGenes.value);
+    });
     onMounted(async () => {
       await clientReady;
     });
@@ -206,6 +247,8 @@ export default defineComponent({
       paddingValue,
       newRowCounter,
       autoGenes,
+      valueCollapse,
+      fileContent,
       acInputChanged,
       querySelections,
       onGenelistChanged,
@@ -213,6 +256,9 @@ export default defineComponent({
       showGene,
       updateTrack,
       resetScroll,
+      collapseGene,
+      readFile,
+      resetFile,
     };
   },
 });
@@ -221,10 +267,19 @@ export default defineComponent({
 
 <style scoped>
   .noScroll {
-    margin-top: 18px;
+    margin-top: 2px;
+    height: 24px;
   }
-  .noScroll >>> .v-input__slot {
+  .noScroll >>> .v-select__slot {
     background-color: #f5f5f5;
+  }
+  .collapse {
+    height: 1px;
+    overflow: auto;
+  }
+  .show {
+    height: 0;
+    overflow: none;
   }
   .customCheck {
     color: white;
@@ -240,5 +295,8 @@ export default defineComponent({
   }
   .customCheck .v-simple-checkbox {
     padding-top: 3px;
+  }
+  #no-background-hover::before {
+   background-color: transparent !important;
   }
 </style>
