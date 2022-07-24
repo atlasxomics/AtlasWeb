@@ -124,8 +124,7 @@
             </v-card-text>
           </v-card>
         </v-dialog>
-        <v-col cols="12" sm="2" class="pl-6 pt-3"
-        >
+        <v-col cols="12" sm="2" class="pl-6 pt-3">
           <!-- workflow menu -->
           <template v-if="run_id && optionFlag">
             <v-card>
@@ -323,6 +322,7 @@
                   dense
                   color="primary"
                   @click="showSpatialFolder">
+                  Show Spatial Folder
                   </v-btn>
                 </template>
               </v-list>
@@ -515,6 +515,12 @@
                 </v-stage>
               </v-card>
             </v-row>
+            <SpatialFolderViewer
+            v-if="checkSpatial"
+            :selectedRunID="run_id"
+            :getFiles="checkSpatial"
+            >
+            </SpatialFolderViewer>
           </v-container>
         </v-col>
       </v-row>
@@ -539,6 +545,7 @@ import { resolveAuthGroup } from '@/utils/auth';
 import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
+import SpatialFolderViewer from './SpatialFolderViewer.vue';
 // import { resolve } from 'dns';
 
 const clientReady = new Promise((resolve) => {
@@ -587,6 +594,7 @@ interface Metadata {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
+  components: { SpatialFolderViewer },
   setup(props, ctx) {
     const welcome_screen = ref<boolean>(true);
     const router = ctx.root.$router;
@@ -598,7 +606,7 @@ export default defineComponent({
     const searchInput = ref<any[]>([]);
     const search = ref<string | null>();
     const selected = ref<any | null>();
-    const run_id = ref<string | null>(null);
+    const run_id = ref<string>('');
     const width = window.innerWidth;
     const height = window.innerHeight;
     const konvaConfig = ref<any>({ width, height });
@@ -670,6 +678,7 @@ export default defineComponent({
     const imageDataObj = ref<ImageData>({ data: new Uint8ClampedArray([1]), width: 1, height: 1 });
     const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
+    const availableFiles = ref<any[]>([]);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -1314,8 +1323,23 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
       }
     }
-    function showSpatialFolder() {
+    async function showSpatialFolder() {
       checkSpatial.value = true;
+      console.log(this.run_id);
+      // if (!client.value) {
+      //   return;
+      // }
+      // if (run_id.value === null) {
+      //   run_id.value = '';
+      // }
+      // const folder_path = 'data/'.concat(run_id.value);
+      // const file_payload = { params: { path: folder_path } };
+
+      // const run_files = await client.value.getFileList(file_payload);
+      // availableFiles.value = run_files;
+      // if (availableFiles.value.length === 0) {
+      //   availableFiles.value.push('Run '.concat(run_id.value).concat(' has no associated files.'));
+      // }
     }
     async function generateSpatial() {
       if (!client.value) return;
@@ -1654,6 +1678,7 @@ export default defineComponent({
       imageDataToBlob,
       checkSpatial,
       showSpatialFolder,
+      availableFiles,
     };
   },
 });
