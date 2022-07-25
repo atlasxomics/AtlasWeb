@@ -746,18 +746,18 @@ export default defineComponent({
       }
     }
     async function mouseOutOnSpatial(ev: any) {
-      const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
-      if (ev) {
-        if (selectedGenes.value.length > 0) {
-          tooltip.hide();
-          tooltipRight.hide();
-        }
+      const mousePos = { x: ev.evt.layerX, y: ev.evt.layerY };
+      if (selectedGenes.value.length > 0 || (isDrawing.value || isDrawingRect.value)) {
+        tooltip.hide();
+        tooltipRight.hide();
         return;
       }
-      const first = circlesSpatial.value[0];
-      const second = circlesSpatial.value[49];
-      const third = circlesSpatial.value[circlesSpatial.value.length - 50];
-      const end = circlesSpatial.value[circlesSpatial.value.length - 1];
+      const stageWidth = (ctx as any).refs.konvaStage.$el.offsetWidth;
+      const stageHeight = (ctx as any).refs.konvaStage.$el.offsetHeight;
+      const first = (ctx as any).refs.konvaStage.$children[0].$children[0].getNode().absolutePosition();
+      const second = (ctx as any).refs.konvaStage.$children[0].$children[49].getNode().absolutePosition();
+      const third = (ctx as any).refs.konvaStage.$children[0].$children[circlesSpatial.value.length - 50].getNode().absolutePosition();
+      const end = (ctx as any).refs.konvaStage.$children[0].$children[circlesSpatial.value.length - 1].getNode().absolutePosition();
       const boundaries = [first, second, third, end];
       let leftmost = 1000;
       let bottommost = 0;
@@ -765,21 +765,29 @@ export default defineComponent({
       let topmost = 1000;
       boundaries.forEach((v: any, i: number) => {
         if (v.x > rightmost) {
-          rightmost = v.x;
+          if (v.x > stageWidth) {
+            rightmost = stageWidth - 2;
+          } else rightmost = v.x;
         }
         if (v.x < leftmost) {
-          leftmost = v.x;
+          if (v.x < 0) {
+            leftmost = 15;
+          } else leftmost = v.x;
         }
         if (v.y > bottommost) {
-          bottommost = v.y;
+          if (v.y > stageHeight) {
+            bottommost = stageHeight - 2;
+          } else bottommost = v.y;
         }
         if (v.y < topmost) {
-          topmost = v.y;
+          if (v.y < 0) {
+            topmost = 15;
+          } else topmost = v.y;
         }
       });
-      const finale = [leftmost - Math.round(boundaries[0].radius), topmost - Math.round(boundaries[0].radius), rightmost + Math.round(boundaries[0].radius), bottommost + Math.round(boundaries[0].radius)];
+      const finale = [leftmost, topmost, rightmost, bottommost];
       isHighlighted.value = false;
-      if ((mousePos.x < finale[0] || mousePos.y < finale[1] || mousePos.x > finale[2] || mousePos.y > finale[3])) {
+      if ((!isDrawing.value && !isDrawingRect.value) && (mousePos.x < finale[0] || mousePos.y < finale[1] || mousePos.x > finale[2] || mousePos.y > finale[3])) {
         tooltip.hide();
         tooltipRight.hide();
         unHighlighCluster();
@@ -860,6 +868,7 @@ export default defineComponent({
     }
     function mouseMoveOnStageLeft(ev: any) {
       if (isDrawing.value) {
+        mouseOutOnSpatial('');
         if (isClicked.value) {
           const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
           polygon.value.points.push(Math.round(mousePos.x));
@@ -868,6 +877,7 @@ export default defineComponent({
         }
       }
       if (isDrawingRect.value) {
+        mouseOutOnSpatial('');
         if (isClicked.value) {
           const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
           const xdiff = Math.abs(mousePos.x - rectangle.value.x);
@@ -880,7 +890,7 @@ export default defineComponent({
         }
       }
       if (!isDrawingRect.value && !isDrawing.value && !isClicked.value && spatialData.value) {
-        mouseOutOnSpatial(null);
+        mouseOutOnSpatial(ev);
       }
     }
     function mouseMoveOnStageRight(ev: any) {
@@ -971,6 +981,11 @@ export default defineComponent({
       fitStageToParent();
       updateCircles();
     }
+    watch(backgroundColor, (v: any) => {
+      if (isDrawing.value || isDrawingRect.value) {
+        highlightRegion();
+      }
+    });
     watch(isDrawing, (v: boolean) => {
       setDraggable(!v);
       removeRegions();
