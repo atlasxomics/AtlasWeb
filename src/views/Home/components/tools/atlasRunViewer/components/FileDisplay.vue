@@ -1,10 +1,10 @@
 <template>
   <v-col>
-    <div
+    <!-- <div
     ref="imgLens"
     class="img-lens"
     >
-    </div>
+    </div> -->
     <v-img
     v-if="isImage"
     :src="localImageURL"
@@ -13,8 +13,8 @@
     :width="displayedWidth"
     >
     </v-img>
-    <div ref="zoomBox" class="zoomed-in-image">
-    </div>
+    <!-- <div ref="zoomBox" class="zoomed-in-image">
+    </div> -->
     <v-slider
     :min="40"
     :max="100"
@@ -55,8 +55,8 @@ export default defineComponent({
     const naturalWidth = ref<number>(500);
     const displayedHeight = ref<number>(0);
     const displayedWidth = ref<number>(0);
-    const cX = ref<number>(0);
-    const cY = ref<number>(0);
+    // const cX = ref<number>(0);
+    // const cY = ref<number>(0);
     const konvaConfiguration = ref<any>({
       width: 400,
       height: 1000,
@@ -73,13 +73,13 @@ export default defineComponent({
     function configureImage() {
       console.log(localImageURL.value);
     }
-    function getCursorPos(ev: any) {
-      const x = 0;
-      const y = 0;
-    }
-    function moveLens(ev: any) {
-      const pos = getCursorPos(ev);
-    }
+    // function getCursorPos(ev: any) {
+    //   const x = 0;
+    //   const y = 0;
+    // }
+    // function moveLens(ev: any) {
+    //   const pos = getCursorPos(ev);
+    // }
     function getImageDimensions(url: string) {
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -91,21 +91,21 @@ export default defineComponent({
         img.src = url;
       });
     }
-    function imageZoom() {
-      const elements = this.$refs;
-      console.log(elements);
-      const img = elements.image;
-      const zoomedBox = elements.zoomBox;
-      const lens = elements.imgLens;
-      cX.value = zoomedBox.offsetWidth / lens.offsetWidth;
-      cY.value = zoomedBox.offsetHeight / lens.offsetHeight;
-      console.log(cX);
-      console.log(cY);
-      zoomedBox.style.backgroundImage = 'url('.concat(currentDisplayedImage.value).concat(')');
-      zoomedBox.style.backgroundSize = (1000 * cX.value).toString().concat('px').concat((1000 * cY.value).toString()).concat('px');
-      lens.addEventListener('mousemove', this.moveLens);
-      img.addEventListener('mousemove', this.moveLens);
-    }
+    // function imageZoom() {
+    //   const elements = this.$refs;
+    //   console.log(elements);
+    //   const img = elements.image;
+    //   const zoomedBox = elements.zoomBox;
+    //   const lens = elements.imgLens;
+    //   cX.value = zoomedBox.offsetWidth / lens.offsetWidth;
+    //   cY.value = zoomedBox.offsetHeight / lens.offsetHeight;
+    //   console.log(cX);
+    //   console.log(cY);
+    //   zoomedBox.style.backgroundImage = 'url('.concat(currentDisplayedImage.value).concat(')');
+    //   zoomedBox.style.backgroundSize = (1000 * cX.value).toString().concat('px').concat((1000 * cY.value).toString()).concat('px');
+    //   lens.addEventListener('mousemove', this.moveLens);
+    //   img.addEventListener('mousemove', this.moveLens);
+    // }
     return {
       isImage,
       getImageDimensions,
@@ -123,16 +123,16 @@ export default defineComponent({
       displayedHeight,
       displayedWidth,
       modifyImageSize,
-      imageZoom,
-      cX,
-      cY,
-      moveLens,
-      getCursorPos,
+      // imageZoom,
+      // cX,
+      // cY,
+      // moveLens,
+      // getCursorPos,
     };
   },
   watch: {
     imageURL(newValue) {
-      this.imageZoom();
+      // this.imageZoom();
       const img = new Image();
       img.src = newValue;
       // const val = await this.getImageDimensions(newValue);
