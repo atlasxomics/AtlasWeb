@@ -124,7 +124,7 @@
             </v-card-text>
           </v-card>
         </v-dialog>
-        <v-col cols="12" sm="2" class="pl-6 pt-3">
+        <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
           <!-- workflow menu -->
           <template v-if="run_id && optionFlag">
             <v-card>
@@ -316,7 +316,6 @@
                   Generate Spatial Folder
                   </v-btn>
                   <v-btn
-                  :disabled="!tixels_filled"
                   outlined
                   x-small
                   dense
@@ -351,7 +350,7 @@
           </v-card>
         </v-col>
         <!-- right section of the screen where images and loading screens are displayed -->
-        <v-col cols="12" sm="9">
+        <v-col cols="12" sm="9" v-if="!checkSpatial">
           <v-container>
             <!-- Loading message when saving spatial folder -->
             <template v-if="loadingMessage">
@@ -515,13 +514,15 @@
                 </v-stage>
               </v-card>
             </v-row>
-            <SpatialFolderViewer
-            v-if="checkSpatial"
-            :selectedRunID="run_id"
-            :getFiles="checkSpatial"
-            >
-            </SpatialFolderViewer>
           </v-container>
+        </v-col>
+        <v-col cols="12" sm="12">
+        <SpatialFolderViewer
+        v-if="checkSpatial"
+        :selectedRunID="run_id"
+        :getFiles="checkSpatial"
+        >
+        </SpatialFolderViewer>
         </v-col>
       </v-row>
     </v-container>
@@ -746,7 +747,6 @@ export default defineComponent({
       crop.value.setScaleFactor(v);
     }
     function assignMetadata(slimsData: any) {
-      console.log(slimsData);
       metadata.value.organ = slimsData.cntn_cf_fk_organ;
       metadata.value.species = slimsData.cntn_cf_fk_species;
       metadata.value.chip_resolution = slimsData.Resolution;
@@ -1119,7 +1119,6 @@ export default defineComponent({
           // imageDataObj.value.data.set([0], i+1)
         }
       }
-      // imageDataObj.value.data = missingGreen.value;
     }
     function onCropButton(ev: any) {
       cropFlag.value = true;
@@ -1138,7 +1137,6 @@ export default defineComponent({
         ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
         imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
         // missingGreen.value = imageDataObj.value.data;
-        console.log(missingGreen);
         extractChannels();
         canvas.toBlob((blob: any) => {
           newImage.src = URL.createObjectURL(blob);
@@ -1178,7 +1176,6 @@ export default defineComponent({
     }
 
     function imageDataToBlob() {
-      console.log('here');
       const w = imageDataObj.value.width;
       const h = imageDataObj.value.height;
       const canvas = document.createElement('canvas');
@@ -1195,16 +1192,11 @@ export default defineComponent({
       if (!current_image.value) return;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
-      // loading.value = true;
-      // let img_src = current_image.value.image.original_src;
-      // if (bsa_image_disp.value) {
-      //   img_src = current_image.value.image.src;
-      // }
+      loading.value = true;
       let img_src = current_image.value.image.src;
       if (!optionUpdate) {
         img_src = imageDataToBlob();
       }
-      // console.log(blob);
       getPixels(img_src, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
@@ -1332,21 +1324,6 @@ export default defineComponent({
     }
     async function showSpatialFolder() {
       checkSpatial.value = true;
-      console.log(this.run_id);
-      // if (!client.value) {
-      //   return;
-      // }
-      // if (run_id.value === null) {
-      //   run_id.value = '';
-      // }
-      // const folder_path = 'data/'.concat(run_id.value);
-      // const file_payload = { params: { path: folder_path } };
-
-      // const run_files = await client.value.getFileList(file_payload);
-      // availableFiles.value = run_files;
-      // if (availableFiles.value.length === 0) {
-      //   availableFiles.value.push('Run '.concat(run_id.value).concat(' has no associated files.'));
-      // }
     }
     async function generateSpatial() {
       if (!client.value) return;
@@ -1357,7 +1334,6 @@ export default defineComponent({
         loadingMessage.value = true;
         progressMessage.value = null;
         loading.value = true;
-        spatial.value = true;
         const task = 'atlasbrowser.generate_spatial';
         const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
@@ -1425,6 +1401,7 @@ export default defineComponent({
         one.value = 0;
         two.value = 0;
         three.value = 0;
+        spatial.value = true;
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -1502,7 +1479,6 @@ export default defineComponent({
     });
     watch(current_image, (v) => {
       if (current_image.value && !isCropMode.value) {
-        console.log('Cropping going on');
         crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
         onChangeScale(scaleFactor.value);
       }
@@ -1516,9 +1492,6 @@ export default defineComponent({
       if (v !== ov) {
         thresh_same.value = false;
       }
-    });
-    watch(konvaConfig, (v, ov) => {
-      console.log('konva stage changed');
     });
     const submenu = [
       {

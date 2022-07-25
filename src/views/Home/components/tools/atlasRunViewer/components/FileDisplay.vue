@@ -117,7 +117,7 @@ export default defineComponent({
       console.log(temp);
       this.textConfig = {
         text: temp,
-        wrap: 'word',
+        fontSize: 24,
       };
       this.isImage = false;
       this.jsonDisplay = true;
@@ -125,7 +125,10 @@ export default defineComponent({
     csvStringContents(newValue) {
       console.log('csv changed');
       const [temp] = newValue;
-      this.textConfig = { text: temp };
+      this.textConfig = {
+        fontSize: 24,
+        text: temp,
+      };
       this.isImage = false;
       this.jsonDisplay = true;
     },

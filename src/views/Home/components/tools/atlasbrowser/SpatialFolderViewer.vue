@@ -1,6 +1,9 @@
 <template>
-    <v-container>
+      <v-row>
+        <v-col>
             <AvailableFileList :fileList="availableFiles" :runID="selectedRunID" @file-selected=handleFileSelection> </AvailableFileList>
+        </v-col>
+        <v-col>
             <FileDisplay
             :fileName="file_selected"
             :imageURL="selectedImageURL_array"
@@ -8,7 +11,8 @@
             :jsonContents="jsonPackage"
             :csvStringContents="csvPretty_array"
             > </FileDisplay>
-    </v-container>
+        </v-col>
+      </v-row>
 </template>
 
 <script lang='ts'>
@@ -52,7 +56,7 @@ export default defineComponent({
         console.log('no client');
         return;
       }
-      const folder_path = 'data/'.concat(props.selectedRunID);
+      const folder_path = 'data/'.concat(props.selectedRunID).concat('/images');
       const file_payload = { params: { path: folder_path } };
       const run_files = await client.value.getFileList(file_payload);
       availableFiles.value = run_files;
@@ -86,7 +90,7 @@ export default defineComponent({
       const payload = { params: { filename: input_filename } };
       const resp = await client.value?.getJsonFile(payload);
       jsonPackage.value = resp;
-      jsonString.value = JSON.stringify(resp, null, 4);
+      jsonString.value = JSON.stringify(resp, null, 8);
       jsonString_array.value = [jsonString.value];
     }
     // method to handle a user request to get a file
