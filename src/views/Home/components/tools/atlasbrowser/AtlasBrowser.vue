@@ -322,7 +322,7 @@
                   dense
                   color="primary"
                   @click="showSpatialFolder">
-                  Show Spatial Folder
+                  Check Spatial Folder
                   </v-btn>
                 </template>
               </v-list>
@@ -575,7 +575,8 @@ const metaItemLists = {
 interface Metadata {
   points: number[] | any;
   run: string | null;
-  blockSize: number | null;
+  blockSize: number;
+  cValue: number;
   threshold: number | null;
   type: string | null;
   species: string | null;
@@ -683,7 +684,8 @@ export default defineComponent({
     const metadata = ref<Metadata>({
       points: [],
       run: null,
-      blockSize: null,
+      blockSize: 7,
+      cValue: 7,
       threshold: null,
       type: 'FFPE',
       species: 'Mouse',
@@ -937,6 +939,8 @@ export default defineComponent({
       orientation.value = metadata.value.orientation;
       // console.log(orientation.value.rotation);
       roi.value.loadTixels(csvHolder.value);
+      // c_val.value = metadata.value.cValue;
+      // neighbor_size.value = metadata.value.blockSize;
     }
     function updateChannels(ev: any) {
       if (/50/.test(ev)) {
@@ -1192,13 +1196,16 @@ export default defineComponent({
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
       // loading.value = true;
-      let img_src = current_image.value.image.original_src;
-      if (bsa_image_disp.value) {
-        img_src = current_image.value.image.src;
+      // let img_src = current_image.value.image.original_src;
+      // if (bsa_image_disp.value) {
+      //   img_src = current_image.value.image.src;
+      // }
+      let img_src = current_image.value.image.src;
+      if (!optionUpdate) {
+        img_src = imageDataToBlob();
       }
-      const url = imageDataToBlob();
       // console.log(blob);
-      getPixels(url, async (err, pixels) => {
+      getPixels(img_src, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
@@ -1366,8 +1373,9 @@ export default defineComponent({
         metadata.value = Object.assign(metadata.value, {
           points,
           run: run_id.value,
-          blockSize: null,
+          blockSize: neighbor_size.value,
           threshold: threshold.value,
+          cValue: c_val.value,
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
