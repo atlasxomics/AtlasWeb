@@ -1,14 +1,25 @@
 <template>
-    <v-stage
-      :config="konvaConfiguration"
-      >
-    <v-layer
+  <v-col>
+    <div
+    ref="imgLens"
+    class="img-lens"
+    >
+    </div>
+    <v-img
     v-if="isImage"
     :src="localImageURL"
     ref="image"
     :height="displayedHeight"
     :width="displayedWidth"
     >
+    </v-img>
+    <div ref="zoomBox" class="zoomed-in-image">
+    </div>
+    <v-slider
+    :min="40"
+    :max="100"
+    v-if="isImage"
+    v-model="imageSize"
     >
     </v-slider>
     <pre
@@ -44,6 +55,8 @@ export default defineComponent({
     const naturalWidth = ref<number>(500);
     const displayedHeight = ref<number>(0);
     const displayedWidth = ref<number>(0);
+    const cX = ref<number>(0);
+    const cY = ref<number>(0);
     const konvaConfiguration = ref<any>({
       width: 400,
       height: 1000,
@@ -59,6 +72,39 @@ export default defineComponent({
     // convert the image url passed to the component into konva compatible format
     function configureImage() {
       console.log(localImageURL.value);
+    }
+    function getCursorPos(ev: any) {
+      const x = 0;
+      const y = 0;
+    }
+    function moveLens(ev: any) {
+      const pos = getCursorPos(ev);
+    }
+    function getImageDimensions(url: string) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve({
+          width: img.width,
+          height: img.height,
+        });
+        img.onerror = (error) => reject(error);
+        img.src = url;
+      });
+    }
+    function imageZoom() {
+      const elements = this.$refs;
+      console.log(elements);
+      const img = elements.image;
+      const zoomedBox = elements.zoomBox;
+      const lens = elements.imgLens;
+      cX.value = zoomedBox.offsetWidth / lens.offsetWidth;
+      cY.value = zoomedBox.offsetHeight / lens.offsetHeight;
+      console.log(cX);
+      console.log(cY);
+      zoomedBox.style.backgroundImage = 'url('.concat(currentDisplayedImage.value).concat(')');
+      zoomedBox.style.backgroundSize = (1000 * cX.value).toString().concat('px').concat((1000 * cY.value).toString()).concat('px');
+      lens.addEventListener('mousemove', this.moveLens);
+      img.addEventListener('mousemove', this.moveLens);
     }
     return {
       isImage,
@@ -77,6 +123,11 @@ export default defineComponent({
       displayedHeight,
       displayedWidth,
       modifyImageSize,
+      imageZoom,
+      cX,
+      cY,
+      moveLens,
+      getCursorPos,
     };
   },
   watch: {
@@ -116,6 +167,28 @@ export default defineComponent({
       this.isImage = false;
       this.jsonDisplay = true;
     },
+    imageSize(newValue) {
+      this.modifyImageSize(newValue);
+    },
   },
 });
 </script>
+
+<style>
+.outer-container {
+  position: relative;
+}
+
+.img-lens {
+  position: absolute;
+  border: 1px solid #d4d4d4;
+  width: 40px;
+  height: 40px;
+}
+
+.zoomed-in-image {
+  border: 1px solid #d4d4d4;
+  width: 400px;
+  height: 400px;
+}
+</style>
