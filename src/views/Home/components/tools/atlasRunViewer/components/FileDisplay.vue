@@ -4,23 +4,19 @@
       >
     <v-layer
     v-if="isImage"
+    :src="localImageURL"
+    ref="image"
+    :height="displayedHeight"
+    :width="displayedWidth"
     >
-        <v-image
-        ref="image"
-        :config="displayedImage"
-        >
-        </v-image>
-    </v-layer>
-    <v-layer
+    >
+    </v-slider>
+    <pre
     v-if="jsonDisplay"
-    :config="textLayerConfig"
     >
-    <v-text
-    :config="textConfig"
-    >
-    </v-text>
-    </v-layer>
- </v-stage>
+      {{ dispText }}
+    </pre>
+  </v-col>
 </template>
 
 <script lang="ts">
@@ -42,6 +38,12 @@ export default defineComponent({
     const jsonDisplay = ref<boolean>(false);
     const displayedImage = ref<any>();
     const localImageURL = ref<string>('');
+    const dispText = ref<string>('');
+    const imageSize = ref<number>(80);
+    const naturalHeight = ref<number>(500);
+    const naturalWidth = ref<number>(500);
+    const displayedHeight = ref<number>(0);
+    const displayedWidth = ref<number>(0);
     const konvaConfiguration = ref<any>({
       width: 400,
       height: 1000,
@@ -49,31 +51,18 @@ export default defineComponent({
       y: 100,
     });
     const textConfig = ref<any>({ text: '' });
-    const textLayerConfig = ref<any>({
-      width: 1000,
-      height: 10000,
-    });
+    function modifyImageSize(factor: number) {
+      console.log('changing image size');
+      this.displayedHeight = (factor * this.naturalHeight) / 100;
+      this.displayedWidth = (factor * this.naturalWidth) / 100;
+    }
     // convert the image url passed to the component into konva compatible format
     function configureImage() {
       console.log(localImageURL.value);
-      const imgObj = new window.Image();
-      imgObj.src = localImageURL.value;
-      if (imgObj) {
-        imgObj.onload = (ev: any) => {
-          displayedImage.value = {
-            x: 0,
-            y: 0,
-            draggable: false,
-            image: imgObj,
-            src: imgObj.src,
-            width: 300,
-            height: 300,
-          };
-        };
-      }
     }
     return {
       isImage,
+      getImageDimensions,
       currentDisplayedImage,
       jsonDisplay,
       displayedImage,
@@ -81,39 +70,33 @@ export default defineComponent({
       localImageURL,
       konvaConfiguration,
       textConfig,
-      textLayerConfig,
+      dispText,
+      imageSize,
+      naturalHeight,
+      naturalWidth,
+      displayedHeight,
+      displayedWidth,
+      modifyImageSize,
     };
   },
   watch: {
-    // fileName(newValue, oldValue) {
-    //   const path_parts = newValue.split('.');
-    //   const extension = path_parts[path_parts.length - 1];
-    //   // check if the file we have been passed is an iamge
-    //   if (extension === 'tif' || extension === 'png') {
-    //     console.log('image');
-    //     this.isImage = true;
-    //     this.jsonDisplay = false;
-    //     // this.configureImage();
-    //   } else {
-    //     this.isImage = false;
-    //   } if (extension === 'json') {
-    //     this.jsonDisplay = true;
-    //   } else if (extension === 'csv') {
-    //     this.jsonDisplay = true;
-    //   }
-    //   console.log('the selcted file has changed');
-    // },
     imageURL(newValue) {
-      console.log('here');
+      this.imageZoom();
+      const img = new Image();
+      img.src = newValue;
+      // const val = await this.getImageDimensions(newValue);
+      this.naturalHeight = 1000;
+      this.naturalWidth = 1000;
       const [temp] = newValue;
       this.localImageURL = temp;
-      this.configureImage();
+      this.modifyImageSize(80);
       this.isImage = true;
       this.jsonDisplay = false;
     },
     jsonStringContents(newValue) {
       console.log('json changed');
       const [temp] = newValue;
+      this.dispText = temp;
       console.log(temp);
       this.textConfig = {
         text: temp,
@@ -125,8 +108,9 @@ export default defineComponent({
     csvStringContents(newValue) {
       console.log('csv changed');
       const [temp] = newValue;
+      this.dispText = temp;
       this.textConfig = {
-        fontSize: 24,
+        fontSize: 12,
         text: temp,
       };
       this.isImage = false;

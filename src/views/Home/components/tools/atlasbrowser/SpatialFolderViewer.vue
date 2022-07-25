@@ -1,9 +1,9 @@
 <template>
       <v-row>
-        <v-col>
+        <v-col cols="12" sm="4">
             <AvailableFileList :fileList="availableFiles" :runID="selectedRunID" @file-selected=handleFileSelection> </AvailableFileList>
         </v-col>
-        <v-col>
+        <v-col cols="12" sm="8" align-self="center">
             <FileDisplay
             :fileName="file_selected"
             :imageURL="selectedImageURL_array"
