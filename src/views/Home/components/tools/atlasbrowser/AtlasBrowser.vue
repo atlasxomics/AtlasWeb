@@ -121,6 +121,62 @@
               label="Chip Resolution"
               readonly>
               </v-text-field>
+              <v-text-field
+              v-model="metadata.comments_flowB"
+              outlined
+              dense
+              label="Comments Flow B"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.crosses_flowB"
+              outlined
+              dense
+              label="B Flow Crosses"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.leak_flowB"
+              outlined
+              dense
+              label="B Flow Leaks"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.comments_flowA"
+              outlined
+              dense
+              label="Flow A Comments"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.crosses_flowA"
+              outlined
+              dense
+              label="A Flow Crosses"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.blocks_flowA"
+              outlined
+              dense
+              label="A Flow Blocks"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.leak_flowA"
+              outlined
+              dense
+              label="A Flow Leak"
+              readonly
+              >
+              </v-text-field>
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -591,6 +647,14 @@ interface Metadata {
   diseaseName: string | null;
   collaborator: string | null;
   chip_resolution: number | null;
+  comments_flowB: string | null;
+  crosses_flowB: Array<number> | null;
+  blocks_flowB: Array<number> | null;
+  leak_flowB: string | null;
+  comments_flowA: string | null;
+  crosses_flowA: Array<number> | null;
+  blocks_flowA: Array<number> | null;
+  leak_flowA: string | null;
 }
 
 export default defineComponent({
@@ -663,6 +727,7 @@ export default defineComponent({
     const runIdFlag = ref<boolean>(false);
     const runIDSelected = ref<boolean>(false);
     const metaFlag = ref<boolean>(false);
+    const flowMetadata = ref<Record<string, any>>({});
     const imageh = ref<any>();
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
@@ -700,6 +765,14 @@ export default defineComponent({
       diseaseState: null,
       diseaseName: null,
       collaborator: null,
+      comments_flowB: '',
+      crosses_flowB: [],
+      blocks_flowB: [],
+      leak_flowB: '',
+      comments_flowA: '',
+      crosses_flowA: [],
+      blocks_flowA: [],
+      leak_flowA: '',
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -747,24 +820,37 @@ export default defineComponent({
       crop.value.setScaleFactor(v);
     }
     function assignMetadata(slimsData: any) {
-      metadata.value.organ = slimsData.cntn_cf_fk_organ;
-      metadata.value.species = slimsData.cntn_cf_fk_species;
-      metadata.value.chip_resolution = slimsData.Resolution;
-      metadata.value.collaborator = slimsData.cntn_cf_source;
-      metadata.value.assay = slimsData.cntn_cf_fk_workflow;
-      metadata.value.diseaseName = slimsData.cntn_cf_disease;
-      if (metadata.value.diseaseName == null) {
-        metadata.value.diseaseState = 'Healthy';
-      }
-      metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
-      if (metadata.value.barcodes === '1 (normal)') {
-        barcodes.value = 1;
-      } else if (metadata.value.barcodes === '2 (reverseB)') {
-        barcodes.value = 2;
-      } else if (metadata.value.barcodes === '3 (reverseAB)') {
-        barcodes.value = 4;
-      } else {
-        barcodes.value = 3;
+      try {
+        console.log(slimsData);
+        metadata.value.organ = slimsData.cntn_cf_fk_organ;
+        metadata.value.species = slimsData.cntn_cf_fk_species;
+        metadata.value.chip_resolution = slimsData.Resolution;
+        metadata.value.collaborator = slimsData.cntn_cf_source;
+        metadata.value.assay = slimsData.cntn_cf_fk_workflow;
+        metadata.value.diseaseName = slimsData.cntn_cf_disease;
+        if (metadata.value.diseaseName == null) {
+          metadata.value.diseaseState = 'Healthy';
+        }
+        metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
+        if (metadata.value.barcodes === '1 (normal)') {
+          barcodes.value = 1;
+        } else if (metadata.value.barcodes === '2 (reverseB)') {
+          barcodes.value = 2;
+        } else if (metadata.value.barcodes === '3 (reverseAB)') {
+          barcodes.value = 4;
+        } else {
+          barcodes.value = 3;
+        }
+        metadata.value.comments_flowB = slimsData.comments_flowB;
+        metadata.value.crosses_flowB = slimsData.crosses_flowB;
+        metadata.value.blocks_flowB = slimsData.blocks_flowB;
+        metadata.value.leak_flowB = slimsData.leak_flowB;
+        metadata.value.comments_flowA = slimsData.comments_flowA;
+        metadata.value.crosses_flowA = slimsData.crosses_flowA;
+        metadata.value.blocks_flowA = slimsData.blocks_flowA;
+        metadata.value.leak_flowA = slimsData.leak_flowA;
+      } catch (error) {
+        console.log(error);
       }
     }
 
@@ -786,7 +872,6 @@ export default defineComponent({
         const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
         let slimsData: any;
         // if the json folder cannot be obtained from local server query slims
-        if (!jsonBoolean) {
           loading.value = true;
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
           params.data = slimsData;
@@ -1660,6 +1745,7 @@ export default defineComponent({
       checkSpatial,
       showSpatialFolder,
       availableFiles,
+      flowMetadata,
     };
   },
 });
