@@ -107,6 +107,21 @@
               >
               </v-text-field>
               <v-text-field
+              outlined
+              dense
+              label="Tissue Slide Experimental Condition"
+              v-model="metadata.tissueSlideExperiment"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              outlined
+              dense
+              label="Tissue Block Experimental Condition"
+              v-model="metadata.tissueBlockExperiment"
+              >
+              </v-text-field>
+              <v-text-field
                 v-model="metadata.barcodes"
                 outlined
                 dense
@@ -647,6 +662,8 @@ interface Metadata {
   diseaseName: string | null;
   collaborator: string | null;
   chip_resolution: number | null;
+  tissueSlideExperiment: string | null;
+  tissueBlockExperiment: string | null;
   comments_flowB: string | null;
   crosses_flowB: Array<number> | null;
   blocks_flowB: Array<number> | null;
@@ -764,6 +781,8 @@ export default defineComponent({
       chip_resolution: null,
       diseaseState: null,
       diseaseName: null,
+      tissueSlideExperiment: '',
+      tissueBlockExperiment: '',
       collaborator: null,
       comments_flowB: '',
       crosses_flowB: [],
@@ -772,7 +791,7 @@ export default defineComponent({
       comments_flowA: '',
       crosses_flowA: [],
       blocks_flowA: [],
-      leak_flowA: '',
+      leak_flowA: ' ',
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -828,6 +847,8 @@ export default defineComponent({
         metadata.value.collaborator = slimsData.cntn_cf_source;
         metadata.value.assay = slimsData.cntn_cf_fk_workflow;
         metadata.value.diseaseName = slimsData.cntn_cf_disease;
+        metadata.value.tissueSlideExperiment = slimsData.cntn_cf_tissueSlideExperimentalCondition;
+        metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
         if (metadata.value.diseaseName == null) {
           metadata.value.diseaseState = 'Healthy';
         }
@@ -872,8 +893,10 @@ export default defineComponent({
         const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
         let slimsData: any;
         // if the json folder cannot be obtained from local server query slims
+        if (!jsonBoolean) {
           loading.value = true;
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
+          console.log(slimsData);
           params.data = slimsData;
           const taskObject = await client.value!.postTask(task, args, kwargs, queue);
           await checkTaskStatus(taskObject._id);
@@ -917,6 +940,7 @@ export default defineComponent({
       const pos_filename = `${root}/${run_id.value}/images/spatial/tissue_positions_list.csv`;
       const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
+      console.log(resp);
       const pos_payload = { params: { filename: pos_filename } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
       const scale_payload = { params: { filename: scale_filename } };
@@ -931,6 +955,7 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
       } else {
+        console.log('calling getMeta');
         await getMeta();
         optionFlag.value = true;
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
@@ -1197,13 +1222,25 @@ export default defineComponent({
       }
     }
     function extractChannels() {
-      for (let i = 1; i < imageDataObj.value.data.length; i += 4) {
+      let count = 0;
+      for (let i = 0; i < imageDataObj.value.data.length; i += 4) {
         if (i < imageDataObj.value.data.length) {
-          // console.log(imageDataObj.value.data[i]);
-          imageDataObj.value.data.set([0], i);
-          // imageDataObj.value.data.set([0], i+1)
+          // imageDataObj.value.data.set([0], i + 1);
+        //   // console.log(imageDataObj.value.data[i]);
+          const mean = ((imageDataObj.value.data[i] + imageDataObj.value.data[i + 2]) / 2);
+          if (mean * 1.2 < imageDataObj.value.data[i + 1]) {
+          // if (Math.max(imageDataObj.value.data[i], imageDataObj.value.data[i + 1], imageDataObj.value.data[i + 2]) === imageDataObj.value.data[i + 1]) {
+          // if (mean * 1.4 < imageDataObj.value.data[i + 1]) {
+            const setVal = Math.floor(200 + (Math.random() * 30));
+            const min = Math.min(imageDataObj.value.data[i], imageDataObj.value.data[i + 2]);
+            imageDataObj.value.data.set([mean], i + 1);
+            count += 1;
+            // imageDataObj.value.data.set([100], i + 1);
+          }
         }
       }
+      console.log('prop:');
+      console.log(count / (imageDataObj.value.data.length / 4));
     }
     function onCropButton(ev: any) {
       cropFlag.value = true;
@@ -1277,14 +1314,17 @@ export default defineComponent({
       if (!current_image.value) return;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
-      loading.value = true;
+      // loading.value = true;
       let img_src = current_image.value.image.src;
-      if (!optionUpdate) {
+      if (!optionUpdate.value) {
         img_src = imageDataToBlob();
       }
+      // current_image.value.image.src = img_src;
       getPixels(img_src, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
+        console.log(compensation);
+        console.log(size);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
         atpixels.value = thresholded;
         const b = blobStream();
