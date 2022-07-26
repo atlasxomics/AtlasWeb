@@ -245,7 +245,7 @@ export default defineComponent({
     });
     watch(fileContent, (value: any) => {
       const array = value[0].split(',');
-      const cleaned = array.map((s: any) => s.replace(/[.,/#!$%^&*;:{}=\-_`~()@'"\s]/g, ''));
+      const cleaned = array.map((s: any) => s.replace(/[.,\\/#!$%^&*;:{}=_`~()@'"\s]/g, ''));
       cleaned.forEach((v: string, i: number) => {
         const lower = v.toLowerCase();
         const stringFormat = lower.charAt(0).toUpperCase() + lower.slice(1);
