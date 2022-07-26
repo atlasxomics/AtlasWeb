@@ -746,12 +746,18 @@ export default defineComponent({
       }
     }
     async function mouseOutOnSpatial(ev: any) {
-      const mousePos = { x: ev.evt.layerX, y: ev.evt.layerY };
-      if (selectedGenes.value.length > 0 || (isDrawing.value || isDrawingRect.value)) {
+      if ((isDrawing.value || isDrawingRect.value)) {
         tooltip.hide();
         tooltipRight.hide();
         return;
       }
+      if (selectedGenes.value.length > 0) {
+        tooltip.hide();
+        tooltipRight.hide();
+        unHighlighCluster();
+        return;
+      }
+      const mousePos = { x: ev.evt.layerX, y: ev.evt.layerY };
       const stageWidth = (ctx as any).refs.konvaStage.$el.offsetWidth;
       const stageHeight = (ctx as any).refs.konvaStage.$el.offsetHeight;
       const first = (ctx as any).refs.konvaStage.$children[0].$children[0].getNode().absolutePosition();
@@ -868,7 +874,6 @@ export default defineComponent({
     }
     function mouseMoveOnStageLeft(ev: any) {
       if (isDrawing.value) {
-        mouseOutOnSpatial('');
         if (isClicked.value) {
           const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
           polygon.value.points.push(Math.round(mousePos.x));
@@ -877,7 +882,6 @@ export default defineComponent({
         }
       }
       if (isDrawingRect.value) {
-        mouseOutOnSpatial('');
         if (isClicked.value) {
           const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
           const xdiff = Math.abs(mousePos.x - rectangle.value.x);
@@ -889,7 +893,7 @@ export default defineComponent({
           (ctx as any).refs.drawingLayerRect.getNode().batchDraw(); // forced update since due to pointer issue
         }
       }
-      if (!isDrawingRect.value && !isDrawing.value && !isClicked.value && spatialData.value) {
+      if (!isDrawingRect.value && !isDrawing.value && !isClicked.value && spatialData.value && selectedGenes.value.length === 0) {
         mouseOutOnSpatial(ev);
       }
     }

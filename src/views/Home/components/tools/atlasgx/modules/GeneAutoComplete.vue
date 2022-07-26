@@ -245,7 +245,8 @@ export default defineComponent({
     });
     watch(fileContent, (value: any) => {
       const array = value[0].split(',');
-      array.forEach((v: string, i: number) => {
+      const cleaned = array.map((s: any) => s.replace(/[.,/#!$%^&*;:{}=\-_`~()@'"\s]/g, ''));
+      cleaned.forEach((v: string, i: number) => {
         const lower = v.toLowerCase();
         const stringFormat = lower.charAt(0).toUpperCase() + lower.slice(1);
         const foundGene = genes.value.filter((g: any) => g.name.toLowerCase().startsWith(stringFormat.toLowerCase()));
