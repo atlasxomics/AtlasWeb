@@ -1273,12 +1273,15 @@ export default defineComponent({
               original_src: newImage.src,
               alternative_src: null,
             };
+            onChangeScale(scaleFactor.value);
           };
         });
       };
-      // onChangeScale('');
+      // konvaConfig.value.width = scaleFactor.value * current_image.value.image.width;
+      // konvaConfig.value.height = scaleFactor.value * current_image.value.image.height;
+      // stageWidth.value = konvaConfig.value.width;
+      // stageHeight.value = konvaConfig.value.height;
       roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
-      onChangeScale('');
     }
     function finding_roi() {
       if (!no_thresh.value) {
