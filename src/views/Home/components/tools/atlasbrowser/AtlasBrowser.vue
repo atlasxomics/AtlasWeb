@@ -1656,15 +1656,15 @@ export default defineComponent({
           }
         },
       },
-      {
-        text: 'Save spatial data',
-        icon: 'mdi-content-save',
-        color: 'primary',
-        tooltip: 'Save spatial data',
-        click: () => {
-          handle_spatial_call();
-        },
-      },
+      // {
+      //   text: 'Save spatial data',
+      //   icon: 'mdi-content-save',
+      //   color: 'primary',
+      //   tooltip: 'Save spatial data',
+      //   click: () => {
+      //     handle_spatial_call();
+      //   },
+      // },
     ];
     onMounted(async () => {
       await clientReady;
