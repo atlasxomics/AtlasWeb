@@ -1,7 +1,12 @@
 <template>
       <v-row>
         <v-col cols="12" sm="4">
-            <AvailableFileList :fileList="availableFiles" :runID="selectedRunID" @file-selected=handleFileSelection> </AvailableFileList>
+            <AvailableFileList
+            :fileList="availableFiles"
+            :runID="selectedRunID"
+            :flipLoading="flipBool"
+            @file-selected=handleFileSelection>
+            </AvailableFileList>
         </v-col>
         <v-col cols="12" sm="8" align-self="center">
             <FileDisplay
@@ -10,6 +15,7 @@
             :jsonStringContents="jsonString_array"
             :jsonContents="jsonPackage"
             :csvStringContents="csvPretty_array"
+            @file-displayed="stopLoading"
             > </FileDisplay>
         </v-col>
       </v-row>
@@ -20,6 +26,7 @@ import { defineComponent, computed, ref, onMounted } from '@vue/composition-api'
 import AvailableFileList from '@/views/Home/components/tools/atlasRunViewer/components/AvailableFileList.vue';
 import FileDisplay from '@/views/Home/components/tools/atlasRunViewer/components/FileDisplay.vue';
 import store from '@/store';
+import { flip } from 'lodash';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -50,6 +57,7 @@ export default defineComponent({
     const selectedImage = ref<any>({});
     const csvPretty = ref<string>('');
     const csvPretty_array = ref<any[]>([]);
+    const flipBool = ref<boolean>(false);
     // method to obtain all the files associated with a particular run from aws
     async function getRunFiles() {
       if (!client.value) {
@@ -59,11 +67,15 @@ export default defineComponent({
       const folder_path = 'data/'.concat(props.selectedRunID).concat('/images');
       const file_payload = { params: { path: folder_path } };
       const run_files = await client.value.getFileList(file_payload);
-      availableFiles.value = run_files;
-      if (availableFiles.value.length === 0) {
-        availableFiles.value.push('Run '.concat(props.selectedRunID).concat(' has no associated files.'));
+      for (let i = 0; i < run_files.length; i += 1) {
+        const temp_obj = { id: i, file: run_files[i] };
+        availableFiles.value.push(temp_obj);
       }
-      console.log(run_files);
+      // availableFiles.value = run_files;
+      if (availableFiles.value.length === 0) {
+        availableFiles.value.push({ id: 0, file: 'Run '.concat(props.selectedRunID).concat(' has no associated files.') });
+      }
+      console.log(availableFiles);
     }
     async function loadDisplayImage(filename: string) {
       try {
@@ -110,6 +122,9 @@ export default defineComponent({
       loadFile(filename);
       file_selected.value = filename;
     }
+    function stopLoading() {
+      flipBool.value = !flipBool.value;
+    }
     onMounted(() => {
       getRunFiles();
     });
@@ -132,6 +147,8 @@ export default defineComponent({
       selectedImage,
       csvPretty,
       csvPretty_array,
+      stopLoading,
+      flipBool,
     };
   },
   // watch: {

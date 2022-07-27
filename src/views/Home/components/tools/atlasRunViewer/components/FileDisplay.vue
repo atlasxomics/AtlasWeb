@@ -1,10 +1,5 @@
 <template>
   <v-col>
-    <!-- <div
-    ref="imgLens"
-    class="img-lens"
-    >
-    </div> -->
     <v-img
     v-if="isImage"
     :src="localImageURL"
@@ -13,8 +8,6 @@
     :width="displayedWidth"
     >
     </v-img>
-    <!-- <div ref="zoomBox" class="zoomed-in-image">
-    </div> -->
     <v-slider
     :min="40"
     :max="100"
@@ -32,7 +25,6 @@
 
 <script lang="ts">
 import { defineComponent, computed, ref, onMounted, watch } from '@vue/composition-api';
-import Konva from 'konva';
 
 export default defineComponent({
   name: 'FileDisplay',
@@ -55,8 +47,6 @@ export default defineComponent({
     const naturalWidth = ref<number>(500);
     const displayedHeight = ref<number>(0);
     const displayedWidth = ref<number>(0);
-    // const cX = ref<number>(0);
-    // const cY = ref<number>(0);
     const konvaConfiguration = ref<any>({
       width: 400,
       height: 1000,
@@ -68,6 +58,9 @@ export default defineComponent({
       console.log('changing image size');
       this.displayedHeight = (factor * this.naturalHeight) / 100;
       this.displayedWidth = (factor * this.naturalWidth) / 100;
+    }
+    function fileDisplayed() {
+      this.$emit('file-displayed');
     }
     // convert the image url passed to the component into konva compatible format
     function configureImage() {
@@ -91,21 +84,6 @@ export default defineComponent({
         img.src = url;
       });
     }
-    // function imageZoom() {
-    //   const elements = this.$refs;
-    //   console.log(elements);
-    //   const img = elements.image;
-    //   const zoomedBox = elements.zoomBox;
-    //   const lens = elements.imgLens;
-    //   cX.value = zoomedBox.offsetWidth / lens.offsetWidth;
-    //   cY.value = zoomedBox.offsetHeight / lens.offsetHeight;
-    //   console.log(cX);
-    //   console.log(cY);
-    //   zoomedBox.style.backgroundImage = 'url('.concat(currentDisplayedImage.value).concat(')');
-    //   zoomedBox.style.backgroundSize = (1000 * cX.value).toString().concat('px').concat((1000 * cY.value).toString()).concat('px');
-    //   lens.addEventListener('mousemove', this.moveLens);
-    //   img.addEventListener('mousemove', this.moveLens);
-    // }
     return {
       isImage,
       getImageDimensions,
@@ -123,26 +101,23 @@ export default defineComponent({
       displayedHeight,
       displayedWidth,
       modifyImageSize,
-      // imageZoom,
-      // cX,
-      // cY,
-      // moveLens,
-      // getCursorPos,
+      fileDisplayed,
     };
   },
   watch: {
     imageURL(newValue) {
-      // this.imageZoom();
       const img = new Image();
       img.src = newValue;
-      // const val = await this.getImageDimensions(newValue);
-      this.naturalHeight = 1000;
-      this.naturalWidth = 1000;
-      const [temp] = newValue;
-      this.localImageURL = temp;
-      this.modifyImageSize(80);
-      this.isImage = true;
-      this.jsonDisplay = false;
+      img.onload = (() => {
+        this.naturalHeight = 1000;
+        this.naturalWidth = 1000;
+        const [temp] = newValue;
+        this.localImageURL = temp;
+        this.modifyImageSize(80);
+        this.isImage = true;
+        this.jsonDisplay = false;
+        this.fileDisplayed();
+      });
     },
     jsonStringContents(newValue) {
       console.log('json changed');
@@ -155,6 +130,7 @@ export default defineComponent({
       };
       this.isImage = false;
       this.jsonDisplay = true;
+      this.fileDisplayed();
     },
     csvStringContents(newValue) {
       console.log('csv changed');
@@ -166,6 +142,7 @@ export default defineComponent({
       };
       this.isImage = false;
       this.jsonDisplay = true;
+      this.fileDisplayed();
     },
     imageSize(newValue) {
       this.modifyImageSize(newValue);

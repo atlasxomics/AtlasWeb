@@ -1273,7 +1273,6 @@ export default defineComponent({
               original_src: newImage.src,
               alternative_src: null,
             };
-            onChangeScale(scaleFactor.value);
           };
         });
       };
