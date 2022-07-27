@@ -24,23 +24,49 @@
       width="100%"
       small-chips>
       <template v-slot:selection="data">
-      <v-chip-group column active-class="warning">
         <v-chip
           :ref="data.item.name"
-          :key="data.item.name"
-          :value="data.item"
-          v-bind="data.attrs"
           close
           small
-          color="rgb(0, 0, 0, .05)"
+          :color="autoGenes.includes(data.item.name) ? 'warning' : 'rgb(0, 0, 0, .05)'"
           @click.stop="updateTrack(data.item.name)"
-          @toggle="updateTrack(data.item.name)"
           @click:close="remove(data.item)"
         >{{ data.item.name }}
         </v-chip>
-        </v-chip-group>
       </template>
       <template v-slot:append-outer>
+        <input type="file" ref="file" style="display: none" @change="readFile()" @click="resetFile" />
+        <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            v-bind="attrs"
+            v-on="on"
+            id="no-background-hover"
+            style="min-width: 0"
+            elevation="0"
+            color="transparent"
+            class="mt-n1"
+            medium
+            @click="$refs.file.click()"><v-icon>mdi-upload</v-icon></v-btn>
+        </template>
+        <span>Upload ID's</span>
+        </v-tooltip>
+        <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            v-show="selectedGenes.length > 0"
+            v-bind="attrs"
+            v-on="on"
+            id="no-background-hover"
+            style="padding: 0; min-width: 0"
+            elevation="0"
+            color="transparent"
+            class="mt-n1"
+            medium
+            @click="collapseGene"><v-icon>mdi-menu</v-icon></v-btn>
+        </template>
+        <span>Open/Collapse</span>
+        </v-tooltip>
         <v-btn
           v-show="selectedGenes.length > 0"
           id="no-background-hover"
@@ -100,7 +126,7 @@ export default defineComponent({
     const newRowCounter = ref<number>(0);
     const autoGenes = ref<any[]>([]);
     const valueCollapse = ref<boolean>(false);
-    const fileContent = ref<any>();
+    const fileContent = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -133,9 +159,6 @@ export default defineComponent({
         if (index > -1) autoGenes.value.splice(index, 1);
       }
     }
-    function resetScroll() {
-      labelValue.value = '';
-    }
     function remove(item: any) {
       if (autoGenes.value.includes(item.name)) {
         const index = autoGenes.value.indexOf(item.name);
@@ -163,7 +186,7 @@ export default defineComponent({
       const reader = new FileReader();
       if (theFile.type.includes('csv')) {
         reader.onload = (res) => {
-          fileContent.value = res.target!.result;
+          fileContent.value = [res.target!.result];
         };
         reader.onerror = (err) => console.log(err);
         reader.readAsText(theFile);
@@ -221,11 +244,13 @@ export default defineComponent({
       } else labelValue.value = '';
     });
     watch(fileContent, (value: any) => {
-      const array = value.split(',');
-      array.forEach((v: string, i: number) => {
+      const array = value[0].split(',');
+      const cleaned = array.map((s: any) => s.replace(/[.,\\/#!$%^&*;:{}=_`~()@'"\s]/g, ''));
+      cleaned.forEach((v: string, i: number) => {
         const lower = v.toLowerCase();
         const stringFormat = lower.charAt(0).toUpperCase() + lower.slice(1);
-        if (!selectedGenes.value.includes(stringFormat)) {
+        const foundGene = genes.value.filter((g: any) => g.name.toLowerCase().startsWith(stringFormat.toLowerCase()));
+        if (!selectedGenes.value.includes(stringFormat) && foundGene.length >= 1) {
           searchInput.value = stringFormat;
           selectedGenes.value.push(stringFormat);
         }
@@ -255,7 +280,6 @@ export default defineComponent({
       remove,
       showGene,
       updateTrack,
-      resetScroll,
       collapseGene,
       readFile,
       resetFile,
