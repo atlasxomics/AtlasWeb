@@ -798,9 +798,12 @@ export default defineComponent({
       crop.value = new Crop([0, 0], scaleFactor.value);
       roi.value.setScaleFactor(scaleFactor.value);
       crop.value.setScaleFactor(scaleFactor.value);
+      roi_active.value = false;
       isBrushMode.value = false;
       isEraseMode.value = false;
       atfilter.value = false;
+      thresh_image_created.value = false;
+      thresh_same.value = false;
       isCropMode.value = false;
       grid.value = false;
       cropFlag.value = false;
@@ -840,7 +843,6 @@ export default defineComponent({
     }
     function assignMetadata(slimsData: any) {
       try {
-        console.log(slimsData);
         metadata.value.organ = slimsData.cntn_cf_fk_organ;
         metadata.value.species = slimsData.cntn_cf_fk_species;
         metadata.value.chip_resolution = slimsData.Resolution;
@@ -896,7 +898,6 @@ export default defineComponent({
         if (!jsonBoolean) {
           loading.value = true;
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
-          console.log(slimsData);
           params.data = slimsData;
           const taskObject = await client.value!.postTask(task, args, kwargs, queue);
           await checkTaskStatus(taskObject._id);
@@ -940,7 +941,6 @@ export default defineComponent({
       const pos_filename = `${root}/${run_id.value}/images/spatial/tissue_positions_list.csv`;
       const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
-      console.log(resp);
       const pos_payload = { params: { filename: pos_filename } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
       const scale_payload = { params: { filename: scale_filename } };
@@ -961,7 +961,6 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
     }
-
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
@@ -1013,7 +1012,6 @@ export default defineComponent({
 
     function rotate_image(choice: number) {
       if (choice === 0) {
-        console.log(degreeRotation);
         const rotationAmount = parseInt(degreeRotation.value, 10);
         orientation.value.rotation += rotationAmount;
       } else {
@@ -1273,13 +1271,10 @@ export default defineComponent({
               original_src: newImage.src,
               alternative_src: null,
             };
+            onChangeScale('');
           };
         });
       };
-      // konvaConfig.value.width = scaleFactor.value * current_image.value.image.width;
-      // konvaConfig.value.height = scaleFactor.value * current_image.value.image.height;
-      // stageWidth.value = konvaConfig.value.width;
-      // stageHeight.value = konvaConfig.value.height;
       roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
     }
     function finding_roi() {
@@ -1319,6 +1314,7 @@ export default defineComponent({
       // loading.value = true;
       let img_src = current_image.value.image.src;
       if (!optionUpdate.value) {
+        console.log('here');
         img_src = imageDataToBlob();
       }
       // current_image.value.image.src = img_src;

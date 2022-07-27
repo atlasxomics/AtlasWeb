@@ -63,9 +63,6 @@ export default defineComponent({
       this.$emit('file-displayed');
     }
     // convert the image url passed to the component into konva compatible format
-    function configureImage() {
-      console.log(localImageURL.value);
-    }
     // function getCursorPos(ev: any) {
     //   const x = 0;
     //   const y = 0;
@@ -90,7 +87,6 @@ export default defineComponent({
       currentDisplayedImage,
       jsonDisplay,
       displayedImage,
-      configureImage,
       localImageURL,
       konvaConfiguration,
       textConfig,
@@ -123,7 +119,6 @@ export default defineComponent({
       console.log('json changed');
       const [temp] = newValue;
       this.dispText = temp;
-      console.log(temp);
       this.textConfig = {
         text: temp,
         fontSize: 24,

@@ -75,7 +75,6 @@ export default defineComponent({
       if (availableFiles.value.length === 0) {
         availableFiles.value.push({ id: 0, file: 'Run '.concat(props.selectedRunID).concat(' has no associated files.') });
       }
-      console.log(availableFiles);
     }
     async function loadDisplayImage(filename: string) {
       try {
@@ -92,10 +91,8 @@ export default defineComponent({
     async function loadCSVFile(input_filename: string) {
       const payload = { params: { filename: input_filename } };
       const resp = await client.value?.getCsvFile(payload);
-      console.log(resp);
       csvPretty.value = JSON.stringify(resp, null, 4);
       csvPretty_array.value = [csvPretty.value];
-      console.log(csvPretty);
     }
     // method called to load a json file into compotnent
     async function loadJSONFile(input_filename: string) {
@@ -109,7 +106,6 @@ export default defineComponent({
     function loadFile(filename: string) {
       const file_array = filename.split('.');
       const suffix = file_array[file_array.length - 1];
-      console.log(suffix);
       if (suffix === 'tif' || suffix === 'png') {
         loadDisplayImage(filename);
       } else if (suffix === 'json') {
