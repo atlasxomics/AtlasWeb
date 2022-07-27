@@ -791,7 +791,7 @@ export default defineComponent({
       comments_flowA: '',
       crosses_flowA: [],
       blocks_flowA: [],
-      leak_flowA: ' ',
+      leak_flowA: '',
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -895,7 +895,7 @@ export default defineComponent({
         const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
         let slimsData: any;
         // if the json folder cannot be obtained from local server query slims
-        if (!jsonBoolean) {
+        if (true) {
           loading.value = true;
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
           params.data = slimsData;
@@ -948,7 +948,7 @@ export default defineComponent({
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
-      if (resp) {
+      if (false) {
         metadata.value = resp;
         // console.log(resp);
         optionFlag.value = false;
@@ -1479,6 +1479,18 @@ export default defineComponent({
           orientation: orientation.value,
           crop_area: cropCoords,
           barcodes: barcodes.value,
+          diseaseState: metadata.value.diseaseState,
+          diseaseName: metadata.value.diseaseName,
+          tissueSlideExperiment: metadata.value.tissueSlideExperiment,
+          tissueBlockExperiment: metadata.value.tissueBlockExperiment,
+          comments_flowB: metadata.value.comments_flowB,
+          crosses_flowB: metadata.value.crosses_flowB,
+          blocks_flowB: metadata.value.blocks_flowB,
+          leaks_flowB: metadata.value.leak_flowB,
+          comments_flowA: metadata.value.comments_flowA,
+          crosses_flowA: metadata.value.crosses_flowA,
+          blocks_flowA: metadata.value.blocks_flowA,
+          leak_flowA: metadata.value.leak_flowA,
         });
         const params = {
           run_id: run_id.value,
