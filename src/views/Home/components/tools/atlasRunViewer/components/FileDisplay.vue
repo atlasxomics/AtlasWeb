@@ -109,7 +109,7 @@ export default defineComponent({
         this.naturalWidth = 1000;
         const [temp] = newValue;
         this.localImageURL = temp;
-        this.modifyImageSize(80);
+        this.modifyImageSize(this.imageSize);
         this.isImage = true;
         this.jsonDisplay = false;
         this.fileDisplayed();

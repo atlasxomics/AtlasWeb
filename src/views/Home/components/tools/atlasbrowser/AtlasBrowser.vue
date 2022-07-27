@@ -243,8 +243,8 @@
                 :disabled="!current_image || isCropMode || grid"
                 >
                 </v-switch> -->
-                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90'>90</label>
-                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45'>45</label>
+                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid">90</label>
+                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid">45</label>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -260,12 +260,13 @@
                 </v-btn>
                 <v-btn
                   outlined
+                  :loading="cropLoading"
                   :disabled="!current_image || !isCropMode || cropFlag"
                   x-small
                   dense
                   class="mt-0 pt-0"
                   color="primary"
-                  @click="onCropButton">
+                  @click="cropLoading = true;onCropButton()">
                   Confirm
                 </v-btn>
               </v-list>
@@ -325,6 +326,7 @@
                   >
                   </v-slider>
                   <v-btn
+                  :loading="threshLoading"
                   outlined
                   dense
                   color="primary"
@@ -734,6 +736,8 @@ export default defineComponent({
     const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
     const cropFlag = ref<boolean>(false);
+    const cropLoading = ref<boolean>(false);
+    const threshLoading = ref<boolean>(false);
     const thresh = ref<boolean>(false);
     const spatial = ref<boolean>(false);
     const csvHolder = ref<any>();
@@ -895,7 +899,7 @@ export default defineComponent({
         const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
         let slimsData: any;
         // if the json folder cannot be obtained from local server query slims
-        if (true) {
+        if (!jsonBoolean) {
           loading.value = true;
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
           params.data = slimsData;
@@ -948,7 +952,7 @@ export default defineComponent({
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
-      if (false) {
+      if (resp) {
         metadata.value = resp;
         // console.log(resp);
         optionFlag.value = false;
@@ -1272,6 +1276,7 @@ export default defineComponent({
               alternative_src: null,
             };
             onChangeScale('');
+            cropLoading.value = false;
           };
         });
       };
@@ -1309,6 +1314,7 @@ export default defineComponent({
     }
     function thresh_clicked() {
       if (!current_image.value) return;
+      threshLoading.value = true;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
       // loading.value = true;
@@ -1321,8 +1327,6 @@ export default defineComponent({
       getPixels(img_src, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
-        console.log(compensation);
-        console.log(size);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
         atpixels.value = thresholded;
         const b = blobStream();
@@ -1338,6 +1342,7 @@ export default defineComponent({
           thresh_same.value = true;
           loading.value = false;
           bsa_image_disp.value = false;
+          threshLoading.value = false;
         });
       });
       // setting the filled grid back to default state
@@ -1739,6 +1744,8 @@ export default defineComponent({
       threshold,
       loading,
       loadingMessage,
+      cropLoading,
+      threshLoading,
       orientation,
       onLatticeButton,
       onCropButton,
