@@ -2,13 +2,14 @@
     <v-container>
         <v-row>
             <RunIdList :availableRunsPassed="availableRuns" @run-selected=handleRunSelection> </RunIdList>
-            <AvailableFileList :fileList="availableFiles" :runID="selectedRunID" @file-selected=handleFileSelection> </AvailableFileList>
+            <AvailableFileList :fileList="availableFiles" :runID="selectedRunID" :flipLoading="flippingBoolean" @file-selected=handleFileSelection> </AvailableFileList>
             <FileDisplay
             :fileName="file_selected"
             :imageURL="selectedImageURL_array"
             :jsonStringContents="jsonString_array"
             :jsonContents="jsonPackage"
             :csvStringContents="csvPretty_array"
+            @file-displayed="flippingBoolean = !flippingBoolean"
             > </FileDisplay>
         </v-row>
     </v-container>
@@ -49,6 +50,7 @@ export default defineComponent({
     const csvPretty = ref<string>('');
     const csvPretty_array = ref<any[]>([]);
     const selectedRunID = ref<string>('');
+    const flippingBoolean = ref<boolean>(false);
     // method to obtain all the files associated with a particular run from aws
     async function getRunFiles(runID: string) {
       if (!client.value) {
@@ -58,9 +60,12 @@ export default defineComponent({
       const file_payload = { params: { path: folder_path } };
 
       const run_files = await client.value.getFileList(file_payload);
-      availableFiles.value = run_files;
+      for (let i = 0; i < run_files.length; i += 1) {
+        const tempObj = { id: i, file: run_files[i] };
+        availableFiles.value[i] = tempObj;
+      }
       if (availableFiles.value.length === 0) {
-        availableFiles.value.push('Run '.concat(runID).concat(' has no associated files.'));
+        availableFiles.value.push({ id: 0, file: 'Run '.concat(runID).concat(' has no associated files.') });
       }
     }
     function handleRunSelection(runID: string) {
@@ -154,6 +159,7 @@ export default defineComponent({
       csvPretty_array,
       selectedRunID,
       handleRunSelection,
+      flippingBoolean,
     };
   },
 });
