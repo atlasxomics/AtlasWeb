@@ -1129,7 +1129,7 @@ export default defineComponent({
       if (marker) {
         loading.value = true;
         const task = 'gene.compute_cell_type';
-        const queue = 'joshua_gene';
+        const queue = 'atxcloud_gene';
         const args = [filename.value, marker];
         const kwargs = {};
         const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue) : await client.value!.postTask(task, args, kwargs, queue);
