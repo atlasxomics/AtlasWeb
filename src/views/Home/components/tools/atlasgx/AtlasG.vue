@@ -381,7 +381,7 @@
             v-if="cellTypeFlag"
             :value="cellTypeFlag"
             :scrollable="true"
-            @click:outside="cellTypeFlagg = !cellTypeFlag">
+            @click:outside="cellTypeFlag = !cellTypeFlag">
               <v-card style="width:600px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);z-index: 999" :loading="loading">
                 <v-card-title>Cell Type Configuration</v-card-title>
                 <v-card-text>
