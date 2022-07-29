@@ -34,8 +34,8 @@
         >{{ data.item.name }}
         </v-chip>
       </template>
-      <template v-slot:append-outer>
-        <input type="file" ref="file" style="display: none" @change="readFile()" @click="resetFile" />
+      <template v-slot:prepend>
+        <input type="file" ref="filegac" style="display: none" @change="readFile()" @click="resetFile" />
         <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <v-btn
@@ -45,16 +45,17 @@
             style="min-width: 0"
             elevation="0"
             color="transparent"
-            class="mt-n1"
+            class="mt-n2"
             medium
-            @click="$refs.file.click()"><v-icon>mdi-upload</v-icon></v-btn>
+            @click="$refs.filegac.click()"><v-icon>mdi-upload</v-icon></v-btn>
         </template>
         <span>Upload ID's</span>
         </v-tooltip>
+      </template>
+      <template v-slot:append-outer v-if="selectedGenes.length > 0">
         <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
           <v-btn
-            v-show="selectedGenes.length > 0"
             v-bind="attrs"
             v-on="on"
             id="no-background-hover"
@@ -68,7 +69,6 @@
         <span>Open/Collapse</span>
         </v-tooltip>
         <v-btn
-          v-show="selectedGenes.length > 0"
           id="no-background-hover"
           color="primary"
           class="mt-n1"
@@ -79,7 +79,7 @@
         <div class="customCheck">
           <v-tooltip bottom>
           <template v-slot:activator="{ on, attrs }">
-            <v-simple-checkbox v-show="selectedGenes.length > 0" v-bind="attrs" v-on="on" v-model="de_select" label="" color="secondary" hide-details dense />
+            <v-simple-checkbox v-bind="attrs" v-on="on" v-model="de_select" label="" color="secondary" hide-details dense />
           </template>
           <span>(De)Select All</span>
           </v-tooltip>
@@ -182,7 +182,7 @@ export default defineComponent({
       }
     }
     function readFile() {
-      const theFile = (ctx as any).refs.file.files[0];
+      const theFile = (ctx as any).refs.filegac.files[0];
       const reader = new FileReader();
       if (theFile.type.includes('csv')) {
         reader.onload = (res) => {

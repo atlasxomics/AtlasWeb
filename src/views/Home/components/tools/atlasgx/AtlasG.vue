@@ -381,8 +381,8 @@
             v-if="cellTypeFlag"
             :value="cellTypeFlag"
             :scrollable="true"
-            @click:outside="cellTypeFlagg = !cellTypeFlag">
-              <v-card style="width:600px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);z-index: 999">
+            @click:outside="cellTypeFlag = !cellTypeFlag">
+              <v-card style="width:600px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);z-index: 999" :loading="loading">
                 <v-card-title>Cell Type Configuration</v-card-title>
                 <v-card-text>
                   <v-divider/>
@@ -393,16 +393,9 @@
                         <tbody>
                           <tr v-for="(value, cluster) in colorMapCopy" v-bind:key="cluster"><b>{{ cluster }}</b>
                             <td style="padding-left: 50px; vertical-align: top;">
-                              <v-tooltip color="black" right>
-                              <template v-slot:activator="{ on, attrs }">
                               <v-btn
-                              v-on="on"
-                              v-bind="attrs"
                               class="round_chip"
                               :color="value"/>
-                              </template>
-                              <span>{{ value }}</span>
-                              </v-tooltip>
                             </td>
                             <td style="padding-left: 80px;">
                               <v-text-field
@@ -426,6 +419,14 @@
                         outlined
                         @click="clearCellType">
                         Cancel
+                      </v-btn>
+                      <input type="file" ref="file" style="display: none" @change="uploadCellType()" @click="resetFile"/>
+                      <v-btn
+                        class="pl-5"
+                        color="green"
+                        outlined
+                        @click="$refs.file.click()">
+                        Upload
                       </v-btn>
                       <v-btn
                         class="pl-5"
@@ -782,6 +783,7 @@ export default defineComponent({
     const userSelectedColor = ref<string>('');
     const manualClusterFlag = ref<boolean>(false);
     const clickedClusterFromChild = ref<any[]>([]);
+    const fileContent = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -1123,6 +1125,62 @@ export default defineComponent({
         console.log(error);
       }
     }
+    async function runCellType(marker: any) {
+      if (marker) {
+        loading.value = true;
+        const task = 'gene.compute_cell_type';
+        const queue = 'atxcloud_gene';
+        const args = [filename.value, marker];
+        const kwargs = {};
+        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue) : await client.value!.postTask(task, args, kwargs, queue);
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          if (taskStatus.value.status === 'PROGRESS') {
+            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          }
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        /* eslint-disable no-await-in-loop */
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed for CellType', options: { right: true, color: 'error' } });
+          loading.value = false;
+          return;
+        }
+        progressMessage.value = taskStatus.value.status;
+        const resp = taskStatus.value.result;
+
+        const cell: any = {};
+        lodash.each(cellTypeMapCopy.value, (value: any, key: any) => {
+          if (Object.keys(resp).includes(key)) {
+            cell[key] = [resp[key]];
+          } else cell[key] = 'Undefined';
+        });
+        cellTypeMapCopy.value = cell;
+        loading.value = false;
+      }
+    }
+    function uploadCellType() {
+      const theFile = (ctx as any).refs.file.files[0];
+      const reader = new FileReader();
+      if (theFile.type.includes('csv')) {
+        reader.onload = (res) => {
+          fileContent.value = [res.target!.result];
+        };
+        reader.onerror = (err) => console.log(err);
+        reader.readAsText(theFile);
+      } else {
+        snackbar.dispatch({ text: 'Wrong file type must be csv', options: { right: true, color: 'error' } });
+      }
+    }
+    function resetFile(ev: any) {
+      const element = ev.target as HTMLInputElement;
+      element.value = '';
+    }
     async function getMeta() {
       const root = 'data';
       const task = 'creation.create_files';
@@ -1214,20 +1272,18 @@ export default defineComponent({
           selectedGenes.value = ev;
         });
         this.$on('sentgenes', (ev: any) => {
-          if (ev.length > 0) {
-            isClusterView.value = false;
-            childGenes.value = [];
-            trackBrowserGenes.value = [];
+          isClusterView.value = false;
+          childGenes.value = [];
+          trackBrowserGenes.value = [];
+          ev.forEach((v: string, i: number) => {
+            childGenes.value.push(v);
+          });
+          if (ev.length === 1) {
             ev.forEach((v: string, i: number) => {
-              childGenes.value.push(v);
+              trackBrowserGenes.value.push(v);
             });
-            if (ev.length === 1) {
-              ev.forEach((v: string, i: number) => {
-                trackBrowserGenes.value.push(v);
-              });
-              if (geneMotif.value) {
-                seqlogo();
-              }
+            if (geneMotif.value) {
+              seqlogo();
             }
           }
         });
@@ -1292,6 +1348,27 @@ export default defineComponent({
         userSelectedColor.value = '';
         clickedCluster.value = '';
       }
+    });
+    watch(fileContent, (value: any) => {
+      const funcInsideFile = (gene: string) => {
+        const lower = gene.toLowerCase();
+        const stringFormat = lower.charAt(0).toUpperCase() + lower.slice(1);
+        return stringFormat;
+      };
+      const eachLine = value[0].split('\n');
+      const listOflines = eachLine.map((s: any) => s.split(','));
+      const markerGenes = listOflines.map((s: any[]) => ({ [s[0].replace(/[.\\/#!$%^&*;:{}=_`~()@'"\r\n]/g, '')]: s.slice(1, s.length) }));
+      let cleanedArray: any = {};
+      cleanedArray = {};
+      markerGenes.forEach((v: any[], i: number) => {
+        const values = Object.values(v);
+        const key = Object.keys(v);
+        values.forEach((v2: any, i2: number) => {
+          const newArray = v2.filter((gene: string) => gene.length > 1);
+          cleanedArray[key[0]] = newArray.map((s: any) => funcInsideFile(s.replace(/[.,\\/#!$%^&*;:{}=_`~()@'"\r\n\s]/g, '')));
+        });
+      });
+      runCellType(cleanedArray);
     });
     const submenu = [
       {
@@ -1485,6 +1562,10 @@ export default defineComponent({
       clickedClusterFromChild,
       cellTypeMap,
       cellTypeMapCopy,
+      uploadCellType,
+      fileContent,
+      runCellType,
+      resetFile,
     };
   },
 });
