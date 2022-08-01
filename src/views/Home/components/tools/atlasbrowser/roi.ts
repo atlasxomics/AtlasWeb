@@ -119,8 +119,8 @@ export class ROI {
   getMask(length: any[]): any[] {
     return this.polygons.map((v: any) => {
       const position = v.posit;
-      const y = Math.abs(((v.centery * v.scaleY) / this.scalefactor) - length[0]);
-      const x = Math.abs(((v.centerx * v.scaleX) / this.scalefactor) - length[1]);
+      const y = v.centery / this.scalefactor;
+      const x = v.centerx / this.scalefactor;
       const value = v.fill != null;
       return { position, value, coordinates: { y, x } };
     });
@@ -178,9 +178,12 @@ export class ROI {
       elm.scaleX = v.scaleX * ratio;
       elm.scaleY = v.scaleY * ratio;
       elm.radius = v.radius * ratio;
+      elm.centerx = v.centerx * ratio;
+      elm.centery = v.centery * ratio;
       elm.strokeWidth = this.scalefactor < 0.11 ? 0 : Math.min(ratio, 1.0);
       newPolygons.push(elm);
     });
+    // this.generatePolygons();
     this.polygons = newPolygons;
   }
 

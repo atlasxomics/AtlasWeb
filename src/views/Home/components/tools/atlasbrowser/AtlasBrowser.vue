@@ -510,7 +510,9 @@
                   <v-layer
                     v-if="current_image"
                     ref="imageLayer"
-                    id="imageLayer">
+                    id="imageLayer"
+                    @click="imageClick"
+                    >
                     <v-image
                       ref="image"
                       :config="current_image"
@@ -557,6 +559,7 @@
                       id="cropLayer"
                       @mouseup="handleMouseUp">
                       <template v-if="current_image && !loading">
+                        <!-- config of the rectangle, being the cropping square -->
                         <v-rect
                           :config="crop.generateRect()"/>
                         <template v-if="!isBrushMode">
@@ -820,6 +823,12 @@ export default defineComponent({
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       // metaFlag.value = false;
     }
+    function imageClick(ev: any) {
+      console.log(scaleFactor.value);
+      console.log(ev.evt.layerY / scaleFactor.value);
+      console.log(ev.evt.layerX / scaleFactor.value);
+      console.log(ev);
+    }
     function changeDiseaseState() {
       if (metadata.value.diseaseState === 'Normal') {
         metadata.value.diseaseName = '';
@@ -997,6 +1006,8 @@ export default defineComponent({
               original_src: imgObj.src,
               alternative_src: null,
             };
+            console.log(imgObj.width);
+            console.log(imgObj.height);
           };
         }
         loading.value = false;
@@ -1143,6 +1154,9 @@ export default defineComponent({
       if (roi.value.polygons) {
         if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
         else roi.value.polygons[idx].fill = 'red';
+        console.log(scaleFactor.value);
+        console.log(roi.value.polygons[idx].centerx / scaleFactor.value);
+        console.log(roi.value.polygons[idx].centery / scaleFactor.value);
       }
       isMouseDown.value = true;
     }
@@ -1241,14 +1255,13 @@ export default defineComponent({
           }
         }
       }
-      console.log('prop:');
-      console.log(count / (imageDataObj.value.data.length / 4));
     }
     function onCropButton(ev: any) {
       cropFlag.value = true;
       isCropMode.value = true;
       active_roi_available.value = true;
       const coords = crop.value.getCoordinatesOnImage();
+      console.log(coords);
       const imgObj = new window.Image();
       const newImage = new window.Image();
       imgObj.src = URL.createObjectURL(imageh.value);
@@ -1466,6 +1479,7 @@ export default defineComponent({
         const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
+        console.log(cropCoords);
         if (optionUpdate.value) {
           cropCoords = metadata.value.crop_area;
         }
@@ -1803,6 +1817,7 @@ export default defineComponent({
       showSpatialFolder,
       availableFiles,
       flowMetadata,
+      imageClick,
     };
   },
 });
