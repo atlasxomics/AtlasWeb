@@ -139,7 +139,7 @@
                   </tr>
                 </template>
                 <template v-else>
-                  <tr @click="clusterColorFlag = true ; heatmapFlag = false">
+                  <tr @click="clusterColorFlag = true ; heatmapFlag = false" :style="{ 'pointer-events': isClusterView ? 'auto' : 'none' }">
                     <td>customize</td>
                   </tr>
                 </template>
@@ -521,7 +521,7 @@
             <span>Copy Public Link</span>
             </v-tooltip>
           </v-card>
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '300px' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '18vh' }" flat>
             <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -596,9 +596,12 @@
                     </template>
                     <template v-if="value.length > 0">
                       <td class="bold-disabled-Text" style="padding-left: 20px;">
-                        <v-text-field
+                        <v-textarea
                         :dark="backgroundColor == 'white' ? false : true"
                         :value="value"
+                        dense
+                        auto-grow
+                        row-height="1px"
                         solo
                         disabled/>
                       </td>

@@ -1,7 +1,8 @@
-<template>
+<template v-if="geneList">
     <v-autocomplete
       class="noScroll"
       id ="noScrollId"
+      @paste="handlePaste"
       v-model="selectedGenes"
       :items="filteredGenes"
       :outlined="false"
@@ -147,6 +148,22 @@ export default defineComponent({
     async function onGenelistChanged(ev: any) {
       ctx.emit('changed', ev);
     }
+    async function handlePaste(ev: any) {
+      const pasteElement = await navigator.clipboard.readText();
+      const splitPaste = pasteElement.split(/[,\s]+/);
+      const stripString = splitPaste.map((s: any) => s.replace(/[,\\/#!$%^&*;:{}=_`~()@'"\r\n\s]/g, ''));
+      stripString.forEach((v: string, i: number) => {
+        const lower = v.toLowerCase();
+        const stringFormat = lower.charAt(0).toUpperCase() + lower.slice(1);
+        const foundGene = genes.value.filter((g: any) => g.name.toLowerCase().startsWith(stringFormat.toLowerCase()));
+        if (!selectedGenes.value.includes(stringFormat) && foundGene.length >= 1) {
+          searchInput.value = stringFormat;
+          selectedGenes.value.push(stringFormat);
+        }
+      });
+      onGenelistChanged(selectedGenes.value);
+      searchInput.value = null;
+    }
     async function showGene(ev: any) {
       showFlag.value = true;
       ctx.emit('sentgenes', autoGenes.value);
@@ -283,6 +300,7 @@ export default defineComponent({
       collapseGene,
       readFile,
       resetFile,
+      handlePaste,
     };
   },
 });
