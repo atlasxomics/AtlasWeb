@@ -127,10 +127,17 @@ export class ROI {
   }
 
   autoMask(pixels: any, threshold: number): any[] {
+    console.log(this.scalefactor);
     const [height, width] = pixels.shape;
+    let count = 0;
     lodash.each(this.polygons, (v, i) => {
-      const y = Math.round((v.centerx * v.scaleX) / this.scalefactor);
-      const x = Math.round((v.centery * v.scaleY) / this.scalefactor);
+      if (count === 0) {
+        console.log(v.scaleY);
+        console.log(v.scaleX);
+        count += 1;
+      }
+      const y = Math.round(v.centerx / this.scalefactor);
+      const x = Math.round(v.centery / this.scalefactor);
       const r = Math.round(v.radius / this.scalefactor);
       let pixval = 0.0;
       for (let row = x - r; row < x + r; row += 1) {

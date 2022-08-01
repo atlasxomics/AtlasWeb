@@ -1342,6 +1342,7 @@ export default defineComponent({
         const size = Number(neighbor_size.value);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
         atpixels.value = thresholded;
+        console.log(atpixels.value);
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
