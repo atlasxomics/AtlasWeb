@@ -723,7 +723,6 @@ export default defineComponent({
     const atfilter = ref(false);
     const atpixels = ref<any[] | null>([]);
     const threshold = ref(210);
-    const no_thresh = ref(true);
     const thresh_image_created = ref<boolean>(false);
     const thresh_same = ref<boolean>(false);
     const saved_grid_state = ref<Map<string, boolean>>(new Map<string, boolean>());
@@ -805,12 +804,14 @@ export default defineComponent({
       crop.value = new Crop([0, 0], scaleFactor.value);
       roi.value.setScaleFactor(scaleFactor.value);
       crop.value.setScaleFactor(scaleFactor.value);
+      active_roi_available.value = false;
       roi_active.value = false;
       isBrushMode.value = false;
       isEraseMode.value = false;
       atfilter.value = false;
       thresh_image_created.value = false;
       thresh_same.value = false;
+      tixels_filled.value = false;
       isCropMode.value = false;
       grid.value = false;
       cropFlag.value = false;
@@ -1295,13 +1296,9 @@ export default defineComponent({
       roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
     }
     function finding_roi() {
-      if (!no_thresh.value) {
-        current_image.value.image.src = current_image.value.original_src;
-      }
       grid.value = true;
       active_roi_available.value = false;
       roi_active.value = true;
-      // no_thresh.value = false;
     }
 
     function clear_filled_tixels() {
@@ -1789,7 +1786,6 @@ export default defineComponent({
       welcome_screen,
       company_image,
       thresh_clicked,
-      no_thresh,
       c_val,
       neighbor_size,
       active_roi_available,
