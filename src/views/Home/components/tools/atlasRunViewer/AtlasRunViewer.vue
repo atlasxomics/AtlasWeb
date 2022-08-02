@@ -56,13 +56,13 @@ export default defineComponent({
       if (!client.value) {
         return;
       }
-      const folder_path = 'data/'.concat(runID);
+      // const folder_path = 'data/'.concat(runID);
+      const folder_path = 'data/'.concat(selectedRunID.value).concat('/images');
       const file_payload = { params: { path: folder_path } };
-
       const run_files = await client.value.getFileList(file_payload);
       for (let i = 0; i < run_files.length; i += 1) {
         const tempObj = { id: i, file: run_files[i] };
-        availableFiles.value[i] = tempObj;
+        availableFiles.value.push(tempObj);
       }
       if (availableFiles.value.length === 0) {
         availableFiles.value.push({ id: 0, file: 'Run '.concat(runID).concat(' has no associated files.') });
@@ -88,10 +88,8 @@ export default defineComponent({
     async function loadCSVFile(input_filename: string) {
       const payload = { params: { filename: input_filename } };
       const resp = await client.value?.getCsvFile(payload);
-      console.log(resp);
       csvPretty.value = JSON.stringify(resp, null, 4);
       csvPretty_array.value = [csvPretty.value];
-      console.log(csvPretty);
     }
     // method called to load a json file into compotnent
     async function loadJSONFile(input_filename: string) {
@@ -105,7 +103,6 @@ export default defineComponent({
     function loadFile(filename: string) {
       const file_array = filename.split('.');
       const suffix = file_array[file_array.length - 1];
-      console.log(suffix);
       if (suffix === 'tif' || suffix === 'png') {
         loadDisplayImage(filename);
       } else if (suffix === 'json') {
@@ -121,7 +118,8 @@ export default defineComponent({
     // method to obtain a list of all unique run Ids with data present in AWS
     async function loadRunIds() {
       const uniqueRuns = new Set();
-      const payload = { params: { path: 'data/' } };
+      // const payload = { params: { path: 'data/' } };
+      const payload = { params: { path: 'data', filter: 'images/postB_BSA.tif' } };
       const allData = await client.value?.getFileList(payload);
       try {
         allData.forEach((file: any) => {
