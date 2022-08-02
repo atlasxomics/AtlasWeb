@@ -15,7 +15,7 @@ export class ROI {
     this.scalefactor = scale;
     this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
     this.initializeROI(coord[0], coord[1]);
-    this.scalefactor = 0.15;
+    // this.scalefactor = 0.15;
     this.channels = 50;
     this.polygons = [];
   }
@@ -195,6 +195,7 @@ export class ROI {
   }
 
   getQCScaleFactors(img: any, length: any[]) {
+    // obtaining scale factor for high res and low res images
     const hsf = 2000.0 / img.image.width;
     const lsf = 600.0 / img.image.width;
     const mask = this.getMask(length);

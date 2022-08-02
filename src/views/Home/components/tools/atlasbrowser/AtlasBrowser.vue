@@ -1273,7 +1273,6 @@ export default defineComponent({
         canvas.height = coords[3] - coords[1];
         ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
         imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
-        // missingGreen.value = imageDataObj.value.data;
         extractChannels();
         canvas.toBlob((blob: any) => {
           newImage.src = URL.createObjectURL(blob);
@@ -1342,7 +1341,6 @@ export default defineComponent({
         const size = Number(neighbor_size.value);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
         atpixels.value = thresholded;
-        console.log(atpixels.value);
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
