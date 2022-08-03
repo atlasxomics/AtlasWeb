@@ -34,6 +34,7 @@ export default defineComponent({
     jsonContents: { type: Object, required: true },
     jsonStringContents: { type: Array, required: true },
     csvStringContents: { type: Array, required: true },
+    clearFileBoolean: { type: Boolean, required: false },
   },
   setup(props, ctxe) {
     const isImage = ref<boolean>(false);
@@ -81,6 +82,10 @@ export default defineComponent({
         img.src = url;
       });
     }
+    function clearScreen() {
+      jsonDisplay.value = false;
+      isImage.value = false;
+    }
     return {
       isImage,
       getImageDimensions,
@@ -98,6 +103,7 @@ export default defineComponent({
       displayedWidth,
       modifyImageSize,
       fileDisplayed,
+      clearScreen,
     };
   },
   watch: {
@@ -141,6 +147,10 @@ export default defineComponent({
     },
     imageSize(newValue) {
       this.modifyImageSize(newValue);
+    },
+    clearFileBoolean(newValue) {
+      console.log(newValue);
+      this.clearScreen();
     },
   },
 });

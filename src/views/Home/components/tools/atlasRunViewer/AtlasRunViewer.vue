@@ -9,6 +9,7 @@
             :jsonStringContents="jsonString_array"
             :jsonContents="jsonPackage"
             :csvStringContents="csvPretty_array"
+            :clearFileBoolean="switchRunBoolean"
             @file-displayed="flippingBoolean = !flippingBoolean"
             > </FileDisplay>
         </v-row>
@@ -51,11 +52,15 @@ export default defineComponent({
     const csvPretty_array = ref<any[]>([]);
     const selectedRunID = ref<string>('');
     const flippingBoolean = ref<boolean>(false);
+    const switchRunBoolean = ref<boolean>(false);
     // method to obtain all the files associated with a particular run from aws
     async function getRunFiles(runID: string) {
       if (!client.value) {
         return;
       }
+      switchRunBoolean.value = !switchRunBoolean.value;
+      console.log(switchRunBoolean);
+      availableFiles.value = [];
       // const folder_path = 'data/'.concat(runID);
       const folder_path = 'data/'.concat(selectedRunID.value).concat('/images');
       const file_payload = { params: { path: folder_path } };
@@ -158,6 +163,7 @@ export default defineComponent({
       selectedRunID,
       handleRunSelection,
       flippingBoolean,
+      switchRunBoolean,
     };
   },
 });
