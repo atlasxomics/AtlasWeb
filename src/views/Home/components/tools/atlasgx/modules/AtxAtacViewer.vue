@@ -1,13 +1,14 @@
 <template>
   <v-row no-gutters>
-    <v-col cols="12" sm="1">
+    <v-col cols="12" sm="1" class="shrinkCol">
       <v-card
       class="rounded-0"
       flat
       :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-      height="50vh">
-        <v-card-text style="margin-left:4vw">
-          <v-row>
+      height="50vh"
+      width="100%">
+        <v-card-text>
+          <v-row justify="end">
             <v-btn
             small
             icon
@@ -17,7 +18,7 @@
             ><v-icon small>mdi-arrow-expand</v-icon>
             </v-btn>
           </v-row>
-          <v-row>
+          <v-row justify="end">
             <v-btn
               small
               icon
@@ -27,7 +28,7 @@
               ><v-icon small>mdi-magnify-plus</v-icon>
             </v-btn>
           </v-row>
-          <v-row>
+          <v-row justify="end">
             <v-btn
               small
               icon
@@ -104,15 +105,15 @@
         </v-col>
       </v-row>
     </v-col>
-    <v-col cols="12" sm="1">
+    <v-col cols="12" sm="1" class="shrinkCol">
       <v-card
       class="rounded-0"
       flat
       :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
       height="50vh"
       width="100%">
-        <v-card-text style="margin-left:4vw">
-          <v-row>
+        <v-card-text>
+          <v-row justify="end">
             <v-btn
             small
             icon
@@ -122,7 +123,7 @@
             ><v-icon small>mdi-arrow-expand</v-icon>
             </v-btn>
           </v-row>
-          <v-row>
+          <v-row justify="end">
             <v-btn
               small
               icon
@@ -132,7 +133,7 @@
               ><v-icon small>mdi-magnify-plus</v-icon>
             </v-btn>
           </v-row>
-          <v-row>
+          <v-row justify="end">
             <v-btn
               small
               icon
@@ -1141,5 +1142,9 @@ export default defineComponent({
 });
 </script>
 
-<style>
+<style scoped>
+.shrinkCol {
+  flex: 0 0 6% !important;
+  max-width: 6% !important;
+}
 </style>
