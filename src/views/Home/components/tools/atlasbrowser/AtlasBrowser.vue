@@ -1419,7 +1419,7 @@ export default defineComponent({
       if (!spatial.value) return;
       try {
         const task = 'atlasbrowser.generate_h5ad';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
@@ -1472,7 +1472,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         console.log(cropCoords);
