@@ -38,6 +38,7 @@ import AtlasViewer from './components/tools/atlasview/AtlasViewer.vue';
 import AtlasUploader from './components/tools/filetools/AtlasUploader.vue';
 import AdminPanel from './components/settings/admin/AdminPanel.vue';
 import UserSettings from './components/settings/users/UserSettings.vue';
+import AtlasRunViewer from './components/tools/atlasRunViewer/AtlasRunViewer.vue';
 
 const appReadyForClient = new Promise((resolve) => {
   const ready = computed(() => (
@@ -69,6 +70,7 @@ export default defineComponent({
     AtlasUploader,
     AdminPanel,
     UserSettings,
+    AtlasRunViewer,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;
