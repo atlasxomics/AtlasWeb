@@ -636,8 +636,6 @@ export default defineComponent({
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
           const clr = (geneSum[i] + 10 > 0) ? geneColors[i] : inactiveColor.value;
-          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
-          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
             id: get_uuid(),
             x: x * scaleUMAP.value * viewScaleUMAP + paddingX,
@@ -657,7 +655,18 @@ export default defineComponent({
           });
           circlesUMAP.push(c);
         });
-        stepArray.value = makearray(highestCount.value, lowestCount.value);
+        let highAvg = 0;
+        let lowAvg = 10000000;
+        circles.forEach((v: any, i: any) => {
+          const avg = v.total / selectedGenes.value.length;
+          if (avg > highAvg) {
+            highAvg = avg;
+          }
+          if (avg < lowAvg) {
+            lowAvg = avg;
+          }
+        });
+        stepArray.value = makearray(highAvg, lowAvg);
       }
       circlesSpatial.value = circles;
       circlesSpatialUMAP.value = circlesUMAP;
@@ -734,7 +743,7 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (selectedGenes.value.length > 0) {
-        text = `${text}\nSum: ${item.total}`;
+        text = `${text}\nAvg: ${item.total / selectedGenes.value.length}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
           text = `${text}\n${k}: ${v}`;
         });
@@ -809,7 +818,7 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (selectedGenes.value.length > 0) {
-        text = `${text}\nSum: ${item.total}`;
+        text = `${text}\nAvg: ${item.total / selectedGenes.value.length}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
           text = `${text}\n${k}: ${v}`;
         });

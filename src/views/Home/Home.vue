@@ -30,7 +30,7 @@ import ChipInformationViewer from './components/edit/ChipInformationViewer.vue';
 import WaferInformationViewer from './components/edit/WaferInformationViewer.vue';
 import DbitInformationViewer from './components/edit/DbitInformationViewer.vue';
 import AtlasBrowser from './components/tools/atlasbrowser/AtlasBrowser.vue';
-import AtlasG from './components/tools/atlasgx/AtlasG.vue';
+import AtlasXplore from './components/tools/atlasgx/AtlasXplore.vue';
 import AtlasTest from './components/tools/atlasgx/AtlasTest.vue';
 import AtlasCompare from './components/tools/atlasgx/AtlasCompare.vue';
 import AtlasAnalytics from './components/tools/atlasanalytics/AtlasAnalytics.vue';
@@ -62,7 +62,7 @@ export default defineComponent({
     WaferInformationViewer,
     DbitInformationViewer,
     AtlasBrowser,
-    AtlasG,
+    AtlasXplore,
     AtlasTest,
     AtlasCompare,
     AtlasAnalytics,
