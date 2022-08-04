@@ -640,15 +640,6 @@ const metaHeaders = [
   { text: 'Field', value: 'key' },
   { text: 'Value', value: 'value' },
 ];
-const metaItemLists = {
-  types: [],
-  species: [],
-  organ: [],
-  assays: ['mRNA', 'Protein', 'ATAC', 'H3K27me3', 'H3K4me3', 'H3K27ac'],
-  barcode_file: ['1 (Normal)', '2 (Flipped B)', '3 (Flipped A)', '4 (Flipped A and B)'],
-  resolution: ['10', '25', '50'],
-  diseaseState: ['Normal', 'Disease'],
-};
 interface Metadata {
   points: number[] | any;
   run: string | null;
@@ -979,17 +970,18 @@ export default defineComponent({
       if (!client.value) return;
       loading.value = true;
       loadingMessage.value = false;
-      const root = 'data';
+      // const root = 'data';
+      const root = 'Images';
       let filename: any;
       // console.log(orientation.value.rotation);
       if (optionUpdate.value) {
         filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
       } else {
-        filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
+        filename = `${root}/${run_id.value}/postB_BSA.TIF`;
       }
       const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
       try {
-        const img = await client.value.getImageAsJPG({ params: { filename, rotation: orientation.value.rotation } });
+        const img = await client.value.getImageAsJPG({ params: { bucket: 'atx-illumina', filename, rotation: orientation.value.rotation } });
         imageh.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
@@ -1596,7 +1588,7 @@ export default defineComponent({
       itemsHolder.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', filter: 'images/postB_BSA.tif' } };
+      const fl_payload = { params: { bucket: 'atx-illumina', path: 'Images', filter: 'postB_BSA' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
@@ -1608,7 +1600,6 @@ export default defineComponent({
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
-
     watch(brushSize, (v) => {
       brushConfig.value.radius = v;
     });
@@ -1694,7 +1685,6 @@ export default defineComponent({
       allFiles,
       run_id,
       metadata,
-      metaItemLists,
       items,
       itemsHolder,
       searchInput,
