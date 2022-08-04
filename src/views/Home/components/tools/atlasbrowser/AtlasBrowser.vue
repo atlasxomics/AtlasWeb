@@ -821,6 +821,7 @@ export default defineComponent({
       runIdFlag.value = false;
       loading.value = false;
       imageh.value = null;
+      optionUpdate.value = false;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       // metaFlag.value = false;
     }
@@ -961,7 +962,7 @@ export default defineComponent({
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
-      if (resp) {
+      if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
         // console.log(resp);
         optionFlag.value = false;
@@ -1624,6 +1625,7 @@ export default defineComponent({
       }
     });
     watch(run_id, async (v, ov) => {
+      checkSpatial.value = false;
       runIDSelected.value = true;
       initialize();
       await loadAll();
