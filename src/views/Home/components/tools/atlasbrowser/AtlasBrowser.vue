@@ -769,6 +769,8 @@ export default defineComponent({
     const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
     const availableFiles = ref<any[]>([]);
+    const postB_or_bsa = ref<string>();
+    const black_white = ref<string>();
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -994,6 +996,7 @@ export default defineComponent({
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
+        const temp = imgObj.src;
         const scalefactor = 0.1;
         if (imgObj) {
           imgObj.onload = (ev: any) => {
@@ -1003,12 +1006,10 @@ export default defineComponent({
               draggable: false,
               scale: { x: scalefactor, y: scalefactor },
               image: imgObj,
-              src: imgObj.src,
-              original_src: imgObj.src,
-              alternative_src: null,
+              src: null,
+              original_src: null,
             };
-            console.log(imgObj.width);
-            console.log(imgObj.height);
+            postB_or_bsa.value = temp;
           };
         }
         loading.value = false;
@@ -1277,6 +1278,7 @@ export default defineComponent({
         extractChannels();
         canvas.toBlob((blob: any) => {
           newImage.src = URL.createObjectURL(blob);
+          const temp = newImage.src;
           newImage.onload = (e: any) => {
             current_image.value = {
               x: 0,
@@ -1284,10 +1286,11 @@ export default defineComponent({
               draggable: false,
               scale: { x: scaleFactor.value, y: scaleFactor.value },
               image: newImage,
-              src: newImage.src,
-              original_src: newImage.src,
+              src: null,
+              original_src: null,
               alternative_src: null,
             };
+            postB_or_bsa.value = temp;
             onChangeScale('');
             cropLoading.value = false;
           };
@@ -1341,11 +1344,12 @@ export default defineComponent({
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
-          if (bsa_image_disp.value) {
-            current_image.value.image.original_src = current_image.value.image.src;
-          }
+          const temp = newsrc;
+          // if (bsa_image_disp.value) {
+          //   current_image.value.image.original_src = current_image.value.image.src;
+          // }
+          bw_image.value = newsrc;
           current_image.value.image.src = newsrc;
-          current_image.value.image.alternative_src = newsrc;
           current_image.value.scale = { x: sv, y: sv };
           onChangeScale(sv);
           thresh_same.value = true;
@@ -1573,11 +1577,11 @@ export default defineComponent({
       }
     }
     function display_bsa() {
-      current_image.value.image.src = current_image.value.image.original_src;
+      current_image.value.image.src = postB_or_bsa.value;
       bsa_image_disp.value = true;
     }
     function display_bw() {
-      current_image.value.image.src = current_image.value.image.alternative_src;
+      current_image.value.image.src = bw_image.value;
       bsa_image_disp.value = false;
     }
     function autoFill(ev: any) {
@@ -1813,6 +1817,8 @@ export default defineComponent({
       availableFiles,
       flowMetadata,
       imageClick,
+      postB_or_bsa,
+      black_white,
     };
   },
 });
