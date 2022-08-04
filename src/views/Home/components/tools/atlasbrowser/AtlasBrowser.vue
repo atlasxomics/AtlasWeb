@@ -487,26 +487,12 @@
                 </div>
                 </template>
                 <v-stage
-                  v-if="!checkSpatial"
+                  v-if="!checkSpatial && !welcome_screen"
                   ref="konvaStage"
                   class="mainStage"
                   :config="konvaConfig"
                   v-resize="onResize"
                   @mousemove="handleMouseMoveStage">
-                  <v-layer
-                  id="WelcomeLayer"
-                  v-if="welcome_screen">
-                  <v-text
-                  ref="text1"
-                  :config="{
-                    text: 'Welcome to AtlasXbrowser',
-                    fontSize: 30,
-                    align: 'center',
-                    width: 1100,
-                    padding: 25
-                  }">
-                  </v-text>
-                  </v-layer>
                   <v-layer
                     v-if="current_image"
                     ref="imageLayer"
@@ -599,6 +585,18 @@
         :getFiles="checkSpatial"
         >
         </SpatialFolderViewer>
+        </v-col>
+        <v-col cols="12" sm="12"
+        justify="center"
+        v-if="welcome_screen"
+        >
+        <v-img
+        class="center"
+        src="@/assets/images/atlasbg.png"
+        width="width"
+        height="height"
+        >
+        </v-img>
         </v-col>
       </v-row>
     </v-container>
@@ -892,7 +890,6 @@ export default defineComponent({
         console.log(error);
       }
     }
-
     async function getMeta() {
       try {
         const root = 'data';
@@ -1670,15 +1667,6 @@ export default defineComponent({
           }
         },
       },
-      // {
-      //   text: 'Save spatial data',
-      //   icon: 'mdi-content-save',
-      //   color: 'primary',
-      //   tooltip: 'Save spatial data',
-      //   click: () => {
-      //     handle_spatial_call();
-      //   },
-      // },
     ];
     onMounted(async () => {
       await clientReady;
@@ -1856,5 +1844,11 @@ export default defineComponent({
 }
 .main {
   padding-top: 15px;
+}
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 80%;
 }
 </style>
