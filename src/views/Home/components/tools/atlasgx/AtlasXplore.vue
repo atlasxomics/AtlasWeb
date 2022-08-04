@@ -980,8 +980,10 @@ export default defineComponent({
         }
         colorMap.value = cmap;
         colorMapCopy.value = cmapCopy;
-        cellTypeMap.value = cellmap;
-        cellTypeMapCopy.value = cellmapCopy;
+        if (!('C1' in cellTypeMap.value)) {
+          cellTypeMap.value = cellmap;
+          cellTypeMapCopy.value = cellmapCopy;
+        }
       }
       if (!geneMotif.value && isClusterView.value) {
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
