@@ -769,7 +769,7 @@ export default defineComponent({
     const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
     const availableFiles = ref<any[]>([]);
-    const postB_or_bsa = ref<string>();
+    const postB_or_bsa = ref<any>();
     const black_white = ref<string>();
     // Metadata
     const metadata = ref<Metadata>({
@@ -1330,7 +1330,7 @@ export default defineComponent({
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
       // loading.value = true;
-      let img_src = current_image.value.image.src;
+      let img_src = postB_or_bsa.value;
       if (!optionUpdate.value) {
         console.log('here');
         img_src = imageDataToBlob();
