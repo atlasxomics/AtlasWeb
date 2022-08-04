@@ -1,5 +1,5 @@
 <template>
-  <atlas-g :query="query"/>
+  <atlas-xplore :query="query"/>
 </template>
 
 <script lang='ts'>
@@ -9,7 +9,7 @@ import lodash from 'lodash';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { generateRouteByQuery } from '@/utils';
-import AtlasG from '@/views/Home/components/tools/atlasgx/AtlasG.vue';
+import AtlasXplore from '@/views/Home/components/tools/atlasgx/AtlasXplore.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -22,7 +22,7 @@ const clientReady = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'PublicGeneViewer',
-  components: { AtlasG },
+  components: { AtlasXplore },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;

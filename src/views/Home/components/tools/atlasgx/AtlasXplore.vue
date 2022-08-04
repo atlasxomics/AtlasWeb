@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-container v-if="resolveAuthGroup(['admin','user'])" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
+    <v-container v-if="resolveAuthGroup(['admin', 'user'])" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
           <v-tooltip bottom :disabled="metaFlag">
@@ -559,7 +559,7 @@
         <v-col cols="12" sm="11" class="mt-5">
           <div id="screenCapture" :style="{ 'background-color': 'transparent' }">
           <v-row>
-            <v-col cols="12" sm="9">
+            <v-col cols="12" :sm="isClusterView ? '9' : '12'">
               <atx-atac-viewer
                 @loading_value="updateLoading"
                 @spatialFlag='updateSpatial'
@@ -630,7 +630,7 @@
         </v-col>
       </v-row>
     </v-container>
-    <!-- <loading-page v-if="!resolveAuthGroup(['admin']) && !query.public" :listRuns="collabData"/> -->
+    <!-- <loading-page v-if="!resolveAuthGroup(['admin']) && !query.public" :listRuns="collabData" :collabName="collabName"/> -->
   </v-app>
 </template>
 
@@ -701,7 +701,7 @@ interface Metadata {
 }
 
 export default defineComponent({
-  name: 'AtlasG',
+  name: 'AtlasXplore',
   components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage },
   props: ['query'],
   setup(props, ctx) {
@@ -794,6 +794,7 @@ export default defineComponent({
     const clickedClusterFromChild = ref<any[]>([]);
     const fileContent = ref<any[]>([]);
     const collabData = ref<any[]>([]);
+    const collabName = ref<string>('');
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -979,8 +980,10 @@ export default defineComponent({
         }
         colorMap.value = cmap;
         colorMapCopy.value = cmapCopy;
-        cellTypeMap.value = cellmap;
-        cellTypeMapCopy.value = cellmapCopy;
+        if (!('C1' in cellTypeMap.value)) {
+          cellTypeMap.value = cellmap;
+          cellTypeMapCopy.value = cellmapCopy;
+        }
       }
       if (!geneMotif.value && isClusterView.value) {
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
@@ -1130,7 +1133,7 @@ export default defineComponent({
           await checkTaskStatus(taskObject._id);
         }
         if (taskStatus.value.status !== 'SUCCESS') {
-          snackbar.dispatch({ text: 'Worker failed in AtlasGx', options: { right: true, color: 'error' } });
+          snackbar.dispatch({ text: 'Worker failed in AtlasXplore', options: { right: true, color: 'error' } });
           loading.value = false;
         } else {
           snackbar.dispatch({ text: `Motif ${trackBrowserGenes.value[0]} found`, options: { right: true, color: 'success' } });
@@ -1248,6 +1251,7 @@ export default defineComponent({
       if (metadata.value.diseaseName === null) {
         metadata.value.diseaseState = 'Healthy';
       }
+      collabName.value = slimsData.cntn_cf_source;
     }
     async function selectAction(ev: any) {
       const root = 'data';
@@ -1256,7 +1260,7 @@ export default defineComponent({
         filename.value = fn;
         holdMotif.value = '';
         runId.value = ev.id;
-        pushByQuery({ component: 'AtlasG', run_id: ev.id });
+        pushByQuery({ component: 'AtlasXplore', run_id: ev.id });
         selectedGenes.value = [];
         featureTableFlag.value = true;
         peakViewerFlag.value = false;
@@ -1301,7 +1305,7 @@ export default defineComponent({
           const fn = `data/${rid}/h5/obj/genes.h5ad`;
           filename.value = fn;
           await runSpatial(rid);
-          const valueHolder = { runId: `${rid}`, organ: `${metadata.value.organ}`, disease: `${metadata.value.diseaseState}`, species: `${metadata.value.species}`, link: `${publicLink.value}` };
+          const valueHolder = { runId: `${cleanRunId(rid)}`, organ: `${metadata.value.organ}`, species: `${metadata.value.species}`, disease: `${metadata.value.diseaseState}`, link: `${publicLink.value}` };
           dataStruct.push(valueHolder);
         });
         collabData.value = dataStruct;
@@ -1480,14 +1484,14 @@ export default defineComponent({
     ];
     onMounted(async () => {
       await clientReady;
-      store.commit.setSubmenu(submenu);
       // if (!resolveAuthGroup(['admin']) && (props.query && !props.query.public)) {
       //   await loadingPage();
       // } else {
+      store.commit.setSubmenu(submenu);
       if (props.query && !props.query.public) {
         await fetchFileList();
         if (props.query.run_id) {
-          // loadCandidateWorkers('AtlasGX');
+          // loadCandidateWorkers('AtlasXploreX');
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
           await selectAction({ id: props.query.run_id });
         } else {
@@ -1629,6 +1633,7 @@ export default defineComponent({
       loadingPage,
       collabData,
       removeZeros,
+      collabName,
     };
   },
 });
