@@ -139,7 +139,7 @@
                   </tr>
                 </template>
                 <template v-else>
-                  <tr @click="clusterColorFlag = true ; heatmapFlag = false">
+                  <tr @click="clusterColorFlag = true ; heatmapFlag = false" :style="{ 'pointer-events': isClusterView ? 'auto' : 'none' }">
                     <td>customize</td>
                   </tr>
                 </template>
@@ -521,7 +521,7 @@
             <span>Copy Public Link</span>
             </v-tooltip>
           </v-card>
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '300px' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '18vh' }" flat>
             <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -559,7 +559,7 @@
         <v-col cols="12" sm="11" class="mt-5">
           <div id="screenCapture" :style="{ 'background-color': 'transparent' }">
           <v-row>
-            <v-col cols="12" sm="10">
+            <v-col cols="12" sm="9">
               <atx-atac-viewer
                 @loading_value="updateLoading"
                 @spatialFlag='updateSpatial'
@@ -581,7 +581,7 @@
                 :clickedCluster="clickedClusterFromChild"
                 ref="mainAtxViewer"/>
             </v-col>
-            <v-col cols="12" sm="2" v-if="isClusterView">
+            <v-col cols="12" sm="3" v-if="isClusterView">
               <table style="margin-bottom: 0; width: 100%;">
                   <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'color': colorMap[cluster], 'vertical-align': 'baseline'}">
                     <template v-if="value.length > 0">
@@ -596,9 +596,12 @@
                     </template>
                     <template v-if="value.length > 0">
                       <td class="bold-disabled-Text" style="padding-left: 20px;">
-                        <v-text-field
+                        <v-textarea
                         :dark="backgroundColor == 'white' ? false : true"
                         :value="value"
+                        dense
+                        auto-grow
+                        row-height="2vw"
                         solo
                         disabled/>
                       </td>
@@ -627,6 +630,7 @@
         </v-col>
       </v-row>
     </v-container>
+    <!-- <loading-page v-if="!resolveAuthGroup(['admin']) && !query.public" :listRuns="collabData"/> -->
   </v-app>
 </template>
 
@@ -647,6 +651,7 @@ import GeneDataTable from './modules/GeneDataTable.vue';
 import TrackBrowser from './modules/TrackBrowser.vue';
 import AtxAtacViewer from './modules/AtxAtacViewer.vue';
 import BarChart from './modules/BarChart.vue';
+import LoadingPage from './modules/LoadingPage.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -687,15 +692,17 @@ const colorRules = [
   (v: any) => (v.startsWith('#')) || 'Must be of Hex Code',
 ];
 interface Metadata {
-  run: string | null;
   type: string | null;
   species: string | null;
+  assay: string | null;
   organ: string | null;
+  diseaseState: string | null;
+  diseaseName: string | null;
 }
 
 export default defineComponent({
   name: 'AtlasG',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -733,10 +740,12 @@ export default defineComponent({
     const metaFlag = ref<boolean>(false);
     // Metadata
     const metadata = ref<Metadata>({
-      run: null,
       type: '',
-      species: '',
+      species: 'Mouse',
+      assay: 'mRNA',
       organ: null,
+      diseaseState: null,
+      diseaseName: null,
     });
     const backgroundColor = ref<string>('black');
     const heatMap = ref<string>('jet');
@@ -784,6 +793,7 @@ export default defineComponent({
     const manualClusterFlag = ref<boolean>(false);
     const clickedClusterFromChild = ref<any[]>([]);
     const fileContent = ref<any[]>([]);
+    const collabData = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -791,6 +801,13 @@ export default defineComponent({
     }
     function cleanRunId(rid: string) {
       return rid.match('[A-Z]+[0-9]+')![0];
+    }
+    function removeZeros(rid: any) {
+      if (!rid.includes('D')) {
+        return '';
+      }
+      const go = rid.replace(/D0+/i, 'D');
+      return go;
     }
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
@@ -1068,7 +1085,7 @@ export default defineComponent({
         console.log(error);
       }
     }
-    async function runSpatial(stype: string) {
+    async function runSpatial(rid = runId.value) {
       if (!client.value) return;
       if (!filename.value) return;
       try {
@@ -1076,8 +1093,8 @@ export default defineComponent({
           const existingCookie = readCookie();
           const split = existingCookie?.token.split('JWT ')[1];
           const motifHold = filename.value;
-          const { encoded: filenameToken } = await client.value.encodeLink({ args: [motifHold!.replace(/motifs/i, 'genes')], meta: { run_id: runId.value } });
-          const { encoded: filenameTokenMotif } = await client.value.encodeLink({ args: [motifHold!.replace(/genes/i, 'motifs')], meta: { run_id: runId.value } });
+          const { encoded: filenameToken } = await client.value.encodeLink({ args: [motifHold!.replace(/motifs/i, 'genes')], meta: { run_id: rid } });
+          const { encoded: filenameTokenMotif } = await client.value.encodeLink({ args: [motifHold!.replace(/genes/i, 'motifs')], meta: { run_id: rid } });
           const { host } = window.location;
           publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true&token=JWT%20${split}`;
         }
@@ -1181,25 +1198,25 @@ export default defineComponent({
       const element = ev.target as HTMLInputElement;
       element.value = '';
     }
-    async function getMeta() {
+    async function getMeta(rid = runId.value) {
       const root = 'data';
       const task = 'creation.create_files';
       const queue = 'creation_worker';
       const params = {
         data: null,
-        path: `${root}/${runId.value}`,
+        path: `${root}/${rid}`,
         file_type: 'json',
         file_name: 'metadata.json',
       };
       const args: any[] = [params];
       const kwargs: any = {};
-      const name = `${root}/${runId.value}/metadata.json`;
+      const name = `${root}/${rid}/metadata.json`;
       const jsonFileName = { params: { filename: name } };
       const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
       let slimsData: any;
       if (!jsonBoolean) {
         loading.value = true;
-        slimsData = await client.value!.getMetadataFromRunId(`${cleanRunId(runId.value!)}`);
+        slimsData = await client.value!.getMetadataFromRunId(`${cleanRunId(rid!)}`);
         params.data = slimsData;
         const taskObject = await client.value!.postTask(task, args, kwargs, queue);
         await checkTaskStatus(taskObject._id);
@@ -1226,6 +1243,11 @@ export default defineComponent({
       metadata.value.organ = slimsData.cntn_cf_fk_organ;
       metadata.value.species = slimsData.cntn_cf_fk_species;
       metadata.value.type = slimsData.cntn_cf_fk_tissueType;
+      metadata.value.assay = slimsData.cntn_cf_fk_workflow;
+      metadata.value.diseaseName = slimsData.cntn_cf_disease;
+      if (metadata.value.diseaseName === null) {
+        metadata.value.diseaseState = 'Healthy';
+      }
     }
     async function selectAction(ev: any) {
       const root = 'data';
@@ -1249,6 +1271,41 @@ export default defineComponent({
       await runSpatial('begin');
       await loadExpressions();
       await getMeta();
+    }
+    async function loadingPage() {
+      const funcInsideLoad = (id: string, checker: any) => {
+        let v = false;
+        if (id.length > 1) {
+          checker.forEach((val: any, i: any) => {
+            if (val.includes(id)) {
+              v = val;
+            }
+          });
+        }
+        return v;
+      };
+      const val = await client.value!.getRunIdList();
+      await fetchFileList();
+      if (items.value) {
+        const checker = items.value.map((ids: any) => ids.id);
+        const newe: any[] = [];
+        val.forEach((value: any, i: any) => {
+          const yeah = funcInsideLoad(removeZeros(value['Run Id']), checker);
+          if (yeah && !newe.includes(yeah)) {
+            newe.push(yeah);
+          }
+        });
+        const dataStruct: any[] = [];
+        newe.forEach(async (rid: any, i: any) => {
+          await getMeta(rid);
+          const fn = `data/${rid}/h5/obj/genes.h5ad`;
+          filename.value = fn;
+          await runSpatial(rid);
+          const valueHolder = { runId: `${rid}`, organ: `${metadata.value.organ}`, disease: `${metadata.value.diseaseState}`, species: `${metadata.value.species}`, link: `${publicLink.value}` };
+          dataStruct.push(valueHolder);
+        });
+        collabData.value = dataStruct;
+      }
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
@@ -1424,6 +1481,9 @@ export default defineComponent({
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(submenu);
+      // if (!resolveAuthGroup(['admin']) && (props.query && !props.query.public)) {
+      //   await loadingPage();
+      // } else {
       if (props.query && !props.query.public) {
         await fetchFileList();
         if (props.query.run_id) {
@@ -1566,6 +1626,9 @@ export default defineComponent({
       fileContent,
       runCellType,
       resetFile,
+      loadingPage,
+      collabData,
+      removeZeros,
     };
   },
 });
