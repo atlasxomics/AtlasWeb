@@ -54,40 +54,148 @@
                 v-model="metadata.species"
                 outlined
                 dense
-                label="Species">
+                label="Species"
+                readonly
+                >
               </v-text-field>
               <v-text-field
                 v-model="metadata.organ"
                 outlined
                 dense
-                label="Organ">
+                label="Organ"
+                readonly>
               </v-text-field>
               <v-text-field
+              v-model="metadata.collaborator"
+              label="Collaborator"
+              readonly
+              dense
+              outlined
+              >
+              </v-text-field>
+              <!-- <v-text-field
                 v-model="metadata.type"
                 outlined
                 dense
-                label="Type">
-              </v-text-field>
-              <v-select
+                label="Type"
+                readonly
+                >
+              </v-text-field> -->
+              <v-text-field
                 v-model="metadata.assay"
                 outlined
-                :items="metaItemLists.assays"
                 dense
-                label="Assay">
-              </v-select>
-              <v-select
-                v-model="metadata.numChannels"
+                label="Assay"
+                readonly>
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.diseaseState"
+              outlined
+              dense
+              label="Disease State"
+              @change="changeDiseaseState"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              outlined
+              dense
+              label="Disease Name"
+              v-model="metadata.diseaseName"
+              v-if="metadata.diseaseState === 'Disease'"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              outlined
+              dense
+              label="Tissue Slide Experimental Condition"
+              v-model="metadata.tissueSlideExperiment"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              outlined
+              dense
+              label="Tissue Block Experimental Condition"
+              v-model="metadata.tissueBlockExperiment"
+              >
+              </v-text-field>
+              <v-text-field
+                v-model="metadata.barcodes"
                 outlined
-                :items="metaItemLists.numChannels"
                 dense
                 label="Barcode"
-                @change="updateChannels">
-              </v-select>
+                @change="updateChannels"
+                readonly>
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.chip_resolution"
+              outlined
+              dense
+              label="Chip Resolution"
+              readonly>
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.comments_flowB"
+              outlined
+              dense
+              label="Comments Flow B"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.crosses_flowB"
+              outlined
+              dense
+              label="B Flow Crosses"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.leak_flowB"
+              outlined
+              dense
+              label="B Flow Leaks"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.comments_flowA"
+              outlined
+              dense
+              label="Flow A Comments"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.crosses_flowA"
+              outlined
+              dense
+              label="A Flow Crosses"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.blocks_flowA"
+              outlined
+              dense
+              label="A Flow Blocks"
+              readonly
+              >
+              </v-text-field>
+              <v-text-field
+              v-model="metadata.leak_flowA"
+              outlined
+              dense
+              label="A Flow Leak"
+              readonly
+              >
+              </v-text-field>
             </v-card-text>
           </v-card>
         </v-dialog>
-        <v-col cols="12" sm="2" class="pl-6 pt-3"
-        >
+        <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
           <!-- workflow menu -->
           <template v-if="run_id && optionFlag">
             <v-card>
@@ -109,8 +217,9 @@
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Rotation</v-subheader>
                 <v-btn
                 color="grey"
+                class="leftRotate"
                 :disabled="!current_image || isCropMode || grid"
-                @click="orientation.rotation = orientation.rotation + 270; loadImage()"
+                @click="rotate_image(0)"
                 small
                 >
                 <img src="@/assets/images/rotate_left.png"
@@ -120,14 +229,22 @@
                 <v-btn
                 color="grey"
                 class="spaced_btn"
-                :disabled="!current_image || isCropMode || grid"
-                @click="orientation.rotation = orientation.rotation + 90; loadImage()"
+                :disabled="!current_image || isCropMode || grid || degreeRotation == '45'"
+                @click="rotate_image(1)"
                 small
                 >
                 <img src="@/assets/images/rotate_right.png"
                 width="24"
                 height="24"/>
                 </v-btn>
+                <!-- <v-switch class="toggle_switch"
+                label="45°"
+                v-model = "degreeBoolean45"
+                :disabled="!current_image || isCropMode || grid"
+                >
+                </v-switch> -->
+                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid">90</label>
+                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid">45</label>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -143,12 +260,13 @@
                 </v-btn>
                 <v-btn
                   outlined
+                  :loading="cropLoading"
                   :disabled="!current_image || !isCropMode || cropFlag"
                   x-small
                   dense
                   class="mt-0 pt-0"
                   color="primary"
-                  @click="onCropButton">
+                  @click="cropLoading = true;onCropButton()">
                   Confirm
                 </v-btn>
               </v-list>
@@ -208,6 +326,7 @@
                   >
                   </v-slider>
                   <v-btn
+                  :loading="threshLoading"
                   outlined
                   dense
                   color="primary"
@@ -228,7 +347,6 @@
                 :disabled="!thresh_image_created || bsa_image_disp || spatial"
                 > BSA </v-btn>
                 <v-btn
-                class="spaced_btn"
                 outlined
                 x-small
                 color="primary"
@@ -260,14 +378,23 @@
                   step="3.0"
                   :disabled="!tixels_filled"
                 />
-                <template v-if="spatial && !loadingMessage && grid">
+                <template>
+                  <v-btn
+                  :disabled="!tixels_filled"
+                  outlined
+                  x-small
+                  dense
+                  color="primary"
+                  @click="handle_spatial_call()">
+                  Generate Spatial Folder
+                  </v-btn>
                   <v-btn
                   outlined
                   x-small
                   dense
                   color="primary"
-                  @click="generateh5ad()">
-                  Generate h5ad file
+                  @click="showSpatialFolder">
+                  Check Spatial Folder
                   </v-btn>
                 </template>
               </v-list>
@@ -288,7 +415,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="optionFlag=true;optionUpdate=true;loadImage(); uploadingTixels()"
+                @click="optionFlag=true;optionUpdate=true;tixels_filled=true; loadImage(); uploadingTixels()"
                 x-small>
                 Update
               </v-btn>
@@ -296,7 +423,7 @@
           </v-card>
         </v-col>
         <!-- right section of the screen where images and loading screens are displayed -->
-        <v-col cols="12" sm="9">
+        <v-col cols="12" sm="9" v-if="!checkSpatial">
           <v-container>
             <!-- Loading message when saving spatial folder -->
             <template v-if="loadingMessage">
@@ -345,32 +472,6 @@
                   </v-card-text>
                 </v-card>
               </v-dialog>
-              <!-- when generating h5ad file -->
-            </template>
-              <template v-if="generating">
-              <v-dialog
-                value=true
-                hide-overlay
-                persistent
-                width="600"
-                height=200>
-                <v-card
-                  color="primary"
-                  dark>
-                  <v-card-title>Progress</v-card-title>
-                  <v-card-text>
-                    Generating h5ad file
-                    <v-progress-linear
-                      v-model="four"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                </v-card>
-              </v-dialog>
             </template>
             <v-row>
               <v-card>
@@ -386,12 +487,13 @@
                 </div>
                 </template>
                 <v-stage
+                  v-if="!checkSpatial"
                   ref="konvaStage"
                   class="mainStage"
                   :config="konvaConfig"
                   v-resize="onResize"
                   @mousemove="handleMouseMoveStage">
-                <v-layer
+                  <v-layer
                   id="WelcomeLayer"
                   v-if="welcome_screen">
                   <v-text
@@ -402,13 +504,15 @@
                     align: 'center',
                     width: 1100,
                     padding: 25
-                }">
-                </v-text>
-                </v-layer>
+                  }">
+                  </v-text>
+                  </v-layer>
                   <v-layer
                     v-if="current_image"
                     ref="imageLayer"
-                    id="imageLayer">
+                    id="imageLayer"
+                    @click="imageClick"
+                    >
                     <v-image
                       ref="image"
                       :config="current_image"
@@ -455,6 +559,7 @@
                       id="cropLayer"
                       @mouseup="handleMouseUp">
                       <template v-if="current_image && !loading">
+                        <!-- config of the rectangle, being the cropping square -->
                         <v-rect
                           :config="crop.generateRect()"/>
                         <template v-if="!isBrushMode">
@@ -482,10 +587,18 @@
                         @mouseup="handleMouseUpBrush"
                       />
                     </v-layer>
-                  </v-stage>
+                </v-stage>
               </v-card>
             </v-row>
           </v-container>
+        </v-col>
+        <v-col cols="12" sm="12">
+        <SpatialFolderViewer
+        v-if="checkSpatial"
+        :selectedRunID="run_id"
+        :getFiles="checkSpatial"
+        >
+        </SpatialFolderViewer>
         </v-col>
       </v-row>
     </v-container>
@@ -496,7 +609,7 @@
 <script lang='ts'>
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
-import lodash, { pad, trim } from 'lodash';
+import lodash, { pad, toInteger, trim } from 'lodash';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
@@ -509,6 +622,8 @@ import { resolveAuthGroup } from '@/utils/auth';
 import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
+import SpatialFolderViewer from './SpatialFolderViewer.vue';
+// import { resolve } from 'dns';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -530,12 +645,15 @@ const metaItemLists = {
   species: [],
   organ: [],
   assays: ['mRNA', 'Protein', 'ATAC', 'H3K27me3', 'H3K4me3', 'H3K27ac'],
-  numChannels: ['50', '50 v2'],
+  barcode_file: ['1 (Normal)', '2 (Flipped B)', '3 (Flipped A)', '4 (Flipped A and B)'],
+  resolution: ['10', '25', '50'],
+  diseaseState: ['Normal', 'Disease'],
 };
 interface Metadata {
   points: number[] | any;
   run: string | null;
-  blockSize: number | null;
+  blockSize: number;
+  cValue: number;
   threshold: number | null;
   type: string | null;
   species: string | null;
@@ -543,22 +661,28 @@ interface Metadata {
   numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
-  barcodes: number | null;
+  barcodes: string | null;
   organ: string | null;
+  diseaseState: string | null;
+  diseaseName: string | null;
+  collaborator: string | null;
+  chip_resolution: number | null;
+  tissueSlideExperiment: string | null;
+  tissueBlockExperiment: string | null;
+  comments_flowB: string | null;
+  crosses_flowB: Array<number> | null;
+  blocks_flowB: Array<number> | null;
+  leak_flowB: string | null;
+  comments_flowA: string | null;
+  crosses_flowA: Array<number> | null;
+  blocks_flowA: Array<number> | null;
+  leak_flowA: string | null;
 }
 
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  methods: {
-    check_vals() {
-      if (this.csvHolder) {
-        console.log('csv holder is true');
-      } else {
-        console.log('csv holder is false');
-      }
-    },
-  },
+  components: { SpatialFolderViewer },
   setup(props, ctx) {
     const welcome_screen = ref<boolean>(true);
     const router = ctx.root.$router;
@@ -570,7 +694,7 @@ export default defineComponent({
     const searchInput = ref<any[]>([]);
     const search = ref<string | null>();
     const selected = ref<any | null>();
-    const run_id = ref<string | null>(null);
+    const run_id = ref<string>('');
     const width = window.innerWidth;
     const height = window.innerHeight;
     const konvaConfig = ref<any>({ width, height });
@@ -599,7 +723,6 @@ export default defineComponent({
     const atfilter = ref(false);
     const atpixels = ref<any[] | null>([]);
     const threshold = ref(210);
-    const no_thresh = ref(true);
     const thresh_image_created = ref<boolean>(false);
     const thresh_same = ref<boolean>(false);
     const saved_grid_state = ref<Map<string, boolean>>(new Map<string, boolean>());
@@ -615,6 +738,8 @@ export default defineComponent({
     const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
     const cropFlag = ref<boolean>(false);
+    const cropLoading = ref<boolean>(false);
+    const threshLoading = ref<boolean>(false);
     const thresh = ref<boolean>(false);
     const spatial = ref<boolean>(false);
     const csvHolder = ref<any>();
@@ -625,23 +750,31 @@ export default defineComponent({
     const runIdFlag = ref<boolean>(false);
     const runIDSelected = ref<boolean>(false);
     const metaFlag = ref<boolean>(false);
+    const flowMetadata = ref<Record<string, any>>({});
     const imageh = ref<any>();
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
     const bsa_image_disp = ref<boolean>(true);
+    const degreeRotation = ref<string>('90');
     const scaleFactor_json = ref<any>({
       fiducial_diameter_fullres: null,
       spot_diameter_fullres: null,
       tissue_hires_scalef: null,
       tissue_lowres_scalef: null,
     });
+    const checkSpatial = ref<boolean>(false);
+    const imageChannels = ref<Record<string, any>>();
+    const missingGreen = ref<Uint8ClampedArray>(new Uint8ClampedArray(1));
+    const imageDataObj = ref<ImageData>({ data: new Uint8ClampedArray([1]), width: 1, height: 1 });
     const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
+    const availableFiles = ref<any[]>([]);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
       run: null,
-      blockSize: null,
+      blockSize: 7,
+      cValue: 7,
       threshold: null,
       type: 'FFPE',
       species: 'Mouse',
@@ -650,16 +783,35 @@ export default defineComponent({
       organ: null,
       orientation: null,
       crop_area: null,
-      barcodes: 1,
+      barcodes: 'Normal',
+      chip_resolution: null,
+      diseaseState: null,
+      diseaseName: null,
+      tissueSlideExperiment: '',
+      tissueBlockExperiment: '',
+      collaborator: null,
+      comments_flowB: '',
+      crosses_flowB: [],
+      blocks_flowB: [],
+      leak_flowB: '',
+      comments_flowA: '',
+      crosses_flowA: [],
+      blocks_flowA: [],
+      leak_flowA: '',
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
       crop.value = new Crop([0, 0], scaleFactor.value);
       roi.value.setScaleFactor(scaleFactor.value);
       crop.value.setScaleFactor(scaleFactor.value);
+      active_roi_available.value = false;
+      roi_active.value = false;
       isBrushMode.value = false;
       isEraseMode.value = false;
       atfilter.value = false;
+      thresh_image_created.value = false;
+      thresh_same.value = false;
+      tixels_filled.value = false;
       isCropMode.value = false;
       grid.value = false;
       cropFlag.value = false;
@@ -672,6 +824,17 @@ export default defineComponent({
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       // metaFlag.value = false;
     }
+    function imageClick(ev: any) {
+      console.log(scaleFactor.value);
+      console.log(ev.evt.layerY / scaleFactor.value);
+      console.log(ev.evt.layerX / scaleFactor.value);
+      console.log(ev);
+    }
+    function changeDiseaseState() {
+      if (metadata.value.diseaseState === 'Normal') {
+        metadata.value.diseaseName = '';
+      }
+    }
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -682,6 +845,52 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
       taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
+    function onChangeScale(ev: any) {
+      const v = scaleFactor.value;
+      current_image.value.scale = { x: v, y: v };
+      konvaConfig.value.width = v * current_image.value.image.width;
+      konvaConfig.value.height = v * current_image.value.image.height;
+      stageWidth.value = konvaConfig.value.width;
+      stageHeight.value = konvaConfig.value.height;
+      roi.value.setScaleFactor(v);
+      crop.value.setScaleFactor(v);
+    }
+    function assignMetadata(slimsData: any) {
+      try {
+        metadata.value.organ = slimsData.cntn_cf_fk_organ;
+        metadata.value.species = slimsData.cntn_cf_fk_species;
+        metadata.value.chip_resolution = slimsData.Resolution;
+        metadata.value.collaborator = slimsData.cntn_cf_source;
+        metadata.value.assay = slimsData.cntn_cf_fk_workflow;
+        metadata.value.diseaseName = slimsData.cntn_cf_disease;
+        metadata.value.tissueSlideExperiment = slimsData.cntn_cf_tissueSlideExperimentalCondition;
+        metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
+        if (metadata.value.diseaseName == null) {
+          metadata.value.diseaseState = 'Healthy';
+        }
+        metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
+        if (metadata.value.barcodes === '1 (normal)') {
+          barcodes.value = 1;
+        } else if (metadata.value.barcodes === '2 (reverseB)') {
+          barcodes.value = 2;
+        } else if (metadata.value.barcodes === '3 (reverseAB)') {
+          barcodes.value = 4;
+        } else {
+          barcodes.value = 3;
+        }
+        metadata.value.comments_flowB = slimsData.comments_flowB;
+        metadata.value.crosses_flowB = slimsData.crosses_flowB;
+        metadata.value.blocks_flowB = slimsData.blocks_flowB;
+        metadata.value.leak_flowB = slimsData.leak_flowB;
+        metadata.value.comments_flowA = slimsData.comments_flowA;
+        metadata.value.crosses_flowA = slimsData.crosses_flowA;
+        metadata.value.blocks_flowA = slimsData.blocks_flowA;
+        metadata.value.leak_flowA = slimsData.leak_flowA;
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
     async function getMeta() {
       try {
         const root = 'data';
@@ -699,6 +908,7 @@ export default defineComponent({
         const jsonFileName = { params: { filename: name } };
         const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
         let slimsData: any;
+        // if the json folder cannot be obtained from local server query slims
         if (!jsonBoolean) {
           loading.value = true;
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
@@ -707,6 +917,7 @@ export default defineComponent({
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */
           while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+            // console.log(args);
             progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
             await new Promise((r) => {
               taskTimeout.value = window.setTimeout(r, 1000);
@@ -720,13 +931,13 @@ export default defineComponent({
             loading.value = false;
             return;
           }
+          // if the metadata is able to be retrieved locally, assign it to slimsData
         } else {
           slimsData = jsonBoolean;
         }
+        // function to assign the local metadata values to the slimsData object fields
         loading.value = false;
-        metadata.value.organ = slimsData.Organ;
-        metadata.value.species = slimsData.Species;
-        metadata.value.type = slimsData['Tissue type'];
+        assignMetadata(slimsData);
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -750,27 +961,27 @@ export default defineComponent({
       const scale_pos = await client.value.getJsonFile(scale_payload);
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
+      // if the json file is retrieved from server use that as metadata
       if (resp) {
         metadata.value = resp;
+        // console.log(resp);
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
+        // otherwise call getMeta to query the API
       } else {
+        console.log('calling getMeta');
         await getMeta();
         optionFlag.value = true;
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
     }
-    async function rotate_image(degrees: number) {
-      document.querySelector(current_image).style.transform = 'rotate(90deg)';
-    }
-
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
       loadingMessage.value = false;
       const root = 'data';
       let filename: any;
-      console.log(optionUpdate.value);
+      // console.log(orientation.value.rotation);
       if (optionUpdate.value) {
         filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
       } else {
@@ -778,7 +989,7 @@ export default defineComponent({
       }
       const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
       try {
-        const img = await client.value.getImageAsJPG({ params: { filename, hflip: orientation.value.horizontal_flip, vflip: orientation.value.vertical_flip, rotation: orientation.value.rotation } });
+        const img = await client.value.getImageAsJPG({ params: { filename, rotation: orientation.value.rotation } });
         imageh.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
@@ -796,6 +1007,8 @@ export default defineComponent({
               original_src: imgObj.src,
               alternative_src: null,
             };
+            console.log(imgObj.width);
+            console.log(imgObj.height);
           };
         }
         loading.value = false;
@@ -811,6 +1024,16 @@ export default defineComponent({
       await loadMetadata();
       await loadImage();
       loading.value = false;
+    }
+
+    function rotate_image(choice: number) {
+      if (choice === 0) {
+        const rotationAmount = parseInt(degreeRotation.value, 10);
+        orientation.value.rotation += rotationAmount;
+      } else {
+        orientation.value.rotation += 270;
+      }
+      loadImage();
     }
 
     function searchRuns(ev: any) {
@@ -838,7 +1061,10 @@ export default defineComponent({
       const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
+      // console.log(orientation.value.rotation);
       roi.value.loadTixels(csvHolder.value);
+      // c_val.value = metadata.value.cValue;
+      // neighbor_size.value = metadata.value.blockSize;
     }
     function updateChannels(ev: any) {
       if (/50/.test(ev)) {
@@ -929,6 +1155,9 @@ export default defineComponent({
       if (roi.value.polygons) {
         if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
         else roi.value.polygons[idx].fill = 'red';
+        console.log(scaleFactor.value);
+        console.log(roi.value.polygons[idx].centerx / scaleFactor.value);
+        console.log(roi.value.polygons[idx].centery / scaleFactor.value);
       }
       isMouseDown.value = true;
     }
@@ -1009,22 +1238,31 @@ export default defineComponent({
         roi.value.polygons = [];
       }
     }
-    function onChangeScale(ev: any) {
-      const v = scaleFactor.value;
-      current_image.value.scale = { x: v, y: v };
-      konvaConfig.value.width = v * current_image.value.image.width;
-      konvaConfig.value.height = v * current_image.value.image.height;
-      stageWidth.value = konvaConfig.value.width;
-      stageHeight.value = konvaConfig.value.height;
-      roi.value.setScaleFactor(v);
-      crop.value.setScaleFactor(v);
+    function extractChannels() {
+      let count = 0;
+      for (let i = 0; i < imageDataObj.value.data.length; i += 4) {
+        if (i < imageDataObj.value.data.length) {
+          // imageDataObj.value.data.set([0], i + 1);
+        //   // console.log(imageDataObj.value.data[i]);
+          const mean = ((imageDataObj.value.data[i] + imageDataObj.value.data[i + 2]) / 2);
+          if (mean * 1.2 < imageDataObj.value.data[i + 1]) {
+          // if (Math.max(imageDataObj.value.data[i], imageDataObj.value.data[i + 1], imageDataObj.value.data[i + 2]) === imageDataObj.value.data[i + 1]) {
+          // if (mean * 1.4 < imageDataObj.value.data[i + 1]) {
+            const setVal = Math.floor(200 + (Math.random() * 30));
+            const min = Math.min(imageDataObj.value.data[i], imageDataObj.value.data[i + 2]);
+            imageDataObj.value.data.set([mean], i + 1);
+            count += 1;
+            // imageDataObj.value.data.set([100], i + 1);
+          }
+        }
+      }
     }
     function onCropButton(ev: any) {
-      console.log(current_image.value.original_src);
       cropFlag.value = true;
       isCropMode.value = true;
       active_roi_available.value = true;
       const coords = crop.value.getCoordinatesOnImage();
+      console.log(coords);
       const imgObj = new window.Image();
       const newImage = new window.Image();
       imgObj.src = URL.createObjectURL(imageh.value);
@@ -1035,6 +1273,8 @@ export default defineComponent({
         canvas.width = coords[2] - coords[0];
         canvas.height = coords[3] - coords[1];
         ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
+        imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
+        extractChannels();
         canvas.toBlob((blob: any) => {
           newImage.src = URL.createObjectURL(blob);
           newImage.onload = (e: any) => {
@@ -1044,24 +1284,21 @@ export default defineComponent({
               draggable: false,
               scale: { x: scaleFactor.value, y: scaleFactor.value },
               image: newImage,
-              src: URL.createObjectURL(blob),
-              original_src: URL.createObjectURL(blob),
+              src: newImage.src,
+              original_src: newImage.src,
               alternative_src: null,
             };
+            onChangeScale('');
+            cropLoading.value = false;
           };
         });
       };
-      onChangeScale('');
       roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
     }
     function finding_roi() {
-      if (!no_thresh.value) {
-        current_image.value.image.src = current_image.value.original_src;
-      }
       grid.value = true;
       active_roi_available.value = false;
       roi_active.value = true;
-      // no_thresh.value = false;
     }
 
     function clear_filled_tixels() {
@@ -1071,14 +1308,31 @@ export default defineComponent({
       }
     }
 
+    function imageDataToBlob() {
+      const w = imageDataObj.value.width;
+      const h = imageDataObj.value.height;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const context = canvas.getContext('2d');
+      context!.putImageData(imageDataObj.value, 0, 0);
+      return canvas.toDataURL();
+      // return new Promise((resolve) => {
+      //   canvas.toBlob(resolve);
+      // })
+    }
     function thresh_clicked() {
       if (!current_image.value) return;
+      threshLoading.value = true;
+      thresh_image_created.value = true;
       const sv = scaleFactor.value;
-      loading.value = true;
-      let img_src = current_image.value.image.original_src;
-      if (bsa_image_disp.value) {
-        img_src = current_image.value.image.src;
+      // loading.value = true;
+      let img_src = current_image.value.image.src;
+      if (!optionUpdate.value) {
+        console.log('here');
+        img_src = imageDataToBlob();
       }
+      // current_image.value.image.src = img_src;
       getPixels(img_src, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
@@ -1089,18 +1343,17 @@ export default defineComponent({
           const newsrc = b.toBlobURL('image/jpeg');
           if (bsa_image_disp.value) {
             current_image.value.image.original_src = current_image.value.image.src;
-            console.log('bsa image displayed');
           }
           current_image.value.image.src = newsrc;
           current_image.value.image.alternative_src = newsrc;
-          // current_image.value.scale = { x: sv, y: sv };
+          current_image.value.scale = { x: sv, y: sv };
           onChangeScale(sv);
           thresh_same.value = true;
           loading.value = false;
           bsa_image_disp.value = false;
+          threshLoading.value = false;
         });
       });
-      thresh_image_created.value = true;
       // setting the filled grid back to default state
       if (tixels_filled.value) {
         clear_filled_tixels();
@@ -1166,7 +1419,7 @@ export default defineComponent({
       if (!spatial.value) return;
       try {
         const task = 'atlasbrowser.generate_h5ad';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
         const params = {
           run_id: run_id.value,
           root_dir: 'data',
@@ -1176,24 +1429,12 @@ export default defineComponent({
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
         generating.value = true;
         await checkTaskStatus(taskObject._id);
-        console.log('1');
-        console.log(taskStatush5.value.status);
-        console.log(taskStatush5.value.position);
-        console.log(taskStatush5.value.status);
-        console.log(taskStatush5.value.progress);
         /* eslint-disable no-await-in-loop */
         while (taskStatush5.value.status !== 'SUCCESS' && taskStatush5.value.status !== 'FAILURE') {
           if (taskStatush5.value.status === 'PROGRESS') {
             await updateH5ad(taskStatus.value.progress);
-            console.log('2');
-            console.log(taskStatush5.value.position);
-            console.log(taskStatush5.value.progress);
             progressMessage.value = `${taskStatush5.value.progress}% - ${taskStatush5.value.position}`;
           }
-          console.log('3');
-          console.log(taskStatush5.value.position);
-          console.log(taskStatush5.value.progress);
-
           await new Promise((r) => {
             taskTimeout.value = window.setTimeout(r, 1000);
           });
@@ -1218,6 +1459,9 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
       }
     }
+    async function showSpatialFolder() {
+      checkSpatial.value = true;
+    }
     async function generateSpatial() {
       if (!client.value) return;
       try {
@@ -1227,11 +1471,14 @@ export default defineComponent({
         loadingMessage.value = true;
         progressMessage.value = null;
         loading.value = true;
-        spatial.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
-        const cropCoords = crop.value.getCoordinatesOnImage();
+        let cropCoords = crop.value.getCoordinatesOnImage();
+        console.log(cropCoords);
+        if (optionUpdate.value) {
+          cropCoords = metadata.value.crop_area;
+        }
         const points: number[] = [];
         coords.forEach((v, i) => {
           points.push(v.x);
@@ -1240,12 +1487,25 @@ export default defineComponent({
         metadata.value = Object.assign(metadata.value, {
           points,
           run: run_id.value,
-          blockSize: null,
+          blockSize: neighbor_size.value,
           threshold: threshold.value,
+          cValue: c_val.value,
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
           barcodes: barcodes.value,
+          diseaseState: metadata.value.diseaseState,
+          diseaseName: metadata.value.diseaseName,
+          tissueSlideExperiment: metadata.value.tissueSlideExperiment,
+          tissueBlockExperiment: metadata.value.tissueBlockExperiment,
+          comments_flowB: metadata.value.comments_flowB,
+          crosses_flowB: metadata.value.crosses_flowB,
+          blocks_flowB: metadata.value.blocks_flowB,
+          leaks_flowB: metadata.value.leak_flowB,
+          comments_flowA: metadata.value.comments_flowA,
+          crosses_flowA: metadata.value.crosses_flowA,
+          blocks_flowA: metadata.value.blocks_flowA,
+          leak_flowA: metadata.value.leak_flowA,
         });
         const params = {
           run_id: run_id.value,
@@ -1291,6 +1551,7 @@ export default defineComponent({
         one.value = 0;
         two.value = 0;
         three.value = 0;
+        spatial.value = true;
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -1303,7 +1564,6 @@ export default defineComponent({
       }
     }
     function handle_spatial_call() {
-      console.log(orientation.value);
       if (!client.value) {
         snackbar.dispatch({ text: 'Client is not initialized', options: { right: true, color: 'error' } });
       } else if (!tixels_filled.value) {
@@ -1406,15 +1666,15 @@ export default defineComponent({
           }
         },
       },
-      {
-        text: 'Save spatial data',
-        icon: 'mdi-content-save',
-        color: 'primary',
-        tooltip: 'Save spatial data',
-        click: () => {
-          handle_spatial_call();
-        },
-      },
+      // {
+      //   text: 'Save spatial data',
+      //   icon: 'mdi-content-save',
+      //   color: 'primary',
+      //   tooltip: 'Save spatial data',
+      //   click: () => {
+      //     handle_spatial_call();
+      //   },
+      // },
     ];
     onMounted(async () => {
       await clientReady;
@@ -1470,6 +1730,9 @@ export default defineComponent({
       objectToArray,
       generateLattices,
       current_image,
+      imageChannels,
+      missingGreen,
+      imageDataObj,
       loadImage,
       searchRuns,
       onResize,
@@ -1491,6 +1754,8 @@ export default defineComponent({
       threshold,
       loading,
       loadingMessage,
+      cropLoading,
+      threshLoading,
       orientation,
       onLatticeButton,
       onCropButton,
@@ -1521,7 +1786,6 @@ export default defineComponent({
       welcome_screen,
       company_image,
       thresh_clicked,
-      no_thresh,
       c_val,
       neighbor_size,
       active_roi_available,
@@ -1540,15 +1804,42 @@ export default defineComponent({
       hide_grid,
       load_tixel_state,
       clear_filled_tixels,
+      changeDiseaseState,
+      degreeRotation,
+      assignMetadata,
+      imageDataToBlob,
+      checkSpatial,
+      showSpatialFolder,
+      availableFiles,
+      flowMetadata,
+      imageClick,
     };
   },
 });
 
 </script>
 <style scoped>
-
+.leftRotate {
+  margin-bottom: 50px;
+}
 .spaced_btn {
   margin-left: 10px;
+  margin-bottom: 50px;
+}
+.radio1 {
+  position: relative;
+  top: 12px;
+  right: 95px;
+}
+.radio2 {
+  position: relative;
+  top: 35px;
+  right: 125px;
+
+}
+.toggle_switch {
+  padding: 0;
+  margin: 1;
 }
 .toolRow {
   height: 5vh;

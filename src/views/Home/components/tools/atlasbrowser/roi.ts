@@ -15,7 +15,7 @@ export class ROI {
     this.scalefactor = scale;
     this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
     this.initializeROI(coord[0], coord[1]);
-    this.scalefactor = 0.15;
+    // this.scalefactor = 0.15;
     this.channels = 50;
     this.polygons = [];
   }
@@ -119,18 +119,25 @@ export class ROI {
   getMask(length: any[]): any[] {
     return this.polygons.map((v: any) => {
       const position = v.posit;
-      const y = Math.abs(((v.centery * v.scaleY) / this.scalefactor) - length[0]);
-      const x = Math.abs(((v.centerx * v.scaleX) / this.scalefactor) - length[1]);
+      const y = v.centery / this.scalefactor;
+      const x = v.centerx / this.scalefactor;
       const value = v.fill != null;
       return { position, value, coordinates: { y, x } };
     });
   }
 
   autoMask(pixels: any, threshold: number): any[] {
+    console.log(this.scalefactor);
     const [height, width] = pixels.shape;
+    let count = 0;
     lodash.each(this.polygons, (v, i) => {
-      const y = Math.round((v.centerx * v.scaleX) / this.scalefactor);
-      const x = Math.round((v.centery * v.scaleY) / this.scalefactor);
+      if (count === 0) {
+        console.log(v.scaleY);
+        console.log(v.scaleX);
+        count += 1;
+      }
+      const y = Math.round(v.centerx / this.scalefactor);
+      const x = Math.round(v.centery / this.scalefactor);
       const r = Math.round(v.radius / this.scalefactor);
       let pixval = 0.0;
       for (let row = x - r; row < x + r; row += 1) {
@@ -178,13 +185,17 @@ export class ROI {
       elm.scaleX = v.scaleX * ratio;
       elm.scaleY = v.scaleY * ratio;
       elm.radius = v.radius * ratio;
+      elm.centerx = v.centerx * ratio;
+      elm.centery = v.centery * ratio;
       elm.strokeWidth = this.scalefactor < 0.11 ? 0 : Math.min(ratio, 1.0);
       newPolygons.push(elm);
     });
+    // this.generatePolygons();
     this.polygons = newPolygons;
   }
 
   getQCScaleFactors(img: any, length: any[]) {
+    // obtaining scale factor for high res and low res images
     const hsf = 2000.0 / img.image.width;
     const lsf = 600.0 / img.image.width;
     const mask = this.getMask(length);
