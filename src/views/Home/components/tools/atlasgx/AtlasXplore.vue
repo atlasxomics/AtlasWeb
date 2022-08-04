@@ -1131,7 +1131,7 @@ export default defineComponent({
           await checkTaskStatus(taskObject._id);
         }
         if (taskStatus.value.status !== 'SUCCESS') {
-          snackbar.dispatch({ text: 'Worker failed in AtlasXplorex', options: { right: true, color: 'error' } });
+          snackbar.dispatch({ text: 'Worker failed in AtlasXplore', options: { right: true, color: 'error' } });
           loading.value = false;
         } else {
           snackbar.dispatch({ text: `Motif ${trackBrowserGenes.value[0]} found`, options: { right: true, color: 'success' } });

@@ -1,6 +1,6 @@
 <template>
-  <v-container fluid class="ma-0 pa-0">
-    <table style="width: 100%;border-spacing: 35px;" v-if="name">
+  <v-container fluid class="ma-0 pa-0"  v-if="allRuns">
+    <table style="width: 100%;border-spacing: 35px;">
     <caption style="font-size: 20px;font-weight: bold;padding: 15px;border-bottom: 1px solid;">{{name}}</caption>
       <tr style="border-bottom:1px solid rgb(92, 112, 128); color:rgb(92, 112, 128);font-weight: 500;">
         <th>Run ID</th>
