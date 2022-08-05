@@ -1272,6 +1272,8 @@ export default defineComponent({
       isDrawingRect.value = false;
       heatMap.value = 'jet';
       manualClusterFlag.value = false;
+      cellTypeMap.value = {};
+      cellTypeMapCopy.value = {};
       await runSpatial();
       await loadExpressions();
       await getMeta();
