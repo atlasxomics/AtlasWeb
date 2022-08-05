@@ -1272,7 +1272,7 @@ export default defineComponent({
       isDrawingRect.value = false;
       heatMap.value = 'jet';
       manualClusterFlag.value = false;
-      await runSpatial('begin');
+      await runSpatial();
       await loadExpressions();
       await getMeta();
     }
