@@ -979,7 +979,7 @@ export default defineComponent({
       } else {
         filename = `${root}/${run_id.value}/postB_BSA.TIF`;
       }
-      const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
+      const filenameList = { params: { path: 'Images', filter: `${run_id.value}`, bucket: 'atx-illumina' } };
       try {
         const img = await client.value.getImageAsJPG({ params: { bucket: 'atx-illumina', filename, rotation: orientation.value.rotation } });
         imageh.value = img;
@@ -1414,7 +1414,7 @@ export default defineComponent({
         const queue = 'atxcloud_atlasbrowser';
         const params = {
           run_id: run_id.value,
-          root_dir: 'data',
+          root_dir: 'Images',
         };
         const args: any[] = [params];
         const kwargs: any = {};
@@ -1464,7 +1464,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'dog';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         console.log(cropCoords);
@@ -1501,7 +1501,6 @@ export default defineComponent({
         });
         const params = {
           run_id: run_id.value,
-          root_dir: 'data',
           files: allFiles.value,
           crop_area: cropCoords,
           mask: roi.value.getMask(cropCoords),
@@ -1509,8 +1508,10 @@ export default defineComponent({
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
           barcodes: barcodes.value,
+          root_dir: 'Images',
+          bucket: 'atx-illumina',
         };
-
+        console.log(params);
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -1588,7 +1589,7 @@ export default defineComponent({
       itemsHolder.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { bucket: 'atx-illumina', path: 'Images', filter: 'postB_BSA' } };
+      const fl_payload = { params: { bucket: 'atx-illumina', path: 'Images', filter: run_id.value.toString().concat('postB_BSA.tif') } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
       items.value = qc_data;
