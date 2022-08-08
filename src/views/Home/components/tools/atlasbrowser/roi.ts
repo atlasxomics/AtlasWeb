@@ -164,7 +164,7 @@ export class ROI {
 
   setPolygonsInCircle(x: number, y: number, radius: number, key: string, value: any) {
     lodash.each(this.polygons, (v: any, i: number) => {
-      const tf = (((v.centery * v.scaleX) - x) ** 2 + ((v.centerx * v.scaleY) - y) ** 2) < (radius ** 2);
+      const tf = ((v.centery - x)) ** 2 + ((v.centerx - y) ** 2) < (radius ** 2);
       if (tf) this.polygons[i][key] = value;
     });
   }
