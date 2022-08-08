@@ -595,6 +595,8 @@
         <v-col cols="12" sm="12">
         <SpatialFolderViewer
         v-if="checkSpatial"
+        :root="root"
+        :bucket_name="bucket_name"
         :selectedRunID="run_id"
         :getFiles="checkSpatial"
         >
@@ -946,11 +948,11 @@ export default defineComponent({
       if (!client.value) return;
       loading.value = true;
       loadingMessage.value = false;
-      const root = 'data';
-      const filename = `${root}/${run_id.value}/images/spatial/metadata.json`;
-      const scale_filename = `${root}/${run_id.value}/images/spatial/scalefactors_json.json`;
-      const pos_filename = `${root}/${run_id.value}/images/spatial/tissue_positions_list.csv`;
-      const payload = { params: { filename } };
+      // specify path to images within s3
+      const filename = `${root}/${run_id.value}/spatial/metadata.json`;
+      const scale_filename = `${root}/${run_id.value}/spatial/scalefactors_json.json`;
+      const pos_filename = `${root}/${run_id.value}/spatial/tissue_positions_list.csv`;
+      const payload = { params: { filename, bucket_name } };
       const resp = await client.value.getJsonFile(payload);
       const pos_payload = { params: { filename: pos_filename, bucket_name } };
       const resp_pos = await client.value.getCsvFile(pos_payload);

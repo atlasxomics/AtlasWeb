@@ -38,6 +38,8 @@ export default defineComponent({
   props: {
     selectedRunID: { required: true, type: String },
     getFiles: { required: true, type: Boolean },
+    bucket_name: { required: true, type: String },
+    root: { required: true, type: String },
   },
   components: {
     AvailableFileList,
@@ -64,8 +66,8 @@ export default defineComponent({
         console.log('no client');
         return;
       }
-      const folder_path = 'data/'.concat(props.selectedRunID).concat('/images');
-      const file_payload = { params: { path: folder_path } };
+      const folder_path = props.root.concat('/').concat(props.selectedRunID);
+      const file_payload = { params: { bucket_name: props.bucket_name, path: folder_path } };
       const run_files = await client.value.getFileList(file_payload);
       for (let i = 0; i < run_files.length; i += 1) {
         const temp_obj = { id: i, file: run_files[i] };
@@ -79,7 +81,7 @@ export default defineComponent({
     async function loadDisplayImage(filename: string) {
       try {
         image_selected.value = true;
-        const image = await client.value?.getImageAsJPG({ params: { filename } });
+        const image = await client.value?.getImageAsJPG({ params: { bucket_name: props.bucket_name, filename } });
         if (image) {
           selectedImageURL.value = URL.createObjectURL(image);
           selectedImageURL_array.value = [selectedImageURL.value];
@@ -89,14 +91,14 @@ export default defineComponent({
       }
     }
     async function loadCSVFile(input_filename: string) {
-      const payload = { params: { filename: input_filename } };
+      const payload = { params: { bucket_name: props.bucket_name, filename: input_filename } };
       const resp = await client.value?.getCsvFile(payload);
       csvPretty.value = JSON.stringify(resp, null, 4);
       csvPretty_array.value = [csvPretty.value];
     }
     // method called to load a json file into compotnent
     async function loadJSONFile(input_filename: string) {
-      const payload = { params: { filename: input_filename } };
+      const payload = { params: { bucket_name: props.bucket_name, filename: input_filename } };
       const resp = await client.value?.getJsonFile(payload);
       jsonPackage.value = resp;
       jsonString.value = JSON.stringify(resp, null, 8);

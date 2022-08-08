@@ -335,6 +335,7 @@ export default class Client {
   }
   async getFileList(payload: FileListRequest): Promise<any> {
     try {
+      console.log(payload);
       const resp = await this.axios.get('api/v1/storage/list', payload);
       return resp.data;
     } catch (error) {
