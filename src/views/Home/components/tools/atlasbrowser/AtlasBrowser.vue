@@ -675,6 +675,11 @@ export default defineComponent({
   props: ['query'],
   components: { SpatialFolderViewer },
   setup(props, ctx) {
+    // Parameters for changing which bucket images are being pulled to and written to
+    // s3 bucket to connect to
+    const bucket_name = 'atx-illumina';
+    // root directory of that s3 bucket
+    const root = 'Images';
     const welcome_screen = ref<boolean>(true);
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
@@ -884,7 +889,6 @@ export default defineComponent({
 
     async function getMeta() {
       try {
-        const root = 'data';
         const task = 'creation.create_files';
         const queue = 'creation_worker';
         const params = {
@@ -892,17 +896,19 @@ export default defineComponent({
           path: `${root}/${run_id.value}`,
           file_type: 'json',
           file_name: 'metadata.json',
+          bucket_name,
         };
         const args: any[] = [params];
         const kwargs: any = {};
         const name = `${root}/${run_id.value}/metadata.json`;
-        const jsonFileName = { params: { filename: name } };
+        const jsonFileName = { params: { filename: name, bucket_name } };
         const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
         let slimsData: any;
         // if the json folder cannot be obtained from local server query slims
         if (!jsonBoolean) {
           loading.value = true;
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
+          console.log(slimsData);
           params.data = slimsData;
           const taskObject = await client.value!.postTask(task, args, kwargs, queue);
           await checkTaskStatus(taskObject._id);
@@ -946,9 +952,9 @@ export default defineComponent({
       const pos_filename = `${root}/${run_id.value}/images/spatial/tissue_positions_list.csv`;
       const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename } };
+      const pos_payload = { params: { filename: pos_filename, bucket_name } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
-      const scale_payload = { params: { filename: scale_filename } };
+      const scale_payload = { params: { filename: scale_filename, bucket_name } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
@@ -970,18 +976,18 @@ export default defineComponent({
       if (!client.value) return;
       loading.value = true;
       loadingMessage.value = false;
-      // const root = 'data';
-      const root = 'Images';
       let filename: any;
       // console.log(orientation.value.rotation);
+      // path to images
       if (optionUpdate.value) {
         filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
       } else {
         filename = `${root}/${run_id.value}/postB_BSA.TIF`;
       }
-      const filenameList = { params: { path: 'Images', filter: `${run_id.value}`, bucket: 'atx-illumina' } };
+      const filenameList = { params: { path: root, filter: `${run_id.value}`, bucket_name } };
       try {
-        const img = await client.value.getImageAsJPG({ params: { bucket: 'atx-illumina', filename, rotation: orientation.value.rotation } });
+        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation } };
+        const img = await client.value.getImageAsJPG(pl);
         imageh.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
@@ -1414,7 +1420,7 @@ export default defineComponent({
         const queue = 'atxcloud_atlasbrowser';
         const params = {
           run_id: run_id.value,
-          root_dir: 'Images',
+          root_dir: root,
         };
         const args: any[] = [params];
         const kwargs: any = {};
@@ -1508,8 +1514,8 @@ export default defineComponent({
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
           barcodes: barcodes.value,
-          root_dir: 'Images',
-          bucket: 'atx-illumina',
+          root_dir: root,
+          bucket: bucket_name,
         };
         console.log(params);
         const args: any[] = [params];
@@ -1589,11 +1595,16 @@ export default defineComponent({
       itemsHolder.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { bucket: 'atx-illumina', path: 'Images', filter: run_id.value.toString().concat('postB_BSA.tif') } };
+      // Change the filter parameters of the below opject to change the displayed runs
+      // Cap sensitive
+      const fl_payload = { params: { bucket_name, path: root, filter: 'postB_BSA.tif' } };
       const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
-      items.value = qc_data;
-      itemsHolder.value = qc_data;
+      console.log(filelist);
+      if (filelist !== false) {
+        const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
+        items.value = qc_data;
+        itemsHolder.value = qc_data;
+      }
       loading.value = false;
     }
     async function selectAction(ev: any) {
@@ -1804,6 +1815,8 @@ export default defineComponent({
       availableFiles,
       flowMetadata,
       imageClick,
+      root,
+      bucket_name,
     };
   },
 });

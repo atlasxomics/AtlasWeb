@@ -366,6 +366,7 @@ export default class Client {
     const uri = '/api/v1/dataset/slimstest_runid';
     const run_id = `D${padzeros(Number(rid.split('D')[1]), 5)}`;
     const payload = { params: { run_id } };
+    console.log(payload);
     const resp = await this.axios.get(uri, payload);
     return resp.data;
   }
