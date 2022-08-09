@@ -204,7 +204,7 @@ export class ROI {
     const { x: x1, y: y1 } = mask[0].coordinates;
     const { x: x2, y: y2 } = mask[1].coordinates;
     const spot_fiduciary_ratio = 1.6153846;
-    const sdf = Math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2)) / 3;
+    const sdf = Math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2)) / 2;
     return {
       spot_diameter_fullres: sdf,
       fiducial_diameter_fullres: sdf * spot_fiduciary_ratio,

@@ -208,7 +208,7 @@
                 label="Scale"
                 type="number"
                 min="0.1"
-                max=".7"
+                max="1.5"
                 step="0.005"
                 :disabled="!current_image"
                 @change="onChangeScale"></v-slider>
@@ -1474,7 +1474,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         console.log(cropCoords);
