@@ -984,11 +984,12 @@ export default defineComponent({
       if (optionUpdate.value) {
         filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
       } else {
-        filename = `${root}/${run_id.value}/postB_BSA.TIF`;
+        filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       }
       const filenameList = { params: { path: root, filter: `${run_id.value}`, bucket_name } };
       try {
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation } };
+        console.log(pl);
         const img = await client.value.getImageAsJPG(pl);
         imageh.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
@@ -1599,7 +1600,7 @@ export default defineComponent({
       loading.value = true;
       // Change the filter parameters of the below opject to change the displayed runs
       // Cap sensitive
-      const fl_payload = { params: { bucket_name, path: root, filter: 'postB_BSA.tif' } };
+      const fl_payload = { params: { bucket_name, path: root, filter: run_id.value.concat('_postB_BSA.tif') } };
       const filelist = await client.value.getFileList(fl_payload);
       console.log(filelist);
       if (filelist !== false) {
