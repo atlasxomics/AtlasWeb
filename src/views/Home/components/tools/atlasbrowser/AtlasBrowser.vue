@@ -208,7 +208,7 @@
                 label="Scale"
                 type="number"
                 min="0.1"
-                max=".7"
+                max="1.5"
                 step="0.005"
                 :disabled="!current_image"
                 @change="onChangeScale"></v-slider>
@@ -487,26 +487,12 @@
                 </div>
                 </template>
                 <v-stage
-                  v-if="!checkSpatial"
+                  v-if="!checkSpatial && !welcome_screen"
                   ref="konvaStage"
                   class="mainStage"
                   :config="konvaConfig"
                   v-resize="onResize"
                   @mousemove="handleMouseMoveStage">
-                  <v-layer
-                  id="WelcomeLayer"
-                  v-if="welcome_screen">
-                  <v-text
-                  ref="text1"
-                  :config="{
-                    text: 'Welcome to AtlasXbrowser',
-                    fontSize: 30,
-                    align: 'center',
-                    width: 1100,
-                    padding: 25
-                  }">
-                  </v-text>
-                  </v-layer>
                   <v-layer
                     v-if="current_image"
                     ref="imageLayer"
@@ -601,6 +587,18 @@
         :getFiles="checkSpatial"
         >
         </SpatialFolderViewer>
+        </v-col>
+        <v-col cols="12" sm="12"
+        justify="center"
+        v-if="welcome_screen"
+        >
+        <v-img
+        class="center"
+        src="@/assets/images/atlasbg.png"
+        width="width"
+        height="height"
+        >
+        </v-img>
         </v-col>
       </v-row>
     </v-container>
@@ -767,6 +765,8 @@ export default defineComponent({
     const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
     const availableFiles = ref<any[]>([]);
+    const postB_or_bsa = ref<any>();
+    const black_white = ref<string>();
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -819,6 +819,7 @@ export default defineComponent({
       runIdFlag.value = false;
       loading.value = false;
       imageh.value = null;
+      optionUpdate.value = false;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       // metaFlag.value = false;
     }
@@ -888,7 +889,6 @@ export default defineComponent({
         console.log(error);
       }
     }
-
     async function getMeta() {
       try {
         const task = 'creation.create_files';
@@ -961,7 +961,7 @@ export default defineComponent({
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
-      if (resp) {
+      if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
         // console.log(resp);
         optionFlag.value = false;
@@ -995,6 +995,7 @@ export default defineComponent({
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
+        const temp = imgObj.src;
         const scalefactor = 0.1;
         if (imgObj) {
           imgObj.onload = (ev: any) => {
@@ -1004,12 +1005,10 @@ export default defineComponent({
               draggable: false,
               scale: { x: scalefactor, y: scalefactor },
               image: imgObj,
-              src: imgObj.src,
-              original_src: imgObj.src,
-              alternative_src: null,
+              src: null,
+              original_src: null,
             };
-            console.log(imgObj.width);
-            console.log(imgObj.height);
+            postB_or_bsa.value = temp;
           };
         }
         loading.value = false;
@@ -1278,6 +1277,7 @@ export default defineComponent({
         extractChannels();
         canvas.toBlob((blob: any) => {
           newImage.src = URL.createObjectURL(blob);
+          const temp = newImage.src;
           newImage.onload = (e: any) => {
             current_image.value = {
               x: 0,
@@ -1285,10 +1285,11 @@ export default defineComponent({
               draggable: false,
               scale: { x: scaleFactor.value, y: scaleFactor.value },
               image: newImage,
-              src: newImage.src,
-              original_src: newImage.src,
+              src: null,
+              original_src: null,
               alternative_src: null,
             };
+            postB_or_bsa.value = temp;
             onChangeScale('');
             cropLoading.value = false;
           };
@@ -1328,7 +1329,7 @@ export default defineComponent({
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
       // loading.value = true;
-      let img_src = current_image.value.image.src;
+      let img_src = postB_or_bsa.value;
       if (!optionUpdate.value) {
         console.log('here');
         img_src = imageDataToBlob();
@@ -1342,11 +1343,12 @@ export default defineComponent({
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
-          if (bsa_image_disp.value) {
-            current_image.value.image.original_src = current_image.value.image.src;
-          }
+          const temp = newsrc;
+          // if (bsa_image_disp.value) {
+          //   current_image.value.image.original_src = current_image.value.image.src;
+          // }
+          bw_image.value = newsrc;
           current_image.value.image.src = newsrc;
-          current_image.value.image.alternative_src = newsrc;
           current_image.value.scale = { x: sv, y: sv };
           onChangeScale(sv);
           thresh_same.value = true;
@@ -1473,7 +1475,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'dog';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         console.log(cropCoords);
@@ -1575,11 +1577,11 @@ export default defineComponent({
       }
     }
     function display_bsa() {
-      current_image.value.image.src = current_image.value.image.original_src;
+      current_image.value.image.src = postB_or_bsa.value;
       bsa_image_disp.value = true;
     }
     function display_bw() {
-      current_image.value.image.src = current_image.value.image.alternative_src;
+      current_image.value.image.src = bw_image.value;
       bsa_image_disp.value = false;
     }
     function autoFill(ev: any) {
@@ -1629,6 +1631,7 @@ export default defineComponent({
       }
     });
     watch(run_id, async (v, ov) => {
+      checkSpatial.value = false;
       runIDSelected.value = true;
       initialize();
       await loadAll();
@@ -1672,15 +1675,6 @@ export default defineComponent({
           }
         },
       },
-      // {
-      //   text: 'Save spatial data',
-      //   icon: 'mdi-content-save',
-      //   color: 'primary',
-      //   tooltip: 'Save spatial data',
-      //   click: () => {
-      //     handle_spatial_call();
-      //   },
-      // },
     ];
     onMounted(async () => {
       await clientReady;
@@ -1820,6 +1814,8 @@ export default defineComponent({
       imageClick,
       root,
       bucket_name,
+      postB_or_bsa,
+      black_white,
     };
   },
 });
@@ -1857,5 +1853,11 @@ export default defineComponent({
 }
 .main {
   padding-top: 15px;
+}
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 80%;
 }
 </style>
