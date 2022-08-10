@@ -373,8 +373,6 @@ export default defineComponent({
       lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
         circlesSpatialUMAP.value[i].fill = c.originalColor;
         circlesSpatialUMAP.value[i].stroke = c.originalColor;
-      });
-      lodash.each(circlesSpatial.value, (c: any, i: number) => {
         circlesSpatial.value[i].fill = c.originalColor;
         circlesSpatial.value[i].stroke = c.originalColor;
       });
@@ -467,16 +465,11 @@ export default defineComponent({
         if (c.cluster !== clusterName) {
           circlesSpatial.value[i].fill = inactiveColor.value;
           circlesSpatial.value[i].stroke = inactiveColor.value;
-        } else {
-          circlesSpatial.value[i].fill = c.originalColor;
-          circlesSpatial.value[i].stroke = c.originalColor;
-        }
-      });
-      lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
-        if (c.cluster !== clusterName) {
           circlesSpatialUMAP.value[i].fill = inactiveColor.value;
           circlesSpatialUMAP.value[i].stroke = inactiveColor.value;
         } else {
+          circlesSpatial.value[i].fill = c.originalColor;
+          circlesSpatial.value[i].stroke = c.originalColor;
           circlesSpatialUMAP.value[i].fill = c.originalColor;
           circlesSpatialUMAP.value[i].stroke = c.originalColor;
         }
@@ -503,7 +496,7 @@ export default defineComponent({
       stepArray.value = [];
       const colors: any[] = [];
       let colors_intensity: any[] = [];
-      const numClusters = lodash.uniq(spatialData.value.clusters).length;
+      const numClusters = spatialData.value.cluster_names.length;
       if (!colorFromParent.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
         colors_raw.forEach((v: any, i: number) => {
@@ -730,7 +723,9 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       } finally {
         loading.value = false;
-        ctx.emit('spatialFlag', spatialData.value);
+        if (selectedGenes.value.length === 0 && (!isDrawingRect.value && !isDrawing.value)) {
+          ctx.emit('spatialFlag', spatialData.value);
+        }
       }
     }
     // Drawing
@@ -743,9 +738,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (selectedGenes.value.length > 0) {
-        text = `${text}\nAvg: ${item.total / selectedGenes.value.length}`;
+        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(2)}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          text = `${text}\n${k}: ${v}`;
+          text = `${text}\n${k}: ${v.toFixed(2)}`;
         });
       }
       tooltipText.text(text);
@@ -818,9 +813,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (selectedGenes.value.length > 0) {
-        text = `${text}\nAvg: ${item.total / selectedGenes.value.length}`;
+        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(2)}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          text = `${text}\n${k}: ${v}`;
+          text = `${text}\n${k}: ${v.toFixed(2)}`;
         });
       }
       tooltipTextRight.text(text);

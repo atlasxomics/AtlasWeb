@@ -57,7 +57,7 @@ export default defineComponent({
       { name: 'Atlas Browser', access_control: ['admin', 'user'], query: { component: 'AtlasBrowser' }, text: 'Generate the tixel information using adaptive filter and interactive annotations.' },
       { name: 'Image Viewer', access_control: ['admin'], query: { component: 'ImageViewer' }, text: 'Browse wafers/chips/DBiTs and view images related to the hardwares/runs' },
       { name: 'AtlasViewer', access_control: ['admin'], query: { component: 'AtlasViewer' }, text: 'QC file browser with metadata and output images' },
-      { name: 'AtlasXplore', access_control: ['admin', 'user'], query: { component: 'AtlasXplore' }, text: 'View spatial information and plots of genes' },
+      { name: 'AtlasXplore', access_control: ['admin', 'user', 'collab'], query: { component: 'AtlasXplore' }, text: 'View spatial information and plots of genes' },
       { name: 'Atlas Run Information Viewer', access_control: ['admin', 'user'], query: { component: 'AtlasRunViewer' }, text: 'View data files currently uploaded by run.' },
       // { name: 'Atlas Compare', access_control: ['admin'], query: { component: 'AtlasCompare' }, text: '' },
       // { name: 'Atlas Test', access_control: ['admin'], color: 'red', query: { component: 'AtlasTest' } },
