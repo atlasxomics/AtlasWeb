@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-container v-if="resolveAuthGroup(['admin', 'user'])" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
+    <v-container v-if="resolveAuthGroup(['admin', 'user']) || query.public" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
           <v-tooltip bottom :disabled="metaFlag">
@@ -630,7 +630,7 @@
         </v-col>
       </v-row>
     </v-container>
-    <!-- <loading-page v-if="!resolveAuthGroup(['admin']) && !query.public" :listRuns="collabData" :collabName="collabName"/> -->
+    <loading-page v-if="resolveAuthGroup(['collab']) && !query.public" :listRuns="collabData" :collabName="collabName" :loading="loading"/>
   </v-app>
 </template>
 
@@ -965,7 +965,7 @@ export default defineComponent({
       const cellmapCopy: any = {};
       const cmapCopy: any = {};
       const colors: any[] = [];
-      const numClusters = lodash.uniq(spatialData.value.clusters).length;
+      const numClusters = spatialData.value.cluster_names.length;
       if (!manualClusterFlag.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
         colors_raw.forEach((v: any, i: number) => {
@@ -991,36 +991,34 @@ export default defineComponent({
     }
     async function updateSpatial(ev: any) {
       spatialData.value = ev;
-      if (Object.keys(spatialData.value.genes).length === 0) {
-        const geneRank: any[] = [];
-        const tableHeaders: any[] = [];
-        clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
-        tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
-        for (let i = 0; i < clusterItems.value.length; i += 1) {
-          tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
-        }
-        topHeaders.value = tableHeaders;
-        lodash.each(spatialData.value.top_ten, (v: string[], i: number) => {
-          const tenGenes: {[k: string]: any} = {};
-          const key = [];
-          const value = [];
-          key.push('id');
-          value.push(i);
-          for (let x = 0; x < clusterItems.value!.length; x += 1) {
-            key.push(clusterItems.value![x].name);
-            value.push(v[x]);
-          }
-          for (let j = 0; j < key.length; j += 1) {
-            tenGenes[key[j]] = value[j];
-          }
-          geneRank.push(tenGenes);
-        });
-        geneNames.value = geneRank;
-        lengthClust.value = clusterItems.value.length;
-        topSelected.value = spatialData.value.top_selected;
-        loading.value = false;
-        await updateCircles();
+      const geneRank: any[] = [];
+      const tableHeaders: any[] = [];
+      clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
+      tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
+      for (let i = 0; i < clusterItems.value.length; i += 1) {
+        tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
       }
+      topHeaders.value = tableHeaders;
+      lodash.each(spatialData.value.top_ten, (v: string[], i: number) => {
+        const tenGenes: {[k: string]: any} = {};
+        const key = [];
+        const value = [];
+        key.push('id');
+        value.push(i);
+        for (let x = 0; x < clusterItems.value!.length; x += 1) {
+          key.push(clusterItems.value![x].name);
+          value.push(v[x]);
+        }
+        for (let j = 0; j < key.length; j += 1) {
+          tenGenes[key[j]] = value[j];
+        }
+        geneRank.push(tenGenes);
+      });
+      geneNames.value = geneRank;
+      lengthClust.value = clusterItems.value.length;
+      topSelected.value = spatialData.value.top_selected;
+      loading.value = false;
+      await updateCircles();
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev;
@@ -1279,6 +1277,7 @@ export default defineComponent({
       await getMeta();
     }
     async function loadingPage() {
+      loading.value = true;
       const funcInsideLoad = (id: string, checker: any) => {
         let v = false;
         if (id.length > 1) {
@@ -1294,24 +1293,25 @@ export default defineComponent({
       await fetchFileList();
       if (items.value) {
         const checker = items.value.map((ids: any) => ids.id);
-        const newe: any[] = [];
+        const matchedRuns: any[] = [];
         val.forEach((value: any, i: any) => {
           const yeah = funcInsideLoad(removeZeros(value['Run Id']), checker);
-          if (yeah && !newe.includes(yeah)) {
-            newe.push(yeah);
+          if (yeah && !matchedRuns.includes(yeah)) {
+            matchedRuns.push(yeah);
           }
         });
         const dataStruct: any[] = [];
-        newe.forEach(async (rid: any, i: any) => {
+        matchedRuns.forEach(async (rid: any, i: any) => {
           await getMeta(rid);
           const fn = `data/${rid}/h5/obj/genes.h5ad`;
           filename.value = fn;
           await runSpatial(rid);
-          const valueHolder = { runId: `${cleanRunId(rid)}`, organ: `${metadata.value.organ}`, species: `${metadata.value.species}`, disease: `${metadata.value.diseaseState}`, link: `${publicLink.value}` };
+          const valueHolder = { date: 'n/a', runId: `${cleanRunId(rid)}`, organ: `${metadata.value.organ}`, species: `${metadata.value.species}`, expcond: `${metadata.value.diseaseState}`, link: `${publicLink.value}` };
           dataStruct.push(valueHolder);
         });
         collabData.value = dataStruct;
       }
+      loading.value = false;
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
@@ -1486,37 +1486,40 @@ export default defineComponent({
     ];
     onMounted(async () => {
       await clientReady;
-      // if (!resolveAuthGroup(['admin']) && (props.query && !props.query.public)) {
-      //   await loadingPage();
-      // } else {
-      store.commit.setSubmenu(submenu);
-      if (props.query && !props.query.public) {
-        await fetchFileList();
-        if (props.query.run_id) {
-          // loadCandidateWorkers('AtlasXploreX');
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-          await selectAction({ id: props.query.run_id });
-        } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+      if (resolveAuthGroup(['collab']) && (props.query && !props.query.public)) {
+        await loadingPage();
+      } else {
+        store.commit.setSubmenu(submenu);
+        if (props.query && !props.query.public) {
+          await fetchFileList();
+          if (props.query.run_id) {
+            // loadCandidateWorkers('AtlasXploreX');
+            currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+            await selectAction({ id: props.query.run_id });
+          } else {
+            currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+          }
         }
-      }
-      if (props.query) {
-        if (props.query.run_id && props.query.public) {
-          const mid = props.query.run_id.search(/motif/i);
-          const end = props.query.run_id.length;
-          const fn = props.query.run_id.slice(0, mid);
-          const fn2 = props.query.run_id.slice(mid + 5, end);
-          holdGene.value = fn;
-          holdMotif.value = fn2;
-          filename.value = fn;
+        if (props.query) {
+          if (props.query.run_id && props.query.public) {
+            const mid = props.query.run_id.search(/motif/i);
+            const end = props.query.run_id.length;
+            const fn = props.query.run_id.slice(0, mid);
+            const fn2 = props.query.run_id.slice(mid + 5, end);
+            holdGene.value = fn;
+            holdMotif.value = fn2;
+            filename.value = fn;
+          }
         }
+        acInstance.$mount('#geneac');
       }
-      acInstance.$mount('#geneac');
     });
     onUnmounted(() => {
-      acInstance.$destroy();
-      acInstance.$el.parentNode!.removeChild(acInstance.$el);
-      store.commit.setSubmenu(null);
+      if (acInstance.$el) {
+        acInstance.$destroy();
+        acInstance.$el.parentNode!.removeChild(acInstance.$el);
+        store.commit.setSubmenu(null);
+      }
     });
     return {
       scale,
