@@ -109,7 +109,7 @@
               <v-text-field
               outlined
               dense
-              label="Tissue Slide Experimental Condition"
+              label="Internal Experimental Condition"
               v-model="metadata.tissueSlideExperiment"
               readonly
               >
@@ -119,6 +119,13 @@
               dense
               label="Tissue Block Experimental Condition"
               v-model="metadata.tissueBlockExperiment"
+              >
+              </v-text-field>
+              <v-text-field
+              outlined
+              dense
+              label="Sample Id"
+              v-model="metadata.sampleID"
               >
               </v-text-field>
               <v-text-field
@@ -702,6 +709,7 @@ interface Metadata {
   crosses_flowA: Array<number> | null;
   blocks_flowA: Array<number> | null;
   leak_flowA: string | null;
+  sampleID: string | null;
 }
 
 export default defineComponent({
@@ -817,11 +825,11 @@ export default defineComponent({
       crop_area: null,
       barcodes: 'Normal',
       chip_resolution: null,
-      diseaseState: null,
-      diseaseName: null,
+      diseaseState: '',
+      diseaseName: '',
       tissueSlideExperiment: '',
       tissueBlockExperiment: '',
-      collaborator: null,
+      collaborator: '',
       comments_flowB: '',
       crosses_flowB: [],
       blocks_flowB: [],
@@ -830,6 +838,7 @@ export default defineComponent({
       crosses_flowA: [],
       blocks_flowA: [],
       leak_flowA: '',
+      sampleID: '',
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -898,6 +907,7 @@ export default defineComponent({
         metadata.value.diseaseName = slimsData.cntn_cf_disease;
         metadata.value.tissueSlideExperiment = slimsData.cntn_cf_tissueSlideExperimentalCondition;
         metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
+        metadata.value.sampleID = slimsData.cntn_cf_sampleId;
         if (metadata.value.diseaseName == null) {
           metadata.value.diseaseState = 'Healthy';
         }
@@ -943,6 +953,7 @@ export default defineComponent({
         // if the json folder cannot be obtained from local server query slims
         if (!jsonBoolean) {
           loading.value = true;
+          console.log('about to get meta');
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
           console.log(slimsData);
           params.data = slimsData;
