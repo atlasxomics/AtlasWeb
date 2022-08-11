@@ -1,5 +1,5 @@
 <template>
-    <v-container>
+    <v-container v-if="resolveAuthGroup(['admin','user'])">
         <v-row>
             <RunIdList :availableRunsPassed="availableRuns" @run-selected=handleRunSelection> </RunIdList>
             <AvailableFileList :fileList="availableFiles" :runID="selectedRunID" :flipLoading="flippingBoolean" @file-selected=handleFileSelection> </AvailableFileList>
@@ -18,6 +18,7 @@
 
 <script lang='ts'>
 import { defineComponent, computed, ref, onMounted } from '@vue/composition-api';
+import { resolveAuthGroup } from '@/utils/auth';
 import store from '../../../../../store';
 import RunIdList from './components/RunIdList.vue';
 import AvailableFileList from './components/AvailableFileList.vue';
@@ -164,6 +165,7 @@ export default defineComponent({
       handleRunSelection,
       flippingBoolean,
       switchRunBoolean,
+      resolveAuthGroup,
     };
   },
 });

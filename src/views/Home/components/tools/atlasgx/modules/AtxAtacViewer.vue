@@ -1,13 +1,14 @@
 <template>
   <v-row no-gutters>
-    <v-col cols="12" sm="1">
+    <v-col cols="12" sm="1" class="shrinkCol">
       <v-card
       class="rounded-0"
       flat
       :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-      height="50vh">
-        <v-card-text style="margin-left:4vw">
-          <v-row>
+      height="50vh"
+      width="100%">
+        <v-card-text>
+          <v-row justify="end">
             <v-btn
             small
             icon
@@ -17,7 +18,7 @@
             ><v-icon small>mdi-arrow-expand</v-icon>
             </v-btn>
           </v-row>
-          <v-row>
+          <v-row justify="end">
             <v-btn
               small
               icon
@@ -27,7 +28,7 @@
               ><v-icon small>mdi-magnify-plus</v-icon>
             </v-btn>
           </v-row>
-          <v-row>
+          <v-row justify="end">
             <v-btn
               small
               icon
@@ -104,15 +105,15 @@
         </v-col>
       </v-row>
     </v-col>
-    <v-col cols="12" sm="1">
+    <v-col cols="12" sm="1" class="shrinkCol">
       <v-card
       class="rounded-0"
       flat
       :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
       height="50vh"
       width="100%">
-        <v-card-text style="margin-left:4vw">
-          <v-row>
+        <v-card-text>
+          <v-row justify="end">
             <v-btn
             small
             icon
@@ -122,7 +123,7 @@
             ><v-icon small>mdi-arrow-expand</v-icon>
             </v-btn>
           </v-row>
-          <v-row>
+          <v-row justify="end">
             <v-btn
               small
               icon
@@ -132,7 +133,7 @@
               ><v-icon small>mdi-magnify-plus</v-icon>
             </v-btn>
           </v-row>
-          <v-row>
+          <v-row justify="end">
             <v-btn
               small
               icon
@@ -372,8 +373,6 @@ export default defineComponent({
       lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
         circlesSpatialUMAP.value[i].fill = c.originalColor;
         circlesSpatialUMAP.value[i].stroke = c.originalColor;
-      });
-      lodash.each(circlesSpatial.value, (c: any, i: number) => {
         circlesSpatial.value[i].fill = c.originalColor;
         circlesSpatial.value[i].stroke = c.originalColor;
       });
@@ -466,16 +465,11 @@ export default defineComponent({
         if (c.cluster !== clusterName) {
           circlesSpatial.value[i].fill = inactiveColor.value;
           circlesSpatial.value[i].stroke = inactiveColor.value;
-        } else {
-          circlesSpatial.value[i].fill = c.originalColor;
-          circlesSpatial.value[i].stroke = c.originalColor;
-        }
-      });
-      lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
-        if (c.cluster !== clusterName) {
           circlesSpatialUMAP.value[i].fill = inactiveColor.value;
           circlesSpatialUMAP.value[i].stroke = inactiveColor.value;
         } else {
+          circlesSpatial.value[i].fill = c.originalColor;
+          circlesSpatial.value[i].stroke = c.originalColor;
           circlesSpatialUMAP.value[i].fill = c.originalColor;
           circlesSpatialUMAP.value[i].stroke = c.originalColor;
         }
@@ -502,7 +496,7 @@ export default defineComponent({
       stepArray.value = [];
       const colors: any[] = [];
       let colors_intensity: any[] = [];
-      const numClusters = lodash.uniq(spatialData.value.clusters).length;
+      const numClusters = spatialData.value.cluster_names.length;
       if (!colorFromParent.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
         colors_raw.forEach((v: any, i: number) => {
@@ -635,8 +629,6 @@ export default defineComponent({
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
           const clr = (geneSum[i] + 10 > 0) ? geneColors[i] : inactiveColor.value;
-          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
-          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
             id: get_uuid(),
             x: x * scaleUMAP.value * viewScaleUMAP + paddingX,
@@ -656,7 +648,18 @@ export default defineComponent({
           });
           circlesUMAP.push(c);
         });
-        stepArray.value = makearray(highestCount.value, lowestCount.value);
+        let highAvg = 0;
+        let lowAvg = 10000000;
+        circles.forEach((v: any, i: any) => {
+          const avg = v.total / selectedGenes.value.length;
+          if (avg > highAvg) {
+            highAvg = avg;
+          }
+          if (avg < lowAvg) {
+            lowAvg = avg;
+          }
+        });
+        stepArray.value = makearray(highAvg, lowAvg);
       }
       circlesSpatial.value = circles;
       circlesSpatialUMAP.value = circlesUMAP;
@@ -720,7 +723,9 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       } finally {
         loading.value = false;
-        ctx.emit('spatialFlag', spatialData.value);
+        if (selectedGenes.value.length === 0 && (!isDrawingRect.value && !isDrawing.value)) {
+          ctx.emit('spatialFlag', spatialData.value);
+        }
       }
     }
     // Drawing
@@ -733,9 +738,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (selectedGenes.value.length > 0) {
-        text = `${text}\nSum: ${item.total}`;
+        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(2)}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          text = `${text}\n${k}: ${v}`;
+          text = `${text}\n${k}: ${v.toFixed(2)}`;
         });
       }
       tooltipText.text(text);
@@ -808,9 +813,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (selectedGenes.value.length > 0) {
-        text = `${text}\nSum: ${item.total}`;
+        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(2)}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          text = `${text}\n${k}: ${v}`;
+          text = `${text}\n${k}: ${v.toFixed(2)}`;
         });
       }
       tooltipTextRight.text(text);
@@ -1005,7 +1010,9 @@ export default defineComponent({
       }
     });
     watch(clickedClusterFromParent, (v: any) => {
-      mouseOverClusterItem({ name: `${v[0]}` });
+      if (!isDrawing.value && !isDrawingRect.value) {
+        mouseOverClusterItem({ name: `${v[0]}` });
+      }
     });
     watch(heatMap, (v: string) => {
       if (v === 'picnic') {
@@ -1139,5 +1146,9 @@ export default defineComponent({
 });
 </script>
 
-<style>
+<style scoped>
+.shrinkCol {
+  flex: 0 0 6% !important;
+  max-width: 6% !important;
+}
 </style>

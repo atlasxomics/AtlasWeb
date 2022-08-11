@@ -46,7 +46,7 @@ export default defineComponent({
       const route = currentRoute.value;
       if (route.query.component) store.commit.setComponent(route.query);
       else store.commit.setComponent({ component: null });
-      const cookie = { token: component.value.token, url: TEST_SERVER_URL };
+      const cookie = { token: component.value.token, url: PROD_SERVER_URL };
       saveCookie(cookie);
       loginExisting();
     });

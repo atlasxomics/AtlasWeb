@@ -425,8 +425,42 @@
         <!-- right section of the screen where images and loading screens are displayed -->
         <v-col cols="12" sm="9" v-if="!checkSpatial">
           <v-container>
-            <!-- Loading message when saving spatial folder -->
             <template v-if="loadingMessage">
+              <div :style="{ 'position': 'absolute', 'z-index': 999, 'top': '43%', 'left': '47%'}">
+                <v-card-text>
+                </v-card-text>
+                <!-- <v-progress-circular
+                  :size="100"
+                  :width="10"
+                  color="primary"
+                  indeterminate>
+                </v-progress-circular> -->
+              <v-dialog
+                value=true
+                hide-overlay
+                persistent
+                width="600"
+                >
+                <v-card
+                  color="primary"
+                  dark>
+                  <v-card-title> Creating and Saving Spatial Folder</v-card-title>
+                  <v-card-text>
+                    <v-progress-linear
+                      v-model="one"
+                      buffer-value="0"
+                      height="10"
+                      stream
+                      color="white"
+                      class="mb-0">
+                    </v-progress-linear>
+                  </v-card-text>
+                </v-card>
+                </v-dialog>
+              </div>
+            </template>
+            <!-- Loading message when saving spatial folder -->
+            <!-- <template v-if="loadingMessage">
               <v-dialog
                 value=true
                 hide-overlay
@@ -472,7 +506,7 @@
                   </v-card-text>
                 </v-card>
               </v-dialog>
-            </template>
+            </template> -->
             <v-row>
               <v-card>
                 <!-- loading circle displayed on screen -->
@@ -1371,32 +1405,33 @@ export default defineComponent({
       let valueone: any;
       let valuetwo: any;
       let valuethree: any;
-      if (value > 0 && value <= 40 && one.value <= 100) {
-        valueone = setTimeout(() => {
-          if (one.value === 100) {
-            clearTimeout(valueone);
-          }
-          one.value += 50;
-        }, 1000);
-      }
+      one.value = value;
+      // if (value > 0 && value <= 40 && one.value <= 100) {
+      //   valueone = setTimeout(() => {
+      //     if (one.value === 100) {
+      //       clearTimeout(valueone);
+      //     }
+      //     one.value += 50;
+      //   }, 1000);
+      // }
 
-      if (value > 40 && value < 80 && two.value <= 100) {
-        valuetwo = setTimeout(() => {
-          if (two.value === 100) {
-            clearTimeout(valuetwo);
-          }
-          two.value += 50;
-        }, 1000);
-      }
+      // if (value > 40 && value < 80 && two.value <= 100) {
+      //   valuetwo = setTimeout(() => {
+      //     if (two.value === 100) {
+      //       clearTimeout(valuetwo);
+      //     }
+      //     two.value += 50;
+      //   }, 1000);
+      // }
 
-      if (value >= 80 && three.value <= 100) {
-        valuethree = setTimeout(() => {
-          if (three.value === 100) {
-            clearTimeout(valuethree);
-          }
-          three.value += 50;
-        }, 1000);
-      }
+      // if (value >= 80 && three.value <= 100) {
+      //   valuethree = setTimeout(() => {
+      //     if (three.value === 100) {
+      //       clearTimeout(valuethree);
+      //     }
+      //     three.value += 50;
+      //   }, 1000);
+      // }
     };
     const updateH5ad = async (value: number) => {
       if (!client.value) return;
