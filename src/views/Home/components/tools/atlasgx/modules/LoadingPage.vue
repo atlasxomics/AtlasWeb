@@ -1,12 +1,23 @@
 <template>
-  <v-container fluid class="ma-0 pa-0"  v-if="allRuns">
-    <table style="width: 100%;border-spacing: 35px;">
+  <v-container fluid class="ma-0 pa-0">
+    <template v-if="loading">
+      <div :style="{ 'position': 'absolute', 'z-index': '999', 'top': '20', 'left': '39%'}">
+        <v-progress-circular
+          :size="300"
+          :width="30"
+          color="primary"
+          indeterminate>
+        </v-progress-circular>
+      </div>
+    </template>
+    <table style="width: 100%;border-spacing: 35px;" v-if="allRuns.length > 0">
     <caption style="font-size: 20px;font-weight: bold;padding: 15px;border-bottom: 1px solid;">{{name}}</caption>
       <tr style="border-bottom:1px solid rgb(92, 112, 128); color:rgb(92, 112, 128);font-weight: 500;">
+        <th>Date</th>
         <th>Run ID</th>
         <th>Tissue</th>
         <th>Organism</th>
-        <th>Disease</th>
+        <th>Experimental Condition</th>
         <th>Browser Link</th>
       </tr>
       <tr v-for="runs in allRuns" v-bind:key="runs" style="border-bottom:1px solid rgb(92, 112, 128);">
@@ -37,27 +48,20 @@ import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmoun
 
 export default defineComponent({
   name: 'LoadingPage',
-  props: ['listRuns', 'collabName'],
+  props: ['listRuns', 'collabName', 'loading'],
   setup(props, ctx) {
     const allRuns = computed(() => props.listRuns);
     const name = computed(() => props.collabName);
     const data = ref<any[]>([]);
+    const loading = ref<boolean>(true);
 
-    async function compute() {
-      // jnknj
-    }
     async function nextPage(ev: any) {
       window.open(`${ev}`, '_blank');
     }
-    watch(allRuns, (v: any) => {
-      if (v) {
-        compute();
-      }
-    });
     onMounted(async () => {
       // dlskmk
     });
-    return { allRuns, name, compute, nextPage };
+    return { allRuns, name, loading, nextPage };
   },
 });
 </script>

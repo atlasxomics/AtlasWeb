@@ -194,6 +194,13 @@ export class ROI {
     this.polygons = newPolygons;
   }
 
+  get_distance_wscale = function (x1: number, y1: number, x2: number, y2: number, scale: number) {
+    const d = Math.sqrt((((x2 / scale) - (x1 / scale)) ** 2) + (((y2 / scale) - (y1 / scale)) ** 2));
+    console.log(d);
+    const rounded = Math.round(d * 1000);
+    return rounded / 1000;
+  }
+
   getQCScaleFactors(img: any, length: any[]) {
     // obtaining scale factor for high res and low res images
     const hsf = 2000.0 / img.image.width;
@@ -203,8 +210,20 @@ export class ROI {
     if (mask.length === 10000) rowcount = 100;
     const { x: x1, y: y1 } = mask[0].coordinates;
     const { x: x2, y: y2 } = mask[1].coordinates;
+    const [p1, p2, p3, p4] = this.getCoordinates();
+
+    const ratioNum = (this.channels * 2) - 1;
+    const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
+    const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
+    const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
+    console.log(this.get_distance_wscale(17, 32, 88, 92.4, 0.5));
+    // const slopeT = [(topS[1] - p1.y), (topS[0] - p1.x)];
+    const p = this.get_distance_wscale(leftS[0], leftS[1], topS[0], topS[1], this.scalefactor);
+    const q = this.get_distance_wscale(p1.x, p1.y, topS[0] + slope[1], topS[1] + slope[0], this.scalefactor);
+    console.log(p);
+    console.log(q);
+    const sdf = (p + q) / 2;
     const spot_fiduciary_ratio = 1.6153846;
-    const sdf = Math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2)) / 2;
     return {
       spot_diameter_fullres: sdf,
       fiducial_diameter_fullres: sdf * spot_fiduciary_ratio,
