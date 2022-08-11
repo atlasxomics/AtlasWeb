@@ -1244,6 +1244,7 @@ export default defineComponent({
     }
 
     function generateLattices(ev: any) {
+      grid.value = true;
       roi.value.polygons = roi.value.generatePolygons();
       if (tixels_filled.value) {
         load_tixel_state();
@@ -1270,6 +1271,7 @@ export default defineComponent({
       } else {
         roi.value.polygons = [];
       }
+      grid.value = false;
     }
     function extractChannels() {
       let count = 0;
@@ -1509,7 +1511,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         console.log(cropCoords);
