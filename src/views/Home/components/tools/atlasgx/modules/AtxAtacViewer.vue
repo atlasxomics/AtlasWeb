@@ -723,7 +723,7 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       } finally {
         loading.value = false;
-        if (selectedGenes.value.length === 0 && (!isDrawingRect.value && !isDrawing.value)) {
+        if (selectedGenes.value.length === 0) {
           ctx.emit('spatialFlag', spatialData.value);
         }
       }
