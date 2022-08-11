@@ -387,7 +387,7 @@
                 />
                 <template>
                   <v-btn
-                  :disabled="!tixels_filled"
+                  :disabled="(!tixels_filled && optionUpdate)"
                   outlined
                   x-small
                   dense
@@ -1027,7 +1027,7 @@ export default defineComponent({
       // console.log(orientation.value.rotation);
       // path to images
       if (optionUpdate.value) {
-        filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
+        filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
       } else {
         filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       }
