@@ -335,6 +335,7 @@ export default class Client {
   }
   async getFileList(payload: FileListRequest): Promise<any> {
     try {
+      console.log(payload);
       const resp = await this.axios.get('api/v1/storage/list', payload);
       return resp.data;
     } catch (error) {
@@ -343,7 +344,7 @@ export default class Client {
   }
   async getImage(payload: ImageFileRequest, image_type = 'image/png'): Promise<File> {
     try {
-      const resp = await this.axios.get('/api/v1/storage', { params: { filename: payload.params.filename }, responseType: 'blob' });
+      const resp = await this.axios.get('/api/v1/storage', { params: { filename: payload.params.filename, bucket_name: payload.params.bucket }, responseType: 'blob' });
       return new File([resp.data], payload.params.filename, { type: image_type });
     } catch (e) {
       return Promise.reject(e);
@@ -366,6 +367,7 @@ export default class Client {
     const uri = '/api/v1/dataset/slimstest_runid';
     const run_id = `D${padzeros(Number(rid.split('D')[1]), 5)}`;
     const payload = { params: { run_id } };
+    console.log(payload);
     const resp = await this.axios.get(uri, payload);
     return resp.data;
   }

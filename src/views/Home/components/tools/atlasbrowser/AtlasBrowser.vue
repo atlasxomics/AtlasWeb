@@ -109,7 +109,7 @@
               <v-text-field
               outlined
               dense
-              label="Tissue Slide Experimental Condition"
+              label="Internal Experimental Condition"
               v-model="metadata.tissueSlideExperiment"
               readonly
               >
@@ -119,6 +119,13 @@
               dense
               label="Tissue Block Experimental Condition"
               v-model="metadata.tissueBlockExperiment"
+              >
+              </v-text-field>
+              <v-text-field
+              outlined
+              dense
+              label="Sample Id"
+              v-model="metadata.sampleID"
               >
               </v-text-field>
               <v-text-field
@@ -380,7 +387,7 @@
                 />
                 <template>
                   <v-btn
-                  :disabled="!tixels_filled"
+                  :disabled="(!tixels_filled && optionUpdate)"
                   outlined
                   x-small
                   dense
@@ -615,6 +622,8 @@
         <v-col cols="12" sm="12">
         <SpatialFolderViewer
         v-if="checkSpatial"
+        :root="root"
+        :bucket_name="bucket_name"
         :selectedRunID="run_id"
         :getFiles="checkSpatial"
         >
@@ -672,15 +681,6 @@ const metaHeaders = [
   { text: 'Field', value: 'key' },
   { text: 'Value', value: 'value' },
 ];
-const metaItemLists = {
-  types: [],
-  species: [],
-  organ: [],
-  assays: ['mRNA', 'Protein', 'ATAC', 'H3K27me3', 'H3K4me3', 'H3K27ac'],
-  barcode_file: ['1 (Normal)', '2 (Flipped B)', '3 (Flipped A)', '4 (Flipped A and B)'],
-  resolution: ['10', '25', '50'],
-  diseaseState: ['Normal', 'Disease'],
-};
 interface Metadata {
   points: number[] | any;
   run: string | null;
@@ -709,6 +709,7 @@ interface Metadata {
   crosses_flowA: Array<number> | null;
   blocks_flowA: Array<number> | null;
   leak_flowA: string | null;
+  sampleID: string | null;
 }
 
 export default defineComponent({
@@ -716,6 +717,11 @@ export default defineComponent({
   props: ['query'],
   components: { SpatialFolderViewer },
   setup(props, ctx) {
+    // Parameters for changing which bucket images are being pulled to and written to
+    // s3 bucket to connect to
+    const bucket_name = 'atx-illumina';
+    // root directory of that s3 bucket
+    const root = 'Images';
     const welcome_screen = ref<boolean>(true);
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
@@ -819,11 +825,11 @@ export default defineComponent({
       crop_area: null,
       barcodes: 'Normal',
       chip_resolution: null,
-      diseaseState: null,
-      diseaseName: null,
+      diseaseState: '',
+      diseaseName: '',
       tissueSlideExperiment: '',
       tissueBlockExperiment: '',
-      collaborator: null,
+      collaborator: '',
       comments_flowB: '',
       crosses_flowB: [],
       blocks_flowB: [],
@@ -832,6 +838,7 @@ export default defineComponent({
       crosses_flowA: [],
       blocks_flowA: [],
       leak_flowA: '',
+      sampleID: '',
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -860,10 +867,10 @@ export default defineComponent({
       // metaFlag.value = false;
     }
     function imageClick(ev: any) {
-      console.log(scaleFactor.value);
-      console.log(ev.evt.layerY / scaleFactor.value);
-      console.log(ev.evt.layerX / scaleFactor.value);
-      console.log(ev);
+      // console.log(scaleFactor.value);
+      // console.log(ev.evt.layerY / scaleFactor.value);
+      // console.log(ev.evt.layerX / scaleFactor.value);
+      // console.log(ev);
     }
     function changeDiseaseState() {
       if (metadata.value.diseaseState === 'Normal') {
@@ -900,6 +907,7 @@ export default defineComponent({
         metadata.value.diseaseName = slimsData.cntn_cf_disease;
         metadata.value.tissueSlideExperiment = slimsData.cntn_cf_tissueSlideExperimentalCondition;
         metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
+        metadata.value.sampleID = slimsData.cntn_cf_sampleId;
         if (metadata.value.diseaseName == null) {
           metadata.value.diseaseState = 'Healthy';
         }
@@ -927,7 +935,6 @@ export default defineComponent({
     }
     async function getMeta() {
       try {
-        const root = 'data';
         const task = 'creation.create_files';
         const queue = 'creation_worker';
         const params = {
@@ -935,11 +942,12 @@ export default defineComponent({
           path: `${root}/${run_id.value}`,
           file_type: 'json',
           file_name: 'metadata.json',
+          bucket_name,
         };
         const args: any[] = [params];
         const kwargs: any = {};
         const name = `${root}/${run_id.value}/metadata.json`;
-        const jsonFileName = { params: { filename: name } };
+        const jsonFileName = { params: { filename: name, bucket_name } };
         const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
         let slimsData: any;
         // if the json folder cannot be obtained from local server query slims
@@ -983,27 +991,25 @@ export default defineComponent({
       if (!client.value) return;
       loading.value = true;
       loadingMessage.value = false;
-      const root = 'data';
-      const filename = `${root}/${run_id.value}/images/spatial/metadata.json`;
-      const scale_filename = `${root}/${run_id.value}/images/spatial/scalefactors_json.json`;
-      const pos_filename = `${root}/${run_id.value}/images/spatial/tissue_positions_list.csv`;
-      const payload = { params: { filename } };
+      // specify path to images within s3
+      const filename = `${root}/${run_id.value}/spatial/metadata.json`;
+      const scale_filename = `${root}/${run_id.value}/spatial/scalefactors_json.json`;
+      const pos_filename = `${root}/${run_id.value}/spatial/tissue_positions_list.csv`;
+      const payload = { params: { filename, bucket_name } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename } };
+      const pos_payload = { params: { filename: pos_filename, bucket_name } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
-      const scale_payload = { params: { filename: scale_filename } };
+      const scale_payload = { params: { filename: scale_filename, bucket_name } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
-        // console.log(resp);
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
       } else {
-        console.log('calling getMeta');
         await getMeta();
         optionFlag.value = true;
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
@@ -1013,17 +1019,17 @@ export default defineComponent({
       if (!client.value) return;
       loading.value = true;
       loadingMessage.value = false;
-      const root = 'data';
       let filename: any;
-      // console.log(orientation.value.rotation);
+      // path to images
       if (optionUpdate.value) {
-        filename = `${root}/${run_id.value}/images/spatial/figure/postB.tif`;
+        filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
       } else {
-        filename = `${root}/${run_id.value}/images/postB_BSA.tif`;
+        filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       }
-      const filenameList = { params: { path: 'data', filter: `${run_id.value}/images` } };
+      const filenameList = { params: { path: root, filter: `${run_id.value}`, bucket_name } };
       try {
-        const img = await client.value.getImageAsJPG({ params: { filename, rotation: orientation.value.rotation } });
+        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation } };
+        const img = await client.value.getImageAsJPG(pl);
         imageh.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
@@ -1188,9 +1194,9 @@ export default defineComponent({
       if (roi.value.polygons) {
         if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
         else roi.value.polygons[idx].fill = 'red';
-        console.log(scaleFactor.value);
-        console.log(roi.value.polygons[idx].centerx / scaleFactor.value);
-        console.log(roi.value.polygons[idx].centery / scaleFactor.value);
+        // console.log(scaleFactor.value);
+        // console.log(roi.value.polygons[idx].centerx / scaleFactor.value);
+        // console.log(roi.value.polygons[idx].centery / scaleFactor.value);
       }
       isMouseDown.value = true;
     }
@@ -1244,6 +1250,7 @@ export default defineComponent({
     }
 
     function generateLattices(ev: any) {
+      grid.value = true;
       roi.value.polygons = roi.value.generatePolygons();
       if (tixels_filled.value) {
         load_tixel_state();
@@ -1270,6 +1277,7 @@ export default defineComponent({
       } else {
         roi.value.polygons = [];
       }
+      grid.value = false;
     }
     function extractChannels() {
       let count = 0;
@@ -1295,7 +1303,7 @@ export default defineComponent({
       isCropMode.value = true;
       active_roi_available.value = true;
       const coords = crop.value.getCoordinatesOnImage();
-      console.log(coords);
+      // console.log(coords);
       const imgObj = new window.Image();
       const newImage = new window.Image();
       imgObj.src = URL.createObjectURL(imageh.value);
@@ -1364,7 +1372,6 @@ export default defineComponent({
       // loading.value = true;
       let img_src = postB_or_bsa.value;
       if (!optionUpdate.value) {
-        console.log('here');
         img_src = imageDataToBlob();
       }
       // current_image.value.image.src = img_src;
@@ -1459,7 +1466,7 @@ export default defineComponent({
         const queue = 'atxcloud_atlasbrowser';
         const params = {
           run_id: run_id.value,
-          root_dir: 'data',
+          root_dir: root,
         };
         const args: any[] = [params];
         const kwargs: any = {};
@@ -1512,7 +1519,6 @@ export default defineComponent({
         const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
-        console.log(cropCoords);
         if (optionUpdate.value) {
           cropCoords = metadata.value.crop_area;
         }
@@ -1546,7 +1552,6 @@ export default defineComponent({
         });
         const params = {
           run_id: run_id.value,
-          root_dir: 'data',
           files: allFiles.value,
           crop_area: cropCoords,
           mask: roi.value.getMask(cropCoords),
@@ -1554,8 +1559,9 @@ export default defineComponent({
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
           barcodes: barcodes.value,
+          root_dir: root,
+          bucket: bucket_name,
         };
-
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -1633,11 +1639,15 @@ export default defineComponent({
       itemsHolder.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', filter: 'images/postB_BSA.tif' } };
+      // Change the filter parameters of the below opject to change the displayed runs
+      // Cap sensitive
+      const fl_payload = { params: { bucket_name, path: root, filter: run_id.value.concat('_postB_BSA.tif') } };
       const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
-      items.value = qc_data;
-      itemsHolder.value = qc_data;
+      if (filelist !== false) {
+        const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
+        items.value = qc_data;
+        itemsHolder.value = qc_data;
+      }
       loading.value = false;
     }
     async function selectAction(ev: any) {
@@ -1645,7 +1655,6 @@ export default defineComponent({
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
-
     watch(brushSize, (v) => {
       brushConfig.value.radius = v;
     });
@@ -1723,7 +1732,6 @@ export default defineComponent({
       allFiles,
       run_id,
       metadata,
-      metaItemLists,
       items,
       itemsHolder,
       searchInput,
@@ -1842,6 +1850,8 @@ export default defineComponent({
       availableFiles,
       flowMetadata,
       imageClick,
+      root,
+      bucket_name,
       postB_or_bsa,
       black_white,
     };
