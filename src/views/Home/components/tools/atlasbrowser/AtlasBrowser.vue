@@ -215,7 +215,7 @@
                 label="Scale"
                 type="number"
                 min="0.1"
-                max="1.5"
+                max="0.8"
                 step="0.005"
                 :disabled="!current_image"
                 @change="onChangeScale"></v-slider>
