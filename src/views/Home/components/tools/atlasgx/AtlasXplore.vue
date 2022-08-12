@@ -562,9 +562,9 @@
           </v-card>
         </v-col>
         <v-col cols="12" sm="11" class="mt-5">
-          <div id="screenCapture" :style="{ 'background-color': 'transparent' }">
           <v-row no-gutters>
             <v-col cols="12" sm="9">
+              <div id="screenCapture" :style="{ 'background-color': 'transparent' }">
               <atx-atac-viewer
                 @loading_value="updateLoading"
                 @spatialFlag='updateSpatial'
@@ -587,6 +587,7 @@
                 :clickedCluster="clickedClusterFromChild"
                 :checkBoxCluster="selectedClusters"
                 ref="mainAtxViewer"/>
+            </div>
             </v-col>
             <v-col cols="12" sm="3">
               <table style="margin-bottom: 0; border-spacing:13px">
@@ -610,7 +611,6 @@
               </table>
             </v-col>
           </v-row>
-          </div>
             <v-col cols="12" sm="11">
               <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
