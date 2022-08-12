@@ -254,7 +254,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster'],
+  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -350,7 +350,9 @@ export default defineComponent({
     const topSelected = ref<any[]>([]);
     const highlightCount = ref<number>(0);
     const spatialRun = ref<boolean>(false);
+    const totalInClust = ref<any>({});
     const clickedClusterFromParent = computed(() => (props.clickedCluster));
+    const checkedClusterFromParent = computed(() => (props.checkBoxCluster));
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
@@ -455,14 +457,14 @@ export default defineComponent({
         }
       });
     }
-    function highlightCluster(clusterName: string) {
+    function highlightCluster(clusterName: string[]) {
       if (backgroundColor.value === 'darkgrey') {
         inactiveColor.value = 'white';
       } else {
         inactiveColor.value = 'darkgrey';
       }
       lodash.each(circlesSpatial.value, (c: any, i: number) => {
-        if (c.cluster !== clusterName) {
+        if (!clusterName.includes(c.cluster)) {
           circlesSpatial.value[i].fill = inactiveColor.value;
           circlesSpatial.value[i].stroke = inactiveColor.value;
           circlesSpatialUMAP.value[i].fill = inactiveColor.value;
@@ -496,7 +498,15 @@ export default defineComponent({
       stepArray.value = [];
       const colors: any[] = [];
       let colors_intensity: any[] = [];
+      const totalHold: any = {};
       const numClusters = spatialData.value.cluster_names.length;
+      if (selectedGenes.value.length === 0 && (!isDrawing.value && !isDrawingRect.value)) {
+        for (let i = 0; i < numClusters; i += 1) {
+          const cidx = `C${i + 1}`;
+          totalHold[cidx] = 0;
+        }
+        totalInClust.value = totalHold;
+      }
       if (!colorFromParent.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
         colors_raw.forEach((v: any, i: number) => {
@@ -543,6 +553,7 @@ export default defineComponent({
       const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
       if (isClusterView.value) {
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
+          totalInClust.value[v] += 1;
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
@@ -664,6 +675,9 @@ export default defineComponent({
       circlesSpatial.value = circles;
       circlesSpatialUMAP.value = circlesUMAP;
       highlightRegion();
+      if (selectedGenes.value.length === 0 && (!isDrawing.value && !isDrawingRect.value)) {
+        ctx.emit('totalClust', totalInClust.value);
+      }
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
@@ -747,7 +761,7 @@ export default defineComponent({
       tooltip.show();
       if (isClusterView.value && item.cluster !== highlightedCluster.value && (!isDrawing.value && !isDrawingRect.value)) {
         const { cluster } = item;
-        highlightCluster(cluster);
+        highlightCluster([cluster]);
       }
     }
     async function mouseOutOnSpatial(ev: any) {
@@ -822,7 +836,7 @@ export default defineComponent({
       tooltipRight.show();
       if (isClusterView.value && item.cluster !== highlightedCluster.value && (!isDrawing.value && !isDrawingRect.value)) {
         const { cluster } = item;
-        highlightCluster(cluster);
+        highlightCluster([cluster]);
       }
     }
     async function mouseOutOnSpatialRight(ev: any) {
@@ -963,7 +977,7 @@ export default defineComponent({
       }
     }
     async function mouseOverClusterItem(ev: any) {
-      highlightCluster(ev.name);
+      highlightCluster([ev.name]);
     }
     function onFilesChanged(ev: any) {
       selectedFiles.value = ev;
@@ -998,20 +1012,21 @@ export default defineComponent({
     watch(isDrawing, (v: boolean) => {
       setDraggable(!v);
       removeRegions();
-      if (!isDrawing.value) {
-        unHighlighCluster();
-      }
+      if (!isDrawing.value) unHighlighCluster();
     });
     watch(isDrawingRect, (v: boolean) => {
       setDraggable(!v);
       removeRegions();
-      if (!isDrawingRect.value) {
-        unHighlighCluster();
-      }
+      if (!isDrawingRect.value) unHighlighCluster();
     });
     watch(clickedClusterFromParent, (v: any) => {
       if (!isDrawing.value && !isDrawingRect.value) {
         mouseOverClusterItem({ name: `${v[0]}` });
+      }
+    });
+    watch(checkedClusterFromParent, (v: any) => {
+      if (!isDrawing.value && !isDrawingRect.value) {
+        highlightCluster(v);
       }
     });
     watch(heatMap, (v: string) => {
@@ -1039,11 +1054,6 @@ export default defineComponent({
     });
     watch(scaleUMAP, () => {
       reScaleUMAP();
-    });
-    watch(isDrawing, (v: boolean) => {
-      setDraggable(!v);
-      if (!isDrawing.value) unHighlighCluster();
-      polygon.value.points = [];
     });
     watch(selectedGenes, (v: any[]) => {
       if (v && selectedGenes.value.length === 0) {
@@ -1141,6 +1151,7 @@ export default defineComponent({
       spatialRun,
       colorFromParent,
       clickedClusterFromParent,
+      totalInClust,
     };
   },
 });

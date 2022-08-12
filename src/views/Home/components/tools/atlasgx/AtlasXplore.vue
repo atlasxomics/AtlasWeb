@@ -73,7 +73,7 @@
           :value="runIdFlag"
           @click:outside="runIdFlag = !runIdFlag"
           hide-overlay>
-          <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
+          <v-card style="width:220px;position: absolute;z-index: 999;top:40px;left:85px;"
             :disabled="loading">
             <v-text-field
               v-model="search"
@@ -203,12 +203,17 @@
             :items="['Genes', 'Motifs']">
               <template v-slot:item="row">
                 <template v-if="row.item == 'Genes'">
-                  <tr @click="geneMotif = false">
+                  <tr @click="geneMotif = 'gene'">
                     <td>{{row.item}}</td>
                   </tr>
                 </template>
-                <template v-else>
-                  <tr @click="geneMotif = true">
+                <template v-if="row.item == 'Motifs'">
+                  <tr @click="geneMotif = 'motif'">
+                    <td>{{row.item}}</td>
+                  </tr>
+                </template>
+                <template v-if="row.item == 'Features'">
+                  <tr @click="geneMotif = 'feat'">
                     <td>{{row.item}}</td>
                   </tr>
                 </template>
@@ -558,13 +563,14 @@
         </v-col>
         <v-col cols="12" sm="11" class="mt-5">
           <div id="screenCapture" :style="{ 'background-color': 'transparent' }">
-          <v-row>
-            <v-col cols="12" :sm="isClusterView ? '9' : '12'">
+          <v-row no-gutters>
+            <v-col cols="12" sm="9">
               <atx-atac-viewer
                 @loading_value="updateLoading"
                 @spatialFlag='updateSpatial'
                 @highlightedId='updateSelectors'
                 @publicRun='getPublicId'
+                @totalClust="updateClustTotal"
                 :query="{ public: query.public}"
                 :filename="filename"
                 :genelist="genes"
@@ -579,31 +585,25 @@
                 :lasso="isDrawing"
                 :rect="isDrawingRect"
                 :clickedCluster="clickedClusterFromChild"
+                :checkBoxCluster="selectedClusters"
                 ref="mainAtxViewer"/>
             </v-col>
-            <v-col cols="12" sm="3" v-if="isClusterView">
-              <table style="margin-bottom: 0; width: 100%;">
-                  <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'color': colorMap[cluster], 'vertical-align': 'baseline'}">
-                    <template v-if="value.length > 0">
+            <v-col cols="12" sm="3">
+              <table style="margin-bottom: 0; border-spacing:13px">
+                  <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'vertical-align': 'middle' }">
+                    <template>
                       <td>
-                        <v-btn
-                        class="round_chip2"
-                        :color="colorMap[cluster]"/>
+                        <v-checkbox @click="unClickCluster(cluster)" :color="colorMap[cluster]" dense :dark="backgroundColor == 'white' ? false : true" input-value="1"/>
+                      </td>
+                    </template>
+                    <template v-if="value.length > 0">
+                      <td style="padding-bottom: 8px;">
+                        <span :style="{ 'color': (backgroundColor == 'white') ? 'black' : 'white', 'font-weight': 'bold'}">{{value[0]}}&ensp;<span style="font-size:10px"> ({{totalInClust[cluster]}})</span></span>
                       </td>
                     </template>
                     <template v-else>
-                      <td><b>{{ cluster }}</b></td>
-                    </template>
-                    <template v-if="value.length > 0">
-                      <td class="bold-disabled-Text" style="padding-left: 20px;">
-                        <v-textarea
-                        :dark="backgroundColor == 'white' ? false : true"
-                        :value="value"
-                        dense
-                        auto-grow
-                        row-height="2vw"
-                        solo
-                        disabled/>
+                      <td style="padding-bottom: 8px;">
+                        <span :style="{ 'color': (backgroundColor == 'white') ? 'black' : 'white', 'font-weight': 'bold'}">{{cluster}}&ensp;<span style="font-size:10px"> ({{totalInClust[cluster]}})</span></span>
                       </td>
                     </template>
                   </tr>
@@ -617,10 +617,10 @@
               </v-card>
               <div id="capturePeak" ref="peakContainer" :style="{ visibility: visible }">
                 <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading">
-                  <template v-if="!geneMotif">
+                  <template v-if="geneMotif == 'gene'">
                       <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
                   </template>
-                  <template v-else>
+                  <template v-if="geneMotif == 'motif'">
                     <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                     <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                   </template>
@@ -696,8 +696,8 @@ interface Metadata {
   species: string | null;
   assay: string | null;
   organ: string | null;
-  diseaseState: string | null;
-  diseaseName: string | null;
+  condition: string | null;
+  date: string | null;
 }
 
 export default defineComponent({
@@ -744,8 +744,8 @@ export default defineComponent({
       species: 'Mouse',
       assay: 'mRNA',
       organ: null,
-      diseaseState: null,
-      diseaseName: null,
+      condition: null,
+      date: null,
     });
     const backgroundColor = ref<string>('black');
     const heatMap = ref<string>('jet');
@@ -773,7 +773,7 @@ export default defineComponent({
     const topSelected = ref<any[]>([]);
     const highlightCount = ref<number>(0);
     const geneButton = ref<any[]>(['']);
-    const geneMotif = ref<boolean>(false);
+    const geneMotif = ref<string>('gene');
     const featureTableFlag = ref<boolean>(true);
     const peakViewerFlag = ref<boolean>(false);
     const displayFlag = ref<boolean>(false);
@@ -795,6 +795,8 @@ export default defineComponent({
     const fileContent = ref<any[]>([]);
     const collabData = ref<any[]>([]);
     const collabName = ref<string>('');
+    const totalInClust = ref<any>({});
+    const selectedClusters = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -819,6 +821,9 @@ export default defineComponent({
     }
     function updateSelectors(ev: any) {
       highlightIds.value = ev;
+    }
+    function updateClustTotal(ev: any) {
+      totalInClust.value = ev;
     }
     function linkAlert() {
       snackbar.dispatch({ text: 'Public link copied to clipboard', options: { left: true, color: 'success' } });
@@ -860,6 +865,14 @@ export default defineComponent({
       });
       cellTypeMap.value = cell;
     }
+    function unClickCluster(ev: any) {
+      if (!selectedClusters.value.includes(ev)) {
+        selectedClusters.value.push(ev);
+      } else {
+        const index = selectedClusters.value.indexOf(ev);
+        if (index > -1) selectedClusters.value.splice(index, 1);
+      }
+    }
     function changeClusterColor() {
       clusterColorFlag.value = false;
       if (colorMap.value !== colorMapCopy.value) {
@@ -872,7 +885,7 @@ export default defineComponent({
         });
         heatMap.value = heatcmap;
         colorMap.value = cmap;
-        if (!geneMotif.value && isClusterView.value) {
+        if (geneMotif.value === 'gene' && isClusterView.value) {
           loading.value = true;
           (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
           loading.value = false;
@@ -917,7 +930,7 @@ export default defineComponent({
           const pom = document.createElement('a');
           pom.href = base64image;
           let end: string;
-          if (geneMotif.value) {
+          if (geneMotif.value === 'motif') {
             end = `${runId.value}_${trackBrowserGenes.value[0]}_seqlogo`;
           } else end = `${runId.value}_${trackBrowserGenes.value[0]}_peaks`;
           pom.setAttribute('download', `${end}.png`);
@@ -939,7 +952,7 @@ export default defineComponent({
       if (!filename.value) return;
       let resp: any;
       if (props.query.public) {
-        if (geneMotif.value) {
+        if (geneMotif.value === 'motif') {
           resp = await client.value.getGeneExpressionsByToken(holdMotif.value!);
         } else {
           resp = await client.value.getGeneExpressionsByToken(filename.value);
@@ -977,6 +990,7 @@ export default defineComponent({
           cmapCopy[cidx] = colors[i];
           cellmap[cidx] = '';
           cellmapCopy[cidx] = '';
+          selectedClusters.value.push(cidx);
         }
         colorMap.value = cmap;
         colorMapCopy.value = cmapCopy;
@@ -985,7 +999,7 @@ export default defineComponent({
           cellTypeMapCopy.value = cellmapCopy;
         }
       }
-      if (!geneMotif.value && isClusterView.value) {
+      if (geneMotif.value === 'gene' && isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
     }
@@ -1056,7 +1070,7 @@ export default defineComponent({
       /* eslint-disable no-lonely-if */
       try {
         if (!props.query.public) {
-          if (geneMotif.value) {
+          if (geneMotif.value === 'motif') {
             const hold = filename.value;
             filename.value = hold!.replace(/genes/i, 'motifs');
             if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
@@ -1070,7 +1084,7 @@ export default defineComponent({
             }
           }
         } else {
-          if (geneMotif.value) {
+          if (geneMotif.value === 'motif') {
             filename.value = holdMotif.value;
             if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
               await loadExpressions();
@@ -1175,8 +1189,8 @@ export default defineComponent({
         const cell: any = {};
         lodash.each(cellTypeMapCopy.value, (value: any, key: any) => {
           if (Object.keys(resp).includes(key)) {
-            cell[key] = [resp[key]];
-          } else cell[key] = 'Undefined';
+            cell[key] = resp[key];
+          } else cell[key] = ['Undefined'];
         });
         cellTypeMapCopy.value = cell;
         loading.value = false;
@@ -1208,6 +1222,7 @@ export default defineComponent({
         path: `${root}/${rid}`,
         file_type: 'json',
         file_name: 'metadata.json',
+        bucket_name: 'atx-cloud-dev',
       };
       const args: any[] = [params];
       const kwargs: any = {};
@@ -1240,21 +1255,27 @@ export default defineComponent({
       } else {
         slimsData = jsonBoolean;
       }
-      loading.value = false;
       metadata.value.organ = slimsData.cntn_cf_fk_organ;
       metadata.value.species = slimsData.cntn_cf_fk_species;
       metadata.value.type = slimsData.cntn_cf_fk_tissueType;
       metadata.value.assay = slimsData.cntn_cf_fk_workflow;
-      metadata.value.diseaseName = slimsData.cntn_cf_disease;
-      if (metadata.value.diseaseName === null) {
-        metadata.value.diseaseState = 'Healthy';
+      [metadata.value.date] = slimsData.sequenced_on.split(' ');
+      if (slimsData.cntn_cf_experimentalCondition && slimsData.cntn_cf_sampleId) {
+        const beginning = slimsData.cntn_cf_experimentalCondition;
+        if (slimsData.cntn_cf_sampleId.includes(beginning)) {
+          metadata.value.condition = slimsData.cntn_cf_sampleId;
+        } else {
+          const ending = `${beginning}-${slimsData.cntn_cf_sampleId}`;
+          metadata.value.condition = ending;
+        }
       }
       collabName.value = slimsData.cntn_cf_source;
+      loading.value = false;
     }
     async function selectAction(ev: any) {
       const root = 'data';
       if (!props.query.public) {
-        const fn = (!geneMotif.value) ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
+        const fn = (geneMotif.value === 'gene') ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
         filename.value = fn;
         holdMotif.value = '';
         runId.value = ev.id;
@@ -1301,14 +1322,15 @@ export default defineComponent({
           }
         });
         const dataStruct: any[] = [];
-        matchedRuns.forEach(async (rid: any, i: any) => {
-          await getMeta(rid);
+        for (let i = 0; i < matchedRuns.length; i += 1) {
+          const rid = matchedRuns[i];
           const fn = `data/${rid}/h5/obj/genes.h5ad`;
           filename.value = fn;
+          await getMeta(rid);
           await runSpatial(rid);
-          const valueHolder = { date: 'n/a', runId: `${cleanRunId(rid)}`, organ: `${metadata.value.organ}`, species: `${metadata.value.species}`, expcond: `${metadata.value.diseaseState}`, link: `${publicLink.value}` };
+          const valueHolder = { runId: `${cleanRunId(rid)}`, organ: `${metadata.value.organ}`, species: `${metadata.value.species}`, expcond: `${metadata.value.condition}`, date: `${metadata.value.date}`, link: `${publicLink.value}` };
           dataStruct.push(valueHolder);
-        });
+        }
         collabData.value = dataStruct;
       }
       loading.value = false;
@@ -1345,7 +1367,7 @@ export default defineComponent({
             ev.forEach((v: string, i: number) => {
               trackBrowserGenes.value.push(v);
             });
-            if (geneMotif.value) {
+            if (geneMotif.value === 'motif') {
               seqlogo();
             }
           }
@@ -1639,6 +1661,10 @@ export default defineComponent({
       collabData,
       removeZeros,
       collabName,
+      updateClustTotal,
+      totalInClust,
+      unClickCluster,
+      selectedClusters,
     };
   },
 });
