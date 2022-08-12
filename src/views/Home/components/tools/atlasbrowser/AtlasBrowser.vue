@@ -867,10 +867,10 @@ export default defineComponent({
       // metaFlag.value = false;
     }
     function imageClick(ev: any) {
-      console.log(scaleFactor.value);
-      console.log(ev.evt.layerY / scaleFactor.value);
-      console.log(ev.evt.layerX / scaleFactor.value);
-      console.log(ev);
+      // console.log(scaleFactor.value);
+      // console.log(ev.evt.layerY / scaleFactor.value);
+      // console.log(ev.evt.layerX / scaleFactor.value);
+      // console.log(ev);
     }
     function changeDiseaseState() {
       if (metadata.value.diseaseState === 'Normal') {
@@ -953,9 +953,7 @@ export default defineComponent({
         // if the json folder cannot be obtained from local server query slims
         if (!jsonBoolean) {
           loading.value = true;
-          console.log('about to get meta');
           slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
-          console.log(slimsData);
           params.data = slimsData;
           const taskObject = await client.value!.postTask(task, args, kwargs, queue);
           await checkTaskStatus(taskObject._id);
@@ -1008,12 +1006,10 @@ export default defineComponent({
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
-        // console.log(resp);
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
       } else {
-        console.log('calling getMeta');
         await getMeta();
         optionFlag.value = true;
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
@@ -1024,7 +1020,6 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       let filename: any;
-      // console.log(orientation.value.rotation);
       // path to images
       if (optionUpdate.value) {
         filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
@@ -1034,7 +1029,6 @@ export default defineComponent({
       const filenameList = { params: { path: root, filter: `${run_id.value}`, bucket_name } };
       try {
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation } };
-        console.log(pl);
         const img = await client.value.getImageAsJPG(pl);
         imageh.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
@@ -1200,9 +1194,9 @@ export default defineComponent({
       if (roi.value.polygons) {
         if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
         else roi.value.polygons[idx].fill = 'red';
-        console.log(scaleFactor.value);
-        console.log(roi.value.polygons[idx].centerx / scaleFactor.value);
-        console.log(roi.value.polygons[idx].centery / scaleFactor.value);
+        // console.log(scaleFactor.value);
+        // console.log(roi.value.polygons[idx].centerx / scaleFactor.value);
+        // console.log(roi.value.polygons[idx].centery / scaleFactor.value);
       }
       isMouseDown.value = true;
     }
@@ -1309,7 +1303,7 @@ export default defineComponent({
       isCropMode.value = true;
       active_roi_available.value = true;
       const coords = crop.value.getCoordinatesOnImage();
-      console.log(coords);
+      // console.log(coords);
       const imgObj = new window.Image();
       const newImage = new window.Image();
       imgObj.src = URL.createObjectURL(imageh.value);
@@ -1378,7 +1372,6 @@ export default defineComponent({
       // loading.value = true;
       let img_src = postB_or_bsa.value;
       if (!optionUpdate.value) {
-        console.log('here');
         img_src = imageDataToBlob();
       }
       // current_image.value.image.src = img_src;
@@ -1526,7 +1519,6 @@ export default defineComponent({
         const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
-        console.log(cropCoords);
         if (optionUpdate.value) {
           cropCoords = metadata.value.crop_area;
         }
@@ -1570,7 +1562,6 @@ export default defineComponent({
           root_dir: root,
           bucket: bucket_name,
         };
-        console.log(params);
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -1652,7 +1643,6 @@ export default defineComponent({
       // Cap sensitive
       const fl_payload = { params: { bucket_name, path: root, filter: run_id.value.concat('_postB_BSA.tif') } };
       const filelist = await client.value.getFileList(fl_payload);
-      console.log(filelist);
       if (filelist !== false) {
         const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
         items.value = qc_data;
