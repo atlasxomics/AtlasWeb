@@ -13,11 +13,11 @@
     <table style="width: 100%;border-spacing: 35px;" v-if="allRuns.length > 0">
     <caption style="font-size: 20px;font-weight: bold;padding: 15px;border-bottom: 1px solid;">{{name}}</caption>
       <tr style="border-bottom:1px solid rgb(92, 112, 128); color:rgb(92, 112, 128);font-weight: 500;">
-        <th>Date</th>
         <th>Run ID</th>
         <th>Tissue</th>
         <th>Organism</th>
         <th>Experimental Condition</th>
+        <th>Date</th>
         <th>Browser Link</th>
       </tr>
       <tr v-for="runs in allRuns" v-bind:key="runs" style="border-bottom:1px solid rgb(92, 112, 128);">
