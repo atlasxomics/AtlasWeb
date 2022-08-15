@@ -606,7 +606,7 @@
             </div>
             </v-col>
             <v-col cols="12" sm="3">
-              <table style="margin-bottom: 0; border-spacing:13px">
+              <table style="margin-bottom: 0;">
                   <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'vertical-align': 'middle' }">
                     <template>
                       <td>
@@ -631,7 +631,12 @@
               <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading">
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
               </v-card>
-              <div id="capturePeak" ref="peakContainer" :style="{ visibility: visible }">
+              <div id="captureHisto">
+                <v-card class="mt-3" v-show="spatialData && histoFlag">
+                  <!-- <histogram-graph v-show="histoFlag" /> -->
+                </v-card>
+              </div>
+              <div id="capturePeak" :style="{ visibility: visible }">
                 <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading">
                   <template v-if="geneMotif == 'gene'">
                       <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
@@ -640,7 +645,6 @@
                     <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                     <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                   </template>
-                  <histogram-graph v-show="histoFlag"></histogram-graph>
                 </v-card>
               </div>
             </v-col>
@@ -867,7 +871,7 @@ export default defineComponent({
     }
     function checkFieldCell(cluster: any, ev: any) {
       const name = typeof ev.srcElement._value !== 'string' ? '' : ev.srcElement._value;
-      cellTypeMapCopy.value[cluster] = name;
+      cellTypeMapCopy.value[cluster] = [name];
     }
     function clearCellType() {
       cellTypeFlag.value = false;
