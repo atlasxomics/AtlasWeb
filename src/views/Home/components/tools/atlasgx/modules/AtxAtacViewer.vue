@@ -675,61 +675,58 @@ export default defineComponent({
       circlesSpatial.value = circles;
       circlesSpatialUMAP.value = circlesUMAP;
       highlightRegion();
-      if (selectedGenes.value.length === 0 && (!isDrawing.value && !isDrawingRect.value)) {
-        ctx.emit('totalClust', totalInClust.value);
-      }
+      ctx.emit('totalClust', totalInClust.value);
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = props.query.public ? await client.value.getPublicTaskStatus(task_id) : await client.value.getTaskStatus(task_id);
     };
-    async function runSpatial(workerRequired = true) {
+    async function runSpatial() {
       if (!client.value) return;
       // if (!selectedFiles.value) return;
       try {
         progressMessage.value = null;
         loading.value = true;
         spatialRun.value = true;
-        if (workerRequired) {
-          const task = currentTask.value;
-          const queue = currentQueue.value;
-          const args = [filenameGene.value, selectedGenes.value, highlightIds.value];
-          const kwargs = {};
-          const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
-          if (props.query.public && runId.value === null) {
-            runId.value = taskObject.meta.run_id;
-            ctx.emit('publicRun', runId.value);
-          }
-          await checkTaskStatus(taskObject._id);
-          /* eslint-disable no-await-in-loop */
-          while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-            if (taskStatus.value.status === 'PROGRESS') {
-              progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
-            }
-            await new Promise((r) => {
-              taskTimeout.value = window.setTimeout(r, 1000);
-            });
-            taskTimeout.value = null;
-            await checkTaskStatus(taskObject._id);
-          }
-          /* eslint-disable no-await-in-loop */
-          if (taskStatus.value.status !== 'SUCCESS') {
-            snackbar.dispatch({ text: 'Worker failed in AtxAtacViewer', options: { right: true, color: 'error' } });
-            loading.value = false;
-            return;
-          }
-          progressMessage.value = taskStatus.value.status;
-          const resp = taskStatus.value.result;
-          spatialData.value = resp;
-          genes.value = props.genelist;
-          if (highlightIds.value.length > 0) {
-            ctx.emit('highlightedId', highlightIds.value);
-          }
+        const task = currentTask.value;
+        const queue = currentQueue.value;
+        const args = [filenameGene.value, selectedGenes.value, highlightIds.value];
+        const kwargs = {};
+        const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
+        if (props.query.public && runId.value === null) {
+          runId.value = taskObject.meta.run_id;
+          ctx.emit('publicRun', runId.value);
         }
-        clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
-        await updateCircles();
-        await fitStageToParent();
-        spatialRun.value = false;
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          if (taskStatus.value.status === 'PROGRESS') {
+            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          }
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        /* eslint-disable no-await-in-loop */
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed in AtxAtacViewer', options: { right: true, color: 'error' } });
+          loading.value = false;
+          return;
+        }
+        progressMessage.value = taskStatus.value.status;
+        const resp = taskStatus.value.result;
+        spatialData.value = resp;
+        genes.value = props.genelist;
+        if (highlightIds.value.length > 0) {
+          ctx.emit('highlightedId', { ids: highlightIds.value, genes: spatialData.value.top_selected });
+        } else {
+          clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
+          await updateCircles();
+          await fitStageToParent();
+          spatialRun.value = false;
+        }
       } catch (error) {
         ctx.emit('spatialFlag', false);
         console.log(error);
@@ -737,7 +734,7 @@ export default defineComponent({
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       } finally {
         loading.value = false;
-        if (selectedGenes.value.length === 0) {
+        if (selectedGenes.value.length === 0 && (!isDrawing.value && !isDrawingRect.value)) {
           ctx.emit('spatialFlag', spatialData.value);
         }
       }
@@ -945,7 +942,7 @@ export default defineComponent({
         polygon.value.points = [];
         highlightRegion();
         if (highlightCount.value > 0) {
-          runSpatial(true);
+          runSpatial();
         }
       }
       if (isDrawingRect.value) {
@@ -953,7 +950,7 @@ export default defineComponent({
         regions.value.push(deepCopy(rectangle.value));
         highlightRegion();
         if (highlightCount.value > 0) {
-          runSpatial(true);
+          runSpatial();
         }
       }
     }
@@ -964,7 +961,7 @@ export default defineComponent({
         polygonUMAP.value.points = [];
         highlightRegion();
         if (highlightCount.value > 0) {
-          runSpatial(true);
+          runSpatial();
         }
       }
       if (isDrawingRect.value) {
@@ -972,7 +969,7 @@ export default defineComponent({
         regionsUMAP.value.push(deepCopy(rectangleUMAP.value));
         highlightRegion();
         if (highlightCount.value > 0) {
-          runSpatial(true);
+          runSpatial();
         }
       }
     }
@@ -1047,7 +1044,7 @@ export default defineComponent({
         ctx.emit('spatialFlag', false);
       }
       filenameGene.value = v;
-      runSpatial(true);
+      runSpatial();
     });
     watch(scale, () => {
       reScale();
@@ -1063,7 +1060,7 @@ export default defineComponent({
       } else {
         isClusterView.value = false;
         removeRegions();
-        runSpatial(true);
+        runSpatial();
       }
     });
     watch(selectedGenesFromParent, (v: any) => {
