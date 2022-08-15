@@ -11,6 +11,7 @@
         <template v-slot:activator="{ on, attrs }" >
           <template v-if="!menu.type">
             <v-btn
+              :id="menu.ref ? menu.ref : ''"
               text
               @click="menu.click"
               :icon="menu.icon ? true : false"

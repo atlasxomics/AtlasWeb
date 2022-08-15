@@ -526,7 +526,7 @@
             <span>Copy Public Link</span>
             </v-tooltip>
           </v-card>
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'107px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '18vh' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'147px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '18vh' }" flat>
             <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -536,7 +536,7 @@
                 icon
                 class="ml-4"
                 :disabled="!spatialData || loading"
-                @click="featureTableFlag = true; peakViewerFlag = false"
+                @click="featureTableFlag = true; peakViewerFlag = false; histoFlag = false"
                 small>
                 <v-icon>mdi-table-large</v-icon>
               </v-btn>
@@ -552,12 +552,28 @@
                 icon
                 class="ml-4 mt-5"
                 :disabled="!spatialData || loading"
-                @click="peakViewerFlag = true; featureTableFlag = false"
+                @click="peakViewerFlag = true; featureTableFlag = false; histoFlag = false"
+                small>
+                <v-icon>mdi-chart-line</v-icon>
+              </v-btn>
+            </template>
+            <span>Peak Viewer</span>
+            </v-tooltip>
+            <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                color="black"
+                icon
+                class="ml-4 mt-5"
+                :disabled="!spatialData || loading"
+                @click="histoFlag = true; peakViewerFlag = false; featureTableFlag = false"
                 small>
                 <v-icon>mdi-chart-bar</v-icon>
               </v-btn>
             </template>
-            <span>Peak Viewer</span>
+            <span>Histogram</span>
             </v-tooltip>
           </v-card>
         </v-col>
@@ -624,6 +640,7 @@
                     <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                     <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                   </template>
+                  <histogram-graph v-show="histoFlag"></histogram-graph>
                 </v-card>
               </div>
             </v-col>
@@ -652,6 +669,7 @@ import TrackBrowser from './modules/TrackBrowser.vue';
 import AtxAtacViewer from './modules/AtxAtacViewer.vue';
 import BarChart from './modules/BarChart.vue';
 import LoadingPage from './modules/LoadingPage.vue';
+import HistogramGraph from './modules/HistogramGraph.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -702,7 +720,7 @@ interface Metadata {
 
 export default defineComponent({
   name: 'AtlasXplore',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -776,6 +794,7 @@ export default defineComponent({
     const geneMotif = ref<string>('gene');
     const featureTableFlag = ref<boolean>(true);
     const peakViewerFlag = ref<boolean>(false);
+    const histoFlag = ref<boolean>(false);
     const displayFlag = ref<boolean>(false);
     const clusterColorFlag = ref<boolean>(false);
     const cellTypeFlag = ref<boolean>(false);
@@ -820,7 +839,8 @@ export default defineComponent({
       loading.value = ev;
     }
     function updateSelectors(ev: any) {
-      highlightIds.value = ev;
+      highlightIds.value = ev.ids;
+      topSelected.value = ev.genes;
     }
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
@@ -1030,7 +1050,6 @@ export default defineComponent({
       });
       geneNames.value = geneRank;
       lengthClust.value = clusterItems.value.length;
-      topSelected.value = spatialData.value.top_selected;
       loading.value = false;
       await updateCircles();
     }
@@ -1067,6 +1086,7 @@ export default defineComponent({
       loading.value = false;
     }
     async function updateFilename() {
+      if (!spatialData.value) return;
       /* eslint-disable no-lonely-if */
       try {
         if (!props.query.public) {
@@ -1283,6 +1303,7 @@ export default defineComponent({
         selectedGenes.value = [];
         featureTableFlag.value = true;
         peakViewerFlag.value = false;
+        histoFlag.value = false;
       }
       runIdFlag.value = false;
       selectedGenes.value = [];
@@ -1382,8 +1403,16 @@ export default defineComponent({
       }
     });
     watch(geneMotif, (v: any) => {
+      const btn = document.getElementById('geneMotifButton')!;
+      const span = btn.childNodes[0] as HTMLElement;
+      if (v === 'gene') {
+        span.innerText = 'GENE';
+      } else if (v === 'motif') {
+        span.innerText = 'MOTIF';
+      }
       featureTableFlag.value = true;
       peakViewerFlag.value = false;
+      histoFlag.value = false;
       geneMotifFlag.value = false;
       isClusterView.value = true;
       selectedGenes.value = [];
@@ -1475,10 +1504,11 @@ export default defineComponent({
         },
       },
       {
-        text: 'Gene/Motif',
-        icon: 'mdi-teamviewer',
+        text: geneMotif.value,
+        icon: null,
         tooltip: 'Gene/Motif',
         disabled: loading.value,
+        ref: 'geneMotifButton',
         click: () => {
           geneMotifFlag.value = !geneMotifFlag.value;
         },
@@ -1612,6 +1642,7 @@ export default defineComponent({
       geneMotif,
       featureTableFlag,
       peakViewerFlag,
+      histoFlag,
       colorMap,
       spatialRun,
       visible,
