@@ -1,10 +1,15 @@
 <template>
-  <Bar
-    :chart-options="chartOptions"
-    :chart-data="chartData"
-    :width=400
-    :height=200
-  />
+  <v-row no-gutters>
+    <v-col cols="12" sm="12">
+      <v-row>
+        <template v-for="genes in data" >
+          <v-col vols="12" sm="4" :key="genes.id">
+            <Plotly :data="genes.data" :layout="genes.layout" :display-mode-bar="true"></Plotly>
+          </v-col>
+        </template>
+      </v-row>
+    </v-col>
+  </v-row>
 </template>
 
 <script lang='ts'>
@@ -15,31 +20,53 @@ import lodash, { lte } from 'lodash';
 import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
-import { Bar } from 'vue-chartjs/legacy';
-import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
-
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
+import { Plotly } from 'vue-plotly';
 
 export default defineComponent({
   name: 'HistogramGraph',
-  components: { Bar },
+  components: { Plotly },
+  props: ['colorCode', 'chartData', 'idName'],
   setup(props, ctx) {
-    const chartData = ref<any>({ labels: ['January', 'February', 'March'], datasets: [{ data: [40, 20, 12], barPercentage: 1.25 }] });
-    const chartOptions = ref<any>({
-      responsive: true,
-      options: {
-        legend: { display: false },
-        scales: {
-          x: {
-            display: false,
-            ticks: { max: 2 },
-            gridLines: { display: false },
-          },
-          ys: { ticks: { beginAtZero: true } },
-        },
-      },
+    const colorMap = computed(() => props.colorCode);
+    const dataFromParent = computed(() => props.chartData);
+    const idName = computed(() => props.idName);
+    const data = ref<any>({});
+    const layout = ref<any>();
+    const created = ref<any>();
+
+    async function constructChart(tixels: any) {
+      const multGenes: any = {};
+      data.value = {};
+      for (let i = 0; i < idName.value.length; i += 1) {
+        const categorization: any = {};
+        const collectiveData: any = [];
+        tixels.forEach((value: any, index: any) => {
+          if (!Object.keys(categorization).includes(value.cluster)) {
+            categorization[value.cluster] = [];
+          }
+          categorization[value.cluster].push(value.genes[idName.value[i]]);
+        });
+        lodash.each(categorization, (value: any, cluster: any) => {
+          const trace = {
+            x: value,
+            type: 'histogram',
+            opacity: 0.5,
+            marker: { color: colorMap.value[cluster] },
+            name: cluster,
+          };
+          collectiveData.push(trace);
+        });
+        multGenes[idName.value[i]] = { id: idName.value[i], data: collectiveData, layout: { barmode: 'overlay', title: idName.value[i] } };
+      }
+      data.value = multGenes;
+    }
+    onMounted(async () => {
+      // constructChart();
     });
-    return { chartData, chartOptions };
+    watch(dataFromParent, (v: any) => {
+      constructChart(v);
+    });
+    return { data, layout, created, constructChart };
   },
 });
 </script>
