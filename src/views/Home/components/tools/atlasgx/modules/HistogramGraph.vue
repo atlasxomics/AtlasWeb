@@ -56,7 +56,14 @@ export default defineComponent({
           };
           collectiveData.push(trace);
         });
-        multGenes[idName.value[i]] = { id: idName.value[i], data: collectiveData, layout: { barmode: 'overlay', title: idName.value[i] } };
+        collectiveData.sort((a: any, b: any) => {
+          const x = a.name.toLowerCase();
+          const y = b.name.toLowerCase();
+          if (x < y) { return -1; }
+          if (x > y) { return 1; }
+          return 0;
+        });
+        multGenes[idName.value[i]] = { id: idName.value[i], data: collectiveData, layout: { barmode: 'overlay', title: idName.value[i], traceorder: 'normal' } };
       }
       data.value = multGenes;
     }
