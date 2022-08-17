@@ -587,6 +587,8 @@
                 @highlightedId='updateSelectors'
                 @publicRun='getPublicId'
                 @totalClust="updateClustTotal"
+                @spatialCircleData="updateHistograph"
+                @sendColorBar="colorBarToSingle"
                 :query="{ public: query.public}"
                 :filename="filename"
                 :genelist="genes"
@@ -627,17 +629,28 @@
               </table>
             </v-col>
           </v-row>
+          <!-- <v-row no-gutters>
             <v-col cols="12" sm="11">
-              <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading">
+              <v-row>
+                <template v-for="genes in childGenes" >
+                  <v-col vols="12" sm="4" :key="genes">
+                    <singleview :gene="genes" :circleData="spatialCircleData" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" />
+                  </v-col>
+                </template>
+              </v-row>
+            </v-col>
+          </v-row> -->
+            <v-col cols="12" sm="11">
+              <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading" flat>
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
               </v-card>
               <div id="captureHisto">
-                <v-card class="mt-3" v-show="spatialData && histoFlag">
-                  <!-- <histogram-graph v-show="histoFlag" /> -->
+                <v-card class="mt-3" v-show="spatialData && histoFlag" flat>
+                  <histogram-graph v-show="histoFlag" :colorCode="colorMap" :idName="childGenes" :chartData="spatialCircleData"/>
                 </v-card>
               </div>
               <div id="capturePeak" :style="{ visibility: visible }">
-                <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading">
+                <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading" flat>
                   <template v-if="geneMotif == 'gene'">
                       <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
                   </template>
@@ -674,6 +687,7 @@ import AtxAtacViewer from './modules/AtxAtacViewer.vue';
 import BarChart from './modules/BarChart.vue';
 import LoadingPage from './modules/LoadingPage.vue';
 import HistogramGraph from './modules/HistogramGraph.vue';
+import Singleview from './modules/Singleview.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -724,7 +738,7 @@ interface Metadata {
 
 export default defineComponent({
   name: 'AtlasXplore',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph, Singleview },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -820,6 +834,8 @@ export default defineComponent({
     const collabName = ref<string>('');
     const totalInClust = ref<any>({});
     const selectedClusters = ref<any[]>([]);
+    const spatialCircleData = ref<any>({});
+    const colorBarFromSibling = ref<any>();
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -848,6 +864,12 @@ export default defineComponent({
     }
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
+    }
+    function updateHistograph(ev: any) {
+      spatialCircleData.value = ev;
+    }
+    function colorBarToSingle(ev: any) {
+      colorBarFromSibling.value = ev;
     }
     function linkAlert() {
       snackbar.dispatch({ text: 'Public link copied to clipboard', options: { left: true, color: 'success' } });
@@ -1700,6 +1722,10 @@ export default defineComponent({
       totalInClust,
       unClickCluster,
       selectedClusters,
+      updateHistograph,
+      spatialCircleData,
+      colorBarToSingle,
+      colorBarFromSibling,
     };
   },
 });

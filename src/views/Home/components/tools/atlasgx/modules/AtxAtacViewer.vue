@@ -42,7 +42,7 @@
       </v-card>
     </v-col>
     <v-col cols="12" sm="5">
-      <v-card id="stageParent"
+      <v-card id="stageParentDualAtac"
         :loading="loading"
         class="rounded-0"
         v-resize="onResize"
@@ -51,7 +51,7 @@
         height="50vh"
         align="center">
         <v-stage
-          ref="konvaStage"
+          ref="konvaStageDualAtac"
           class="mainStage"
           :config="konvaConfigLeft"
           :style="{ 'overflow': 'hidden' }"
@@ -60,8 +60,8 @@
           @mouseup="mouseUpOnStageLeft"
           >
           <v-layer
-            ref="spatialLayer"
-            id="spatialLayer">
+            ref="spatialLayerDualAtac"
+            id="spatialLayerDualAtac">
             <v-circle v-for="p in circlesSpatial"
               :config="p"
               v-bind:key="p.id"
@@ -69,7 +69,7 @@
               @mouseout="mouseOutOnSpatial"/>
           </v-layer>
           <v-layer
-            ref="annotationLayer"
+            ref="annotationLayerDualAtac"
             />
           <v-layer
             ref="drawingLayer"
@@ -147,7 +147,7 @@
       </v-card>
     </v-col>
     <v-col cols="12" sm="5">
-      <v-card id="stageParentRight"
+      <v-card
         :loading="loading"
         class="rounded-0"
         flat
@@ -155,7 +155,7 @@
         :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
         height="50vh">
         <v-stage
-          ref="konvaStageRight"
+          ref="konvaStageDualAtacRight"
           class="mainStage"
           :config="konvaConfigRight"
           @mousedown="mouseDownOnStageRight"
@@ -164,8 +164,8 @@
           :style="{ 'overflow': 'hidden' }"
           >
           <v-layer
-            ref="spatialLayerRight"
-            id="spatialLayerRight">
+            ref="spatialLayerDualAtacRight"
+            id="spatialLayerDualAtacRight">
             <v-circle v-for="p in circlesSpatialUMAP"
               :config="p"
               v-bind:key="p.id"
@@ -173,7 +173,7 @@
               @mouseout="mouseOutOnSpatialRight"/>
           </v-layer>
           <v-layer
-            ref="annotationLayerRight"
+            ref="annotationLayerDualAtacRight"
             />
           <v-layer
             ref="drawingLayerRight"
@@ -358,7 +358,7 @@ export default defineComponent({
       konvaConfigRight.value.draggable = flag;
     }
     async function fitStageToParent() {
-      const parent = document.querySelector('#stageParent');
+      const parent = document.querySelector('#stageParentDualAtac');
       if (!parent) return;
       const parentWidth = (parent as any).offsetWidth;
       const parentHeight = (parent as any).offsetHeight;
@@ -540,6 +540,7 @@ export default defineComponent({
       const minY = Math.min(...spatialCoord.map((a: number[]) => a[1]));
       const maxX = Math.max(...spatialCoord.map((a: number[]) => a[0]));
       const maxY = Math.max(...spatialCoord.map((a: number[]) => a[1]));
+      ctx.emit('sendColorBar', { color: colorBarmap.value, maxMin: [minX, minY, maxX, maxY] });
       const minX_UMAP = Math.min(...spatialCoordUMAP.map((a: number[]) => a[0]));
       const minY_UMAP = Math.min(...spatialCoordUMAP.map((a: number[]) => a[1]));
       const maxX_UMAP = Math.max(...spatialCoordUMAP.map((a: number[]) => a[0]));
@@ -634,6 +635,7 @@ export default defineComponent({
             (c.genes as any)[k] = val[i];
           });
           circles.push(c);
+          ctx.emit('spatialCircleData', circles);
         });
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoordUMAP[i];
@@ -741,7 +743,7 @@ export default defineComponent({
     }
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {
-      const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
+      const mousePos = (ctx as any).refs.konvaStageDualAtac.getNode().getRelativePointerPosition();
       const item = ev.target.attrs;
       tooltip.position({
         x: mousePos.x,
@@ -774,12 +776,12 @@ export default defineComponent({
         return;
       }
       const mousePos = { x: ev.evt.layerX, y: ev.evt.layerY };
-      const stageWidth = (ctx as any).refs.konvaStage.$el.offsetWidth;
-      const stageHeight = (ctx as any).refs.konvaStage.$el.offsetHeight;
-      const first = (ctx as any).refs.konvaStage.$children[0].$children[0].getNode().absolutePosition();
-      const second = (ctx as any).refs.konvaStage.$children[0].$children[49].getNode().absolutePosition();
-      const third = (ctx as any).refs.konvaStage.$children[0].$children[circlesSpatial.value.length - 50].getNode().absolutePosition();
-      const end = (ctx as any).refs.konvaStage.$children[0].$children[circlesSpatial.value.length - 1].getNode().absolutePosition();
+      const stageWidth = (ctx as any).refs.konvaStageDualAtac.$el.offsetWidth;
+      const stageHeight = (ctx as any).refs.konvaStageDualAtac.$el.offsetHeight;
+      const first = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[0].getNode().absolutePosition();
+      const second = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[49].getNode().absolutePosition();
+      const third = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[circlesSpatial.value.length - 50].getNode().absolutePosition();
+      const end = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[circlesSpatial.value.length - 1].getNode().absolutePosition();
       const boundaries = [first, second, third, end];
       let leftmost = 1000;
       let bottommost = 0;
@@ -816,7 +818,7 @@ export default defineComponent({
       }
     }
     async function mouseMoveOnSpatialRight(ev: any) {
-      const mousePosRight = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
+      const mousePosRight = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();
       const item = ev.target.attrs;
       tooltipRight.position({
         x: mousePosRight.x,
@@ -863,7 +865,7 @@ export default defineComponent({
       if (isDrawingRect.value) {
         lassoSide.value = 'left';
         removeRegions();
-        const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
+        const mousePos = (ctx as any).refs.konvaStageDualAtac.getNode().getRelativePointerPosition();
         rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
@@ -881,7 +883,7 @@ export default defineComponent({
       if (isDrawingRect.value) {
         lassoSide.value = 'right';
         removeRegions();
-        const mousePos = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
+        const mousePos = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();
         rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
         highlightRegion();
@@ -891,7 +893,7 @@ export default defineComponent({
     function mouseMoveOnStageLeft(ev: any) {
       if (isDrawing.value) {
         if (isClicked.value) {
-          const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
+          const mousePos = (ctx as any).refs.konvaStageDualAtac.getNode().getRelativePointerPosition();
           polygon.value.points.push(Math.round(mousePos.x));
           polygon.value.points.push(Math.round(mousePos.y));
           (ctx as any).refs.drawingLayer.getNode().batchDraw(); // forced update since due to pointer issue
@@ -899,7 +901,7 @@ export default defineComponent({
       }
       if (isDrawingRect.value) {
         if (isClicked.value) {
-          const mousePos = (ctx as any).refs.konvaStage.getNode().getRelativePointerPosition();
+          const mousePos = (ctx as any).refs.konvaStageDualAtac.getNode().getRelativePointerPosition();
           const xdiff = Math.abs(mousePos.x - rectangle.value.x);
           const ydiff = Math.abs(mousePos.y - rectangle.value.y);
           rectangle.value.width = xdiff;
@@ -916,7 +918,7 @@ export default defineComponent({
     function mouseMoveOnStageRight(ev: any) {
       if (isDrawing.value) {
         if (isClicked.value) {
-          const mousePos = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
+          const mousePos = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();
           polygonUMAP.value.points.push(Math.round(mousePos.x));
           polygonUMAP.value.points.push(Math.round(mousePos.y));
           (ctx as any).refs.drawingLayerRight.getNode().batchDraw(); // forced update since due to pointer issue
@@ -924,7 +926,7 @@ export default defineComponent({
       }
       if (isDrawingRect.value) {
         if (isClicked.value) {
-          const mousePos = (ctx as any).refs.konvaStageRight.getNode().getRelativePointerPosition();
+          const mousePos = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();
           const xdiff = Math.abs(mousePos.x - rectangleUMAP.value.x);
           const ydiff = Math.abs(mousePos.y - rectangleUMAP.value.y);
           rectangleUMAP.value.width = xdiff;
@@ -986,13 +988,13 @@ export default defineComponent({
       updateCircles();
     }
     function resetScaleAndPos(ev: any) {
-      const stage = (ctx as any).refs.konvaStage.getNode();
+      const stage = (ctx as any).refs.konvaStageDualAtac.getNode();
       const newPos = { x: 0, y: 0 };
       stage.position(newPos);
       scale.value = 0.75;
     }
     function resetScaleAndPosUMAP(ev: any) {
-      const stage = (ctx as any).refs.konvaStageRight.getNode();
+      const stage = (ctx as any).refs.konvaStageDualAtacRight.getNode();
       const newPos = { x: 0, y: 0 };
       stage.position(newPos);
       scaleUMAP.value = 0.75;
@@ -1078,8 +1080,8 @@ export default defineComponent({
       tooltip.add(tooltipText);
       tooltipRight.add(tooltipTagRight);
       tooltipRight.add(tooltipTextRight);
-      (ctx.refs.annotationLayer as any).getNode().add(tooltip);
-      (ctx.refs.annotationLayerRight as any).getNode().add(tooltipRight);
+      (ctx.refs.annotationLayerDualAtac as any).getNode().add(tooltip);
+      (ctx.refs.annotationLayerDualAtacRight as any).getNode().add(tooltipRight);
     });
     return {
       get_uuid,
