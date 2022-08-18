@@ -254,7 +254,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster'],
+  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -353,6 +353,7 @@ export default defineComponent({
     const totalInClust = ref<any>({});
     const clickedClusterFromParent = computed(() => (props.clickedCluster));
     const checkedClusterFromParent = computed(() => (props.checkBoxCluster));
+    const averageInd = computed(() => (props.indFlag));
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
@@ -540,7 +541,6 @@ export default defineComponent({
       const minY = Math.min(...spatialCoord.map((a: number[]) => a[1]));
       const maxX = Math.max(...spatialCoord.map((a: number[]) => a[0]));
       const maxY = Math.max(...spatialCoord.map((a: number[]) => a[1]));
-      ctx.emit('sendColorBar', { color: colorBarmap.value, maxMin: [minX, minY, maxX, maxY] });
       const minX_UMAP = Math.min(...spatialCoordUMAP.map((a: number[]) => a[0]));
       const minY_UMAP = Math.min(...spatialCoordUMAP.map((a: number[]) => a[1]));
       const maxX_UMAP = Math.max(...spatialCoordUMAP.map((a: number[]) => a[0]));
@@ -552,7 +552,8 @@ export default defineComponent({
       const radiusUMAP = (Math.min(stageWidthR, stageHeightR) / (30 * 5)) * scaleUMAP.value;
       const [paddingX, paddingY] = [60, 30];
       const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
-      if (isClusterView.value) {
+      if (isClusterView.value || averageInd.value) {
+        const coordinatesSib: any = [];
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           totalInClust.value[v] += 1;
           const [ax, ay] = spatialCoord[i];
@@ -561,6 +562,7 @@ export default defineComponent({
           const regex = /\d+/g;
           const string = v;
           const match = Number(string.match(regex)![0]) - 1;
+          coordinatesSib.push([x, y, v]);
           const c = {
             id: get_uuid(),
             x: x * scale.value * viewScale + paddingX,
@@ -580,6 +582,13 @@ export default defineComponent({
           });
           circles.push(c);
         });
+        if (averageInd.value) {
+          ctx.emit('singleCircleData', { coords: coordinatesSib, geneSum: spatialData.value.genes, intense: colors_intensity });
+          ctx.emit('sendColorBar', { color: colorBarmap.value, maxMin: [minX, minY, maxX, maxY], tixelColor: colors_intensity });
+        }
+        if (isClusterView.value) {
+          ctx.emit('spatialCircleData', [spatialData.value.TSS, spatialData.value.frags]);
+        } else ctx.emit('spatialCircleData', circles);
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
@@ -635,8 +644,8 @@ export default defineComponent({
             (c.genes as any)[k] = val[i];
           });
           circles.push(c);
-          ctx.emit('spatialCircleData', circles);
         });
+        ctx.emit('spatialCircleData', circles);
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
@@ -1008,6 +1017,11 @@ export default defineComponent({
         highlightRegion();
       }
     });
+    watch(averageInd, (v: any) => {
+      if (selectedGenes.value.length > 0) {
+        updateCircles();
+      }
+    });
     watch(isDrawing, (v: boolean) => {
       setDraggable(!v);
       removeRegions();
@@ -1151,6 +1165,7 @@ export default defineComponent({
       colorFromParent,
       clickedClusterFromParent,
       totalInClust,
+      averageInd,
     };
   },
 });
