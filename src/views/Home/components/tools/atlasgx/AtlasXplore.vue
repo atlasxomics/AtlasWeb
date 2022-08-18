@@ -1451,12 +1451,14 @@ export default defineComponent({
       }
     });
     watch(geneMotif, (v: any) => {
-      const btn = document.getElementById('geneMotifButton')!;
-      const span = btn.childNodes[0] as HTMLElement;
-      if (v === 'gene') {
-        span.innerText = 'GENE';
-      } else if (v === 'motif') {
-        span.innerText = 'MOTIF';
+      if (!props.query.public) {
+        const btn = document.getElementById('geneMotifButton')!;
+        const span = btn.childNodes[0] as HTMLElement;
+        if (v === 'gene') {
+          span.innerText = 'GENE';
+        } else if (v === 'motif') {
+          span.innerText = 'MOTIF';
+        }
       }
       featureTableFlag.value = true;
       peakViewerFlag.value = false;
