@@ -1,11 +1,12 @@
 <template>
   <v-row>
     <v-col cols="12" sm="1" class="shrinkCol">
+      <div :style="{ 'color': (backgroundColor != 'black') ? 'black' : 'white', 'z-index': 999, 'position': 'relative' }"><h4>{{selectedGenesFromParent}}</h4></div>
       <v-card
       class="rounded-0"
       flat
       :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-      height="38vh">
+      height="34vh">
         <v-card-text>
           <v-row justify="end">
             <v-btn
@@ -44,12 +45,10 @@
         v-resize="onResize"
         flat
         :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
-        height="38vh"
+        height="34vh"
         align="center">
-        <v-card-title :style="{ 'color': (backgroundColor != 'black') ? 'black' : 'white' }">{{selectedGenesFromParent}}</v-card-title>
         <v-stage
           ref="konvaStageSingle"
-          class="mainStage"
           :config="konvaConfigLeft"
           :style="{ 'overflow': 'hidden' }"
           >
@@ -122,7 +121,7 @@ export default defineComponent({
     const width = window.innerWidth;
     const height = window.innerHeight;
     const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true });
-    const scale = ref<number>(0.6);
+    const scale = ref<number>(0.68);
     const isClusterView = ref(true);
     const lowestCount = ref<number>(10000);
     const highestCount = ref<number>(0);
@@ -244,7 +243,7 @@ export default defineComponent({
       const stage = (ctx as any).refs.konvaStageSingle.getNode();
       const newPos = { x: 0, y: 0 };
       stage.position(newPos);
-      scale.value = 0.6;
+      scale.value = 0.68;
     }
     function onResize() {
       fitStageToParent();
