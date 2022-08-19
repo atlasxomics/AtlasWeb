@@ -28,7 +28,7 @@
                 medium
                 text
                 :disabled="!spatialData || loading"
-                @click="geneMotifFlag = !geneMotifFlag">{{geneMotif}}
+                @click="(geneMotif === 'gene') ? (geneMotif = 'motif') :  (geneMotif = 'gene')">{{geneMotif}}
               </v-btn>
             </template>
             <span>Gene/Motif</span>
@@ -879,6 +879,11 @@ export default defineComponent({
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
+    function onResize() {
+      const parent = (ctx as any).refs.peakContainer;
+      if (!parent) return;
+      widthFromCard.value = parent.$el.offsetWidth - 2;
+    }
     function cleanRunId(rid: string) {
       return rid.match('[A-Z]+[0-9]+')![0];
     }
@@ -1110,6 +1115,7 @@ export default defineComponent({
       loading.value = false;
       await updateCircles();
       await loadExpressions();
+      onResize();
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev;
@@ -1409,11 +1415,6 @@ export default defineComponent({
         }
       }
     }
-    function onResize() {
-      const parent = (ctx as any).refs.peakContainer;
-      if (!parent) return;
-      widthFromCard.value = (ctx as any).refs.peakContainer.offsetWidth - 2;
-    }
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = new GeneAutoCompleteClass({
       vuetify,
@@ -1535,6 +1536,7 @@ export default defineComponent({
       runCellType(cleanedArray);
     });
     const submenu = [
+      /* eslint-disable no-unused-expressions */
       {
         text: 'Run ID\'s',
         icon: 'mdi-magnify',
@@ -1560,7 +1562,7 @@ export default defineComponent({
         disabled: loading.value,
         ref: 'geneMotifButton',
         click: () => {
-          geneMotifFlag.value = !geneMotifFlag.value;
+          (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
         },
       },
       {
