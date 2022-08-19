@@ -5,8 +5,7 @@
       class="rounded-0"
       flat
       :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-      height="50vh"
-      width="100%">
+      height="38vh">
         <v-card-text>
           <v-row justify="end">
             <v-btn
@@ -45,8 +44,9 @@
         v-resize="onResize"
         flat
         :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
-        height="50vh"
+        height="38vh"
         align="center">
+        <v-card-title :style="{ 'color': (backgroundColor != 'black') ? 'black' : 'white' }">{{selectedGenesFromParent}}</v-card-title>
         <v-stage
           ref="konvaStageSingle"
           class="mainStage"
@@ -66,7 +66,6 @@
             ref="annotationLayerSingle"
             />
         </v-stage>
-      <v-card-title>{{selectedGenesFromParent}}</v-card-title>
       </v-card>
       <v-row>
         <v-col cols="12" sm="11">
@@ -98,14 +97,27 @@ const clientReady = new Promise((resolve) => {
     if (ready.value) { resolve(true); }
   });
 });
+function colormapBounded(cmap: string[], values: any, amount: number) {
+  const min_v = Math.min(...values) + (10 * amount);
+  const max_v = Math.max(...values) + (10 * amount);
+  const nshades = cmap.length;
+  const output: string[] = [];
+  lodash.each(values, (v: number) => {
+    const plusTen = v + (10 * amount);
+    const normalized = ((plusTen - min_v) / (max_v - min_v)) * (nshades - 1);
+    const colidx = Math.trunc(normalized);
+    output.push(cmap[colidx]);
+  });
+  return output;
+}
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'genes', 'heatmap', 'circleData', 'colorBar', 'loadingProp'],
+  props: ['query', 'gene', 'heatmap', 'background', 'circleData', 'colorBar', 'loadingProp'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const loading = computed(() => props.loadingProp);
-    const selectedGenesFromParent = computed(() => props.genes);
+    const selectedGenesFromParent = computed(() => props.gene);
     const spatialData = ref<any | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -134,15 +146,19 @@ export default defineComponent({
       padding: 5,
       fill: 'black',
     });
-    const circlesSpatial = computed(() => (props.circleData));
+    const coordGene = computed(() => (props.circleData));
     const clusterColors = ref<string[]>([]);
     const heatMap = computed(() => (props.heatmap ? props.heatmap : 'jet'));
     const stepArray = ref<any[]>([]);
     const colorBarmap = ref<string>('');
     const colorsValues = computed(() => (props.colorBar));
+    const backgroundColor = computed(() => (props.background));
     const colorbarText = ref<string>('white');
     const circlesSpatialSingle = ref<any[]>([]);
     const maxMin = ref<any[]>([]);
+    const colors_intensity = ref<any>();
+    const geneSum = ref<any>();
+    const coordinates = ref<any>();
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
     }
@@ -165,6 +181,8 @@ export default defineComponent({
       return arr;
     }
     async function updateCircles() {
+      if (geneSum.value === undefined) return;
+      const circles: any[] = [];
       const minX = maxMin.value[0];
       const minY = maxMin.value[1];
       const maxX = maxMin.value[2];
@@ -172,18 +190,31 @@ export default defineComponent({
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
       const [paddingX, paddingY] = [60, 30];
+      const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
       highestCount.value = 0;
       lowestCount.value = 10000;
-      lodash.each(circlesSpatial.value, (v: any, i: number) => {
-        highestCount.value = circlesSpatial.value[i].total > highestCount.value ? circlesSpatial.value[i].total : highestCount.value;
-        lowestCount.value = circlesSpatial.value[i].total < lowestCount.value ? circlesSpatial.value[i].total : lowestCount.value;
-        const tixelHold = v;
-        tixelHold.x *= scale.value * viewScale + paddingX;
-        tixelHold.y *= scale.value * viewScale + paddingY;
-        tixelHold.id = get_uuid();
-        circlesSpatialSingle.value.push(tixelHold);
-        console.log(tixelHold);
+      const geneColors = colormapBounded(colors_intensity.value, geneSum.value, 1);
+      lodash.each(geneSum.value, (v: any, i: number) => {
+        highestCount.value = v > highestCount.value ? v : highestCount.value;
+        lowestCount.value = v < lowestCount.value ? v : lowestCount.value;
+        const clr = (i + 10 > 0) ? geneColors[i] : 'grey';
+        const c = {
+          id: get_uuid(),
+          x: coordinates.value[i][0] * scale.value * viewScale + paddingX,
+          y: coordinates.value[i][1] * scale.value * viewScale + paddingY,
+          radius,
+          originalColor: clr,
+          fill: clr,
+          stroke: clr,
+          strokeWidth: 1.0,
+          cluster: coordinates.value[i][2],
+          total: v,
+          inactive: false,
+          genes: { [selectedGenesFromParent.value]: v },
+        };
+        circles.push(c);
       });
+      circlesSpatialSingle.value = circles;
       stepArray.value = makearray(highestCount.value, lowestCount.value);
     }
     // Drawing
@@ -195,7 +226,7 @@ export default defineComponent({
         y: mousePos.y,
       });
       let text = `Cluster: ${item.cluster}`;
-      text = `${text}\nAvg: ${(item.total).toFixed(2)}`;
+      text = `${text}\nTotal: ${(item.total).toFixed(2)}`;
       lodash.forIn(item.genes, (v: number, k: string) => {
         text = `${text}\n${k}: ${v.toFixed(2)}`;
       });
@@ -231,15 +262,18 @@ export default defineComponent({
       }
       updateCircles();
     });
-    watch(colorsValues, (v: any) => {
-      colorBarmap.value = v.color;
-      maxMin.value = v.maxMin;
-    });
+    watch([coordGene, selectedGenesFromParent, colorsValues], ([v, x, y], [prevv, prevx, prevy]) => {
+      if (v !== undefined && x !== undefined && y !== undefined && v !== prevv) {
+        geneSum.value = v.geneSum[x];
+        coordinates.value = v.coords;
+        colors_intensity.value = v.intense;
+        colorBarmap.value = y.color;
+        maxMin.value = y.maxMin;
+        updateCircles();
+      }
+    }, { deep: true });
     watch(scale, () => {
       reScale();
-    });
-    watch(selectedGenesFromParent, () => {
-      updateCircles();
     });
     onMounted(async () => {
       await clientReady;
@@ -252,7 +286,6 @@ export default defineComponent({
       scale,
       loading,
       konvaConfigLeft,
-      circlesSpatial,
       onResize,
       mouseMoveOnSpatial,
       mouseOutOnSpatial,
@@ -272,6 +305,10 @@ export default defineComponent({
       colorsValues,
       maxMin,
       circlesSpatialSingle,
+      colors_intensity,
+      geneSum,
+      coordinates,
+      backgroundColor,
     };
   },
 });

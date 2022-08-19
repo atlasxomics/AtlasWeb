@@ -85,6 +85,20 @@
           <span>(De)Select All</span>
           </v-tooltip>
         </div>
+          <v-tooltip bottom>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                class="mt-n1"
+                medium
+                text
+                id='averageIndButton'
+                @click="avgInd = !avgInd">{{(avgInd) ? 'Ind':'Avg'}}
+              </v-btn>
+            </template>
+            <span>Avg/Ind</span>
+          </v-tooltip>
       </template>
     </v-autocomplete>
 </template>
@@ -122,6 +136,7 @@ export default defineComponent({
     const autocompleteLoading = ref(false);
     const labelValue = ref<string>('Enter ID');
     const de_select = ref<boolean>(false);
+    const avgInd = ref<boolean>(false);
     const clicked = ref<boolean>(false);
     const paddingValue = ref<number>(32);
     const newRowCounter = ref<number>(0);
@@ -243,6 +258,9 @@ export default defineComponent({
         autoGenes.value = [];
       }
     });
+    watch(avgInd, (v: any) => {
+      ctx.emit('avgind', avgInd.value);
+    });
     watch(geneList.value, (v: any[]) => {
       genes.value = v;
     });
@@ -303,6 +321,7 @@ export default defineComponent({
       autoGenes,
       valueCollapse,
       fileContent,
+      avgInd,
       acInputChanged,
       querySelections,
       onGenelistChanged,
@@ -351,6 +370,9 @@ export default defineComponent({
     padding-top: 3px;
   }
   #no-background-hover::before {
+   background-color: transparent !important;
+  }
+  #averageIndButton #no-background-hover::before {
    background-color: transparent !important;
   }
 </style>

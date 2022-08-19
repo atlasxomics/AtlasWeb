@@ -24,13 +24,11 @@
               <v-btn
                 v-bind="attrs"
                 v-on="on"
-                color="black"
-                icon
                 class="ml-1"
                 medium
+                text
                 :disabled="!spatialData || loading"
-                @click="geneMotifFlag = !geneMotifFlag">
-                <v-icon>mdi-teamviewer</v-icon>
+                @click="(geneMotif === 'gene') ? (geneMotif = 'motif') :  (geneMotif = 'gene')">{{geneMotif}}
               </v-btn>
             </template>
             <span>Gene/Motif</span>
@@ -183,6 +181,42 @@
                 label="Type">
               </v-text-field>
             </v-card-text>
+          </v-card>
+        </v-dialog>
+        <v-dialog
+          v-if="geneMotifFlag"
+          :value="geneMotifFlag"
+          @click:outside="geneMotifFlag = !geneMotifFlag"
+          hide-overlay>
+          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:150px;"
+            :disabled="loading">
+            <v-data-table
+            class="thickBorder"
+            v-model="selected"
+            width="20%"
+            dense
+            single-select
+            hide-default-footer
+            hide-default-header
+            :items="['Genes', 'Motifs']">
+              <template v-slot:item="row">
+                <template v-if="row.item == 'Genes'">
+                  <tr @click="geneMotif = 'gene'">
+                    <td>{{row.item}}</td>
+                  </tr>
+                </template>
+                <template v-if="row.item == 'Motifs'">
+                  <tr @click="geneMotif = 'motif'">
+                    <td>{{row.item}}</td>
+                  </tr>
+                </template>
+                <template v-if="row.item == 'Features'">
+                  <tr @click="geneMotif = 'feat'">
+                    <td>{{row.item}}</td>
+                  </tr>
+                </template>
+              </template>
+            </v-data-table>
           </v-card>
         </v-dialog>
         <v-dialog
@@ -526,7 +560,7 @@
             <span>Copy Public Link</span>
             </v-tooltip>
           </v-card>
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'147px', 'padding-top': '15px', 'background-color': 'silver', 'margin-top': '18vh' }" flat>
+          <v-card :style="{ 'position': 'absolute', 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'149px', 'padding-top': '15px', 'background-color': 'silver', 'top': '55vh' }" flat>
             <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -579,7 +613,7 @@
         </v-col>
         <v-col cols="12" sm="11" class="mt-5">
           <v-row no-gutters>
-            <v-col cols="12" sm="9">
+            <v-col cols="12" sm="10">
               <div id="screenCapture" :style="{ 'background-color': 'transparent' }">
               <atx-atac-viewer
                 @loading_value="updateLoading"
@@ -588,6 +622,7 @@
                 @publicRun='getPublicId'
                 @totalClust="updateClustTotal"
                 @spatialCircleData="updateHistograph"
+                @singleCircleData="dataToSingle"
                 @sendColorBar="colorBarToSingle"
                 :query="{ public: query.public}"
                 :filename="filename"
@@ -604,10 +639,11 @@
                 :rect="isDrawingRect"
                 :clickedCluster="clickedClusterFromChild"
                 :checkBoxCluster="selectedClusters"
+                :indFlag="averageInd"
                 ref="mainAtxViewer"/>
             </div>
             </v-col>
-            <v-col cols="12" sm="3">
+            <v-col cols="12" sm="2">
               <table style="margin-bottom: 0;">
                   <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'vertical-align': 'middle' }">
                     <template>
@@ -629,17 +665,17 @@
               </table>
             </v-col>
           </v-row>
-          <!-- <v-row no-gutters>
+          <v-row no-gutters v-if="averageInd">
             <v-col cols="12" sm="11">
               <v-row>
                 <template v-for="genes in childGenes" >
                   <v-col vols="12" sm="4" :key="genes">
-                    <singleview :gene="genes" :circleData="spatialCircleData" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" />
+                    <singleview :gene="genes" :circleData="singleData" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
                   </v-col>
                 </template>
               </v-row>
             </v-col>
-          </v-row> -->
+          </v-row>
             <v-col cols="12" sm="11">
               <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading" flat>
                 <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
@@ -836,10 +872,17 @@ export default defineComponent({
     const selectedClusters = ref<any[]>([]);
     const spatialCircleData = ref<any>({});
     const colorBarFromSibling = ref<any>();
+    const singleData = ref<any>();
+    const averageInd = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
+    }
+    function onResize() {
+      const parent = (ctx as any).refs.peakContainer;
+      if (!parent) return;
+      widthFromCard.value = parent.$el.offsetWidth - 2;
     }
     function cleanRunId(rid: string) {
       return rid.match('[A-Z]+[0-9]+')![0];
@@ -867,6 +910,9 @@ export default defineComponent({
     }
     function updateHistograph(ev: any) {
       spatialCircleData.value = ev;
+    }
+    function dataToSingle(ev: any) {
+      singleData.value = ev;
     }
     function colorBarToSingle(ev: any) {
       colorBarFromSibling.value = ev;
@@ -995,18 +1041,8 @@ export default defineComponent({
     }
     async function loadExpressions() {
       if (!client.value) return;
-      if (!filename.value) return;
-      let resp: any;
-      if (props.query.public) {
-        if (geneMotif.value === 'motif') {
-          resp = await client.value.getGeneExpressionsByToken(holdMotif.value!);
-        } else {
-          resp = await client.value.getGeneExpressionsByToken(filename.value);
-        }
-      } else {
-        resp = await client.value.getGeneExpressions(filename.value);
-      }
-      genes.value = resp.map((v: string) => ({ name: v }));
+      if (!spatialData.value) return;
+      genes.value = spatialData.value.total_genes.map((v: string) => ({ name: v }));
     }
     function remove(item: any) {
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
@@ -1078,6 +1114,8 @@ export default defineComponent({
       lengthClust.value = clusterItems.value.length;
       loading.value = false;
       await updateCircles();
+      await loadExpressions();
+      onResize();
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev;
@@ -1119,27 +1157,15 @@ export default defineComponent({
           if (geneMotif.value === 'motif') {
             const hold = filename.value;
             filename.value = hold!.replace(/genes/i, 'motifs');
-            if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
-              await loadExpressions();
-            }
           } else {
             const hold = filename.value;
             filename.value = hold!.replace(/motifs/i, 'genes');
-            if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
-              await loadExpressions();
-            }
           }
         } else {
           if (geneMotif.value === 'motif') {
             filename.value = holdMotif.value;
-            if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
-              await loadExpressions();
-            }
           } else {
             filename.value = holdGene.value;
-            if (isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
-              await loadExpressions();
-            }
           }
         }
       } catch (error) {
@@ -1341,7 +1367,6 @@ export default defineComponent({
       cellTypeMap.value = {};
       cellTypeMapCopy.value = {};
       await runSpatial();
-      await loadExpressions();
       await getMeta();
     }
     async function loadingPage() {
@@ -1390,11 +1415,6 @@ export default defineComponent({
         }
       }
     }
-    function onResize() {
-      const parent = (ctx as any).refs.peakContainer;
-      if (!parent) return;
-      widthFromCard.value = (ctx as any).refs.peakContainer.offsetWidth - 2;
-    }
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = new GeneAutoCompleteClass({
       vuetify,
@@ -1402,6 +1422,9 @@ export default defineComponent({
       created() {
         this.$on('changed', (ev: any[]) => {
           selectedGenes.value = ev;
+        });
+        this.$on('avgind', (ev: any) => {
+          averageInd.value = ev;
         });
         this.$on('sentgenes', (ev: any) => {
           isClusterView.value = false;
@@ -1429,12 +1452,14 @@ export default defineComponent({
       }
     });
     watch(geneMotif, (v: any) => {
-      const btn = document.getElementById('geneMotifButton')!;
-      const span = btn.childNodes[0] as HTMLElement;
-      if (v === 'gene') {
-        span.innerText = 'GENE';
-      } else if (v === 'motif') {
-        span.innerText = 'MOTIF';
+      if (!props.query.public) {
+        const btn = document.getElementById('geneMotifButton')!;
+        const span = btn.childNodes[0] as HTMLElement;
+        if (v === 'gene') {
+          span.innerText = 'GENE';
+        } else if (v === 'motif') {
+          span.innerText = 'MOTIF';
+        }
       }
       featureTableFlag.value = true;
       peakViewerFlag.value = false;
@@ -1511,6 +1536,7 @@ export default defineComponent({
       runCellType(cleanedArray);
     });
     const submenu = [
+      /* eslint-disable no-unused-expressions */
       {
         text: 'Run ID\'s',
         icon: 'mdi-magnify',
@@ -1536,7 +1562,7 @@ export default defineComponent({
         disabled: loading.value,
         ref: 'geneMotifButton',
         click: () => {
-          geneMotifFlag.value = !geneMotifFlag.value;
+          (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
         },
       },
       {
@@ -1726,6 +1752,9 @@ export default defineComponent({
       spatialCircleData,
       colorBarToSingle,
       colorBarFromSibling,
+      dataToSingle,
+      singleData,
+      averageInd,
     };
   },
 });
