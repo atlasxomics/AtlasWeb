@@ -38,12 +38,12 @@
           </v-card>
         </v-dialog>
         <!-- metdata panel -->
-        <!-- to display must select icon and have either be csvHolder be empty and a runID selected or optionFlag be true. -->
+        <!-- to display must select icon and have either be csvHolder be empty and a runID selected or processing_run be true. -->
         <v-dialog
-          v-if="metaFlag && ((!csvHolder && run_id) || optionFlag)"
+          v-if="metaFlag && ((!csvHolder && run_id) || processing_run)"
           :value="metaFlag"
           @click:outside="metaFlag = !metaFlag">
-          <v-card  :disabled="loading"
+          <v-card :disabled="loading"
           >
             <v-card-title
             class="justify-center">
@@ -204,7 +204,7 @@
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
           <!-- workflow menu -->
-          <template v-if="run_id && optionFlag">
+          <template v-if="run_id && processing_run">
             <v-card>
               <!-- zoom slider -->
               <v-slider
@@ -407,14 +407,17 @@
               </v-list>
             </v-card>
           </template>
-          <v-card v-if="run_id && !loading && !optionFlag && csvHolder">
+          <DapiProcessingMenu
+          v-if="dapi_selected">
+          </DapiProcessingMenu>
+          <v-card v-if="run_id && !loading && !processing_run && csvHolder && !dapi_selected">
             <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
             <v-card-actions>
               <v-btn
                 outlined
                 dense
                 color="primary"
-                @click="optionFlag=true;optionCreate=true;"
+                @click="processing_run=true;optionCreate=true;"
                 x-small>
                 Reprocess
               </v-btn>
@@ -422,9 +425,19 @@
                 outlined
                 dense
                 color="primary"
-                @click="optionFlag=true;optionUpdate=true;tixels_filled=true; loadImage(); uploadingTixels()"
+                @click="processing_run=true;optionUpdate=true;tixels_filled=true; loadImage(); uploadingTixels(fill=true)"
                 x-small>
                 Update
+              </v-btn>
+              <v-btn
+              v-if="dapi_available"
+              outlined
+              dense
+              color="primary"
+              x-small
+              @click="optionUpdate=true;dapi_selected=true; loadImage(); uploadingTixels(fill=false)"
+              >
+              Dapi
               </v-btn>
             </v-card-actions>
           </v-card>
@@ -466,54 +479,6 @@
                 </v-dialog>
               </div>
             </template>
-            <!-- Loading message when saving spatial folder -->
-            <!-- <template v-if="loadingMessage">
-              <v-dialog
-                value=true
-                hide-overlay
-                persistent
-                width="600"
-                height=600>
-                <v-card
-                  color="primary"
-                  dark>
-                  <v-card-title>Progress</v-card-title>
-                  <v-card-text>
-                    Confirm cropping and orientation of images
-                    <v-progress-linear
-                      v-model="one"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                  <v-card-text>
-                    Accessing and Retriving data from the Database
-                    <v-progress-linear
-                      v-model="two"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                  <v-card-text>
-                    Updating Database and uploading spatial folder
-                    <v-progress-linear
-                    v-model="three"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                </v-card>
-              </v-dialog>
-            </template> -->
             <v-row>
               <v-card>
                 <!-- loading circle displayed on screen -->
@@ -664,6 +629,7 @@ import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
 import SpatialFolderViewer from './SpatialFolderViewer.vue';
+import DapiProcessingMenu from './DapiProcessingMenu.vue';
 // import { resolve } from 'dns';
 
 const clientReady = new Promise((resolve) => {
@@ -715,7 +681,7 @@ interface Metadata {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  components: { SpatialFolderViewer },
+  components: { SpatialFolderViewer, DapiProcessingMenu },
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
@@ -742,6 +708,7 @@ export default defineComponent({
     const isBrushMode = ref(false);
     const isCropMode = ref(false);
     const isEraseMode = ref(false);
+    const dapi_available = ref<boolean>(false);
     const brushSize = ref(20);
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
@@ -783,7 +750,8 @@ export default defineComponent({
     const csvHolder = ref<any>();
     const optionCreate = ref<boolean>(false);
     const optionUpdate = ref<boolean>(false);
-    const optionFlag = ref<boolean>(false);
+    const dapi_selected = ref<boolean>(false);
+    const processing_run = ref<boolean>(false);
     const generating = ref<boolean>(false);
     const runIdFlag = ref<boolean>(false);
     const runIDSelected = ref<boolean>(false);
@@ -1003,15 +971,25 @@ export default defineComponent({
       const scale_pos = await client.value.getJsonFile(scale_payload);
       scaleFactor_json.value = scale_pos;
       csvHolder.value = resp_pos;
+      const dapi_resp = client.value.checkExistence('atx-illumina', `${root}/${run_id.value}/dapi10x.tif`);
+      dapi_resp.then((val) => {
+        if (val.code === true) {
+          dapi_available.value = true;
+          console.log('true');
+        } else {
+          dapi_available.value = false;
+          console.log('false');
+        }
+      });
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
-        optionFlag.value = false;
+        processing_run.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
       } else {
         await getMeta();
-        optionFlag.value = true;
+        processing_run.value = true;
         snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
       }
     }
@@ -1021,7 +999,20 @@ export default defineComponent({
       loadingMessage.value = false;
       let filename: any;
       // path to images
-      if (optionUpdate.value) {
+      if (dapi_selected.value) {
+        const res = client.value.checkExistence('atx-illumina', `${root}/${run_id.value}/spatial/figure/dapi10x.tif`);
+        console.log(res);
+        await res.then((value) => {
+          if (value.code === true) {
+            console.log(value.code);
+            filename = `${root}/${run_id.value}/spatial/figure/dapi10x.tif`;
+          } else {
+            // must create the figure folder dapi image
+            console.log('create dapi in figure folder');
+            filename = `${root}/${run_id.value}/spatial/figure/dapi10x.tif`;
+          }
+        });
+      } else if (optionUpdate.value) {
         filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
       } else {
         filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
@@ -1092,7 +1083,7 @@ export default defineComponent({
     function verticalFlip(ev: any) {
       orientation.value.vertical_flip = !orientation.value.vertical_flip;
     }
-    function uploadingTixels(ev: any) {
+    function uploadingTixels(ev: any, fill: boolean) {
       grid.value = true;
       cropFlag.value = true;
       onOff.value = true;
@@ -1101,7 +1092,7 @@ export default defineComponent({
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
       // console.log(orientation.value.rotation);
-      roi.value.loadTixels(csvHolder.value);
+      roi.value.loadTixels(csvHolder.value, fill);
       // c_val.value = metadata.value.cValue;
       // neighbor_size.value = metadata.value.blockSize;
     }
@@ -1516,7 +1507,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         if (optionUpdate.value) {
@@ -1813,7 +1804,7 @@ export default defineComponent({
       uploadingTixels,
       optionCreate,
       optionUpdate,
-      optionFlag,
+      processing_run,
       generating,
       runIdFlag,
       metaFlag,
@@ -1854,6 +1845,8 @@ export default defineComponent({
       bucket_name,
       postB_or_bsa,
       black_white,
+      dapi_available,
+      dapi_selected,
     };
   },
 });

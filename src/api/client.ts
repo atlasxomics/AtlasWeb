@@ -128,6 +128,16 @@ export default class Client {
     return resp.data;
   }
 
+  async checkExistence(bucket_name: string, filename: string) {
+    const uri = '/api/v1/storage/check_exists';
+    const params = {
+      bucket_name,
+      filename,
+    };
+    const resp = await this.axios.get(uri, { params });
+    return resp.data;
+  }
+
   async downloadByLinkPublic(bucket_name: string, filename: string) {
     const uri = '/api/v1/storage/download_link_public';
     const params = {

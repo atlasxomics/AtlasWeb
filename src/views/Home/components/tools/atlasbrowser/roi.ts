@@ -232,7 +232,7 @@ export class ROI {
     };
   }
 
-  loadTixels(tixel_array: any[]) {
+  loadTixels(tixel_array: any[], fill: boolean) {
     const [p1, p2, p3, p4] = this.getCoordinates();
     const ratioNum = (this.channels * 2) - 1;
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
@@ -295,7 +295,7 @@ export class ROI {
             context.fillStrokeShape(shape);
           },
           id: ID.toString(),
-          fill: (f === '1') ? 'red' : null,
+          fill: (f === '1' && fill) ? 'red' : null,
           centerx: center[1],
           centery: center[0],
           radius: slope[0],
