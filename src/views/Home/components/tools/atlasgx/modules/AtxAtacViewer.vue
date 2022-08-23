@@ -238,13 +238,13 @@ const clusterHeaders = [
   { text: 'Cluster', value: 'name' },
 ];
 function colormapBounded(cmap: string[], values: number[], amount: number) {
-  const min_v = Math.min(...values) + (10 * amount);
-  const max_v = Math.max(...values) + (10 * amount);
+  const min_v = Math.min(...values) + (12 * amount);
+  const max_v = Math.max(...values) + (12 * amount);
   // if (min_v === max_v) return null;
   const nshades = cmap.length;
   const output: string[] = [];
   lodash.each(values, (v: number) => {
-    const plusTen = v + (10 * amount);
+    const plusTen = v + (12 * amount);
     const normalized = ((plusTen - min_v) / (max_v - min_v)) * (nshades - 1);
     const colidx = Math.trunc(normalized);
     output.push(cmap[colidx]);
@@ -501,7 +501,7 @@ export default defineComponent({
       let colors_intensity: any[] = [];
       const totalHold: any = {};
       const numClusters = spatialData.value.cluster_names.length;
-      if (selectedGenes.value.length === 0 && (!isDrawing.value && !isDrawingRect.value)) {
+      if ((selectedGenes.value.length === 0 || averageInd.value) && (!isDrawing.value && !isDrawingRect.value)) {
         for (let i = 0; i < numClusters; i += 1) {
           const cidx = `C${i + 1}`;
           totalHold[cidx] = 0;
@@ -623,7 +623,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoord[i];
           const x = ax - minX;
           const y = ay - minY;
-          const clr = (geneSum[i] + 10 > 0) ? geneColors[i] : inactiveColor.value;
+          const clr = (geneSum[i] + (12 * selectedGenes.value.length) > 0) ? geneColors[i] : inactiveColor.value;
           highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
           lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const c = {
@@ -650,7 +650,7 @@ export default defineComponent({
           const [ax, ay] = spatialCoordUMAP[i];
           const x = ax - minX_UMAP;
           const y = ay - minY_UMAP;
-          const clr = (geneSum[i] + 10 > 0) ? geneColors[i] : inactiveColor.value;
+          const clr = (geneSum[i] + (12 * selectedGenes.value.length) > 0) ? geneColors[i] : inactiveColor.value;
           const c = {
             id: get_uuid(),
             x: x * scaleUMAP.value * viewScaleUMAP + paddingX,

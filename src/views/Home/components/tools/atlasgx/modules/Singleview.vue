@@ -1,7 +1,7 @@
 <template>
   <v-row>
     <v-col cols="12" sm="1" class="shrinkCol">
-      <div :style="{ 'color': (backgroundColor != 'black') ? 'black' : 'white', 'z-index': 999, 'position': 'relative' }"><h4>{{selectedGenesFromParent}}</h4></div>
+      <div :style="{ 'color': (backgroundColor != 'black') ? 'black' : 'white', 'z-index': 0, 'position': 'relative' }"><h4><span style="white-space: nowrap;">{{selectedGenesFromParent.trim()}}</span></h4></div>
       <v-card
       class="rounded-0"
       flat
@@ -97,12 +97,12 @@ const clientReady = new Promise((resolve) => {
   });
 });
 function colormapBounded(cmap: string[], values: any, amount: number) {
-  const min_v = Math.min(...values) + (10 * amount);
-  const max_v = Math.max(...values) + (10 * amount);
+  const min_v = Math.min(...values) + (12 * amount);
+  const max_v = Math.max(...values) + (12 * amount);
   const nshades = cmap.length;
   const output: string[] = [];
   lodash.each(values, (v: number) => {
-    const plusTen = v + (10 * amount);
+    const plusTen = v + (12 * amount);
     const normalized = ((plusTen - min_v) / (max_v - min_v)) * (nshades - 1);
     const colidx = Math.trunc(normalized);
     output.push(cmap[colidx]);
@@ -196,7 +196,7 @@ export default defineComponent({
       lodash.each(geneSum.value, (v: any, i: number) => {
         highestCount.value = v > highestCount.value ? v : highestCount.value;
         lowestCount.value = v < lowestCount.value ? v : lowestCount.value;
-        const clr = (i + 10 > 0) ? geneColors[i] : 'grey';
+        const clr = (i + 12 > 0) ? geneColors[i] : 'grey';
         const c = {
           id: get_uuid(),
           x: coordinates.value[i][0] * scale.value * viewScale + paddingX,
