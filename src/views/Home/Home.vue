@@ -138,3 +138,9 @@ export default defineComponent({
   },
 });
 </script>
+
+<style>
+html {
+  overflow-x: scroll;
+}
+</style>

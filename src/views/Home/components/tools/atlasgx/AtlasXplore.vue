@@ -219,42 +219,6 @@
             </v-data-table>
           </v-card>
         </v-dialog>
-        <v-dialog
-          v-if="geneMotifFlag"
-          :value="geneMotifFlag"
-          @click:outside="geneMotifFlag = !geneMotifFlag"
-          hide-overlay>
-          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:150px;"
-            :disabled="loading">
-            <v-data-table
-            class="thickBorder"
-            v-model="selected"
-            width="20%"
-            dense
-            single-select
-            hide-default-footer
-            hide-default-header
-            :items="['Genes', 'Motifs']">
-              <template v-slot:item="row">
-                <template v-if="row.item == 'Genes'">
-                  <tr @click="geneMotif = 'gene'">
-                    <td>{{row.item}}</td>
-                  </tr>
-                </template>
-                <template v-if="row.item == 'Motifs'">
-                  <tr @click="geneMotif = 'motif'">
-                    <td>{{row.item}}</td>
-                  </tr>
-                </template>
-                <template v-if="row.item == 'Features'">
-                  <tr @click="geneMotif = 'feat'">
-                    <td>{{row.item}}</td>
-                  </tr>
-                </template>
-              </template>
-            </v-data-table>
-          </v-card>
-        </v-dialog>
         <v-col cols="2" sm="1">
           <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'300px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
             <v-tooltip right :disabled="isDrawing">
@@ -665,38 +629,40 @@
               </table>
             </v-col>
           </v-row>
-          <v-row no-gutters v-if="averageInd">
-            <v-col cols="12" sm="11">
-              <v-row>
-                <template v-for="genes in childGenes" >
-                  <v-col vols="12" sm="4" :key="genes">
-                    <singleview :gene="genes" :circleData="singleData" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
-                  </v-col>
-                </template>
-              </v-row>
-            </v-col>
-          </v-row>
-            <v-col cols="12" sm="11">
-              <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading" flat>
-                <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
+          <div id="screenCaptureSingle" :style="{ 'background-color': 'transparent' }">
+            <v-row no-gutters v-if="averageInd">
+              <v-col cols="12" sm="11">
+                <v-row>
+                  <template v-for="genes in childGenes" >
+                    <v-col vols="12" sm="4" :key="genes">
+                      <singleview :gene="genes" :circleData="singleData" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
+                    </v-col>
+                  </template>
+                </v-row>
+              </v-col>
+            </v-row>
+          </div>
+          <v-col cols="12" sm="11">
+            <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading" flat>
+              <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
+            </v-card>
+            <div id="captureHisto">
+              <v-card class="mt-3" v-show="spatialData && histoFlag" flat>
+                <histogram-graph v-show="histoFlag" :colorCode="colorMap" :idName="childGenes" :chartData="spatialCircleData"/>
               </v-card>
-              <div id="captureHisto">
-                <v-card class="mt-3" v-show="spatialData && histoFlag" flat>
-                  <histogram-graph v-show="histoFlag" :colorCode="colorMap" :idName="childGenes" :chartData="spatialCircleData"/>
-                </v-card>
-              </div>
-              <div id="capturePeak" :style="{ visibility: visible }">
-                <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading" flat>
-                  <template v-if="geneMotif == 'gene'">
-                      <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
-                  </template>
-                  <template v-if="geneMotif == 'motif'">
-                    <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
-                    <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
-                  </template>
-                </v-card>
-              </div>
-            </v-col>
+            </div>
+            <div id="capturePeak" :style="{ visibility: visible }">
+              <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading" flat>
+                <template v-if="geneMotif == 'gene'">
+                    <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
+                </template>
+                <template v-if="geneMotif == 'motif'">
+                  <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
+                  <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
+                </template>
+              </v-card>
+            </div>
+          </v-col>
         </v-col>
       </v-row>
     </v-container>
@@ -1006,15 +972,27 @@ export default defineComponent({
     }
     function captureScreen(background: string) {
       displayFlag.value = false;
-      const el = document.getElementById('screenCapture')!;
-      html2canvas(el, { backgroundColor: background }).then((canvas) => {
-        const base64image = canvas.toDataURL('image/png');
-        const pom = document.createElement('a');
-        pom.href = base64image;
-        const listGene = childGenes.value.join();
-        pom.setAttribute('download', `${runId.value}/${listGene}.png`);
-        pom.click();
-      });
+      if (!averageInd.value) {
+        const el = document.getElementById('screenCapture')!;
+        html2canvas(el, { backgroundColor: background }).then((canvas) => {
+          const base64image = canvas.toDataURL('image/png');
+          const pom = document.createElement('a');
+          pom.href = base64image;
+          const listGene = childGenes.value.join();
+          pom.setAttribute('download', `${runId.value}/${listGene}.png`);
+          pom.click();
+        });
+      } else {
+        const el = document.getElementById('screenCaptureSingle')!;
+        html2canvas(el, { backgroundColor: background }).then((canvas) => {
+          const base64image = canvas.toDataURL('image/png');
+          const pom = document.createElement('a');
+          pom.href = base64image;
+          const listGene = childGenes.value.join();
+          pom.setAttribute('download', `${runId.value}/${listGene}_single.png`);
+          pom.click();
+        });
+      }
       if (peakViewerFlag.value) {
         const ele = document.getElementById('capturePeak')!;
         html2canvas(ele, { backgroundColor: background }).then((canvas) => {
@@ -1026,6 +1004,17 @@ export default defineComponent({
             end = `${runId.value}_${trackBrowserGenes.value[0]}_seqlogo`;
           } else end = `${runId.value}_${trackBrowserGenes.value[0]}_peaks`;
           pom.setAttribute('download', `${end}.png`);
+          pom.click();
+        });
+      }
+      if (histoFlag.value) {
+        const ele = document.getElementById('captureHisto')!;
+        html2canvas(ele, { backgroundColor: background }).then((canvas) => {
+          const base64image = canvas.toDataURL('image/png');
+          const pom = document.createElement('a');
+          pom.href = base64image;
+          const listGeneH = childGenes.value.join();
+          pom.setAttribute('download', `${runId.value}/${listGeneH}_histogram.png`);
           pom.click();
         });
       }
@@ -1061,6 +1050,7 @@ export default defineComponent({
       const cmapCopy: any = {};
       const colors: any[] = [];
       const numClusters = spatialData.value.cluster_names.length;
+      selectedClusters.value = [];
       if (!manualClusterFlag.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
         colors_raw.forEach((v: any, i: number) => {

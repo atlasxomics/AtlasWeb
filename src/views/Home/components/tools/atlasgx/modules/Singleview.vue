@@ -1,11 +1,12 @@
 <template>
   <v-row>
     <v-col cols="12" sm="1" class="shrinkCol">
+      <div :style="{ 'color': (backgroundColor != 'black') ? 'black' : 'white', 'z-index': 0, 'position': 'relative' }"><h4><span style="white-space: nowrap;">{{selectedGenesFromParent.trim()}}</span></h4></div>
       <v-card
       class="rounded-0"
       flat
       :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-      height="38vh">
+      height="34vh">
         <v-card-text>
           <v-row justify="end">
             <v-btn
@@ -44,12 +45,10 @@
         v-resize="onResize"
         flat
         :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
-        height="38vh"
+        height="34vh"
         align="center">
-        <v-card-title :style="{ 'color': (backgroundColor != 'black') ? 'black' : 'white' }">{{selectedGenesFromParent}}</v-card-title>
         <v-stage
           ref="konvaStageSingle"
-          class="mainStage"
           :config="konvaConfigLeft"
           :style="{ 'overflow': 'hidden' }"
           >
@@ -98,12 +97,12 @@ const clientReady = new Promise((resolve) => {
   });
 });
 function colormapBounded(cmap: string[], values: any, amount: number) {
-  const min_v = Math.min(...values) + (10 * amount);
-  const max_v = Math.max(...values) + (10 * amount);
+  const min_v = Math.min(...values) + (12 * amount);
+  const max_v = Math.max(...values) + (12 * amount);
   const nshades = cmap.length;
   const output: string[] = [];
   lodash.each(values, (v: number) => {
-    const plusTen = v + (10 * amount);
+    const plusTen = v + (12 * amount);
     const normalized = ((plusTen - min_v) / (max_v - min_v)) * (nshades - 1);
     const colidx = Math.trunc(normalized);
     output.push(cmap[colidx]);
@@ -122,7 +121,7 @@ export default defineComponent({
     const width = window.innerWidth;
     const height = window.innerHeight;
     const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true });
-    const scale = ref<number>(0.6);
+    const scale = ref<number>(0.68);
     const isClusterView = ref(true);
     const lowestCount = ref<number>(10000);
     const highestCount = ref<number>(0);
@@ -197,7 +196,7 @@ export default defineComponent({
       lodash.each(geneSum.value, (v: any, i: number) => {
         highestCount.value = v > highestCount.value ? v : highestCount.value;
         lowestCount.value = v < lowestCount.value ? v : lowestCount.value;
-        const clr = (i + 10 > 0) ? geneColors[i] : 'grey';
+        const clr = (i + 12 > 0) ? geneColors[i] : 'grey';
         const c = {
           id: get_uuid(),
           x: coordinates.value[i][0] * scale.value * viewScale + paddingX,
@@ -244,7 +243,7 @@ export default defineComponent({
       const stage = (ctx as any).refs.konvaStageSingle.getNode();
       const newPos = { x: 0, y: 0 };
       stage.position(newPos);
-      scale.value = 0.6;
+      scale.value = 0.68;
     }
     function onResize() {
       fitStageToParent();
