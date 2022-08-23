@@ -133,7 +133,6 @@
                 outlined
                 dense
                 label="Barcode"
-                @change="updateChannels"
                 readonly>
               </v-text-field>
               <v-text-field
@@ -387,7 +386,7 @@
                 />
                 <template>
                   <v-btn
-                  :disabled="(!tixels_filled && optionUpdate)"
+                  :disabled="(!tixels_filled && !optionUpdate)"
                   outlined
                   x-small
                   dense
@@ -772,7 +771,7 @@ export default defineComponent({
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
     const channels = ref(50);
-    const barcodes = ref('1');
+    const barcodes = ref('2');
     const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
     const cropFlag = ref<boolean>(false);
@@ -823,7 +822,7 @@ export default defineComponent({
       organ: null,
       orientation: null,
       crop_area: null,
-      barcodes: 'Normal',
+      barcodes: '2',
       chip_resolution: null,
       diseaseState: '',
       diseaseName: '',
@@ -949,33 +948,27 @@ export default defineComponent({
         const name = `${root}/${run_id.value}/metadata.json`;
         const jsonFileName = { params: { filename: name, bucket_name } };
         const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
-        let slimsData: any;
         // if the json folder cannot be obtained from local server query slims
-        if (!jsonBoolean) {
-          loading.value = true;
-          slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
-          params.data = slimsData;
-          const taskObject = await client.value!.postTask(task, args, kwargs, queue);
+        loading.value = true;
+        const slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
+        params.data = slimsData;
+        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          // console.log(args);
+          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
           await checkTaskStatus(taskObject._id);
-          /* eslint-disable no-await-in-loop */
-          while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-            // console.log(args);
-            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
-            await new Promise((r) => {
-              taskTimeout.value = window.setTimeout(r, 1000);
-            });
-            taskTimeout.value = null;
-            await checkTaskStatus(taskObject._id);
-          }
-          /* eslint-disable no-await-in-loop */
-          if (taskStatus.value.status !== 'SUCCESS') {
-            snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
-            loading.value = false;
-            return;
-          }
-          // if the metadata is able to be retrieved locally, assign it to slimsData
-        } else {
-          slimsData = jsonBoolean;
+        }
+        /* eslint-disable no-await-in-loop */
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
+          loading.value = false;
+          return;
         }
         // function to assign the local metadata values to the slimsData object fields
         loading.value = false;
@@ -1006,6 +999,7 @@ export default defineComponent({
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
+        console.log(resp);
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
