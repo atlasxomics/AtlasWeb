@@ -408,7 +408,10 @@
             </v-card>
           </template>
           <DapiProcessingMenu
-          v-if="dapi_selected">
+          v-if="dapi_selected"
+          @changed-scale="onChangeScale"
+          @count-nuclei="countNuclei"
+          >
           </DapiProcessingMenu>
           <v-card v-if="run_id && !loading && !processing_run && csvHolder && !dapi_selected">
             <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
@@ -580,6 +583,10 @@
                       />
                     </v-layer>
                 </v-stage>
+                <ViewingTixel
+                v-if="tixel_selected"
+                >
+                </ViewingTixel>
               </v-card>
             </v-row>
           </v-container>
@@ -630,6 +637,7 @@ import { Crop } from './crop';
 import { Circle, Point } from './types';
 import SpatialFolderViewer from './SpatialFolderViewer.vue';
 import DapiProcessingMenu from './DapiProcessingMenu.vue';
+import ViewingTixel from './ViewingTixel.vue';
 // import { resolve } from 'dns';
 
 const clientReady = new Promise((resolve) => {
@@ -681,7 +689,11 @@ interface Metadata {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  components: { SpatialFolderViewer, DapiProcessingMenu },
+  components: {
+    SpatialFolderViewer,
+    DapiProcessingMenu,
+    ViewingTixel,
+  },
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
@@ -727,6 +739,7 @@ export default defineComponent({
     const four = ref(0);
     const atfilter = ref(false);
     const atpixels = ref<any[] | null>([]);
+    const tixel_selected = ref<boolean>(false);
     const threshold = ref(210);
     const thresh_image_created = ref<boolean>(false);
     const thresh_same = ref<boolean>(false);
@@ -855,8 +868,13 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
       taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
-    function onChangeScale(ev: any) {
+    function onChangeScale(ev: any, input?: any) {
+      if (typeof input !== 'undefined') {
+        scaleFactor.value = input.value;
+      }
       const v = scaleFactor.value;
+      console.log(v);
+      console.log(current_image.value.image.width);
       current_image.value.scale = { x: v, y: v };
       konvaConfig.value.width = v * current_image.value.image.width;
       konvaConfig.value.height = v * current_image.value.image.height;
@@ -1182,12 +1200,16 @@ export default defineComponent({
     function handleMouseDown(ev: any) {
       const { id } = ev.target.attrs;
       const idx = lodash.findIndex(roi.value.polygons, { id });
-      if (roi.value.polygons) {
+      if (roi.value.polygons && tixels_filled && !dapi_selected) {
         if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
         else roi.value.polygons[idx].fill = 'red';
         // console.log(scaleFactor.value);
         // console.log(roi.value.polygons[idx].centerx / scaleFactor.value);
         // console.log(roi.value.polygons[idx].centery / scaleFactor.value);
+      }
+      if (dapi_selected) {
+        tixel_selected.value = true;
+        console.log(idx);
       }
       isMouseDown.value = true;
     }
@@ -1195,13 +1217,13 @@ export default defineComponent({
       isMouseDown.value = false;
     }
     function handleMouseOver(ev: any) {
-      if (isMouseDown.value) {
-        const { id } = ev.target.attrs;
-        const idx = lodash.findIndex(roi.value.polygons, { id });
-        if (roi.value.polygons) {
-          roi.value.polygons[idx].fill = 'red';
-        }
-      }
+      // if (isMouseDown.value) {
+      //   const { id } = ev.target.attrs;
+      //   const idx = lodash.findIndex(roi.value.polygons, { id });
+      //   if (roi.value.polygons) {
+      //     roi.value.polygons[idx].fill = 'red';
+      //   }
+      // }
     }
     function handleMouseMoveStage(ev: any) {
       if (isBrushMode.value || isEraseMode.value) {
@@ -1404,32 +1426,6 @@ export default defineComponent({
       let valuetwo: any;
       let valuethree: any;
       one.value = value;
-      // if (value > 0 && value <= 40 && one.value <= 100) {
-      //   valueone = setTimeout(() => {
-      //     if (one.value === 100) {
-      //       clearTimeout(valueone);
-      //     }
-      //     one.value += 50;
-      //   }, 1000);
-      // }
-
-      // if (value > 40 && value < 80 && two.value <= 100) {
-      //   valuetwo = setTimeout(() => {
-      //     if (two.value === 100) {
-      //       clearTimeout(valuetwo);
-      //     }
-      //     two.value += 50;
-      //   }, 1000);
-      // }
-
-      // if (value >= 80 && three.value <= 100) {
-      //   valuethree = setTimeout(() => {
-      //     if (three.value === 100) {
-      //       clearTimeout(valuethree);
-      //     }
-      //     three.value += 50;
-      //   }, 1000);
-      // }
     };
     const updateH5ad = async (value: number) => {
       if (!client.value) return;
@@ -1621,6 +1617,15 @@ export default defineComponent({
       roi.value.autoMask(atpixels.value, threshold.value);
       onOff.value = true;
       tixels_filled.value = true;
+    }
+    async function countNuclei(ev: any, thresh_cutoff: any) {
+      console.log(thresh_cutoff.value);
+      const queue = 'jonah_browser';
+      const task = 'atlasbrowser.count_nuclei';
+      const params = { threshold: thresh_cutoff.value };
+      const args: any[] = [params];
+      const kwargs: any = {};
+      const taskObject = await client.value?.postTask(task, args, kwargs, queue);
     }
     async function fetchFileList() {
       if (!client.value) {
@@ -1847,6 +1852,8 @@ export default defineComponent({
       black_white,
       dapi_available,
       dapi_selected,
+      countNuclei,
+      tixel_selected,
     };
   },
 });

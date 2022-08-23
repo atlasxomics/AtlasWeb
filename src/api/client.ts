@@ -299,6 +299,7 @@ export default class Client {
       args,
       kwargs,
     };
+    console.log(payload);
     const resp = await this.axios.post(endpoint, payload);
     return resp.data;
   }
