@@ -772,7 +772,7 @@ export default defineComponent({
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
     const channels = ref(50);
-    const barcodes = ref(1);
+    const barcodes = ref('1');
     const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
     const cropFlag = ref<boolean>(false);
@@ -912,14 +912,14 @@ export default defineComponent({
           metadata.value.diseaseState = 'Healthy';
         }
         metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
-        if (metadata.value.barcodes === '1 (normal)') {
-          barcodes.value = 1;
-        } else if (metadata.value.barcodes === '2 (reverseB)') {
-          barcodes.value = 2;
-        } else if (metadata.value.barcodes === '3 (reverseAB)') {
-          barcodes.value = 4;
-        } else {
-          barcodes.value = 3;
+        if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1') {
+          barcodes.value = '1';
+        } else if (metadata.value.barcodes === '2 (reverseB)' || metadata.value.barcodes === '2') {
+          barcodes.value = '2';
+        } else if (metadata.value.barcodes === '3 (reverseAB)' || metadata.value.barcodes === '3') {
+          barcodes.value = '4';
+        } else if (metadata.value.barcodes === '4 (reverseA)' || metadata.value.barcodes === '4') {
+          barcodes.value = '3';
         }
         metadata.value.comments_flowB = slimsData.comments_flowB;
         metadata.value.crosses_flowB = slimsData.crosses_flowB;
@@ -1104,18 +1104,6 @@ export default defineComponent({
       roi.value.loadTixels(csvHolder.value);
       // c_val.value = metadata.value.cValue;
       // neighbor_size.value = metadata.value.blockSize;
-    }
-    function updateChannels(ev: any) {
-      if (/50/.test(ev)) {
-        channels.value = 50;
-        barcodes.value = 1;
-        if (/v2/.test(ev)) {
-          barcodes.value = 2;
-        }
-      } else {
-        barcodes.value = 1;
-        channels.value = 100;
-      }
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
@@ -1516,7 +1504,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         if (optionUpdate.value) {
@@ -1801,7 +1789,6 @@ export default defineComponent({
       three,
       four,
       channels,
-      updateChannels,
       barcodes,
       onOff,
       spatial,
