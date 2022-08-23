@@ -536,7 +536,6 @@ export default defineComponent({
       clusterColors.value = colors;
       const spatialCoord = spatialData.value.coordinates;
       const spatialCoordUMAP = spatialData.value.coordinates_umap.map((v: number[]) => ([v[0], -v[1]]));
-      const plusTEN = 10;
       const minX = Math.min(...spatialCoord.map((a: number[]) => a[0]));
       const minY = Math.min(...spatialCoord.map((a: number[]) => a[1]));
       const maxX = Math.max(...spatialCoord.map((a: number[]) => a[0]));
@@ -728,11 +727,11 @@ export default defineComponent({
         }
         progressMessage.value = taskStatus.value.status;
         const resp = taskStatus.value.result;
-        spatialData.value = resp;
         genes.value = props.genelist;
         if (highlightIds.value.length > 0) {
-          ctx.emit('highlightedId', { ids: highlightIds.value, genes: spatialData.value.top_selected });
+          ctx.emit('highlightedId', { ids: highlightIds.value, genes: resp.top_selected });
         } else {
+          spatialData.value = resp;
           clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
           await updateCircles();
           await fitStageToParent();
@@ -767,7 +766,7 @@ export default defineComponent({
       }
       tooltipText.text(text);
       tooltip.show();
-      if (isClusterView.value && item.cluster !== highlightedCluster.value && (!isDrawing.value && !isDrawingRect.value)) {
+      if (isClusterView.value && !highlightedCluster.value.includes(item.cluster) && (!isDrawing.value && !isDrawingRect.value)) {
         const { cluster } = item;
         highlightCluster([cluster]);
       }
@@ -842,7 +841,7 @@ export default defineComponent({
       }
       tooltipTextRight.text(text);
       tooltipRight.show();
-      if (isClusterView.value && item.cluster !== highlightedCluster.value && (!isDrawing.value && !isDrawingRect.value)) {
+      if (isClusterView.value && !highlightedCluster.value.includes(item.cluster) && (!isDrawing.value && !isDrawingRect.value)) {
         const { cluster } = item;
         highlightCluster([cluster]);
       }

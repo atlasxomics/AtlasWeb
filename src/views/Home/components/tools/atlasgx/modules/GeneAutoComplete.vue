@@ -176,14 +176,13 @@ export default defineComponent({
           stringFormat = theGene;
         } else if (genes.value.filter((g: any) => g.name === cleanGene).length === 1) {
           stringFormat = cleanGene;
-        } else stringFormat = null;
+        } else stringFormat = '';
         if (!selectedGenes.value.includes(stringFormat) && stringFormat !== null) {
           searchInput.value = stringFormat;
           selectedGenes.value.push(stringFormat);
         }
       });
       onGenelistChanged(selectedGenes.value);
-      searchInput.value = null;
     }
     async function showGene(ev: any) {
       showFlag.value = true;
@@ -296,7 +295,7 @@ export default defineComponent({
           stringFormat = theGene;
         } else if (genes.value.filter((g: any) => g.name === cleanGene).length === 1) {
           stringFormat = cleanGene;
-        } else stringFormat = null;
+        } else stringFormat = '';
         if (!selectedGenes.value.includes(stringFormat) && stringFormat !== null) {
           searchInput.value = stringFormat;
           selectedGenes.value.push(stringFormat);

@@ -1050,6 +1050,7 @@ export default defineComponent({
       const cmapCopy: any = {};
       const colors: any[] = [];
       const numClusters = spatialData.value.cluster_names.length;
+      selectedClusters.value = [];
       if (!manualClusterFlag.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
         colors_raw.forEach((v: any, i: number) => {
