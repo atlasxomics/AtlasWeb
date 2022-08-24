@@ -524,7 +524,7 @@
             <span>Copy Public Link</span>
             </v-tooltip>
           </v-card>
-          <v-card :style="{ 'position': 'absolute', 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'149px', 'padding-top': '15px', 'background-color': 'silver', 'top': '55vh' }" flat>
+          <v-card :style="{ 'position': 'sticky', 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'149px', 'padding-top': '15px', 'background-color': 'silver', 'top': '55vh' }" flat>
             <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
