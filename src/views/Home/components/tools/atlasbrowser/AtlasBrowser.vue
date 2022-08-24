@@ -1464,7 +1464,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         if (optionUpdate.value) {
