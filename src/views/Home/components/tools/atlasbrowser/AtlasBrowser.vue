@@ -934,42 +934,8 @@ export default defineComponent({
     }
     async function getMeta() {
       try {
-        const task = 'creation.create_files';
-        const queue = 'creation_worker';
-        const params = {
-          data: null,
-          path: `${root}/${run_id.value}`,
-          file_type: 'json',
-          file_name: 'metadata.json',
-          bucket_name,
-        };
-        const args: any[] = [params];
-        const kwargs: any = {};
-        const name = `${root}/${run_id.value}/metadata.json`;
-        const jsonFileName = { params: { filename: name, bucket_name } };
-        const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
-        // if the json folder cannot be obtained from local server query slims
         loading.value = true;
         const slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
-        params.data = slimsData;
-        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
-        await checkTaskStatus(taskObject._id);
-        /* eslint-disable no-await-in-loop */
-        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-          // console.log(args);
-          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
-          await new Promise((r) => {
-            taskTimeout.value = window.setTimeout(r, 1000);
-          });
-          taskTimeout.value = null;
-          await checkTaskStatus(taskObject._id);
-        }
-        /* eslint-disable no-await-in-loop */
-        if (taskStatus.value.status !== 'SUCCESS') {
-          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
-          loading.value = false;
-          return;
-        }
         // function to assign the local metadata values to the slimsData object fields
         loading.value = false;
         assignMetadata(slimsData);
