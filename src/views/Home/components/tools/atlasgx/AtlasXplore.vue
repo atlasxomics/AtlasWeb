@@ -1753,7 +1753,7 @@ export default defineComponent({
 <style>
   .container {
     padding: 0;
-    min-width: 900px;
+    min-width: 1020px;
   }
   .bold-disabled input {
       color: black !important;
