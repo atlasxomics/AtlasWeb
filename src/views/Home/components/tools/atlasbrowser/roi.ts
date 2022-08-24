@@ -379,7 +379,7 @@ export class ROI {
           centerx: center[1],
           centery: center[0],
           radius: slope[0],
-          stroke: 'gray',
+          stroke: 'black',
           strokeWidth: 1,
           posit: [i, j],
           scaleX: 1.0,
