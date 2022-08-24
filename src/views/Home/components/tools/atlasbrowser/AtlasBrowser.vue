@@ -771,7 +771,6 @@ export default defineComponent({
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
     const channels = ref(50);
-    const barcodes = ref('2');
     const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
     const cropFlag = ref<boolean>(false);
@@ -822,7 +821,7 @@ export default defineComponent({
       organ: null,
       orientation: null,
       crop_area: null,
-      barcodes: '2',
+      barcodes: null,
       chip_resolution: null,
       diseaseState: '',
       diseaseName: '',
@@ -912,13 +911,13 @@ export default defineComponent({
         }
         metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
         if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1') {
-          barcodes.value = '1';
+          metadata.value.barcodes = '1';
         } else if (metadata.value.barcodes === '2 (reverseB)' || metadata.value.barcodes === '2') {
-          barcodes.value = '2';
+          metadata.value.barcodes = '2';
         } else if (metadata.value.barcodes === '3 (reverseAB)' || metadata.value.barcodes === '3') {
-          barcodes.value = '4';
+          metadata.value.barcodes = '3';
         } else if (metadata.value.barcodes === '4 (reverseA)' || metadata.value.barcodes === '4') {
-          barcodes.value = '3';
+          metadata.value.barcodes = '4';
         }
         metadata.value.comments_flowB = slimsData.comments_flowB;
         metadata.value.crosses_flowB = slimsData.crosses_flowB;
@@ -1484,7 +1483,7 @@ export default defineComponent({
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
-          barcodes: barcodes.value,
+          barcodes: metadata.value.barcodes,
           diseaseState: metadata.value.diseaseState,
           diseaseName: metadata.value.diseaseName,
           tissueSlideExperiment: metadata.value.tissueSlideExperiment,
@@ -1506,7 +1505,7 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
-          barcodes: barcodes.value,
+          barcodes: metadata.value.barcodes,
           root_dir: root,
           bucket: bucket_name,
         };
@@ -1749,7 +1748,6 @@ export default defineComponent({
       three,
       four,
       channels,
-      barcodes,
       onOff,
       spatial,
       scaleFactor_json,
