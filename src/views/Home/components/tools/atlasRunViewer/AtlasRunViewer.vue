@@ -95,7 +95,7 @@ export default defineComponent({
       }
     }
     async function loadCSVFile(input_filename: string) {
-      const payload = { params: { filename: input_filename } };
+      const payload = { params: { bucket_name, filename: input_filename } };
       const resp = await client.value?.getCsvFile(payload);
       csvPretty.value = JSON.stringify(resp, null, 4);
       csvPretty_array.value = [csvPretty.value];
