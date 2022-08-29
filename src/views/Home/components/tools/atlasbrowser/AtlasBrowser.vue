@@ -692,7 +692,7 @@ interface Metadata {
   numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
-  barcodes: string | null;
+  barcodes: number | string | null;
   organ: string | null;
   diseaseState: string | null;
   diseaseName: string | null;
@@ -910,13 +910,13 @@ export default defineComponent({
           metadata.value.diseaseState = 'Healthy';
         }
         metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
-        if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1') {
+        if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1' || metadata.value.barcodes === 1) {
           metadata.value.barcodes = '1';
-        } else if (metadata.value.barcodes === '2 (reverseB)' || metadata.value.barcodes === '2') {
+        } else if (metadata.value.barcodes === '2 (reverseB)' || metadata.value.barcodes === '2' || metadata.value.barcodes === 2) {
           metadata.value.barcodes = '2';
-        } else if (metadata.value.barcodes === '3 (reverseAB)' || metadata.value.barcodes === '3') {
+        } else if (metadata.value.barcodes === '3 (reverseAB)' || metadata.value.barcodes === '3' || metadata.value.barcodes === 3) {
           metadata.value.barcodes = '3';
-        } else if (metadata.value.barcodes === '4 (reverseA)' || metadata.value.barcodes === '4') {
+        } else if (metadata.value.barcodes === '4 (reverseA)' || metadata.value.barcodes === '4' || metadata.value.barcodes === 4) {
           metadata.value.barcodes = '4';
         }
         metadata.value.comments_flowB = slimsData.comments_flowB;
@@ -1483,7 +1483,7 @@ export default defineComponent({
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
-          barcodes: metadata.value.barcodes,
+          barcodes: Number(metadata.value.barcodes),
           diseaseState: metadata.value.diseaseState,
           diseaseName: metadata.value.diseaseName,
           tissueSlideExperiment: metadata.value.tissueSlideExperiment,
@@ -1505,7 +1505,7 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
-          barcodes: metadata.value.barcodes,
+          barcodes: Number(metadata.value.barcodes),
           root_dir: root,
           bucket: bucket_name,
         };

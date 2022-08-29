@@ -54,6 +54,8 @@ export default defineComponent({
     const selectedRunID = ref<string>('');
     const flippingBoolean = ref<boolean>(false);
     const switchRunBoolean = ref<boolean>(false);
+    const bucket_name = 'atx-illumina';
+    const root = 'Images';
     // method to obtain all the files associated with a particular run from aws
     async function getRunFiles(runID: string) {
       if (!client.value) {
@@ -63,8 +65,8 @@ export default defineComponent({
       console.log(switchRunBoolean);
       availableFiles.value = [];
       // const folder_path = 'data/'.concat(runID);
-      const folder_path = 'data/'.concat(selectedRunID.value).concat('/images');
-      const file_payload = { params: { path: folder_path } };
+      const folder_path = root.concat('/').concat(selectedRunID.value);
+      const file_payload = { params: { bucket_name, path: folder_path } };
       const run_files = await client.value.getFileList(file_payload);
       for (let i = 0; i < run_files.length; i += 1) {
         const tempObj = { id: i, file: run_files[i] };
@@ -82,7 +84,8 @@ export default defineComponent({
     async function loadDisplayImage(filename: string) {
       try {
         image_selected.value = true;
-        const image = await client.value?.getImageAsJPG({ params: { filename } });
+        const pl = { bucket_name, filename };
+        const image = await client.value?.getImageAsJPG({ params: pl });
         if (image) {
           selectedImageURL.value = URL.createObjectURL(image);
           selectedImageURL_array.value = [selectedImageURL.value];
@@ -92,14 +95,14 @@ export default defineComponent({
       }
     }
     async function loadCSVFile(input_filename: string) {
-      const payload = { params: { filename: input_filename } };
+      const payload = { params: { bucket_name, filename: input_filename } };
       const resp = await client.value?.getCsvFile(payload);
       csvPretty.value = JSON.stringify(resp, null, 4);
       csvPretty_array.value = [csvPretty.value];
     }
     // method called to load a json file into compotnent
     async function loadJSONFile(input_filename: string) {
-      const payload = { params: { filename: input_filename } };
+      const payload = { params: { bucket_name, filename: input_filename } };
       const resp = await client.value?.getJsonFile(payload);
       jsonPackage.value = resp;
       jsonString.value = JSON.stringify(resp, null, 4);
@@ -125,7 +128,7 @@ export default defineComponent({
     async function loadRunIds() {
       const uniqueRuns = new Set();
       // const payload = { params: { path: 'data/' } };
-      const payload = { params: { path: 'data', filter: 'images/postB_BSA.tif' } };
+      const payload = { params: { bucket_name, path: root.concat('/'), filter: 'postB_BSA.tif' } };
       const allData = await client.value?.getFileList(payload);
       try {
         allData.forEach((file: any) => {
@@ -166,6 +169,8 @@ export default defineComponent({
       flippingBoolean,
       switchRunBoolean,
       resolveAuthGroup,
+      root,
+      bucket_name,
     };
   },
 });
