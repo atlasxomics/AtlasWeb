@@ -692,7 +692,7 @@ interface Metadata {
   numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
-  barcodes: string | null;
+  barcodes: number | string | null;
   organ: string | null;
   diseaseState: string | null;
   diseaseName: string | null;
@@ -1483,7 +1483,7 @@ export default defineComponent({
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
-          barcodes: metadata.value.barcodes,
+          barcodes: Number(metadata.value.barcodes),
           diseaseState: metadata.value.diseaseState,
           diseaseName: metadata.value.diseaseName,
           tissueSlideExperiment: metadata.value.tissueSlideExperiment,
@@ -1505,7 +1505,7 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
-          barcodes: metadata.value.barcodes,
+          barcodes: Number(metadata.value.barcodes),
           root_dir: root,
           bucket: bucket_name,
         };
