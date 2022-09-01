@@ -704,7 +704,8 @@ export default defineComponent({
     const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
     const current_image = ref<any | null>(null);
-    const gray_image = ref<any | null>(null);
+    const gray_image = ref<Promise<any>| null>(null);
+    const gray_image_src = ref<any | null>(null);
     const scaleFactor = ref(0.15);
     const one = ref(0);
     const two = ref(0);
@@ -740,6 +741,7 @@ export default defineComponent({
     const runIDSelected = ref<boolean>(false);
     const metaFlag = ref<boolean>(false);
     const flowMetadata = ref<Record<string, any>>({});
+    // value used to store the loaded image to be used for cropping
     const imageh = ref<any>();
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
@@ -971,7 +973,7 @@ export default defineComponent({
       }
       // console.log(current_image.value.original_src);
     }
-    async function loadGray() {
+    function loadGray() {
       if (!client.value) return;
       // path to image
       const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
@@ -982,9 +984,7 @@ export default defineComponent({
         const x2 = c[2];
         const y2 = c[3];
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
-        const img = await client.value.getGrayImageAsJPG(pl);
-        imageh.value = img;
-        gray_image.value = URL.createObjectURL(img);
+        gray_image.value = client.value.getGrayImageAsJPG(pl);
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -1286,40 +1286,41 @@ export default defineComponent({
     }
     function thresh_clicked() {
       if (!current_image.value) return;
-      current_image.value.image.src = gray_image.value;
-      threshLoading.value = true;
-      thresh_image_created.value = true;
-      const sv = scaleFactor.value;
-      // loading.value = true;
-      // if (!optionUpdate.value) {
-      //   img_src = imageDataToBlob();
-      // }
-      // current_image.value.image.src = img_src;
-      getPixels(gray_image.value, async (err, pixels) => {
-        const compensation = Number(c_val.value);
-        const size = Number(neighbor_size.value);
-        const thresholded = adaptiveThreshold(pixels, { compensation, size });
-        atpixels.value = thresholded;
-        const b = blobStream();
-        savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
-          const newsrc = b.toBlobURL('image/jpeg');
-          const temp = newsrc;
-          bw_image.value = newsrc;
-          current_image.value.image.src = newsrc;
-          current_image.value.scale = { x: sv, y: sv };
-          onChangeScale(sv);
-          thresh_same.value = true;
-          loading.value = false;
-          bsa_image_disp.value = false;
-          threshLoading.value = false;
+      if (!gray_image.value) return;
+      loading.value = true;
+      gray_image.value.then((gray_src: any) => {
+        gray_image_src.value = gray_src;
+        const src = URL.createObjectURL(gray_src);
+        console.log(src);
+        threshLoading.value = true;
+        thresh_image_created.value = true;
+        const sv = scaleFactor.value;
+        getPixels(src, async (err, pixels) => {
+          const compensation = Number(c_val.value);
+          const size = Number(neighbor_size.value);
+          const thresholded = adaptiveThreshold(pixels, { compensation, size });
+          atpixels.value = thresholded;
+          const b = blobStream();
+          savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
+            const newsrc = b.toBlobURL('image/jpeg');
+            const temp = newsrc;
+            bw_image.value = newsrc;
+            current_image.value.image.src = newsrc;
+            current_image.value.scale = { x: sv, y: sv };
+            onChangeScale(sv);
+            thresh_same.value = true;
+            loading.value = false;
+            bsa_image_disp.value = false;
+            threshLoading.value = false;
+          });
         });
-      });
-      // setting the filled grid back to default state
-      if (tixels_filled.value) {
-        clear_filled_tixels();
+        // setting the filled grid back to default state
+        if (tixels_filled.value) {
+          clear_filled_tixels();
+          tixels_filled.value = false;
+        }
         tixels_filled.value = false;
-      }
-      tixels_filled.value = false;
+      });
     }
     async function generateReport(ev: any) {
       //
@@ -1515,6 +1516,7 @@ export default defineComponent({
       bsa_image_disp.value = false;
     }
     function autoFill(ev: any) {
+      grid.value = true;
       if (roi.value.polygons.length === 0) {
         roi.value.generatePolygons();
       }
@@ -1745,6 +1747,7 @@ export default defineComponent({
       black_white,
       loadGray,
       gray_image,
+      gray_image_src,
     };
   },
 });
