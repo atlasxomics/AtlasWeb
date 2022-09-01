@@ -1223,6 +1223,7 @@ export default defineComponent({
       const [x1, y1, x2, y2] = coords;
       if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
         console.log('not allowed');
+        snackbar.dispatch({ text: 'Keeping Cropping on Image', options: { color: 'warning', right: true } });
       } else {
         cropLoading.value = true;
         cropFlag.value = true;
