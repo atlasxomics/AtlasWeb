@@ -358,6 +358,15 @@ export default class Client {
       return Promise.reject(e);
     }
   }
+  async getGrayImageAsJPG(payload: ImageFileRequest): Promise<File> {
+    try {
+      console.log(payload);
+      const resp = await this.axios.get('/api/v1/storage/grayscale_image_jpg', { params: payload.params, responseType: 'blob' });
+      return new File([resp.data], payload.params.filename, { type: 'image/jpeg' });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
   async generateQcEntry(payload: QcEntryGenerationRequest): Promise<any> {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
     return resp.data;

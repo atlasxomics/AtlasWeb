@@ -465,54 +465,6 @@
                 </v-dialog>
               </div>
             </template>
-            <!-- Loading message when saving spatial folder -->
-            <!-- <template v-if="loadingMessage">
-              <v-dialog
-                value=true
-                hide-overlay
-                persistent
-                width="600"
-                height=600>
-                <v-card
-                  color="primary"
-                  dark>
-                  <v-card-title>Progress</v-card-title>
-                  <v-card-text>
-                    Confirm cropping and orientation of images
-                    <v-progress-linear
-                      v-model="one"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                  <v-card-text>
-                    Accessing and Retriving data from the Database
-                    <v-progress-linear
-                      v-model="two"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                  <v-card-text>
-                    Updating Database and uploading spatial folder
-                    <v-progress-linear
-                    v-model="three"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                </v-card>
-              </v-dialog>
-            </template> -->
             <v-row>
               <v-card>
                 <!-- loading circle displayed on screen -->
@@ -752,6 +704,7 @@ export default defineComponent({
     const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
     const current_image = ref<any | null>(null);
+    const gray_image = ref<any | null>(null);
     const scaleFactor = ref(0.15);
     const one = ref(0);
     const two = ref(0);
@@ -1018,6 +971,25 @@ export default defineComponent({
       }
       // console.log(current_image.value.original_src);
     }
+    async function loadGray() {
+      if (!client.value) return;
+      // path to image
+      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
+      try {
+        const c = crop.value.getCoordinatesOnImage();
+        const x1 = c[0];
+        const y1 = c[1];
+        const x2 = c[2];
+        const y2 = c[3];
+        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
+        const img = await client.value.getGrayImageAsJPG(pl);
+        imageh.value = img;
+        gray_image.value = URL.createObjectURL(img);
+      } catch (error) {
+        console.log(error);
+        loading.value = false;
+      }
+    }
     async function loadAll() {
       await loadMetadata();
       await loadImage();
@@ -1250,7 +1222,7 @@ export default defineComponent({
       isCropMode.value = true;
       active_roi_available.value = true;
       const coords = crop.value.getCoordinatesOnImage();
-      // console.log(coords);
+      console.log(coords);
       const imgObj = new window.Image();
       const newImage = new window.Image();
       imgObj.src = URL.createObjectURL(imageh.value);
@@ -1262,7 +1234,7 @@ export default defineComponent({
         canvas.height = coords[3] - coords[1];
         ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
         imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
-        extractChannels();
+        // extractChannels();
         canvas.toBlob((blob: any) => {
           newImage.src = URL.createObjectURL(blob);
           const temp = newImage.src;
@@ -1280,6 +1252,7 @@ export default defineComponent({
             postB_or_bsa.value = temp;
             onChangeScale('');
             cropLoading.value = false;
+            loadGray();
           };
         });
       };
@@ -1313,16 +1286,16 @@ export default defineComponent({
     }
     function thresh_clicked() {
       if (!current_image.value) return;
+      current_image.value.image.src = gray_image.value;
       threshLoading.value = true;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
       // loading.value = true;
-      let img_src = postB_or_bsa.value;
-      if (!optionUpdate.value) {
-        img_src = imageDataToBlob();
-      }
+      // if (!optionUpdate.value) {
+      //   img_src = imageDataToBlob();
+      // }
       // current_image.value.image.src = img_src;
-      getPixels(img_src, async (err, pixels) => {
+      getPixels(gray_image.value, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
@@ -1331,9 +1304,6 @@ export default defineComponent({
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
           const temp = newsrc;
-          // if (bsa_image_disp.value) {
-          //   current_image.value.image.original_src = current_image.value.image.src;
-          // }
           bw_image.value = newsrc;
           current_image.value.image.src = newsrc;
           current_image.value.scale = { x: sv, y: sv };
@@ -1360,32 +1330,6 @@ export default defineComponent({
       let valuetwo: any;
       let valuethree: any;
       one.value = value;
-      // if (value > 0 && value <= 40 && one.value <= 100) {
-      //   valueone = setTimeout(() => {
-      //     if (one.value === 100) {
-      //       clearTimeout(valueone);
-      //     }
-      //     one.value += 50;
-      //   }, 1000);
-      // }
-
-      // if (value > 40 && value < 80 && two.value <= 100) {
-      //   valuetwo = setTimeout(() => {
-      //     if (two.value === 100) {
-      //       clearTimeout(valuetwo);
-      //     }
-      //     two.value += 50;
-      //   }, 1000);
-      // }
-
-      // if (value >= 80 && three.value <= 100) {
-      //   valuethree = setTimeout(() => {
-      //     if (three.value === 100) {
-      //       clearTimeout(valuethree);
-      //     }
-      //     three.value += 50;
-      //   }, 1000);
-      // }
     };
     const updateH5ad = async (value: number) => {
       if (!client.value) return;
@@ -1799,6 +1743,8 @@ export default defineComponent({
       bucket_name,
       postB_or_bsa,
       black_white,
+      loadGray,
+      gray_image,
     };
   },
 });
