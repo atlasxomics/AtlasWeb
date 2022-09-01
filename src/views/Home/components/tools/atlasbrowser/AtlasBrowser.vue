@@ -272,7 +272,7 @@
                   dense
                   class="mt-0 pt-0"
                   color="primary"
-                  @click="cropLoading = true;onCropButton()">
+                  @click="onCropButton()">
                   Confirm
                 </v-btn>
               </v-list>
@@ -684,9 +684,9 @@ export default defineComponent({
     const search = ref<string | null>();
     const selected = ref<any | null>();
     const run_id = ref<string>('');
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const konvaConfig = ref<any>({ width, height });
+    const width_window = window.innerWidth;
+    const height_window = window.innerHeight;
+    const konvaConfig = ref<any>({ width_window, height_window });
     const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
     const tixels_filled = ref<boolean>(false);
@@ -1218,45 +1218,54 @@ export default defineComponent({
       }
     }
     function onCropButton(ev: any) {
-      cropFlag.value = true;
-      isCropMode.value = true;
-      active_roi_available.value = true;
       const coords = crop.value.getCoordinatesOnImage();
-      console.log(coords);
-      const imgObj = new window.Image();
-      const newImage = new window.Image();
-      imgObj.src = URL.createObjectURL(imageh.value);
-      const canvas = document.createElement('canvas');
-      const ctxe = canvas.getContext('2d');
-      imgObj.onload = (v: any) => {
-        URL.revokeObjectURL(imgObj.src);
-        canvas.width = coords[2] - coords[0];
-        canvas.height = coords[3] - coords[1];
-        ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
-        imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
-        // extractChannels();
-        canvas.toBlob((blob: any) => {
-          newImage.src = URL.createObjectURL(blob);
-          const temp = newImage.src;
-          newImage.onload = (e: any) => {
-            current_image.value = {
-              x: 0,
-              y: 0,
-              draggable: false,
-              scale: { x: scaleFactor.value, y: scaleFactor.value },
-              image: newImage,
-              src: null,
-              original_src: null,
-              alternative_src: null,
+      const { width, height } = current_image.value.image;
+      const [x1, y1, x2, y2] = coords;
+      if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
+        console.log('not allowed');
+      } else {
+        cropLoading.value = true;
+        cropFlag.value = true;
+        isCropMode.value = true;
+        active_roi_available.value = true;
+        console.log(coords);
+        const imgObj = new window.Image();
+        const newImage = new window.Image();
+        imgObj.src = URL.createObjectURL(imageh.value);
+        const canvas = document.createElement('canvas');
+        const ctxe = canvas.getContext('2d');
+        imgObj.onload = (v: any) => {
+          URL.revokeObjectURL(imgObj.src);
+          canvas.width = coords[2] - coords[0];
+          canvas.height = coords[3] - coords[1];
+          ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
+          imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
+          // extractChannels();
+          canvas.toBlob((blob: any) => {
+            newImage.src = URL.createObjectURL(blob);
+            const temp = newImage.src;
+            newImage.onload = (e: any) => {
+              current_image.value = {
+                x: 0,
+                y: 0,
+                draggable: false,
+                scale: { x: scaleFactor.value, y: scaleFactor.value },
+                image: newImage,
+                src: null,
+                original_src: null,
+                alternative_src: null,
+              };
+              postB_or_bsa.value = temp;
+              onChangeScale('');
+              cropLoading.value = false;
+              loadGray();
             };
-            postB_or_bsa.value = temp;
-            onChangeScale('');
-            cropLoading.value = false;
-            loadGray();
-          };
-        });
-      };
-      roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
+          });
+        };
+        roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
+      }
+      // const height = current_image.value.image.height;
+      // const width = current_image.value.image.width;
     }
     function finding_roi() {
       grid.value = true;
@@ -1288,9 +1297,9 @@ export default defineComponent({
       if (!current_image.value) return;
       if (!gray_image.value) return;
       loading.value = true;
-      gray_image.value.then((gray_src: any) => {
-        gray_image_src.value = gray_src;
-        const src = URL.createObjectURL(gray_src);
+      gray_image.value.then((gray: any) => {
+        const src = URL.createObjectURL(gray);
+        gray_image_src.value = src;
         console.log(src);
         threshLoading.value = true;
         thresh_image_created.value = true;
