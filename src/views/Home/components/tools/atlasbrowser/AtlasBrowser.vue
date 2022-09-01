@@ -73,14 +73,14 @@
               outlined
               >
               </v-text-field>
-              <!-- <v-text-field
+              <v-text-field
                 v-model="metadata.type"
                 outlined
                 dense
                 label="Type"
                 readonly
                 >
-              </v-text-field> -->
+              </v-text-field>
               <v-text-field
                 v-model="metadata.assay"
                 outlined
@@ -635,8 +635,8 @@ const metaHeaders = [
 interface Metadata {
   points: number[] | any;
   run: string | null;
-  blockSize: number;
-  cValue: number;
+  blockSize: number | null;
+  cValue: number | null;
   threshold: number | null;
   type: string | null;
   species: string | null;
@@ -766,12 +766,12 @@ export default defineComponent({
     const metadata = ref<Metadata>({
       points: [],
       run: null,
-      blockSize: 7,
-      cValue: 7,
+      blockSize: null,
+      cValue: null,
       threshold: null,
-      type: 'FFPE',
-      species: 'Mouse',
-      assay: 'mRNA',
+      type: null,
+      species: null,
+      assay: null,
       numChannels: '50',
       organ: null,
       orientation: null,
@@ -882,6 +882,7 @@ export default defineComponent({
         metadata.value.crosses_flowA = slimsData.crosses_flowA;
         metadata.value.blocks_flowA = slimsData.blocks_flowA;
         metadata.value.leak_flowA = slimsData.leak_flowA;
+        metadata.value.type = slimsData.cntn_cf_fk_tissueType;
       } catch (error) {
         console.log(error);
       }
@@ -894,7 +895,6 @@ export default defineComponent({
         loading.value = false;
         assignMetadata(slimsData);
       } catch (error) {
-        console.log(error);
         loading.value = false;
         snackbar.dispatch({ text: 'Failed to create metadata', options: { color: 'error', right: true } });
       }
@@ -919,7 +919,6 @@ export default defineComponent({
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
-        console.log(resp);
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
@@ -962,6 +961,7 @@ export default defineComponent({
               original_src: null,
             };
             postB_or_bsa.value = temp;
+            imgObj.onload = null;
           };
         }
         loading.value = false;
@@ -1031,10 +1031,7 @@ export default defineComponent({
       const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
-      // console.log(orientation.value.rotation);
       roi.value.loadTixels(csvHolder.value);
-      // c_val.value = metadata.value.cValue;
-      // neighbor_size.value = metadata.value.blockSize;
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
@@ -1113,9 +1110,6 @@ export default defineComponent({
       if (roi.value.polygons) {
         if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
         else roi.value.polygons[idx].fill = 'red';
-        // console.log(scaleFactor.value);
-        // console.log(roi.value.polygons[idx].centerx / scaleFactor.value);
-        // console.log(roi.value.polygons[idx].centery / scaleFactor.value);
       }
       isMouseDown.value = true;
     }
@@ -1198,38 +1192,18 @@ export default defineComponent({
       }
       grid.value = false;
     }
-    function extractChannels() {
-      let count = 0;
-      for (let i = 0; i < imageDataObj.value.data.length; i += 4) {
-        if (i < imageDataObj.value.data.length) {
-          // imageDataObj.value.data.set([0], i + 1);
-        //   // console.log(imageDataObj.value.data[i]);
-          const mean = ((imageDataObj.value.data[i] + imageDataObj.value.data[i + 2]) / 2);
-          if (mean * 1.2 < imageDataObj.value.data[i + 1]) {
-          // if (Math.max(imageDataObj.value.data[i], imageDataObj.value.data[i + 1], imageDataObj.value.data[i + 2]) === imageDataObj.value.data[i + 1]) {
-          // if (mean * 1.4 < imageDataObj.value.data[i + 1]) {
-            const setVal = Math.floor(200 + (Math.random() * 30));
-            const min = Math.min(imageDataObj.value.data[i], imageDataObj.value.data[i + 2]);
-            imageDataObj.value.data.set([mean], i + 1);
-            count += 1;
-            // imageDataObj.value.data.set([100], i + 1);
-          }
-        }
-      }
-    }
     function onCropButton(ev: any) {
       const coords = crop.value.getCoordinatesOnImage();
+      loadGray();
       const { width, height } = current_image.value.image;
       const [x1, y1, x2, y2] = coords;
       if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
-        console.log('not allowed');
         snackbar.dispatch({ text: 'Keeping Cropping on Image', options: { color: 'warning', right: true } });
       } else {
         cropLoading.value = true;
         cropFlag.value = true;
         isCropMode.value = true;
         active_roi_available.value = true;
-        console.log(coords);
         const imgObj = new window.Image();
         const newImage = new window.Image();
         imgObj.src = URL.createObjectURL(imageh.value);
@@ -1259,14 +1233,11 @@ export default defineComponent({
               postB_or_bsa.value = temp;
               onChangeScale('');
               cropLoading.value = false;
-              loadGray();
             };
           });
         };
         roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
       }
-      // const height = current_image.value.image.height;
-      // const width = current_image.value.image.width;
     }
     function finding_roi() {
       grid.value = true;
@@ -1290,47 +1261,52 @@ export default defineComponent({
       const context = canvas.getContext('2d');
       context!.putImageData(imageDataObj.value, 0, 0);
       return canvas.toDataURL();
-      // return new Promise((resolve) => {
-      //   canvas.toBlob(resolve);
-      // })
+    }
+
+    function threshold_image(img_src: any) {
+      threshLoading.value = true;
+      thresh_image_created.value = true;
+      const sv = scaleFactor.value;
+      getPixels(img_src, async (err, pixels) => {
+        const compensation = Number(c_val.value);
+        const size = Number(neighbor_size.value);
+        const thresholded = adaptiveThreshold(pixels, { compensation, size });
+        atpixels.value = thresholded;
+        const b = blobStream();
+        savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
+          const newsrc = b.toBlobURL('image/jpeg');
+          const temp = newsrc;
+          bw_image.value = newsrc;
+          current_image.value.image.src = newsrc;
+          current_image.value.scale = { x: sv, y: sv };
+          onChangeScale(sv);
+          thresh_same.value = true;
+          loading.value = false;
+          bsa_image_disp.value = false;
+          threshLoading.value = false;
+        });
+      });
     }
     function thresh_clicked() {
       if (!current_image.value) return;
       if (!gray_image.value) return;
       loading.value = true;
-      gray_image.value.then((gray: any) => {
-        const src = URL.createObjectURL(gray);
-        gray_image_src.value = src;
-        console.log(src);
-        threshLoading.value = true;
-        thresh_image_created.value = true;
-        const sv = scaleFactor.value;
-        getPixels(src, async (err, pixels) => {
-          const compensation = Number(c_val.value);
-          const size = Number(neighbor_size.value);
-          const thresholded = adaptiveThreshold(pixels, { compensation, size });
-          atpixels.value = thresholded;
-          const b = blobStream();
-          savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
-            const newsrc = b.toBlobURL('image/jpeg');
-            const temp = newsrc;
-            bw_image.value = newsrc;
-            current_image.value.image.src = newsrc;
-            current_image.value.scale = { x: sv, y: sv };
-            onChangeScale(sv);
-            thresh_same.value = true;
-            loading.value = false;
-            bsa_image_disp.value = false;
-            threshLoading.value = false;
-          });
+      if (gray_image_src.value != null) {
+        console.log('here');
+        threshold_image(gray_image_src.value);
+      } else {
+        gray_image.value.then((gray: any) => {
+          const src = URL.createObjectURL(gray);
+          gray_image_src.value = src;
+          console.log(src);
+          threshold_image(gray_image_src.value);
         });
-        // setting the filled grid back to default state
-        if (tixels_filled.value) {
-          clear_filled_tixels();
-          tixels_filled.value = false;
-        }
-        tixels_filled.value = false;
-      });
+      }
+      // setting the filled grid back to default state
+      if (tixels_filled.value) {
+        clear_filled_tixels();
+      }
+      tixels_filled.value = false;
     }
     async function generateReport(ev: any) {
       //
@@ -1581,7 +1557,9 @@ export default defineComponent({
       await loadAll();
     });
     watch(current_image, (v) => {
+      console.log('current_image');
       if (current_image.value && !isCropMode.value) {
+        console.log('current_image1');
         crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
         onChangeScale(scaleFactor.value);
       }
