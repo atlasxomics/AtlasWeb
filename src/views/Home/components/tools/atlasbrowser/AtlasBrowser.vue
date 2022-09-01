@@ -926,7 +926,7 @@ export default defineComponent({
       } else {
         await getMeta();
         optionFlag.value = true;
-        snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
+        snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
       }
     }
     async function loadImage() {
@@ -1487,6 +1487,9 @@ export default defineComponent({
           loading.value = false;
           loadingMessage.value = false;
           return;
+        }
+        if (taskStatus.value.status === 'SUCCESS') {
+          snackbar.dispatch({ text: 'Spatial Folder Successfully Uploaded', options: { right: true, color: 'success' } });
         }
         await updateProgress(taskStatus.value.progress);
         progressMessage.value = taskStatus.value.status;
