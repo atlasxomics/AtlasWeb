@@ -1292,13 +1292,11 @@ export default defineComponent({
       if (!gray_image.value) return;
       loading.value = true;
       if (gray_image_src.value != null) {
-        console.log('here');
         threshold_image(gray_image_src.value);
       } else {
         gray_image.value.then((gray: any) => {
           const src = URL.createObjectURL(gray);
           gray_image_src.value = src;
-          console.log(src);
           threshold_image(gray_image_src.value);
         });
       }
@@ -1557,9 +1555,7 @@ export default defineComponent({
       await loadAll();
     });
     watch(current_image, (v) => {
-      console.log('current_image');
       if (current_image.value && !isCropMode.value) {
-        console.log('current_image1');
         crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
         onChangeScale(scaleFactor.value);
       }

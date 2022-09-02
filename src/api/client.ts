@@ -335,7 +335,6 @@ export default class Client {
   }
   async getFileList(payload: FileListRequest): Promise<any> {
     try {
-      console.log(payload);
       const resp = await this.axios.get('api/v1/storage/list', payload);
       return resp.data;
     } catch (error) {
@@ -360,7 +359,6 @@ export default class Client {
   }
   async getGrayImageAsJPG(payload: ImageFileRequest): Promise<File> {
     try {
-      console.log(payload);
       const resp = await this.axios.get('/api/v1/storage/grayscale_image_jpg', { params: payload.params, responseType: 'blob' });
       return new File([resp.data], payload.params.filename, { type: 'image/jpeg' });
     } catch (e) {
