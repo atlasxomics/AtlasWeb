@@ -1441,7 +1441,6 @@ export default defineComponent({
           root_dir: root,
           bucket: bucket_name,
         };
-        console.log(params.mask);
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
@@ -1466,9 +1465,7 @@ export default defineComponent({
           loadingMessage.value = false;
           return;
         }
-        if (taskStatus.value.status === 'SUCCESS') {
-          snackbar.dispatch({ text: 'Spatial Folder Successfully Uploaded', options: { right: true, color: 'success' } });
-        }
+        snackbar.dispatch({ text: 'Spatial Folder Successfully Uploaded', options: { right: true, color: 'success' } });
         await updateProgress(taskStatus.value.progress);
         progressMessage.value = taskStatus.value.status;
         const resp = taskStatus.value.result;
