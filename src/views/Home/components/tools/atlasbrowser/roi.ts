@@ -126,6 +126,16 @@ export class ROI {
     });
   }
 
+  getOnTissue(): number {
+    let count = 0;
+    this.polygons.forEach((ele: any) => {
+      if (ele.fill != null) {
+        count += 1;
+      }
+    });
+    return count;
+  }
+
   autoMask(pixels: any, threshold: number): any[] {
     const [height, width] = pixels.shape;
     let count = 0;

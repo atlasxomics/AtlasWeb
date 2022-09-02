@@ -222,7 +222,7 @@
               <v-list dense class="mt-n3 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Rotation</v-subheader>
                 <v-btn
-                color="grey"
+                color="blue"
                 class="leftRotate"
                 :disabled="!current_image || isCropMode || grid"
                 @click="rotate_image(0)"
@@ -233,7 +233,7 @@
                 height="24"/>
                 </v-btn>
                 <v-btn
-                color="grey"
+                color="blue"
                 class="spaced_btn"
                 :disabled="!current_image || isCropMode || grid || degreeRotation == '45'"
                 @click="rotate_image(1)"
@@ -792,6 +792,7 @@ export default defineComponent({
       blocks_flowA: [],
       leak_flowA: '',
       sampleID: '',
+      onTissueTixels: null,
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -1392,7 +1393,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         if (optionUpdate.value) {
@@ -1425,6 +1426,7 @@ export default defineComponent({
           crosses_flowA: metadata.value.crosses_flowA,
           blocks_flowA: metadata.value.blocks_flowA,
           leak_flowA: metadata.value.leak_flowA,
+          onTissueTixels: roi.value.getOnTissue(),
         });
         const params = {
           run_id: run_id.value,
@@ -1438,6 +1440,7 @@ export default defineComponent({
           root_dir: root,
           bucket: bucket_name,
         };
+        console.log(params.mask);
         const args: any[] = [params];
         const kwargs: any = {};
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
