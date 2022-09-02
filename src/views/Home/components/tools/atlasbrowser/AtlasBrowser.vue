@@ -661,6 +661,7 @@ interface Metadata {
   blocks_flowA: Array<number> | null;
   leak_flowA: string | null;
   sampleID: string | null;
+  onTissueTixels: number | null;
 }
 
 export default defineComponent({
