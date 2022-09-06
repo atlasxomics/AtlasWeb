@@ -395,10 +395,11 @@
                   Generate Spatial Folder
                   </v-btn>
                   <v-btn
+                  class="vert-spaced-btn"
                   outlined
                   x-small
                   dense
-                  color="primary"
+                  color="red"
                   @click="showSpatialFolder">
                   Check Spatial Folder
                   </v-btn>
@@ -930,6 +931,26 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
       }
     }
+    function loadGray() {
+      if (!client.value) return;
+      // path to image
+      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
+      try {
+        let c = crop.value.getCoordinatesOnImage();
+        if (optionUpdate.value) {
+          c = metadata.value.crop_area;
+        }
+        const x1 = c[0];
+        const y1 = c[1];
+        const x2 = c[2];
+        const y2 = c[3];
+        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
+        gray_image.value = client.value.getGrayImageAsJPG(pl);
+      } catch (error) {
+        console.log(error);
+        loading.value = false;
+      }
+    }
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
@@ -968,29 +989,16 @@ export default defineComponent({
         }
         loading.value = false;
         runIdFlag.value = false;
+        if (optionUpdate.value) {
+          console.log('loading gray');
+          loadGray();
+        }
       } catch (error) {
         console.log(error);
         loading.value = false;
         snackbar.dispatch({ text: 'Failed to load the image file', options: { color: 'error', right: true } });
       }
       // console.log(current_image.value.original_src);
-    }
-    function loadGray() {
-      if (!client.value) return;
-      // path to image
-      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
-      try {
-        const c = crop.value.getCoordinatesOnImage();
-        const x1 = c[0];
-        const y1 = c[1];
-        const x2 = c[2];
-        const y2 = c[3];
-        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
-        gray_image.value = client.value.getGrayImageAsJPG(pl);
-      } catch (error) {
-        console.log(error);
-        loading.value = false;
-      }
     }
     async function loadAll() {
       await loadMetadata();
@@ -1294,6 +1302,7 @@ export default defineComponent({
       if (!gray_image.value) return;
       loading.value = true;
       if (gray_image_src.value != null) {
+        console.log('here');
         threshold_image(gray_image_src.value);
       } else {
         gray_image.value.then((gray: any) => {
@@ -1779,5 +1788,8 @@ export default defineComponent({
   margin-left: auto;
   margin-right: auto;
   width: 80%;
+}
+.vert-spaced-btn {
+  top: 8px;
 }
 </style>
