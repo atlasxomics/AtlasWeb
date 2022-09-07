@@ -666,7 +666,7 @@
         </v-col>
       </v-row>
     </v-container>
-    <loading-page v-if="resolveAuthGroup(['collab']) && !query.public" :listRuns="collabData" :collabName="collabName" :loading="loading"/>
+    <loading-page v-if="resolveAuthGroup(['collab']) && !query.public" :relevantRuns="collabData" :collabName="collabName" :loading_bool="loading"/>
   </v-app>
 </template>
 
@@ -1361,41 +1361,54 @@ export default defineComponent({
     }
     async function loadingPage() {
       loading.value = true;
-      const funcInsideLoad = (id: string, checker: any) => {
-        let v = false;
-        if (id.length > 1) {
-          checker.forEach((val: any, i: any) => {
-            if (val.includes(id)) {
-              v = val;
-            }
-          });
-        }
-        return v;
-      };
-      const val = await client.value!.getRunIdList();
-      await fetchFileList();
-      if (items.value) {
-        const checker = items.value.map((ids: any) => ids.id);
-        const matchedRuns: any[] = [];
-        val.forEach((value: any, i: any) => {
-          const yeah = funcInsideLoad(removeZeros(value['Run Id']), checker);
-          if (yeah && !matchedRuns.includes(yeah)) {
-            matchedRuns.push(yeah);
-          }
-        });
-        const dataStruct: any[] = [];
-        for (let i = 0; i < matchedRuns.length; i += 1) {
-          const rid = matchedRuns[i];
-          const fn = `data/${rid}/h5/obj/genes.h5ad`;
-          filename.value = fn;
-          await getMeta(rid);
-          await runSpatial(rid);
-          const valueHolder = { runId: `${cleanRunId(rid)}`, organ: `${metadata.value.organ}`, species: `${metadata.value.species}`, expcond: `${metadata.value.condition}`, date: `${metadata.value.date}`, link: `${publicLink.value}` };
-          dataStruct.push(valueHolder);
-        }
-        collabData.value = dataStruct;
-      }
-      loading.value = false;
+      const collab_run_data = await client.value!.getRunsCollaborator('Pieper');
+      collabData.value = collab_run_data;
+      console.log(collabData.value);
+      // const collaborator_objs = [];
+      // console.log(collab_run_data);
+      // for (const key in collab_run_data) {
+      //   const inner_obj = collab_run_data[key];
+
+      // }
+
+      // const funcInsideLoad = (id: string, checker: any) => {
+      //   console.log(id);
+      //   console.log(checker);
+      //   let v = false;
+      //   if (id.length > 1) {
+      //     checker.forEach((val: any, i: any) => {
+      //       if (val.includes(id)) {
+      //         v = val;
+      //         console.log(v);
+      //       }
+      //     });
+      //   }
+      //   return v;
+      // };
+    //   const val = await client.value!.getRunIdList();
+    //   await fetchFileList();
+    //   if (items.value) {
+    //     const checker = items.value.map((ids: any) => ids.id);
+    //     const matchedRuns: any[] = [];
+    //     val.forEach((value: any, i: any) => {
+    //       const yeah = funcInsideLoad(removeZeros(value['Run Id']), checker);
+    //       if (yeah && !matchedRuns.includes(yeah)) {
+    //         matchedRuns.push(yeah);
+    //       }
+    //     });
+    //     const dataStruct: any[] = [];
+    //     for (let i = 0; i < matchedRuns.length; i += 1) {
+    //       const rid = matchedRuns[i];
+    //       const fn = `data/${rid}/h5/obj/genes.h5ad`;
+    //       filename.value = fn;
+    //       await getMeta(rid);
+    //       await runSpatial(rid);
+    //       const valueHolder = { runId: `${cleanRunId(rid)}`, organ: `${metadata.value.organ}`, species: `${metadata.value.species}`, expcond: `${metadata.value.condition}`, date: `${metadata.value.date}`, link: `${publicLink.value}` };
+    //       dataStruct.push(valueHolder);
+    //     }
+    //     collabData.value = dataStruct;
+    //   }
+    //   loading.value = false;
     }
     async function getPublicId(ev: any) {
       runId.value = ev;

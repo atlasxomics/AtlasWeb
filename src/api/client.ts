@@ -472,4 +472,10 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/dataset/wafertrace', payload);
     return resp.data;
   }
+  async getRunsCollaborator(collaborator: string) {
+    const table_name = 'dbit_metadata';
+    const payload = { params: { collaborator, table_name } };
+    const resp = await this.axios.get('/api/v1/run_db/get_runs_collaborator', payload);
+    return resp.data;
+  }
 }
