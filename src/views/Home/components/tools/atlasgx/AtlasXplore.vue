@@ -1366,7 +1366,6 @@ export default defineComponent({
       loading.value = true;
       const collab_run_data = await client.value!.getRunsCollaborator(collab_name);
       collabData.value = collab_run_data;
-      console.log(collabData.value);
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
@@ -1499,6 +1498,23 @@ export default defineComponent({
     const submenu = [
       /* eslint-disable no-unused-expressions */
       {
+        text: 'Menu',
+        icon: 'mdi-formula-list-text',
+        tooltip: 'Runs Display',
+        click: () => {
+          landing_disp.value = true;
+          atlasXplore_displayed.value = false;
+          if (acInstance.$el) {
+            acInstance.$destroy();
+            if (acInstance.$el.parentNode != null) {
+              acInstance.$el.parentNode!.removeChild(acInstance.$el);
+            }
+            store.commit.setSubmenu(null);
+            filename.value = 'none';
+          }
+        },
+      },
+      {
         text: 'Run ID\'s',
         icon: 'mdi-magnify',
         tooltip: 'Run ID\'s',
@@ -1549,39 +1565,39 @@ export default defineComponent({
         component: acInstance,
       },
     ];
-    async function prep_atlasxplore() {
+    // async function initializeRun(run_id: string, use_specified: boolean) {
+    // }
+    async function prep_atlasxplore(run_id: string, use_specified: boolean) {
       store.commit.setSubmenu(submenu);
+      await fetchFileList();
       if (props.query && !props.query.public) {
         await fetchFileList();
-        await selectAction({ id: run_id });
-        currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-      }
-      if (props.query) {
-        if (props.query.run_id && props.query.public) {
-          const mid = props.query.run_id.search(/motif/i);
-          const end = props.query.run_id.length;
-          const fn = props.query.run_id.slice(0, mid);
-          const fn2 = props.query.run_id.slice(mid + 5, end);
-          holdGene.value = fn;
-          holdMotif.value = fn2;
-          filename.value = fn;
+        if (use_specified || props.query.run_id) {
+          let run_num = run_id;
+          if (props.query.run_id && !use_specified) {
+            run_num = props.query.run_id;
+          }
+          // await initializeRun(props.query.run_id);
+          await selectAction({ id: run_num });
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
+      }
+      if (props.query && props.query.run_id && props.query.public) {
+        const mid = props.query.run_id.search(/motif/i);
+        const end = props.query.run_id.length;
+        const fn = props.query.run_id.slice(0, mid);
+        const fn2 = props.query.run_id.slice(mid + 5, end);
+        holdGene.value = fn;
+        holdMotif.value = fn2;
+        filename.value = fn;
       }
       acInstance.$mount('#geneac');
     }
+
     function configure_landing_or_explore() {
-      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
-        atlasXplore_displayed.value = true;
-        landing_disp.value = false;
-        prep_atlasxplore(props.query.run_id);
-      } else if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
-        landing_disp.value = true;
-        atlasXplore_displayed.value = false;
-        loadingPage('Pieper');
-      }
+      console.log('void');
     }
     async function run_selected_landing(run_id: string) {
-      console.log(run_id);
       landing_disp.value = false;
       atlasXplore_displayed.value = true;
       // const run = { id: 'D264' };
@@ -1589,10 +1605,18 @@ export default defineComponent({
       // await selectAction(run);
       // acInstance.$mount('#geneac');
       const stripped_id = removeZeros(run_id);
-      prep_atlasxplore(stripped_id);
+      prep_atlasxplore(stripped_id, true);
     }
     onMounted(async () => {
-      configure_landing_or_explore();
+      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
+        atlasXplore_displayed.value = true;
+        landing_disp.value = false;
+        prep_atlasxplore(props.query.run_id, false);
+      } else if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
+        landing_disp.value = true;
+        atlasXplore_displayed.value = false;
+        loadingPage('Pieper');
+      }
       // atlasXplore_displayed.value = true;
       // store.commit.setSubmenu(submenu);
       // await fetchFileList();
@@ -1741,6 +1765,7 @@ export default defineComponent({
       landing_disp,
       atlasXplore_displayed,
       prep_atlasxplore,
+      // initializeRun,
     };
   },
 });

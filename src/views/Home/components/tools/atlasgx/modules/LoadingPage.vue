@@ -101,7 +101,6 @@ export default defineComponent({
       window.open(`${ev}`, '_blank');
     }
     function toAtlasXplore(run_data: any) {
-      console.log(run_data);
       this.$emit('run-selected', run_data.cntn_cf_runId);
     }
     onMounted(async () => {
