@@ -1164,15 +1164,6 @@ export default defineComponent({
         console.log(error);
       }
     }
-    function configure_landing_or_explore() {
-      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
-        atlasXplore_displayed.value = true;
-        landing_disp.value = false;
-      } else if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
-        landing_disp.value = true;
-        atlasXplore_displayed.value = false;
-      }
-    }
     async function runSpatial(rid = runId.value) {
       if (!client.value) return;
       if (!filename.value) return;
@@ -1581,6 +1572,16 @@ export default defineComponent({
           filename.value = fn;
         }
       }
+      acInstance.$mount('#geneac');
+    }
+    function configure_landing_or_explore() {
+      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
+        atlasXplore_displayed.value = true;
+        landing_disp.value = false;
+      } else if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
+        landing_disp.value = true;
+        atlasXplore_displayed.value = false;
+      }
     }
     function run_selected_landing(run_id: string) {
       console.log(run_id);
@@ -1588,18 +1589,8 @@ export default defineComponent({
       prep_atlasxplore();
     }
     onMounted(async () => {
-      await clientReady;
-      console.log('mounted');
-      console.log(props);
-      if (resolveAuthGroup(['collab']) && (props.query && !props.query.public)) {
-        console.log(client.value!.user);
-        const collab = client.value?.user?.groups[0];
-        await loadingPage(collab);
-        console.log(client.value!.user);
-      } else {
-        acInstance.$mount('#geneac');
-      }
       configure_landing_or_explore();
+      prep_atlasxplore();
     });
     onUnmounted(() => {
       if (acInstance.$el) {
