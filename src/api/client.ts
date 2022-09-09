@@ -114,6 +114,7 @@ export default class Client {
 
   private async fetchUser() {
     const { data } = await this.axios.get('/api/v1/auth/whoami');
+    console.log(data);
     const userdata = { username: data.Username, user_level: 0, name: 'None', email: '', groups: data.groups };
     this.user = userdata;
   }

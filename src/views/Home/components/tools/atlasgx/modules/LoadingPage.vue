@@ -53,9 +53,11 @@
           </div>
         </td>
         <td style="text-align:center;">
-          <div>
-            Fake
-          </div>
+          <v-btn
+          @click="toAtlasXplore(runs)"
+          >
+            AtlasXplore
+          </v-btn>
         </td>
         <!-- <td v-for="data in runs" v-bind:key="data" style="text-align:center;">
         <template v-if="data.includes('http')">
@@ -87,9 +89,9 @@ export default defineComponent({
   props: {
     relevantRuns: { type: Array, required: true },
     collabName: { type: String, required: true },
-    loading_bool: { type: Boolean, required: true },
   },
   setup(props, ctx) {
+    const router = ctx.root.$router;
     const allRuns = computed(() => props.relevantRuns);
     const name = computed(() => props.collabName);
     const data = ref<any[]>([]);
@@ -98,10 +100,21 @@ export default defineComponent({
     async function nextPage(ev: any) {
       window.open(`${ev}`, '_blank');
     }
+    function toAtlasXplore(run_data: any) {
+      console.log(run_data);
+      this.$emit('run-selected', run_data.cntn_cf_runId);
+    }
     onMounted(async () => {
       // dlskmk
     });
-    return { allRuns, name, loading, nextPage };
+    return {
+      allRuns,
+      name,
+      loading,
+      nextPage,
+      toAtlasXplore,
+      router,
+    };
   },
 });
 </script>

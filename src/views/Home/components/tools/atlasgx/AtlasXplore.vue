@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-container v-if="resolveAuthGroup(['admin', 'user']) || query.public" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
+    <v-container v-if="atlasXplore_displayed" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
           <v-tooltip bottom :disabled="metaFlag">
@@ -666,7 +666,7 @@
         </v-col>
       </v-row>
     </v-container>
-    <loading-page v-if="resolveAuthGroup(['collab']) && !query.public" :relevantRuns="collabData" :collabName="collabName" :loading_bool="loading"/>
+    <loading-page @run-selected="run_selected_landing" v-if="landing_disp" :relevantRuns="collabData" :collabName="collabName"/>
   </v-app>
 </template>
 
@@ -747,6 +747,7 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const workers = computed(() => store.state.client?.workers);
+    const landing_disp = ref<boolean>(false);
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
     const holdMotif = ref<string | null>(null);
@@ -796,6 +797,7 @@ export default defineComponent({
     const isDrawing = ref<boolean>(false);
     const isDrawingRect = ref<boolean>(false);
     const lengthClust = ref<number>(0);
+    const atlasXplore_displayed = ref<boolean>(false);
     const showFlag = ref<boolean[]>([false]);
     const runIdFlag = ref<boolean>(false);
     const backgroundFlag = ref<boolean>(false);
@@ -1162,6 +1164,15 @@ export default defineComponent({
         console.log(error);
       }
     }
+    function configure_landing_or_explore() {
+      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
+        atlasXplore_displayed.value = true;
+        landing_disp.value = false;
+      } else if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
+        landing_disp.value = true;
+        atlasXplore_displayed.value = false;
+      }
+    }
     async function runSpatial(rid = runId.value) {
       if (!client.value) return;
       if (!filename.value) return;
@@ -1332,6 +1343,7 @@ export default defineComponent({
         }
       }
       collabName.value = slimsData.cntn_cf_source;
+      console.log(collabName);
       loading.value = false;
     }
     async function selectAction(ev: any) {
@@ -1359,56 +1371,11 @@ export default defineComponent({
       await runSpatial();
       await getMeta();
     }
-    async function loadingPage() {
+    async function loadingPage(collab_name: any) {
       loading.value = true;
-      const collab_run_data = await client.value!.getRunsCollaborator('Pieper');
+      const collab_run_data = await client.value!.getRunsCollaborator(collab_name);
       collabData.value = collab_run_data;
       console.log(collabData.value);
-      // const collaborator_objs = [];
-      // console.log(collab_run_data);
-      // for (const key in collab_run_data) {
-      //   const inner_obj = collab_run_data[key];
-
-      // }
-
-      // const funcInsideLoad = (id: string, checker: any) => {
-      //   console.log(id);
-      //   console.log(checker);
-      //   let v = false;
-      //   if (id.length > 1) {
-      //     checker.forEach((val: any, i: any) => {
-      //       if (val.includes(id)) {
-      //         v = val;
-      //         console.log(v);
-      //       }
-      //     });
-      //   }
-      //   return v;
-      // };
-    //   const val = await client.value!.getRunIdList();
-    //   await fetchFileList();
-    //   if (items.value) {
-    //     const checker = items.value.map((ids: any) => ids.id);
-    //     const matchedRuns: any[] = [];
-    //     val.forEach((value: any, i: any) => {
-    //       const yeah = funcInsideLoad(removeZeros(value['Run Id']), checker);
-    //       if (yeah && !matchedRuns.includes(yeah)) {
-    //         matchedRuns.push(yeah);
-    //       }
-    //     });
-    //     const dataStruct: any[] = [];
-    //     for (let i = 0; i < matchedRuns.length; i += 1) {
-    //       const rid = matchedRuns[i];
-    //       const fn = `data/${rid}/h5/obj/genes.h5ad`;
-    //       filename.value = fn;
-    //       await getMeta(rid);
-    //       await runSpatial(rid);
-    //       const valueHolder = { runId: `${cleanRunId(rid)}`, organ: `${metadata.value.organ}`, species: `${metadata.value.species}`, expcond: `${metadata.value.condition}`, date: `${metadata.value.date}`, link: `${publicLink.value}` };
-    //       dataStruct.push(valueHolder);
-    //     }
-    //     collabData.value = dataStruct;
-    //   }
-    //   loading.value = false;
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
@@ -1591,35 +1558,48 @@ export default defineComponent({
         component: acInstance,
       },
     ];
+    async function prep_atlasxplore() {
+      store.commit.setSubmenu(submenu);
+      if (props.query && !props.query.public) {
+        await fetchFileList();
+        if (props.query.run_id) {
+          // loadCandidateWorkers('AtlasXploreX');
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+          await selectAction({ id: props.query.run_id });
+        } else {
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+        }
+      }
+      if (props.query) {
+        if (props.query.run_id && props.query.public) {
+          const mid = props.query.run_id.search(/motif/i);
+          const end = props.query.run_id.length;
+          const fn = props.query.run_id.slice(0, mid);
+          const fn2 = props.query.run_id.slice(mid + 5, end);
+          holdGene.value = fn;
+          holdMotif.value = fn2;
+          filename.value = fn;
+        }
+      }
+    }
+    function run_selected_landing(run_id: string) {
+      console.log(run_id);
+      landing_disp.value = false;
+      prep_atlasxplore();
+    }
     onMounted(async () => {
       await clientReady;
+      console.log('mounted');
+      console.log(props);
       if (resolveAuthGroup(['collab']) && (props.query && !props.query.public)) {
-        await loadingPage();
+        console.log(client.value!.user);
+        const collab = client.value?.user?.groups[0];
+        await loadingPage(collab);
+        console.log(client.value!.user);
       } else {
-        store.commit.setSubmenu(submenu);
-        if (props.query && !props.query.public) {
-          await fetchFileList();
-          if (props.query.run_id) {
-            // loadCandidateWorkers('AtlasXploreX');
-            currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-            await selectAction({ id: props.query.run_id });
-          } else {
-            currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-          }
-        }
-        if (props.query) {
-          if (props.query.run_id && props.query.public) {
-            const mid = props.query.run_id.search(/motif/i);
-            const end = props.query.run_id.length;
-            const fn = props.query.run_id.slice(0, mid);
-            const fn2 = props.query.run_id.slice(mid + 5, end);
-            holdGene.value = fn;
-            holdMotif.value = fn2;
-            filename.value = fn;
-          }
-        }
         acInstance.$mount('#geneac');
       }
+      configure_landing_or_explore();
     });
     onUnmounted(() => {
       if (acInstance.$el) {
@@ -1695,6 +1675,7 @@ export default defineComponent({
       autoCompleteFlag,
       geneButton,
       geneMotif,
+      configure_landing_or_explore,
       featureTableFlag,
       peakViewerFlag,
       histoFlag,
@@ -1758,6 +1739,10 @@ export default defineComponent({
       dataToSingle,
       singleData,
       averageInd,
+      run_selected_landing,
+      landing_disp,
+      atlasXplore_displayed,
+      prep_atlasxplore,
     };
   },
 });
