@@ -1553,13 +1553,8 @@ export default defineComponent({
       store.commit.setSubmenu(submenu);
       if (props.query && !props.query.public) {
         await fetchFileList();
-        if (props.query.run_id) {
-          // loadCandidateWorkers('AtlasXploreX');
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-          await selectAction({ id: props.query.run_id });
-        } else {
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-        }
+        await selectAction({ id: run_id });
+        currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
       }
       if (props.query) {
         if (props.query.run_id && props.query.public) {
@@ -1578,19 +1573,31 @@ export default defineComponent({
       if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
         atlasXplore_displayed.value = true;
         landing_disp.value = false;
+        prep_atlasxplore(props.query.run_id);
       } else if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
         landing_disp.value = true;
         atlasXplore_displayed.value = false;
+        loadingPage('Pieper');
       }
     }
-    function run_selected_landing(run_id: string) {
+    async function run_selected_landing(run_id: string) {
       console.log(run_id);
       landing_disp.value = false;
-      prep_atlasxplore();
+      atlasXplore_displayed.value = true;
+      // const run = { id: 'D264' };
+      // await fetchFileList();
+      // await selectAction(run);
+      // acInstance.$mount('#geneac');
+      const stripped_id = removeZeros(run_id);
+      prep_atlasxplore(stripped_id);
     }
     onMounted(async () => {
       configure_landing_or_explore();
-      prep_atlasxplore();
+      // atlasXplore_displayed.value = true;
+      // store.commit.setSubmenu(submenu);
+      // await fetchFileList();
+      // currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+      // await selectAction({ id: 'D264' });
     });
     onUnmounted(() => {
       if (acInstance.$el) {
