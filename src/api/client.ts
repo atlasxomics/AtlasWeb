@@ -114,7 +114,6 @@ export default class Client {
 
   private async fetchUser() {
     const { data } = await this.axios.get('/api/v1/auth/whoami');
-    console.log(data);
     const userdata = { username: data.Username, user_level: 0, name: 'None', email: '', groups: data.groups };
     this.user = userdata;
   }
@@ -336,7 +335,6 @@ export default class Client {
   }
   async getFileList(payload: FileListRequest): Promise<any> {
     try {
-      console.log(payload);
       const resp = await this.axios.get('api/v1/storage/list', payload);
       return resp.data;
     } catch (error) {
@@ -368,7 +366,6 @@ export default class Client {
     const uri = '/api/v1/dataset/slimstest_runid';
     const run_id = `D${padzeros(Number(rid.split('D')[1]), 5)}`;
     const payload = { params: { run_id } };
-    console.log(payload);
     const resp = await this.axios.get(uri, payload);
     return resp.data;
   }

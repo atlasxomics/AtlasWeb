@@ -7,7 +7,7 @@
             Hello {{ client.user.username.toUpperCase() }}
           </v-card-title>
           <v-card-text>
-            ATX-Cloud is currently under development, any feedback will be appreciated. Please contact <a href="mailto:joshuab@atlasxomics.com">Joshua</a> or <a href="mailto:liyaw@atlasxomics.com">Liya</a> if you have any question or suggestion. All rights reserved by AtlasXomics, 2021.
+            ATX-Cloud is currently under development, any feedback will be appreciated. Please contact <a href="mailto:help@atlasxomics.com">help</a> if you have any question or suggestion. All rights reserved by AtlasXomics, 2021.
           </v-card-text>
         </v-card>
       </v-col>

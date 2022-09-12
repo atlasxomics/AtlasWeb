@@ -36,7 +36,7 @@ const menu = [
   {
     groupname: 'Home',
     items: [
-      { name: 'Home', icon: 'mdi-home', access_control: ['admin', 'user'], color: 'primary', query: { component: null } },
+      { name: 'Home', icon: 'mdi-home', access_control: ['admin', 'user', 'collab'], color: 'primary', query: { component: null } },
     ],
   },
   {

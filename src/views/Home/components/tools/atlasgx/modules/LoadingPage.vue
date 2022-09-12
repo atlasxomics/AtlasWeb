@@ -11,7 +11,7 @@
       </div>
     </template> -->
     <table style="width: 100%;border-spacing: 35px;" v-if="allRuns.length > 0">
-    <caption style="font-size: 20px;font-weight: bold;padding: 15px;border-bottom: 1px solid;">{{name}}</caption>
+    <!-- <caption style="font-size: 20px;font-weight: bold;padding: 15px;border-bottom: 1px solid;">{{name}}</caption> -->
       <tr style="border-bottom:1px solid rgb(92, 112, 128); color:rgb(92, 112, 128);font-weight: 500;">
         <th>Run ID</th>
         <th> Sample ID </th>
@@ -54,6 +54,7 @@
         </td>
         <td style="text-align:center;">
           <v-btn
+          outlined
           @click="toAtlasXplore(runs)"
           >
             AtlasXplore

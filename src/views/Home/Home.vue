@@ -95,12 +95,10 @@ export default defineComponent({
       if (!ev) {
         if (currentRoute.value.query.component) {
           const newRoute: any = generateRouteByQuery(currentRoute.value, null);
-          console.log(newRoute);
           router.push(newRoute);
         }
       } else if (ev.component !== currentRoute.value.query.component) {
         const newRoute: any = generateRouteByQuery(currentRoute.value, ev);
-        console.log(newRoute);
         router.push(newRoute);
       }
     }
