@@ -757,7 +757,7 @@ export default defineComponent({
     const items = ref<any[]>();
     const search = ref<string>();
     const selected = ref<any>();
-    const genes = ref<any[]>([]);
+    const genes = ref<any[] | null>([]);
     const loading = ref<boolean>(false);
     const selectedGenes = ref<any[]>([]);
     const childGenes = ref<any[]>([]);
@@ -796,6 +796,7 @@ export default defineComponent({
     const topHeaders = ref<any[]>([]);
     const isDrawing = ref<boolean>(false);
     const isDrawingRect = ref<boolean>(false);
+    const display_search = ref<boolean>(false);
     const lengthClust = ref<number>(0);
     const atlasXplore_displayed = ref<boolean>(false);
     const showFlag = ref<boolean[]>([false]);
@@ -1376,9 +1377,9 @@ export default defineComponent({
       }
     }
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
-    const acInstance = new GeneAutoCompleteClass({
+    const acInstance = ref<any>(new GeneAutoCompleteClass({
       vuetify,
-      propsData: { gene_list: genes, gene_button: geneButton },
+      propsData: { gene_list: genes, gene_button: geneButton, display: display_search },
       created() {
         this.$on('changed', (ev: any[]) => {
           selectedGenes.value = ev;
@@ -1403,7 +1404,7 @@ export default defineComponent({
           }
         });
       },
-    });
+    }));
     watch(peakViewerFlag, (v: any) => {
       if (v) {
         visible.value = 'visible';
@@ -1504,14 +1505,16 @@ export default defineComponent({
         click: () => {
           landing_disp.value = true;
           atlasXplore_displayed.value = false;
-          if (acInstance.$el) {
-            acInstance.$destroy();
-            if (acInstance.$el.parentNode != null) {
-              acInstance.$el.parentNode!.removeChild(acInstance.$el);
-            }
-            store.commit.setSubmenu(null);
-            filename.value = 'none';
+          genes.value = null;
+          // acInstance.$destroy();
+          if (acInstance.value.$el.parentNode != null) {
+            const val = acInstance.value.$el.parentNode;
+            console.log(val);
+            acInstance.value.$el.parentNode!.removeChild(acInstance.$el);
           }
+          // display_search.value = false;
+          store.commit.setSubmenu(null);
+          filename.value = 'none';
         },
       },
       {
@@ -1591,7 +1594,8 @@ export default defineComponent({
         holdMotif.value = fn2;
         filename.value = fn;
       }
-      acInstance.$mount('#geneac');
+      console.log('ac instance mounting');
+      acInstance.value.$mount('#geneac');
     }
 
     function configure_landing_or_explore() {
@@ -1600,6 +1604,7 @@ export default defineComponent({
     async function run_selected_landing(run_id: string) {
       landing_disp.value = false;
       atlasXplore_displayed.value = true;
+      display_search.value = true;
       // const run = { id: 'D264' };
       // await fetchFileList();
       // await selectAction(run);
@@ -1624,9 +1629,9 @@ export default defineComponent({
       // await selectAction({ id: 'D264' });
     });
     onUnmounted(() => {
-      if (acInstance.$el) {
-        acInstance.$destroy();
-        acInstance.$el.parentNode!.removeChild(acInstance.$el);
+      if (acInstance.value.$el) {
+        acInstance.value.$destroy();
+        acInstance.value.$el.parentNode!.removeChild(acInstance.$el);
         store.commit.setSubmenu(null);
       }
     });
@@ -1765,6 +1770,7 @@ export default defineComponent({
       landing_disp,
       atlasXplore_displayed,
       prep_atlasxplore,
+      acInstance,
       // initializeRun,
     };
   },
