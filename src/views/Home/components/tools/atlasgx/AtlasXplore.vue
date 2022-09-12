@@ -1619,6 +1619,7 @@ export default defineComponent({
       prep_atlasxplore(stripped_id, true);
     }
     onMounted(async () => {
+      await clientReady;
       if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
         atlasXplore_displayed.value = true;
         landing_disp.value = false;
@@ -1627,6 +1628,7 @@ export default defineComponent({
         landing_disp.value = true;
         atlasXplore_displayed.value = false;
         loadingPage('Pieper');
+        loadingPage(client.value?.user?.groups[0]);
       }
       // atlasXplore_displayed.value = true;
       // store.commit.setSubmenu(submenu);
