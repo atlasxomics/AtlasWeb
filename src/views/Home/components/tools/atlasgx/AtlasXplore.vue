@@ -1601,9 +1601,6 @@ export default defineComponent({
       acInstance.value.$mount('#geneac');
     }
 
-    function configure_landing_or_explore() {
-      console.log('void');
-    }
     async function run_selected_landing(run_id: string) {
       landing_disp.value = false;
       atlasXplore_displayed.value = true;
@@ -1710,7 +1707,6 @@ export default defineComponent({
       autoCompleteFlag,
       geneButton,
       geneMotif,
-      configure_landing_or_explore,
       featureTableFlag,
       peakViewerFlag,
       histoFlag,
