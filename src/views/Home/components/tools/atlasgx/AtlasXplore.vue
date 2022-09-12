@@ -1496,24 +1496,21 @@ export default defineComponent({
       });
       runCellType(cleanedArray);
     });
-    const submenu = [
+    const submenu = ref<any[]>([
       /* eslint-disable no-unused-expressions */
       {
         text: 'Menu',
-        icon: 'mdi-formula-list-text',
+        icon: 'mdi-keyboard-backspace',
         tooltip: 'Runs Display',
+        enabled: true,
         click: () => {
           landing_disp.value = true;
           atlasXplore_displayed.value = false;
-          genes.value = null;
-          // acInstance.$destroy();
-          if (acInstance.value.$el.parentNode != null) {
-            const val = acInstance.value.$el.parentNode;
-            console.log(val);
-            acInstance.value.$el.parentNode!.removeChild(acInstance.$el);
+          for (let i = 0; i < submenu.value.length; i += 1) {
+            submenu.value[i].enabled = false;
           }
-          // display_search.value = false;
-          store.commit.setSubmenu(null);
+          display_search.value = false;
+          store.commit.setSubmenu(submenu.value);
           filename.value = 'none';
         },
       },
@@ -1521,7 +1518,7 @@ export default defineComponent({
         text: 'Run ID\'s',
         icon: 'mdi-magnify',
         tooltip: 'Run ID\'s',
-        disabled: loading.value,
+        enabled: true,
         click: () => {
           runIdFlag.value = !runIdFlag.value;
         },
@@ -1530,6 +1527,7 @@ export default defineComponent({
         text: 'Metadata',
         icon: 'mdi-filter-variant',
         tooltip: 'Metadata',
+        enabled: true,
         disabled: loading.value,
         click: () => {
           metaFlag.value = !metaFlag.value;
@@ -1541,6 +1539,7 @@ export default defineComponent({
         tooltip: 'Gene/Motif',
         disabled: loading.value,
         ref: 'geneMotifButton',
+        enabled: true,
         click: () => {
           (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
         },
@@ -1549,6 +1548,7 @@ export default defineComponent({
         text: 'Background Color',
         icon: 'mdi-palette',
         tooltip: 'Background Color',
+        enabled: true,
         click: () => {
           backgroundFlag.value = !backgroundFlag.value;
         },
@@ -1557,6 +1557,7 @@ export default defineComponent({
         text: 'Heat Map',
         icon: 'mdi-fire',
         tooltip: 'HeatMap Color',
+        enabled: true,
         click: () => {
           heatmapFlag.value = !heatmapFlag.value;
         },
@@ -1565,13 +1566,14 @@ export default defineComponent({
         type: 'component',
         name: 'GeneAutoComplete',
         id: 'geneac',
+        enabled: true,
         component: acInstance,
       },
-    ];
+    ]);
     // async function initializeRun(run_id: string, use_specified: boolean) {
     // }
     async function prep_atlasxplore(run_id: string, use_specified: boolean) {
-      store.commit.setSubmenu(submenu);
+      store.commit.setSubmenu(submenu.value);
       await fetchFileList();
       if (props.query && !props.query.public) {
         await fetchFileList();
@@ -1595,6 +1597,7 @@ export default defineComponent({
         filename.value = fn;
       }
       console.log('ac instance mounting');
+      // console.log('ac instance mounting');
       acInstance.value.$mount('#geneac');
     }
 
@@ -1609,6 +1612,9 @@ export default defineComponent({
       // await fetchFileList();
       // await selectAction(run);
       // acInstance.$mount('#geneac');
+      for (let i = 0; i < submenu.value.length; i += 1) {
+        submenu.value[i].enabled = true;
+      }
       const stripped_id = removeZeros(run_id);
       prep_atlasxplore(stripped_id, true);
     }
@@ -1631,7 +1637,7 @@ export default defineComponent({
     onUnmounted(() => {
       if (acInstance.value.$el) {
         acInstance.value.$destroy();
-        acInstance.value.$el.parentNode!.removeChild(acInstance.$el);
+        // acInstance.value.$el.parentNode!.removeChild(acInstance.$el);
         store.commit.setSubmenu(null);
       }
     });
@@ -1771,6 +1777,7 @@ export default defineComponent({
       atlasXplore_displayed,
       prep_atlasxplore,
       acInstance,
+      submenu,
       // initializeRun,
     };
   },
@@ -1841,5 +1848,8 @@ export default defineComponent({
   }
    .bold-disabled-Text .v-input__slot {
     margin-bottom: 0px !important;
+  }
+  .hidden {
+    visibility: hidden;
   }
 </style>

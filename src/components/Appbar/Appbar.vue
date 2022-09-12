@@ -11,6 +11,7 @@
         <template v-slot:activator="{ on, attrs }" >
           <template v-if="!menu.type">
             <v-btn
+              :class ="!menu.enabled ? 'hidden': 'visible'"
               :id="menu.ref ? menu.ref : ''"
               text
               @click="menu.click"
@@ -26,7 +27,7 @@
               </template>
             </v-btn>
           </template>
-          <template v-if="menu.type == 'component'">
+          <template v-if="menu.type == 'component' && menu.enabled">
             <div :id="menu.id"/>
           </template>
         </template>
@@ -142,5 +143,8 @@ export default defineComponent({
 // https://github.com/vuetifyjs/vuetify/issues/11149#issuecomment-852394927
 .v-btn--active::before, .v-btn:focus::before {
   opacity: 0 !important;
+}
+.hidden {
+  visibility: hidden;
 }
 </style>
