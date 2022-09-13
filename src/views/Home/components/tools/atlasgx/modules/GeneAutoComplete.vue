@@ -1,6 +1,5 @@
 <template v-if="true">
     <v-autocomplete
-    v-if="display_bar.value"
       class="noScroll"
       id ="noScrollId"
       @paste="handlePaste"
@@ -122,7 +121,7 @@ const clientReady = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'GeneAutoComplete',
-  props: ['gene_list', 'gene_button', 'display'],
+  props: ['gene_list', 'gene_button'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
@@ -130,7 +129,6 @@ export default defineComponent({
     const selectedGenes = ref<any[]>([]);
     const filteredGenes = ref<any[]>([]);
     const searchInput = ref<string | null>(null);
-    const display_bar = computed(() => props.display);
     const geneList = computed(() => props.gene_list);
     const geneButton = computed(() => props.gene_button);
     const genes = ref<any[]>([]);
@@ -337,7 +335,6 @@ export default defineComponent({
       readFile,
       resetFile,
       handlePaste,
-      display_bar,
     };
   },
 });

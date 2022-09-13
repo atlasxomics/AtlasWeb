@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-container v-if="atlasXplore_displayed" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
-      <template v-if="query.public">
+      <!-- <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
           <v-tooltip bottom :disabled="metaFlag">
             <template v-slot:activator="{ on, attrs }">
@@ -64,7 +64,7 @@
           <div id="geneac">
           </div>
           </v-app-bar>
-      </template>
+      </template> -->
       <v-row>
         <v-dialog
           v-if="!query.public && runIdFlag"
@@ -796,7 +796,6 @@ export default defineComponent({
     const topHeaders = ref<any[]>([]);
     const isDrawing = ref<boolean>(false);
     const isDrawingRect = ref<boolean>(false);
-    const display_search = ref<boolean>(false);
     const lengthClust = ref<number>(0);
     const atlasXplore_displayed = ref<boolean>(false);
     const showFlag = ref<boolean[]>([false]);
@@ -1379,7 +1378,7 @@ export default defineComponent({
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = ref<any>(new GeneAutoCompleteClass({
       vuetify,
-      propsData: { gene_list: genes, gene_button: geneButton, display: display_search },
+      propsData: { gene_list: genes, gene_button: geneButton },
       created() {
         this.$on('changed', (ev: any[]) => {
           selectedGenes.value = ev;
@@ -1496,83 +1495,88 @@ export default defineComponent({
       });
       runCellType(cleanedArray);
     });
-    const submenu = ref<any[]>([
-      /* eslint-disable no-unused-expressions */
-      {
-        text: 'Menu',
-        icon: 'mdi-keyboard-backspace',
-        tooltip: 'Runs Display',
-        enabled: true,
-        click: () => {
-          landing_disp.value = true;
-          atlasXplore_displayed.value = false;
-          for (let i = 0; i < submenu.value.length; i += 1) {
-            submenu.value[i].enabled = false;
-          }
-          display_search.value = false;
-          store.commit.setSubmenu(submenu.value);
-          filename.value = 'none';
-        },
+    const submenu = ref<any[]>([]);
+    const landing_page_revert = {
+      text: 'Menu',
+      icon: 'mdi-keyboard-backspace',
+      tooltip: 'Runs Display',
+      enabled: true,
+      click: () => {
+        landing_disp.value = true;
+        atlasXplore_displayed.value = false;
+        for (let i = 0; i < submenu.value.length; i += 1) {
+          submenu.value[i].enabled = false;
+        }
+        store.commit.setSubmenu(submenu.value);
+        filename.value = 'none';
       },
-      {
-        text: 'Run ID\'s',
-        icon: 'mdi-magnify',
-        tooltip: 'Run ID\'s',
-        enabled: true,
-        click: () => {
-          runIdFlag.value = !runIdFlag.value;
-        },
+    };
+    const list_ids = {
+      text: 'Run ID\'s',
+      icon: 'mdi-magnify',
+      tooltip: 'Run ID\'s',
+      enabled: true,
+      click: () => {
+        runIdFlag.value = !runIdFlag.value;
       },
-      {
-        text: 'Metadata',
-        icon: 'mdi-filter-variant',
-        tooltip: 'Metadata',
-        enabled: true,
-        disabled: loading.value,
-        click: () => {
-          metaFlag.value = !metaFlag.value;
-        },
+    };
+    const metadata_button = {
+      text: 'Metadata',
+      icon: 'mdi-filter-variant',
+      tooltip: 'Metadata',
+      enabled: true,
+      disabled: loading.value,
+      click: () => {
+        metaFlag.value = !metaFlag.value;
       },
-      {
-        text: geneMotif.value,
-        icon: null,
-        tooltip: 'Gene/Motif',
-        disabled: loading.value,
-        ref: 'geneMotifButton',
-        enabled: true,
-        click: () => {
-          (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
-        },
+    };
+    /* eslint-disable no-unused-expressions */
+    const gene_motif_button = {
+      text: geneMotif.value,
+      icon: null,
+      tooltip: 'Gene/Motif',
+      disabled: loading.value,
+      ref: 'geneMotifButton',
+      enabled: true,
+      click: () => {
+        (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
       },
-      {
-        text: 'Background Color',
-        icon: 'mdi-palette',
-        tooltip: 'Background Color',
-        enabled: true,
-        click: () => {
-          backgroundFlag.value = !backgroundFlag.value;
-        },
+    };
+    const bg_color_button = {
+      text: 'Background Color',
+      icon: 'mdi-palette',
+      tooltip: 'Background Color',
+      enabled: true,
+      click: () => {
+        backgroundFlag.value = !backgroundFlag.value;
       },
-      {
-        text: 'Heat Map',
-        icon: 'mdi-fire',
-        tooltip: 'HeatMap Color',
-        enabled: true,
-        click: () => {
-          heatmapFlag.value = !heatmapFlag.value;
-        },
+    };
+    const heat_map_button = {
+      text: 'Heat Map',
+      icon: 'mdi-fire',
+      tooltip: 'HeatMap Color',
+      enabled: true,
+      click: () => {
+        heatmapFlag.value = !heatmapFlag.value;
       },
-      {
-        type: 'component',
-        name: 'GeneAutoComplete',
-        id: 'geneac',
-        enabled: true,
-        component: acInstance,
-      },
-    ]);
+    };
+    const gene_ac_bar = {
+      type: 'component',
+      name: 'GeneAutoComplete',
+      id: 'geneac',
+      enabled: true,
+      component: acInstance,
+    };
+    function prep_sub_menu() {
+      if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
+        submenu.value.push(landing_page_revert);
+      }
+      submenu.value.push(list_ids, metadata_button, gene_motif_button, bg_color_button, heat_map_button, gene_ac_bar);
+    }
     // async function initializeRun(run_id: string, use_specified: boolean) {
     // }
     async function prep_atlasxplore(run_id: string, use_specified: boolean) {
+      prep_sub_menu();
       store.commit.setSubmenu(submenu.value);
       await fetchFileList();
       if (props.query && !props.query.public) {
@@ -1597,18 +1601,12 @@ export default defineComponent({
         filename.value = fn;
       }
       console.log('ac instance mounting');
-      // console.log('ac instance mounting');
       acInstance.value.$mount('#geneac');
     }
 
     async function run_selected_landing(run_id: string) {
       landing_disp.value = false;
       atlasXplore_displayed.value = true;
-      display_search.value = true;
-      // const run = { id: 'D264' };
-      // await fetchFileList();
-      // await selectAction(run);
-      // acInstance.$mount('#geneac');
       for (let i = 0; i < submenu.value.length; i += 1) {
         submenu.value[i].enabled = true;
       }
@@ -1624,7 +1622,7 @@ export default defineComponent({
       } else if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
         landing_disp.value = true;
         atlasXplore_displayed.value = false;
-        loadingPage('Pieper');
+        // loadingPage('Pieper');
         loadingPage(client.value?.user?.groups[0]);
       }
       // atlasXplore_displayed.value = true;
@@ -1636,7 +1634,7 @@ export default defineComponent({
     onUnmounted(() => {
       if (acInstance.value.$el) {
         acInstance.value.$destroy();
-        // acInstance.value.$el.parentNode!.removeChild(acInstance.$el);
+        acInstance.value.$el.parentNode!.removeChild(acInstance.value.$el);
         store.commit.setSubmenu(null);
       }
     });
@@ -1776,6 +1774,14 @@ export default defineComponent({
       prep_atlasxplore,
       acInstance,
       submenu,
+      landing_page_revert,
+      list_ids,
+      metadata_button,
+      gene_motif_button,
+      bg_color_button,
+      heat_map_button,
+      gene_ac_bar,
+      prep_sub_menu,
       // initializeRun,
     };
   },
