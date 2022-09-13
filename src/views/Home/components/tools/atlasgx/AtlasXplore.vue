@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-container v-if="atlasXplore_displayed" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
-      <!-- <template v-if="query.public">
+      <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
           <v-tooltip bottom :disabled="metaFlag">
             <template v-slot:activator="{ on, attrs }">
@@ -64,7 +64,7 @@
           <div id="geneac">
           </div>
           </v-app-bar>
-      </template> -->
+      </template>
       <v-row>
         <v-dialog
           v-if="!query.public && runIdFlag"
@@ -807,6 +807,7 @@ export default defineComponent({
     const atlasXplore_displayed = ref<boolean>(false);
     const showFlag = ref<boolean[]>([false]);
     const runIdFlag = ref<boolean>(false);
+    const collaborator_specific_ids = ref<Set<string> | null>(null);
     const backgroundFlag = ref<boolean>(false);
     const heatmapFlag = ref<boolean>(false);
     const autoCompleteFlag = ref<boolean>(false);
@@ -1145,7 +1146,18 @@ export default defineComponent({
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
-      items.value = qc_data;
+      if (resolveAuthGroup(['collab']) && !props.query.public) {
+        for (let i = 0; i < qc_data.length; i += 1) {
+          if (collaborator_specific_ids.value?.has(qc_data[i].id)) {
+            items.value.push(qc_data[i]);
+          }
+        }
+      } else if (resolveAuthGroup(['admin', 'user'])) {
+        items.value = qc_data;
+      }
+      console.log(items);
+      console.log(qc_data);
+      // items.value = qc_data;
       loading.value = false;
     }
     async function updateFilename() {
@@ -1371,8 +1383,12 @@ export default defineComponent({
     }
     async function loadingPage(collab_name: any) {
       loading.value = true;
-      const collab_run_data = await client.value!.getRunsCollaborator(collab_name);
+      const collab_run_data = await client.value!.getRunsCollaborator(collab_name, true);
       collabData.value = collab_run_data;
+      collaborator_specific_ids.value = new Set<string>();
+      for (let i = 0; i < collabData.value.length; i += 1) {
+        collaborator_specific_ids.value!.add(collabData.value[i].cntn_id_NGS);
+      }
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
@@ -1509,7 +1525,7 @@ export default defineComponent({
       tooltip: 'Runs Display',
       enabled: true,
       click: () => {
-        // search_enabled.value = false;
+        selectedGenes.value = [];
         atlasXplore_displayed.value = false;
         for (let i = 0; i < submenu.value.length; i += 1) {
           submenu.value[i].enabled = false;
@@ -1610,7 +1626,6 @@ export default defineComponent({
         holdMotif.value = fn2;
         filename.value = fn;
       }
-      console.log('ac instance mounting');
       acInstance.value.$mount('#geneac');
     }
 
@@ -1621,8 +1636,8 @@ export default defineComponent({
       for (let i = 0; i < submenu.value.length; i += 1) {
         submenu.value[i].enabled = true;
       }
-      const stripped_id = removeZeros(run_id);
-      prep_atlasxplore(stripped_id, true);
+      // const stripped_id = removeZeros(run_id);
+      prep_atlasxplore(run_id, true);
     }
     onMounted(async () => {
       await clientReady;
@@ -1636,11 +1651,6 @@ export default defineComponent({
         // loadingPage('Pieper');
         loadingPage(client.value?.user?.groups[0]);
       }
-      // atlasXplore_displayed.value = true;
-      // store.commit.setSubmenu(submenu);
-      // await fetchFileList();
-      // currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-      // await selectAction({ id: 'D264' });
     });
     onUnmounted(() => {
       if (acInstance.value.$el) {
@@ -1784,6 +1794,7 @@ export default defineComponent({
       run_selected_landing,
       landing_disp,
       atlasXplore_displayed,
+      collaborator_specific_ids,
       prep_atlasxplore,
       acInstance,
       submenu,
