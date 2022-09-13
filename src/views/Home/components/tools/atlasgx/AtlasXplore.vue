@@ -748,6 +748,13 @@ export default defineComponent({
     const currentRoute = computed(() => ctx.root.$route);
     const workers = computed(() => store.state.client?.workers);
     const landing_disp = ref<boolean>(false);
+    const search_enabled = ref<boolean>(false);
+    // const search_bar_enabled = computed(() => {
+    //   if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
+    //     return true;
+    //   }
+    //   return !landing_disp.value;
+    // });
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
     const holdMotif = ref<string | null>(null);
@@ -1378,7 +1385,7 @@ export default defineComponent({
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = ref<any>(new GeneAutoCompleteClass({
       vuetify,
-      propsData: { gene_list: genes, gene_button: geneButton },
+      propsData: { gene_list: genes, gene_button: geneButton, search_bar_enabled: search_enabled },
       created() {
         this.$on('changed', (ev: any[]) => {
           selectedGenes.value = ev;
@@ -1502,12 +1509,13 @@ export default defineComponent({
       tooltip: 'Runs Display',
       enabled: true,
       click: () => {
-        landing_disp.value = true;
+        search_enabled.value = false;
         atlasXplore_displayed.value = false;
         for (let i = 0; i < submenu.value.length; i += 1) {
           submenu.value[i].enabled = false;
         }
         store.commit.setSubmenu(submenu.value);
+        landing_disp.value = true;
         filename.value = 'none';
       },
     };
@@ -1576,7 +1584,9 @@ export default defineComponent({
     // async function initializeRun(run_id: string, use_specified: boolean) {
     // }
     async function prep_atlasxplore(run_id: string, use_specified: boolean) {
-      prep_sub_menu();
+      if (submenu.value.length < 1) {
+        prep_sub_menu();
+      }
       store.commit.setSubmenu(submenu.value);
       await fetchFileList();
       if (props.query && !props.query.public) {
@@ -1606,6 +1616,7 @@ export default defineComponent({
 
     async function run_selected_landing(run_id: string) {
       landing_disp.value = false;
+      search_enabled.value = true;
       atlasXplore_displayed.value = true;
       for (let i = 0; i < submenu.value.length; i += 1) {
         submenu.value[i].enabled = true;
@@ -1669,6 +1680,7 @@ export default defineComponent({
       backgroundColor,
       updateCircles,
       heatMap,
+      search_enabled,
       progressMessage,
       selectAction,
       workers,
@@ -1735,6 +1747,7 @@ export default defineComponent({
       holdMotif,
       copyToClip,
       updateClusterLabel,
+      // search_bar_enabled,
       clickedCluster,
       userSelectedColor,
       colorRules,

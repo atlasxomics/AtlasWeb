@@ -1,5 +1,6 @@
-<template v-if="true">
+<template>
     <v-autocomplete
+      v-if="search_enabled.value"
       class="noScroll"
       id ="noScrollId"
       @paste="handlePaste"
@@ -121,10 +122,14 @@ const clientReady = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'GeneAutoComplete',
-  props: ['gene_list', 'gene_button'],
+  props: ['gene_list', 'gene_button', 'search_bar_enabled'],
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
+    const search_enabled = computed(() => {
+      console.log(props.search_bar_enabled);
+      return props.search_bar_enabled;
+    });
     const currentRoute = computed(() => ctx.root.$route);
     const selectedGenes = ref<any[]>([]);
     const filteredGenes = ref<any[]>([]);
@@ -311,6 +316,7 @@ export default defineComponent({
       await clientReady;
     });
     return {
+      search_enabled,
       selectedGenes,
       filteredGenes,
       searchInput,
