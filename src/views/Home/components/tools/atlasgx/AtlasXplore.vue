@@ -748,13 +748,13 @@ export default defineComponent({
     const currentRoute = computed(() => ctx.root.$route);
     const workers = computed(() => store.state.client?.workers);
     const landing_disp = ref<boolean>(false);
-    const search_enabled = ref<boolean>(false);
-    // const search_bar_enabled = computed(() => {
-    //   if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
-    //     return true;
-    //   }
-    //   return !landing_disp.value;
-    // });
+    // const search_enabled = ref<boolean>(false);
+    const search_enabled = computed(() => {
+      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
+        return true;
+      }
+      return !landing_disp.value;
+    });
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
     const holdMotif = ref<string | null>(null);
@@ -1509,7 +1509,7 @@ export default defineComponent({
       tooltip: 'Runs Display',
       enabled: true,
       click: () => {
-        search_enabled.value = false;
+        // search_enabled.value = false;
         atlasXplore_displayed.value = false;
         for (let i = 0; i < submenu.value.length; i += 1) {
           submenu.value[i].enabled = false;
@@ -1616,7 +1616,7 @@ export default defineComponent({
 
     async function run_selected_landing(run_id: string) {
       landing_disp.value = false;
-      search_enabled.value = true;
+      // search_enabled.value = true;
       atlasXplore_displayed.value = true;
       for (let i = 0; i < submenu.value.length; i += 1) {
         submenu.value[i].enabled = true;
