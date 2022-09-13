@@ -1642,6 +1642,7 @@ export default defineComponent({
         text: 'Run ID\'s',
         icon: 'mdi-magnify',
         tooltip: 'Run ID\'s',
+        enabled: true,
         disabled: loading.value,
         click: () => {
           runIdFlag.value = !runIdFlag.value;
@@ -1651,6 +1652,7 @@ export default defineComponent({
         text: 'Metadata',
         icon: 'mdi-filter-variant',
         tooltip: 'Metadata',
+        enabled: true,
         disabled: loading.value,
         click: () => {
           metaFlag.value = !metaFlag.value;

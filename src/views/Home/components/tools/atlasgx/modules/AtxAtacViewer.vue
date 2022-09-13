@@ -1054,12 +1054,14 @@ export default defineComponent({
       updateCircles();
     });
     watch(filenameFromParent, (v: string) => {
-      selectedGenes.value = [];
-      if (v === '') {
-        ctx.emit('spatialFlag', false);
+      if (v !== 'none') {
+        selectedGenes.value = [];
+        if (v === '') {
+          ctx.emit('spatialFlag', false);
+        }
+        filenameGene.value = v;
+        runSpatial();
       }
-      filenameGene.value = v;
-      runSpatial();
     });
     watch(scale, () => {
       reScale();

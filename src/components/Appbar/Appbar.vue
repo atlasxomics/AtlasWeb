@@ -11,6 +11,7 @@
         <template v-slot:activator="{ on, attrs }" >
           <template v-if="!menu.type">
             <v-btn
+              :class ="!menu.enabled ? 'hidden': 'visible'"
               :id="menu.ref ? menu.ref : ''"
               text
               @click="menu.click"
@@ -26,8 +27,12 @@
               </template>
             </v-btn>
           </template>
-          <template v-if="menu.type == 'component'">
-            <div :id="menu.id"/>
+          <template
+          v-if="menu.type == 'component'"
+          >
+            <div
+            :id="menu.id"
+            />
           </template>
         </template>
         <span v-bind:key="`${menu.text}-span`">{{ menu.tooltip }}</span>
@@ -108,6 +113,12 @@ export default defineComponent({
     const userMenu = ref(false);
     const changePasswordMenu = ref(false);
     const subMenu = computed(() => store.state.subMenu);
+    const searchbar_enabled = computed(() => {
+      if (store.state.subMenu == null) {
+        return false;
+      }
+      return store.state.subMenu[6].enabled;
+    });
     return {
       filemenu,
       filemenuStyle,
@@ -120,6 +131,7 @@ export default defineComponent({
       changePasswordMenu,
       subMenu,
       urlPostfix,
+      searchbar_enabled,
     };
   },
 });
@@ -142,5 +154,8 @@ export default defineComponent({
 // https://github.com/vuetifyjs/vuetify/issues/11149#issuecomment-852394927
 .v-btn--active::before, .v-btn:focus::before {
   opacity: 0 !important;
+}
+.hidden {
+  visibility: hidden;
 }
 </style>
