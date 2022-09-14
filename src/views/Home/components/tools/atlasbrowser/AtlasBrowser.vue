@@ -346,18 +346,30 @@
               <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Background Image</v-subheader>
                 <v-btn
+                id="postB_button"
                 outlined
                 x-small
                 color="primary"
-                @click="display_bsa"
-                :disabled="!thresh_image_created || bsa_image_disp || spatial"
+                @click="change_image('postB')"
+                :disabled="(!thresh_image_created && !optionUpdate) || postB_image_displayed || spatial"
+                >
+                PostB
+                </v-btn>
+                <v-btn
+                id="bsa_button"
+                outlined
+                x-small
+                color="primary"
+                @click="change_image('BSA')"
+                :disabled="(!thresh_image_created && !optionUpdate) || bsa_image_displayed || spatial"
                 > BSA </v-btn>
                 <v-btn
+                id="bw_button"
                 outlined
                 x-small
                 color="primary"
-                @click="display_bw"
-                :disabled="!thresh_image_created || !bsa_image_disp || spatial"
+                @click="change_image('BW')"
+                :disabled="!thresh_image_created || bw_image_displayed || spatial"
                 > BW </v-btn>
               </v-list>
               <v-list dense class="pt-0 pl-2">
@@ -706,8 +718,8 @@ export default defineComponent({
     const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
     const current_image = ref<any | null>(null);
-    const gray_image = ref<Promise<any>| null>(null);
-    const gray_image_src = ref<any | null>(null);
+    const postB_image_promise = ref<Promise<any>| null>(null);
+    const postB_image = ref<any | null>(null);
     const scaleFactor = ref(0.15);
     const one = ref(0);
     const two = ref(0);
@@ -747,7 +759,9 @@ export default defineComponent({
     const imageh = ref<any>();
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
-    const bsa_image_disp = ref<boolean>(true);
+    const bsa_image_displayed = ref<boolean>(true);
+    const bw_image_displayed = ref<boolean>(false);
+    const postB_image_displayed = ref<boolean>(false);
     const degreeRotation = ref<string>('90');
     const scaleFactor_json = ref<any>({
       fiducial_diameter_fullres: null,
@@ -762,7 +776,7 @@ export default defineComponent({
     const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
     const availableFiles = ref<any[]>([]);
-    const postB_or_bsa = ref<any>();
+    const bsa_image = ref<any>();
     const black_white = ref<string>();
     // Metadata
     const metadata = ref<Metadata>({
@@ -945,7 +959,8 @@ export default defineComponent({
         const x2 = c[2];
         const y2 = c[3];
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
-        gray_image.value = client.value.getGrayImageAsJPG(pl);
+        postB_image_promise.value = client.value.getGrayImageAsJPG(pl);
+        console.log(postB_image_promise);
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -958,7 +973,7 @@ export default defineComponent({
       let filename: any;
       // path to images
       if (optionUpdate.value) {
-        filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
+        filename = `${root}/${run_id.value}/spatial/figure/postB_BSA.tif`;
       } else {
         filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       }
@@ -983,8 +998,8 @@ export default defineComponent({
               src: null,
               original_src: null,
             };
-            postB_or_bsa.value = temp;
-            imgObj.onload = null;
+            bsa_image.value = temp;
+            // imgObj.onload = null;
           };
         }
         loading.value = false;
@@ -1201,6 +1216,29 @@ export default defineComponent({
       }
       grid.value = false;
     }
+    async function change_image(img: string) {
+      bsa_image_displayed.value = false;
+      postB_image_displayed.value = false;
+      bw_image_displayed.value = false;
+      console.log(bw_image_displayed);
+      let new_img = null;
+      if (img === 'postB') {
+        if (optionUpdate.value && postB_image_promise.value != null) {
+          await postB_image_promise.value.then((gray: any) => {
+            postB_image.value = URL.createObjectURL(gray);
+          });
+        }
+        new_img = postB_image.value;
+        postB_image_displayed.value = true;
+      } else if (img === 'BSA') {
+        new_img = bsa_image.value;
+        bsa_image_displayed.value = true;
+      } else if (img === 'BW') {
+        new_img = bw_image.value;
+        bw_image_displayed.value = true;
+      }
+      current_image.value.image.src = new_img;
+    }
     function onCropButton(ev: any) {
       const coords = crop.value.getCoordinatesOnImage();
       loadGray();
@@ -1239,7 +1277,7 @@ export default defineComponent({
                 original_src: null,
                 alternative_src: null,
               };
-              postB_or_bsa.value = temp;
+              bsa_image.value = temp;
               onChangeScale('');
               cropLoading.value = false;
             };
@@ -1298,39 +1336,31 @@ export default defineComponent({
               original_src: null,
               alternative_src: null,
             };
+            onChangeScale(sv);
             // current_image.value.image.src = newsrc;
             // current_image.value.scale = { x: sv, y: sv };
-            onChangeScale(sv);
-            thresh_same.value = true;
-            loading.value = false;
-            bsa_image_disp.value = false;
-            threshLoading.value = false;
           };
+          thresh_same.value = true;
+          loading.value = false;
+          threshLoading.value = false;
+          change_image('BW');
         });
       });
     }
     function thresh_clicked() {
       if (!current_image.value) return;
-      if (!gray_image.value) return;
+      if (!postB_image_promise.value) return;
       loading.value = true;
-      if (false) {
-        console.log('here');
-        threshold_image(gray_image_src.value);
-      } else {
-        gray_image.value.then((gray: any) => {
-          const src = URL.createObjectURL(gray);
-          gray_image_src.value = src;
-          threshold_image(gray_image_src.value);
-        });
-      }
+      postB_image_promise.value.then((gray: any) => {
+        const src = URL.createObjectURL(gray);
+        postB_image.value = src;
+        threshold_image(postB_image.value);
+      });
       // setting the filled grid back to default state
       if (tixels_filled.value) {
         clear_filled_tixels();
       }
       tixels_filled.value = false;
-    }
-    async function generateReport(ev: any) {
-      //
     }
     const updateProgress = async (value: number) => {
       if (!client.value) return;
@@ -1516,14 +1546,20 @@ export default defineComponent({
         generateSpatial();
       }
     }
-    function display_bsa() {
-      current_image.value.image.src = postB_or_bsa.value;
-      bsa_image_disp.value = true;
-    }
-    function display_bw() {
-      current_image.value.image.src = bw_image.value;
-      bsa_image_disp.value = false;
-    }
+    // function display_bsa() {
+    //   current_image.value.image.src = bsa_image.value;
+    //   bsa_image_displayed.value = true;
+    // }
+    // function display_bw() {
+    //   current_image.value.image.src = bw_image.value;
+    //   bsa_image_displayed.value = false;
+    // }
+    // function display_postB() {
+    //   current_image.value.image.src = postB_image.value;
+    //   bsa_image_displayed.value = false;
+
+    //   console.log('display postB');
+    // }
     function autoFill(ev: any) {
       grid.value = true;
       if (roi.value.polygons.length === 0) {
@@ -1679,7 +1715,6 @@ export default defineComponent({
       initialize,
       generateSpatial,
       generateh5ad,
-      generateReport,
       isCropMode,
       isBrushMode,
       setBrushMode,
@@ -1729,12 +1764,14 @@ export default defineComponent({
       roi_active,
       finding_roi,
       thresh_image_created,
-      display_bsa,
+      // display_bsa,
       bw_image,
-      display_bw,
+      // display_bw,
       thresh_same,
       tixels_filled,
-      bsa_image_disp,
+      bsa_image_displayed,
+      change_image,
+      // display_postB,
       handle_spatial_call,
       rotate_image,
       saved_grid_state,
@@ -1752,11 +1789,13 @@ export default defineComponent({
       imageClick,
       root,
       bucket_name,
-      postB_or_bsa,
+      bsa_image,
       black_white,
       loadGray,
-      gray_image,
-      gray_image_src,
+      postB_image_promise,
+      postB_image,
+      bw_image_displayed,
+      postB_image_displayed,
     };
   },
 });
