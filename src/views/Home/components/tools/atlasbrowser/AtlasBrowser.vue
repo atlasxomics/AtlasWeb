@@ -224,7 +224,7 @@
                 <v-btn
                 color="blue"
                 class="leftRotate"
-                :disabled="!current_image || isCropMode || grid"
+                :disabled="!current_image || isCropMode || grid || optionUpdate"
                 @click="rotate_image(0)"
                 small
                 >
@@ -235,7 +235,7 @@
                 <v-btn
                 color="blue"
                 class="spaced_btn"
-                :disabled="!current_image || isCropMode || grid || degreeRotation == '45'"
+                :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || optionUpdate"
                 @click="rotate_image(1)"
                 small
                 >
@@ -249,8 +249,8 @@
                 :disabled="!current_image || isCropMode || grid"
                 >
                 </v-switch> -->
-                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid">90</label>
-                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid">45</label>
+                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || optionUpdate">90</label>
+                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || optionUpdate">45</label>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -261,7 +261,7 @@
                   dense
                   x-small
                   @click="isCropMode=true"
-                  :disabled="!current_image || isCropMode || grid">
+                  :disabled="!current_image || isCropMode || grid || optionUpdate">
                   Activate
                 </v-btn>
                 <v-btn
@@ -1277,6 +1277,7 @@ export default defineComponent({
       threshLoading.value = true;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
+      console.log(img_src);
       getPixels(img_src, async (err, pixels) => {
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
@@ -1301,7 +1302,7 @@ export default defineComponent({
       if (!current_image.value) return;
       if (!gray_image.value) return;
       loading.value = true;
-      if (gray_image_src.value != null) {
+      if (false) {
         console.log('here');
         threshold_image(gray_image_src.value);
       } else {
