@@ -990,7 +990,6 @@ export default defineComponent({
         loading.value = false;
         runIdFlag.value = false;
         if (optionUpdate.value) {
-          console.log('loading gray');
           loadGray();
         }
       } catch (error) {
@@ -1277,8 +1276,8 @@ export default defineComponent({
       threshLoading.value = true;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
-      console.log(img_src);
       getPixels(img_src, async (err, pixels) => {
+        const my_image = new window.Image();
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
@@ -1286,15 +1285,27 @@ export default defineComponent({
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
-          const temp = newsrc;
+          my_image.src = newsrc;
           bw_image.value = newsrc;
-          current_image.value.image.src = newsrc;
-          current_image.value.scale = { x: sv, y: sv };
-          onChangeScale(sv);
-          thresh_same.value = true;
-          loading.value = false;
-          bsa_image_disp.value = false;
-          threshLoading.value = false;
+          my_image.onload = (e: any) => {
+            current_image.value = {
+              x: 0,
+              y: 0,
+              draggable: false,
+              scale: { x: scaleFactor.value, y: scaleFactor.value },
+              image: my_image,
+              src: null,
+              original_src: null,
+              alternative_src: null,
+            };
+            // current_image.value.image.src = newsrc;
+            // current_image.value.scale = { x: sv, y: sv };
+            onChangeScale(sv);
+            thresh_same.value = true;
+            loading.value = false;
+            bsa_image_disp.value = false;
+            threshLoading.value = false;
+          };
         });
       });
     }
