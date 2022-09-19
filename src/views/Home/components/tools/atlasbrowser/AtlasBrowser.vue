@@ -960,7 +960,6 @@ export default defineComponent({
         const y2 = c[3];
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
         postB_image_promise.value = client.value.getGrayImageAsJPG(pl);
-        console.log(postB_image_promise);
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -1220,7 +1219,6 @@ export default defineComponent({
       bsa_image_displayed.value = false;
       postB_image_displayed.value = false;
       bw_image_displayed.value = false;
-      console.log(bw_image_displayed);
       let new_img = null;
       if (img === 'postB') {
         if (optionUpdate.value && postB_image_promise.value != null) {

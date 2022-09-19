@@ -222,7 +222,6 @@ export class ROI {
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
     const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
     const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
-    console.log(this.get_distance_wscale(17, 32, 88, 92.4, 0.5));
     // const slopeT = [(topS[1] - p1.y), (topS[0] - p1.x)];
     const p = this.get_distance_wscale(leftS[0], leftS[1], topS[0], topS[1], this.scalefactor);
     const q = this.get_distance_wscale(p1.x, p1.y, topS[0] + slope[1], topS[1] + slope[0], this.scalefactor);

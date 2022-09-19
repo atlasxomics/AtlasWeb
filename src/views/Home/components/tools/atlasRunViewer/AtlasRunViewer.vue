@@ -62,7 +62,6 @@ export default defineComponent({
         return;
       }
       switchRunBoolean.value = !switchRunBoolean.value;
-      console.log(switchRunBoolean);
       availableFiles.value = [];
       // const folder_path = 'data/'.concat(runID);
       const folder_path = root.concat('/').concat(selectedRunID.value);
