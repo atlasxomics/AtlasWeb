@@ -973,6 +973,9 @@ export default defineComponent({
       // path to images
       if (optionUpdate.value) {
         filename = `${root}/${run_id.value}/spatial/figure/postB_BSA.tif`;
+        bsa_image_displayed.value = true;
+        postB_image_displayed.value = false;
+        bw_image_displayed.value = false;
       } else {
         filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       }
@@ -1544,20 +1547,6 @@ export default defineComponent({
         generateSpatial();
       }
     }
-    // function display_bsa() {
-    //   current_image.value.image.src = bsa_image.value;
-    //   bsa_image_displayed.value = true;
-    // }
-    // function display_bw() {
-    //   current_image.value.image.src = bw_image.value;
-    //   bsa_image_displayed.value = false;
-    // }
-    // function display_postB() {
-    //   current_image.value.image.src = postB_image.value;
-    //   bsa_image_displayed.value = false;
-
-    //   console.log('display postB');
-    // }
     function autoFill(ev: any) {
       grid.value = true;
       if (roi.value.polygons.length === 0) {
