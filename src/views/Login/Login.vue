@@ -1,92 +1,79 @@
 <template>
-  <v-main>
-    <v-container fill-height>
-      <v-row
-        justify="center"
-        align="center"
-      >
-        <v-col
-          xl="6"
-          lg="8"
-          md="10"
-          sm="12"
-        >
-          <v-card
-            class="pa-6"
-            :disabled="loading"
-          >
-            <v-card-title class="pt-0 pl-0">
-              ATX-CLOUD
-            </v-card-title>
-            <v-row>
-              <v-col cols="6">
-                <v-img src="company_logo.png" />
-              </v-col>
-              <v-col>
-                <v-text-field
-                  v-model="username"
-                  label="Username"
-                  :loading="loading"
-                  :error="!!loginErrorMessage"
-                  @input="loginErrorMessage = null"
-                  @keypress.enter="loginUser"
-                />
-                <v-text-field
-                  v-model="password"
-                  label="Password"
-                  type="password"
-                  :error-messages="loginErrorMessage"
-                  @input="loginErrorMessage = null"
-                  @keypress.enter="loginUser"
-                />
-                <v-card-actions>
-                  <div>
-                    <a
-                      href="https://atlasxomics.com"
-                      target="_blank"
-                      rel="noopener"
-                      style="text-decoration: none;"
-                    >
-                      AtlasXomics
-                      <v-icon small>
-                        mdi-open-in-new
-                      </v-icon>
-                    </a>
-                  </div>
-                  <v-spacer />
-                  <v-btn
-                    color="secondary"
-                    @click="LoginDialogActive = false"
-                  >
-                    Cancel
-                  </v-btn>
-                  <v-btn
-                    color="success"
-                    :disabled="!(username && password)"
-                    @click="loginUser"
-                  >
-                    Sign In
-                  </v-btn>
-                </v-card-actions>
-              </v-col>
-            </v-row>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
-  </v-main>
+  <v-container fluid>
+    <v-card style="width:100%" color="#F6F6F6" flat>
+      <v-card-actions class="align-end"><v-btn text @click="signFlag = !signFlag">Sign In</v-btn></v-card-actions>
+    </v-card>
+    <v-dialog
+      v-if="signFlag"
+      :value="signFlag"
+      @click:outside="signFlag = false">
+      <v-card style="width:500px; position: absolute; left: 50%; top: 20%; transform: translate(-50%, -50%);z-index: 999; height: 19vh;padding: 5px;">
+        <v-row>
+          <v-col>
+            <v-text-field
+              v-model="username"
+              label="Username"
+              :loading="loading"
+              :error="!!loginErrorMessage"
+              @input="loginErrorMessage = null"
+              @keypress.enter="loginUser"
+            />
+            <v-text-field
+              v-model="password"
+              label="Password"
+              type="password"
+              :error-messages="loginErrorMessage"
+              @input="loginErrorMessage = null"
+              @keypress.enter="loginUser"
+            />
+            <v-card-actions>
+              <div>
+                <a
+                  href="https://atlasxomics.com"
+                  target="_blank"
+                  rel="noopener"
+                  style="text-decoration: none;"
+                >
+                  AtlasXomics
+                  <v-icon small>
+                    mdi-open-in-new
+                  </v-icon>
+                </a>
+              </div>
+              <v-spacer />
+              <v-btn
+                color="secondary"
+                @click="LoginDialogActive = false"
+              >
+                Cancel
+              </v-btn>
+              <v-btn
+                color="success"
+                :disabled="!(username && password)"
+                @click="loginUser"
+              >
+                Sign In
+              </v-btn>
+            </v-card-actions>
+          </v-col>
+        </v-row>
+      </v-card>
+    </v-dialog>
+    <landing-page v-if="client"/>
+  </v-container>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watchEffect } from '@vue/composition-api';
-
+import { defineComponent, ref, watchEffect, onMounted, computed } from '@vue/composition-api';
 import { login, isClient } from '@/api';
 import { loggedIn, saveCookie, readCookie, logout } from '@/utils/auth';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
+import LandingPage from './modules/LandingPage.vue';
 
 export default defineComponent({
   name: 'Login',
+  components: { LandingPage },
   setup(props, ctx) {
     // NOTE: May need to be computed ref
     const router = ctx.root.$router;
@@ -98,7 +85,9 @@ export default defineComponent({
 
     const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
-
+    const signFlag = ref(false);
+    const show = ref(false);
+    const client = ref<any>();
     async function loginUser() {
       if (username.value && password.value) {
         loading.value = true;
@@ -106,6 +95,7 @@ export default defineComponent({
         const resp = await login(serverUrl, username.value, password.value);
         if (isClient(resp)) {
           const existingCookie = readCookie();
+          console.log(existingCookie);
           if (existingCookie) {
             logout();
           }
@@ -115,17 +105,30 @@ export default defineComponent({
           loginErrorMessage.value = resp;
         }
         loading.value = false;
-        username.value = null;
-        password.value = null;
+        if (loggedIn.value && !loading.value) {
+          store.commit.setComponent({ component: null });
+          router.push('/');
+        }
       }
     }
-
-    // Will re-route as soon as user is logged in
-    watchEffect(() => {
-      if (loggedIn.value && !loading.value) {
-        store.commit.setComponent({ component: null });
-        router.push('/');
+    async function openPublic() {
+      console.log('in');
+      const resp = await login(PROD_SERVER_URL, 'public', 'Public1!');
+      if (isClient(resp)) {
+        const existingCookie = readCookie();
+        if (existingCookie) {
+          logout();
+        }
+        saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
+        store.commit.setClient(resp);
+      } else {
+        loginErrorMessage.value = resp;
       }
+      client.value = computed(() => store.state.client);
+    }
+    onMounted(async () => {
+      console.log('mount');
+      openPublic();
     });
 
     return {
@@ -137,6 +140,10 @@ export default defineComponent({
       showAdvanced,
       useTestServer,
       loading,
+      signFlag,
+      show,
+      client,
+      openPublic,
     };
   },
 });

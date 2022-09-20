@@ -610,7 +610,7 @@ export default defineComponent({
             publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true`;
           }
           const kwargs = {};
-          const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
+          const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, 0) : await client.value.postTask(task, args, kwargs, queue);
           if (props.query.public) runId.value = taskObject.meta.run_id;
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */

@@ -3,6 +3,7 @@
     <v-container v-if="resolveAuthGroup(['admin', 'user']) || query.public" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
+          <v-btn @click="redirectToLogin" text>Home</v-btn>
           <v-tooltip bottom :disabled="metaFlag">
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -581,16 +582,16 @@
               <div id="screenCapture" :style="{ 'background-color': 'transparent' }">
               <atx-atac-viewer
                 @loading_value="updateLoading"
-                @spatialFlag='updateSpatial'
                 @highlightedId='updateSelectors'
                 @publicRun='getPublicId'
                 @totalClust="updateClustTotal"
                 @spatialCircleData="updateHistograph"
                 @singleCircleData="dataToSingle"
                 @sendColorBar="colorBarToSingle"
+                @totalGM="loadExpressions"
+                @topTen="updateTen"
                 :query="{ public: query.public}"
                 :filename="filename"
-                :genelist="genes"
                 :standalone="false"
                 :selected_tixels="topSelected"
                 :selected_genes="childGenes"
@@ -604,6 +605,8 @@
                 :clickedCluster="clickedClusterFromChild"
                 :checkBoxCluster="selectedClusters"
                 :indFlag="averageInd"
+                :geneOmotif="geneMotif"
+                :idOfRun="runId"
                 ref="mainAtxViewer"/>
             </div>
             </v-col>
@@ -630,11 +633,11 @@
             </v-col>
           </v-row>
           <div id="screenCaptureSingle" :style="{ 'background-color': 'transparent' }">
-            <v-row no-gutters v-if="averageInd">
+            <v-row no-gutters v-show="averageInd">
               <v-col cols="12" sm="11">
                 <v-row>
                   <template v-for="genes in childGenes" >
-                    <v-col vols="12" sm="4" :key="genes">
+                    <v-col cols="12" sm="4" :key="genes">
                       <singleview :gene="genes" :circleData="singleData" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
                     </v-col>
                   </template>
@@ -643,16 +646,16 @@
             </v-row>
           </div>
           <v-col cols="12" sm="11">
-            <v-card class="mt-3" v-show="spatialData && featureTableFlag" :disabled="loading" flat>
+            <v-card class="mt-3" v-show="genes.length > 0 && featureTableFlag" :disabled="loading" flat>
               <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
             </v-card>
             <div id="captureHisto">
-              <v-card class="mt-3" v-show="spatialData && histoFlag" flat>
+              <v-card class="mt-3" v-show="genes.length > 0 && histoFlag" flat>
                 <histogram-graph v-show="histoFlag" :colorCode="colorMap" :idName="childGenes" :chartData="spatialCircleData"/>
               </v-card>
             </div>
             <div id="capturePeak" :style="{ visibility: visible }">
-              <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading" flat>
+              <v-card class="mt-3" v-show="genes.length > 0" v-resize="onResize" ref="peakContainer" :disabled="loading" flat>
                 <template v-if="geneMotif == 'gene'">
                     <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
                 </template>
@@ -761,8 +764,8 @@ export default defineComponent({
     const selectedGenes = ref<any[]>([]);
     const childGenes = ref<any[]>([]);
     const trackBrowserGenes = ref<any[]>([]);
-    const spatialData = ref<any>();
-    const clusterItems = ref<any[]>();
+    const spatialData = ref<boolean>(false);
+    const clusterItems = ref<any[]>([]);
     const width = window.innerWidth;
     const height = window.innerHeight;
     const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true });
@@ -840,6 +843,7 @@ export default defineComponent({
     const colorBarFromSibling = ref<any>();
     const singleData = ref<any>();
     const averageInd = ref<boolean>(false);
+    const topTenIds = ref<any>();
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -849,6 +853,9 @@ export default defineComponent({
       const parent = (ctx as any).refs.peakContainer;
       if (!parent) return;
       widthFromCard.value = parent.$el.offsetWidth - 2;
+    }
+    function redirectToLogin() {
+      router.push('/login');
     }
     function cleanRunId(rid: string) {
       return rid.match('[A-Z]+[0-9]+')![0];
@@ -871,9 +878,6 @@ export default defineComponent({
       highlightIds.value = ev.ids;
       topSelected.value = ev.genes;
     }
-    function updateClustTotal(ev: any) {
-      totalInClust.value = ev;
-    }
     function updateHistograph(ev: any) {
       spatialCircleData.value = ev;
     }
@@ -891,6 +895,9 @@ export default defineComponent({
     }
     function updateClusterLabel(ev: any) {
       clickedCluster.value = ev;
+    }
+    function updateTen(ev: any) {
+      topTenIds.value = ev;
     }
     function checkFieldColor(ev: any) {
       if (ev.indexOf('#') !== -1) {
@@ -945,7 +952,7 @@ export default defineComponent({
         colorMap.value = cmap;
         if (geneMotif.value === 'gene' && isClusterView.value) {
           loading.value = true;
-          (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+          // (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
           loading.value = false;
         }
       }
@@ -1028,10 +1035,11 @@ export default defineComponent({
     function sendCluster(ev: any) {
       clickedClusterFromChild.value = [ev];
     }
-    async function loadExpressions() {
+    async function loadExpressions(ev: any) {
       if (!client.value) return;
       if (!spatialData.value) return;
-      genes.value = spatialData.value.total_genes.map((v: string) => ({ name: v }));
+      genes.value = ev.map((v: string) => ({ name: v }));
+      loading.value = false;
     }
     function remove(item: any) {
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
@@ -1049,7 +1057,7 @@ export default defineComponent({
       const cellmapCopy: any = {};
       const cmapCopy: any = {};
       const colors: any[] = [];
-      const numClusters = spatialData.value.cluster_names.length;
+      const numClusters = Object.keys(totalInClust.value).length;
       selectedClusters.value = [];
       if (!manualClusterFlag.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
@@ -1072,40 +1080,48 @@ export default defineComponent({
         }
       }
       if (geneMotif.value === 'gene' && isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
-        (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+        // (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
     }
-    async function updateSpatial(ev: any) {
-      spatialData.value = ev;
-      const geneRank: any[] = [];
-      const tableHeaders: any[] = [];
-      clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
-      tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
-      for (let i = 0; i < clusterItems.value.length; i += 1) {
-        tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
+    async function updateSpatial() {
+      if (!spatialData.value) {
+        loading.value = true;
+        spatialData.value = true;
+        const geneRank: any[] = [];
+        const tableHeaders: any[] = [];
+        const clustMap: any[] = [];
+        const clustKeys = Object.keys(totalInClust.value);
+        clusterItems.value = clustKeys.map((v: any) => ({ name: v }));
+        tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
+        for (let i = 0; i < clusterItems.value.length; i += 1) {
+          tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
+        }
+        topHeaders.value = tableHeaders;
+        lodash.each(topTenIds.value, (v: string[], i: number) => {
+          const tenGenes: {[k: string]: any} = {};
+          const key = [];
+          const value = [];
+          key.push('id');
+          value.push(i);
+          for (let x = 0; x < clusterItems.value!.length; x += 1) {
+            key.push(clusterItems.value![x].name);
+            value.push(v[x]);
+          }
+          for (let j = 0; j < key.length; j += 1) {
+            tenGenes[key[j]] = value[j];
+          }
+          geneRank.push(tenGenes);
+        });
+        geneNames.value = geneRank;
+        lengthClust.value = clusterItems.value.length;
+        await updateCircles();
+        onResize();
+        loading.value = false;
       }
-      topHeaders.value = tableHeaders;
-      lodash.each(spatialData.value.top_ten, (v: string[], i: number) => {
-        const tenGenes: {[k: string]: any} = {};
-        const key = [];
-        const value = [];
-        key.push('id');
-        value.push(i);
-        for (let x = 0; x < clusterItems.value!.length; x += 1) {
-          key.push(clusterItems.value![x].name);
-          value.push(v[x]);
-        }
-        for (let j = 0; j < key.length; j += 1) {
-          tenGenes[key[j]] = value[j];
-        }
-        geneRank.push(tenGenes);
-      });
-      geneNames.value = geneRank;
-      lengthClust.value = clusterItems.value.length;
-      loading.value = false;
-      await updateCircles();
-      await loadExpressions();
-      onResize();
+    }
+    function updateClustTotal(ev: any) {
+      totalInClust.value = ev;
+      updateSpatial();
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev;
@@ -1124,7 +1140,7 @@ export default defineComponent({
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
-      taskStatus.value = props.query.public ? await client.value.getPublicTaskStatus(task_id) : await client.value.getTaskStatus(task_id);
+      taskStatus.value = await client.value.getTaskStatus(task_id);
     };
     async function fetchFileList() {
       if (!client.value) {
@@ -1141,6 +1157,7 @@ export default defineComponent({
     }
     async function updateFilename() {
       if (!spatialData.value) return;
+      spatialData.value = false;
       /* eslint-disable no-lonely-if */
       try {
         if (!props.query.public) {
@@ -1151,13 +1168,8 @@ export default defineComponent({
             const hold = filename.value;
             filename.value = hold!.replace(/motifs/i, 'genes');
           }
-        } else {
-          if (geneMotif.value === 'motif') {
-            filename.value = holdMotif.value;
-          } else {
-            filename.value = holdGene.value;
-          }
         }
+        await updateCircles();
       } catch (error) {
         console.log(error);
       }
@@ -1169,11 +1181,13 @@ export default defineComponent({
         if (!props.query.public) {
           const existingCookie = readCookie();
           const split = existingCookie?.token.split('JWT ')[1];
+          const geneFileName = `data/${rid}/gene.csv`;
+          const motifFileName = `data/${rid}/motif.csv`;
+          const tixelFileName = `data/${rid}/data.csv`;
           const motifHold = filename.value;
-          const { encoded: filenameToken } = await client.value.encodeLink({ args: [motifHold!.replace(/motifs/i, 'genes')], meta: { run_id: rid } });
-          const { encoded: filenameTokenMotif } = await client.value.encodeLink({ args: [motifHold!.replace(/genes/i, 'motifs')], meta: { run_id: rid } });
+          const { encoded: filenameToken } = await client.value.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, motifHold!.replace(/motifs/i, 'genes'), motifHold!.replace(/genes/i, 'motifs'), `data/${runId.value}/h5/obj/motifs.csv`], meta: { run_id: rid } });
           const { host } = window.location;
-          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}motif${filenameTokenMotif}&public=true&token=JWT%20${split}`;
+          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true&token=JWT%20${split}`;
         }
       } catch (error) {
         console.log(error);
@@ -1183,16 +1197,12 @@ export default defineComponent({
     }
     async function seqlogo() {
       try {
-        if (props.query.public) {
-          const { encoded: filenameToken } = await client.value?.encodeLink({ args: [`data/${runId.value}/h5/obj/motifs.csv`], meta: { run_id: runId.value } });
-          publicSeqlogo.value = filenameToken;
-        }
         const root = 'data';
         const task = 'gene.seq_logo';
         const queue = 'atxcloud_gene';
-        const args = [props.query.public ? publicSeqlogo.value : `${root}/${runId.value}/h5/obj/motifs.csv`, trackBrowserGenes.value[0]];
+        const args = [props.query.public ? filename.value : `${root}/${runId.value}/h5/obj/motifs.csv`, trackBrowserGenes.value[0]];
         const kwargs: any = {};
-        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue) : await client.value!.postTask(task, args, kwargs, queue);
+        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue, 5) : await client.value!.postTask(task, args, kwargs, queue);
 
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
@@ -1226,7 +1236,7 @@ export default defineComponent({
         const queue = 'atxcloud_gene';
         const args = [filename.value, marker];
         const kwargs = {};
-        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue) : await client.value!.postTask(task, args, kwargs, queue);
+        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue, (geneMotif.value === 'gene') ? 3 : 4) : await client.value!.postTask(task, args, kwargs, queue);
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -1284,7 +1294,7 @@ export default defineComponent({
         path: `${root}/${rid}`,
         file_type: 'json',
         file_name: 'metadata.json',
-        bucket_name: 'atx-cloud-dev',
+        bucket_name: 'atx-cloud-dev2',
       };
       const args: any[] = [params];
       const kwargs: any = {};
@@ -1356,8 +1366,8 @@ export default defineComponent({
       manualClusterFlag.value = false;
       cellTypeMap.value = {};
       cellTypeMapCopy.value = {};
-      await runSpatial();
-      await getMeta();
+      await runSpatial(runId.value);
+      await getMeta(runId.value);
     }
     async function loadingPage() {
       loading.value = true;
@@ -1399,11 +1409,11 @@ export default defineComponent({
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
-      if (props.query) {
+      if (props.query && runId.value === null) {
         if (props.query.run_id) {
           await selectAction({ id: props.query.run_id });
         }
-      }
+      } else getMeta();
     }
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = new GeneAutoCompleteClass({
@@ -1596,12 +1606,7 @@ export default defineComponent({
         }
         if (props.query) {
           if (props.query.run_id && props.query.public) {
-            const mid = props.query.run_id.search(/motif/i);
-            const end = props.query.run_id.length;
-            const fn = props.query.run_id.slice(0, mid);
-            const fn2 = props.query.run_id.slice(mid + 5, end);
-            holdGene.value = fn;
-            holdMotif.value = fn2;
+            const fn = props.query.run_id;
             filename.value = fn;
           }
         }
@@ -1745,6 +1750,9 @@ export default defineComponent({
       dataToSingle,
       singleData,
       averageInd,
+      topTenIds,
+      updateTen,
+      redirectToLogin,
     };
   },
 });

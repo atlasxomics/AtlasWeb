@@ -105,7 +105,7 @@ export default defineComponent({
     // Login Existing User
     onBeforeMount(async () => {
       await loginExisting();
-      if (!loggedIn.value) {
+      if (!loggedIn.value || user.value?.username === 'public') {
         redirectToLogin();
       }
     });
