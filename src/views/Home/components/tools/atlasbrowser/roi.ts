@@ -126,14 +126,21 @@ export class ROI {
     });
   }
 
+  getOnTissue(): number {
+    let count = 0;
+    this.polygons.forEach((ele: any) => {
+      if (ele.fill != null) {
+        count += 1;
+      }
+    });
+    return count;
+  }
+
   autoMask(pixels: any, threshold: number): any[] {
-    console.log(this.scalefactor);
     const [height, width] = pixels.shape;
     let count = 0;
     lodash.each(this.polygons, (v, i) => {
       if (count === 0) {
-        console.log(v.scaleY);
-        console.log(v.scaleX);
         count += 1;
       }
       const y = Math.round(v.centerx / this.scalefactor);
@@ -196,7 +203,6 @@ export class ROI {
 
   get_distance_wscale = function (x1: number, y1: number, x2: number, y2: number, scale: number) {
     const d = Math.sqrt((((x2 / scale) - (x1 / scale)) ** 2) + (((y2 / scale) - (y1 / scale)) ** 2));
-    console.log(d);
     const rounded = Math.round(d * 1000);
     return rounded / 1000;
   }
@@ -216,12 +222,9 @@ export class ROI {
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
     const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
     const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
-    console.log(this.get_distance_wscale(17, 32, 88, 92.4, 0.5));
     // const slopeT = [(topS[1] - p1.y), (topS[0] - p1.x)];
     const p = this.get_distance_wscale(leftS[0], leftS[1], topS[0], topS[1], this.scalefactor);
     const q = this.get_distance_wscale(p1.x, p1.y, topS[0] + slope[1], topS[1] + slope[0], this.scalefactor);
-    console.log(p);
-    console.log(q);
     const sdf = (p + q) / 2;
     const spot_fiduciary_ratio = 1.6153846;
     return {
