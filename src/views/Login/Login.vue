@@ -95,7 +95,6 @@ export default defineComponent({
         const resp = await login(serverUrl, username.value, password.value);
         if (isClient(resp)) {
           const existingCookie = readCookie();
-          console.log(existingCookie);
           if (existingCookie) {
             logout();
           }
@@ -112,7 +111,6 @@ export default defineComponent({
       }
     }
     async function openPublic() {
-      console.log('in');
       const resp = await login(PROD_SERVER_URL, 'public', 'Public1!');
       if (isClient(resp)) {
         const existingCookie = readCookie();
@@ -127,7 +125,6 @@ export default defineComponent({
       client.value = computed(() => store.state.client);
     }
     onMounted(async () => {
-      console.log('mount');
       openPublic();
     });
 

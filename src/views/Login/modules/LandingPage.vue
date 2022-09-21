@@ -18,7 +18,7 @@
             <template v-if="item.active">
               <template v-for="child in item.items">
                 <v-card-actions v-bind:key="child">
-                  <v-checkbox :key="child" :label="child" @click="checkBoxSort(child, item.title)"></v-checkbox>
+                  <v-checkbox :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox>
                 </v-card-actions>
               </template>
             </template>
@@ -81,6 +81,9 @@ export default defineComponent({
     const checkBoxArr = ref<any[]>([]);
     const textSearch = ref<string>('');
     const loading = ref<boolean>(false);
+    const count = ref<any>({});
+    const countHold = ref<any>({});
+    const decodeDT = ref<any>({ 'spatial transcriptome': 'Spatial Transcriptome', 'spatial atac': 'Spatial ATAC', 'spatial cut & tag': 'Spatial Cut & Tag', Rong: 'Rong Lab', Atlas: 'Atlas', Hurd: 'Hurd Lab' });
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -89,6 +92,10 @@ export default defineComponent({
     function checkBoxSort(ev: string, title: any) {
       loading.value = true;
       numOfPubsHold.value = [];
+      const countKeys = Object.keys(countHold.value);
+      countKeys.forEach((v: any, k: any) => {
+        countHold.value[v] = 0;
+      });
       const val = { key: ev, title };
       if (checkBoxArr.value.length === 0) {
         checkBoxArr.value.push(val);
@@ -99,24 +106,33 @@ export default defineComponent({
       }
       const hold: any[] = [];
       if (checkBoxArr.value.length > 0) {
-        checkBoxArr.value.forEach((elements: any) => {
-          numOfPubs.value.forEach((value: any, key: any) => {
+        numOfPubs.value.forEach((value: any, key: any) => {
+          const bool: boolean[] = [];
+          checkBoxArr.value.forEach((elements: any) => {
             if (elements.title === 'Groups') {
-              if (elements.key === value.name && !hold.includes(value)) {
-                hold.push(value);
-              }
+              if (elements.key.trim() === value.name.trim()) bool.push(true);
+              else bool.push(false);
             }
             if (elements.title === 'Data Type') {
-              if (value.meta.keyPhrases.includes(elements.key.toLowerCase()) && !hold.includes(value)) {
-                hold.push(value);
-              }
+              if (value.meta.keyPhrases.includes(elements.key.toLowerCase().trim())) bool.push(true);
+              else bool.push(false);
             }
+          });
+          if (!bool.includes(false)) hold.push(value);
+        });
+        hold.forEach((value: any, key: any) => {
+          countHold.value[value.name] += 1;
+          value.meta.keyPhrases.forEach((v: any, k: any) => {
+            countHold.value[decodeDT.value[v.trim()]] += 1;
           });
         });
         numOfPubsHold.value = hold;
       } else {
         numOfPubs.value.forEach((v: string, i: number) => {
           numOfPubsHold.value.push(v);
+        });
+        lodash.each(count.value, (v: any, i: any) => {
+          countHold.value[i] = count.value[i];
         });
       }
       loading.value = false;
@@ -140,7 +156,7 @@ export default defineComponent({
             if (ev === value.pmid) hold.push(value);
           } else {
             value.author.forEach((auth: string, index: any) => {
-              if (auth.toLowerCase().includes(ev)) hold.push(value);
+              if (auth.toLowerCase().startsWith(ev)) hold.push(value);
             });
           }
         });
@@ -179,18 +195,36 @@ export default defineComponent({
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
-        items: [...Object.keys(groupsAndPub)],
+        items: [...Object.values(groupsAndPub).map((value: any) => value.title)],
         title: 'Groups',
       });
       groupsAndData.value.reverse();
       const data: any[] = [];
-      const amountOfPub = { Atlas: await callJson('database/Atlas/metadata.json') };
+      const predata: any = {};
+      const precount: any = { 'Spatial Transcriptome': 0, 'Spatial ATAC': 0, 'Spatial Cut & Tag': 0 };
+      const labMeta = Object.keys(groupsAndPub);
+      lodash.each(labMeta, async (value: any, key: any) => {
+        predata[value] = await callJson(`database/${value}/metadata.json`);
+        precount[decodeDT.value[value]] = 0;
+      });
+      await new Promise((resolve: any) => setTimeout(resolve, 2000));
+      const amountOfPub = predata;
       lodash.each(amountOfPub, (value: any, key: any) => {
         lodash.each(value, async (info: any, pid: any) => {
-          for (let i = 0; i < parseInt(info.runs, 10) - 1; i += 1) {
-            data.push({ id: `database/${key}/publications/${pid}/D${i}`, name: key, pmid: info.pmid, author: [...info.author], runs: `D${i}`, meta: await callJson(`database/${key}/publications/${pid}/D${i}/metadata.json`) });
+          for (let i = 0; i < parseInt(info.runs, 10); i += 1) {
+            const meta = await callJson(`database/${key}/publications/${pid}/D${i}/metadata.json`);
+            meta.keyPhrases.forEach((v: any, k: any) => {
+              precount[decodeDT.value[v.trim()]] += 1;
+            });
+            precount[decodeDT.value[key]] += 1;
+            data.push({ id: `database/${key}/publications/${pid}/D${i}`, name: groupsAndPub[key].title, pmid: info.pmid, author: [...info.author], run: `D${i}`, meta });
           }
         });
+      });
+      await new Promise((resolve: any) => setTimeout(resolve, 2000));
+      lodash.each(precount, (v: any, i: any) => {
+        countHold.value[i] = v;
+        count.value[i] = v;
       });
       numOfPubs.value = data;
       numOfPubsHold.value = data;
@@ -224,6 +258,9 @@ export default defineComponent({
       searchRuns,
       textSearch,
       loading,
+      count,
+      countHold,
+      decodeDT,
     };
   },
 });
