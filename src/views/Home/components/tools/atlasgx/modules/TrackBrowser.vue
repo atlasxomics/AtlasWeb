@@ -150,9 +150,9 @@ export default defineComponent({
           console.log('Rendered');
         },
       };
-      const ref_bucket = 'atx-track-host';
+      const ref_bucket = 'atx-track-host2';
       const fl_payload = { params: { path: 'data', filter: `${rid}/tracks` } };
-      const fl_payload_ref = { params: { bucket_name: ref_bucket, path: 'ref', filter: `${speciesMap[selectedSpecies.value]}` } };
+      const fl_payload_ref = { params: { bucket_name: ref_bucket, path: '', filter: `${speciesMap[selectedSpecies.value]}` } };
       const resp = await client.value.getFileList(fl_payload);
       const resp_ref = await client.value.getFileList(fl_payload_ref);
       const merged_list = resp.concat(...resp_ref);

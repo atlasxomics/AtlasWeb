@@ -2,7 +2,7 @@
   <v-container fluid>
     <v-row no-gutters>
       <v-col cols="12" sm="3" style="padding-left:10px">
-        <v-card :loading="loading" flat>
+        <v-card :loading="loading" flat v-if="numOfPubs.length > 0">
           <v-card-title>Filters</v-card-title>
           <v-divider style="width:91%"/>
           <template v-for="item in groupsAndData">
@@ -137,7 +137,8 @@ export default defineComponent({
       }
       loading.value = false;
     }
-    function searchRuns(ev: any) {
+    function searchRuns(event: string) {
+      const ev = event.toLowerCase();
       loading.value = true;
       if (ev.length === 0) {
         numOfPubsHold.value = [];
@@ -147,10 +148,7 @@ export default defineComponent({
       } else {
         const digpat = /\d/;
         const digit = digpat.test(ev);
-        const charpat = /[.,\\/#!$%^&*;:{}=_`~()@"\r\n]/;
         const hold: any[] = [];
-        const char = charpat.test(ev);
-        if (char) return;
         numOfPubs.value.forEach((value: any, key: any) => {
           if (digit) {
             if (ev === value.pmid) hold.push(value);
@@ -203,25 +201,28 @@ export default defineComponent({
       const predata: any = {};
       const precount: any = { 'Spatial Transcriptome': 0, 'Spatial ATAC': 0, 'Spatial Cut & Tag': 0 };
       const labMeta = Object.keys(groupsAndPub);
-      lodash.each(labMeta, async (value: any, key: any) => {
-        predata[value] = await callJson(`database/${value}/metadata.json`);
-        precount[decodeDT.value[value]] = 0;
-      });
-      await new Promise((resolve: any) => setTimeout(resolve, 2000));
-      const amountOfPub = predata;
-      lodash.each(amountOfPub, (value: any, key: any) => {
-        lodash.each(value, async (info: any, pid: any) => {
-          for (let i = 0; i < parseInt(info.runs, 10); i += 1) {
-            const meta = await callJson(`database/${key}/publications/${pid}/D${i}/metadata.json`);
+      for (let i = 0; i < labMeta.length; i += 1) {
+        predata[labMeta[i]] = await callJson(`database/${labMeta[i]}/metadata.json`);
+        precount[decodeDT.value[labMeta[i]]] = 0;
+      }
+      const amountOfPub = Object.keys(predata);
+      for (let x = 0; x < amountOfPub.length; x += 1) {
+        const value = predata[amountOfPub[x]];
+        const key = amountOfPub[x];
+        const keys = Object.keys(value);
+        for (let i = 0; i < keys.length; i += 1) {
+          const info = value[keys[i]];
+          const pid = keys[i];
+          for (let j = 0; j < parseInt(info.runs, 10); j += 1) {
+            const meta = await callJson(`database/${key}/publications/${pid}/D${j}/metadata.json`);
             meta.keyPhrases.forEach((v: any, k: any) => {
               precount[decodeDT.value[v.trim()]] += 1;
             });
             precount[decodeDT.value[key]] += 1;
-            data.push({ id: `database/${key}/publications/${pid}/D${i}`, name: groupsAndPub[key].title, pmid: info.pmid, author: [...info.author], run: `D${i}`, meta });
+            data.push({ id: `database/${key}/publications/${pid}/D${j}`, name: groupsAndPub[key].title, pmid: info.pmid, author: [...info.author], run: `D${j}`, meta });
           }
-        });
-      });
-      await new Promise((resolve: any) => setTimeout(resolve, 2000));
+        }
+      }
       lodash.each(precount, (v: any, i: any) => {
         countHold.value[i] = v;
         count.value[i] = v;
@@ -265,3 +266,6 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+</style>

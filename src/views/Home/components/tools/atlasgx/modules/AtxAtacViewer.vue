@@ -718,7 +718,6 @@ export default defineComponent({
       circlesSpatialUMAP.value = circlesUMAP;
       highlightRegion();
       spatialRun.value = false;
-      // loading.value = false;
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
@@ -775,7 +774,6 @@ export default defineComponent({
       // if (!selectedFiles.value) return;
       try {
         if (highlightIds.value.length > 0 || change === true) {
-          if (highlightIds.value.length > 0) loading.value = true;
           progressMessage.value = null;
           spatialRun.value = true;
           const task = currentTask.value;
@@ -805,7 +803,6 @@ export default defineComponent({
           }
           progressMessage.value = taskStatus.value.status;
           const resp = taskStatus.value.result;
-          if (highlightIds.value.length > 0) loading.value = false;
           ctx.emit('highlightedId', { ids: highlightIds.value, genes: resp.top_selected });
           if (change) {
             ctx.emit('topTen', resp.top_ten);

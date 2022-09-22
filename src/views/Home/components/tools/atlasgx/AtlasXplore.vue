@@ -952,7 +952,7 @@ export default defineComponent({
         colorMap.value = cmap;
         if (geneMotif.value === 'gene' && isClusterView.value) {
           loading.value = true;
-          // (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+          (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
           loading.value = false;
         }
       }
@@ -1080,7 +1080,7 @@ export default defineComponent({
         }
       }
       if (geneMotif.value === 'gene' && isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
-        // (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+        (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
     }
     async function updateSpatial() {
