@@ -22,7 +22,9 @@
               <v-col cols="6">
                 <v-img src="company_logo.png" />
               </v-col>
-              <v-col>
+              <v-col
+              v-if="loginScreenDisplayed"
+              >
                 <v-text-field
                   v-model="username"
                   label="Username"
@@ -54,11 +56,17 @@
                     </a>
                   </div>
                   <v-spacer />
-                  <v-btn
+                  <!-- <v-btn
                     color="secondary"
                     @click="LoginDialogActive = false"
                   >
                     Cancel
+                  </v-btn> -->
+                  <v-btn
+                  color="primary"
+                  @click="registrationClicked"
+                  >
+                    Register
                   </v-btn>
                   <v-btn
                     color="success"
@@ -68,6 +76,29 @@
                     Sign In
                   </v-btn>
                 </v-card-actions>
+              </v-col>
+              <v-col
+              v-if="!loginScreenDisplayed">
+              <v-text-field
+              label="Username"
+              v-model="username">
+              </v-text-field>
+              <v-text-field
+              label="Password"
+              v-model="password"
+              >
+              </v-text-field>
+              <v-text-field
+              label="Email"
+              v-model="email"
+              >
+              </v-text-field>
+              <v-btn
+              color="primary"
+              :disabled="!username || !password || !email"
+              >
+                Request Account
+              </v-btn>
               </v-col>
             </v-row>
           </v-card>
@@ -90,12 +121,13 @@ export default defineComponent({
   setup(props, ctx) {
     // NOTE: May need to be computed ref
     const router = ctx.root.$router;
-
+    const loginScreenDisplayed = ref<boolean>(true);
     const username = ref<string | null>(null);
     const password = ref<string | null>(null);
+    const email = ref<string | null>(null);
     const loading = ref<boolean>(false);
     const loginErrorMessage = ref<string | null>(null);
-
+    // const email_regex = new RegExp('[a-z]{3}@')
     const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
 
@@ -121,7 +153,15 @@ export default defineComponent({
         password.value = null;
       }
     }
-
+    function registrationClicked() {
+      loginScreenDisplayed.value = false;
+    }
+    function request_available() {
+      if (username && password && email) {
+        return false;
+      }
+      return true;
+    }
     // Will re-route as soon as user is logged in
     watchEffect(() => {
       if (loggedIn.value && !loading.value) {
@@ -139,6 +179,10 @@ export default defineComponent({
       showAdvanced,
       useTestServer,
       loading,
+      loginScreenDisplayed,
+      registrationClicked,
+      request_available,
+      email,
     };
   },
 });
