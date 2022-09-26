@@ -84,20 +84,21 @@
               v-model="username">
               </v-text-field>
               <v-text-field
-              label="Password"
-              v-model="password"
-              >
-              </v-text-field>
-              <v-text-field
               label="Email"
               v-model="email"
               >
               </v-text-field>
               <v-btn
               color="primary"
-              :disabled="!username || !password || !email"
+              :disabled="!username || !email"
               >
                 Request Account
+              </v-btn>
+              <v-btn
+              color="red"
+              @click="loginScreenDisplayed = true"
+              >
+                Back
               </v-btn>
               </v-col>
             </v-row>
@@ -154,6 +155,9 @@ export default defineComponent({
       }
     }
     function registrationClicked() {
+      password.value = null;
+      username.value = null;
+      email.value = null;
       loginScreenDisplayed.value = false;
     }
     function request_available() {
