@@ -690,6 +690,7 @@ import BarChart from './modules/BarChart.vue';
 import LoadingPage from './modules/LoadingPage.vue';
 import HistogramGraph from './modules/HistogramGraph.vue';
 import Singleview from './modules/Singleview.vue';
+import { DBColumnsRequest } from '../../../../../types';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -1297,64 +1298,32 @@ export default defineComponent({
       element.value = '';
     }
     async function getMeta(rid = runId.value) {
-      const root = 'data';
-      const task = 'creation.create_files';
-      const queue = 'creation_worker';
-      const params = {
-        data: null,
-        path: `${root}/${rid}`,
-        file_type: 'json',
-        file_name: 'metadata.json',
-        bucket_name: 'atx-cloud-dev',
+      if (!runId.value) return;
+      console.log(runId.value);
+      const payload: DBColumnsRequest = {
+        params: {
+          match_on: 'cntn_id_NGS',
+          columns: ['cntn_cf_fk_organ'],
+          ids: [runId.value],
+        },
       };
-      const args: any[] = [params];
-      const kwargs: any = {};
-      const name = `${root}/${rid}/metadata.json`;
-      const jsonFileName = { params: { filename: name } };
-      const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
-      let slimsData: any;
-      if (!jsonBoolean) {
-        loading.value = true;
-        slimsData = await client.value!.getMetadataFromRunId(`${cleanRunId(rid!)}`);
-        params.data = slimsData;
-        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
-        await checkTaskStatus(taskObject._id);
-        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
-          /* eslint-disable no-await-in-loop */
-          await new Promise((r) => {
-            taskTimeout.value = window.setTimeout(r, 1000);
-          });
-          taskTimeout.value = null;
-          await checkTaskStatus(taskObject._id);
-        }
-        /* eslint-disable no-await-in-loop */
-        if (taskStatus.value.status !== 'SUCCESS') {
-          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
-          loading.value = false;
-          return;
-        }
-        loading.value = false;
-      } else {
-        slimsData = jsonBoolean;
-      }
-      metadata.value.organ = slimsData.cntn_cf_fk_organ;
-      metadata.value.species = slimsData.cntn_cf_fk_species;
-      metadata.value.type = slimsData.cntn_cf_fk_tissueType;
-      metadata.value.assay = slimsData.cntn_cf_fk_workflow;
-      [metadata.value.date] = slimsData.sequenced_on.split(' ');
-      if (slimsData.cntn_cf_experimentalCondition && slimsData.cntn_cf_sampleId) {
-        const beginning = slimsData.cntn_cf_experimentalCondition;
-        if (slimsData.cntn_cf_sampleId.includes(beginning)) {
-          metadata.value.condition = slimsData.cntn_cf_sampleId;
-        } else {
-          const ending = `${beginning}-${slimsData.cntn_cf_sampleId}`;
-          metadata.value.condition = ending;
-        }
-      }
-      collabName.value = slimsData.cntn_cf_source;
-      console.log(collabName);
-      loading.value = false;
+      console.log(payload);
+      const data = await client.value?.getDBColumns(payload);
+      // metadata.value.organ = slimsData.cntn_cf_fk_organ;
+      // metadata.value.species = slimsData.cntn_cf_fk_species;
+      // metadata.value.type = slimsData.cntn_cf_fk_tissueType;
+      // metadata.value.assay = slimsData.cntn_cf_fk_workflow;
+      // [metadata.value.date] = slimsData.sequenced_on.split(' ');
+      // if (slimsData.cntn_cf_experimentalCondition && slimsData.cntn_cf_sampleId) {
+      //   const beginning = slimsData.cntn_cf_experimentalCondition;
+      //   if (slimsData.cntn_cf_sampleId.includes(beginning)) {
+      //     metadata.value.condition = slimsData.cntn_cf_sampleId;
+      //   } else {
+      //     const ending = `${beginning}-${slimsData.cntn_cf_sampleId}`;
+      //     metadata.value.condition = ending;
+      //   }
+      // }
+      // collabName.value = slimsData.cntn_cf_source;
     }
     async function selectAction(ev: any) {
       const root = 'data';

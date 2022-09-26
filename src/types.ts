@@ -127,3 +127,12 @@ export interface QcEntryGenerationRequest {
   }
 }
 
+export interface DBColumnsRequest {
+  params: {
+    match_on: string;
+    columns: Array<string>;
+    ids: Array<string>;
+    table?: string;
+  }
+}
+
