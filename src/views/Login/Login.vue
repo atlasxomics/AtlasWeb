@@ -99,6 +99,8 @@ export default defineComponent({
     const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
 
+    // calls login function from index.ts which calls api to verify user.
+    // If successful, returns a connected client
     async function loginUser() {
       if (username.value && password.value) {
         loading.value = true;

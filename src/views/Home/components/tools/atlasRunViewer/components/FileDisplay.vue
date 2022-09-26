@@ -56,7 +56,6 @@ export default defineComponent({
     });
     const textConfig = ref<any>({ text: '' });
     function modifyImageSize(factor: number) {
-      console.log('changing image size');
       this.displayedHeight = (factor * this.naturalHeight) / 100;
       this.displayedWidth = (factor * this.naturalWidth) / 100;
     }
@@ -122,7 +121,6 @@ export default defineComponent({
       });
     },
     jsonStringContents(newValue) {
-      console.log('json changed');
       const [temp] = newValue;
       this.dispText = temp;
       this.textConfig = {
@@ -134,7 +132,6 @@ export default defineComponent({
       this.fileDisplayed();
     },
     csvStringContents(newValue) {
-      console.log('csv changed');
       const [temp] = newValue;
       this.dispText = temp;
       this.textConfig = {
@@ -149,7 +146,6 @@ export default defineComponent({
       this.modifyImageSize(newValue);
     },
     clearFileBoolean(newValue) {
-      console.log(newValue);
       this.clearScreen();
     },
   },

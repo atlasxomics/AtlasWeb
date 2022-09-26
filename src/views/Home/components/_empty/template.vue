@@ -36,7 +36,6 @@ export default defineComponent({
     onMounted(async () => {
       await clientReady;
       store.commit.setSubmenu(null);
-      console.log('Mounted');
     });
   },
 });

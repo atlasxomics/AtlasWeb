@@ -73,14 +73,14 @@
               outlined
               >
               </v-text-field>
-              <!-- <v-text-field
+              <v-text-field
                 v-model="metadata.type"
                 outlined
                 dense
                 label="Type"
                 readonly
                 >
-              </v-text-field> -->
+              </v-text-field>
               <v-text-field
                 v-model="metadata.assay"
                 outlined
@@ -222,9 +222,9 @@
               <v-list dense class="mt-n3 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Rotation</v-subheader>
                 <v-btn
-                color="grey"
+                color="blue"
                 class="leftRotate"
-                :disabled="!current_image || isCropMode || grid"
+                :disabled="!current_image || isCropMode || grid || optionUpdate"
                 @click="rotate_image(0)"
                 small
                 >
@@ -233,9 +233,9 @@
                 height="24"/>
                 </v-btn>
                 <v-btn
-                color="grey"
+                color="blue"
                 class="spaced_btn"
-                :disabled="!current_image || isCropMode || grid || degreeRotation == '45'"
+                :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || optionUpdate"
                 @click="rotate_image(1)"
                 small
                 >
@@ -249,8 +249,8 @@
                 :disabled="!current_image || isCropMode || grid"
                 >
                 </v-switch> -->
-                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid">90</label>
-                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid">45</label>
+                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || optionUpdate">90</label>
+                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || optionUpdate">45</label>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -261,7 +261,7 @@
                   dense
                   x-small
                   @click="isCropMode=true"
-                  :disabled="!current_image || isCropMode || grid">
+                  :disabled="!current_image || isCropMode || grid || optionUpdate">
                   Activate
                 </v-btn>
                 <v-btn
@@ -272,7 +272,7 @@
                   dense
                   class="mt-0 pt-0"
                   color="primary"
-                  @click="cropLoading = true;onCropButton()">
+                  @click="onCropButton()">
                   Confirm
                 </v-btn>
               </v-list>
@@ -346,18 +346,30 @@
               <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Background Image</v-subheader>
                 <v-btn
+                id="postB_button"
                 outlined
                 x-small
                 color="primary"
-                @click="display_bsa"
-                :disabled="!thresh_image_created || bsa_image_disp || spatial"
+                @click="change_image('postB')"
+                :disabled="(!thresh_image_created && !optionUpdate) || postB_image_displayed || spatial"
+                >
+                PostB
+                </v-btn>
+                <v-btn
+                id="bsa_button"
+                outlined
+                x-small
+                color="primary"
+                @click="change_image('BSA')"
+                :disabled="(!thresh_image_created && !optionUpdate) || bsa_image_displayed || spatial"
                 > BSA </v-btn>
                 <v-btn
+                id="bw_button"
                 outlined
                 x-small
                 color="primary"
-                @click="display_bw"
-                :disabled="!thresh_image_created || !bsa_image_disp || spatial"
+                @click="change_image('BW')"
+                :disabled="!thresh_image_created || bw_image_displayed || spatial"
                 > BW </v-btn>
               </v-list>
               <v-list dense class="pt-0 pl-2">
@@ -395,10 +407,11 @@
                   Generate Spatial Folder
                   </v-btn>
                   <v-btn
+                  class="vert-spaced-btn"
                   outlined
                   x-small
                   dense
-                  color="primary"
+                  color="red"
                   @click="showSpatialFolder">
                   Check Spatial Folder
                   </v-btn>
@@ -465,54 +478,6 @@
                 </v-dialog>
               </div>
             </template>
-            <!-- Loading message when saving spatial folder -->
-            <!-- <template v-if="loadingMessage">
-              <v-dialog
-                value=true
-                hide-overlay
-                persistent
-                width="600"
-                height=600>
-                <v-card
-                  color="primary"
-                  dark>
-                  <v-card-title>Progress</v-card-title>
-                  <v-card-text>
-                    Confirm cropping and orientation of images
-                    <v-progress-linear
-                      v-model="one"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                  <v-card-text>
-                    Accessing and Retriving data from the Database
-                    <v-progress-linear
-                      v-model="two"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                  <v-card-text>
-                    Updating Database and uploading spatial folder
-                    <v-progress-linear
-                    v-model="three"
-                      buffer-value="0"
-                      height="10"
-                      stream
-                      color="white"
-                      class="mb-0">
-                    </v-progress-linear>
-                  </v-card-text>
-                </v-card>
-              </v-dialog>
-            </template> -->
             <v-row>
               <v-card>
                 <!-- loading circle displayed on screen -->
@@ -683,8 +648,8 @@ const metaHeaders = [
 interface Metadata {
   points: number[] | any;
   run: string | null;
-  blockSize: number;
-  cValue: number;
+  blockSize: number | null;
+  cValue: number | null;
   threshold: number | null;
   type: string | null;
   species: string | null;
@@ -692,7 +657,7 @@ interface Metadata {
   numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
-  barcodes: string | null;
+  barcodes: number | string | null;
   organ: string | null;
   diseaseState: string | null;
   diseaseName: string | null;
@@ -709,6 +674,7 @@ interface Metadata {
   blocks_flowA: Array<number> | null;
   leak_flowA: string | null;
   sampleID: string | null;
+  onTissueTixels: number | null;
 }
 
 export default defineComponent({
@@ -732,9 +698,9 @@ export default defineComponent({
     const search = ref<string | null>();
     const selected = ref<any | null>();
     const run_id = ref<string>('');
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const konvaConfig = ref<any>({ width, height });
+    const width_window = window.innerWidth;
+    const height_window = window.innerHeight;
+    const konvaConfig = ref<any>({ width_window, height_window });
     const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
     const tixels_filled = ref<boolean>(false);
@@ -752,6 +718,8 @@ export default defineComponent({
     const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
     const current_image = ref<any | null>(null);
+    const postB_image_promise = ref<Promise<any>| null>(null);
+    const postB_image = ref<any | null>(null);
     const scaleFactor = ref(0.15);
     const one = ref(0);
     const two = ref(0);
@@ -771,7 +739,6 @@ export default defineComponent({
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
     const channels = ref(50);
-    const barcodes = ref('2');
     const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
     const cropFlag = ref<boolean>(false);
@@ -788,10 +755,13 @@ export default defineComponent({
     const runIDSelected = ref<boolean>(false);
     const metaFlag = ref<boolean>(false);
     const flowMetadata = ref<Record<string, any>>({});
+    // value used to store the loaded image to be used for cropping
     const imageh = ref<any>();
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
-    const bsa_image_disp = ref<boolean>(true);
+    const bsa_image_displayed = ref<boolean>(true);
+    const bw_image_displayed = ref<boolean>(false);
+    const postB_image_displayed = ref<boolean>(false);
     const degreeRotation = ref<string>('90');
     const scaleFactor_json = ref<any>({
       fiducial_diameter_fullres: null,
@@ -806,23 +776,23 @@ export default defineComponent({
     const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
     const availableFiles = ref<any[]>([]);
-    const postB_or_bsa = ref<any>();
+    const bsa_image = ref<any>();
     const black_white = ref<string>();
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
       run: null,
-      blockSize: 7,
-      cValue: 7,
+      blockSize: null,
+      cValue: null,
       threshold: null,
-      type: 'FFPE',
-      species: 'Mouse',
-      assay: 'mRNA',
+      type: null,
+      species: null,
+      assay: null,
       numChannels: '50',
       organ: null,
       orientation: null,
       crop_area: null,
-      barcodes: '2',
+      barcodes: null,
       chip_resolution: null,
       diseaseState: '',
       diseaseName: '',
@@ -838,6 +808,7 @@ export default defineComponent({
       blocks_flowA: [],
       leak_flowA: '',
       sampleID: '',
+      onTissueTixels: null,
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -911,14 +882,14 @@ export default defineComponent({
           metadata.value.diseaseState = 'Healthy';
         }
         metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
-        if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1') {
-          barcodes.value = '1';
-        } else if (metadata.value.barcodes === '2 (reverseB)' || metadata.value.barcodes === '2') {
-          barcodes.value = '2';
-        } else if (metadata.value.barcodes === '3 (reverseAB)' || metadata.value.barcodes === '3') {
-          barcodes.value = '4';
-        } else if (metadata.value.barcodes === '4 (reverseA)' || metadata.value.barcodes === '4') {
-          barcodes.value = '3';
+        if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1' || metadata.value.barcodes === 1) {
+          metadata.value.barcodes = '1';
+        } else if (metadata.value.barcodes === '2 (reverseB)' || metadata.value.barcodes === '2' || metadata.value.barcodes === 2) {
+          metadata.value.barcodes = '2';
+        } else if (metadata.value.barcodes === '3 (reverseAB)' || metadata.value.barcodes === '3' || metadata.value.barcodes === 3) {
+          metadata.value.barcodes = '3';
+        } else if (metadata.value.barcodes === '4 (reverseA)' || metadata.value.barcodes === '4' || metadata.value.barcodes === 4) {
+          metadata.value.barcodes = '4';
         }
         metadata.value.comments_flowB = slimsData.comments_flowB;
         metadata.value.crosses_flowB = slimsData.crosses_flowB;
@@ -928,6 +899,7 @@ export default defineComponent({
         metadata.value.crosses_flowA = slimsData.crosses_flowA;
         metadata.value.blocks_flowA = slimsData.blocks_flowA;
         metadata.value.leak_flowA = slimsData.leak_flowA;
+        metadata.value.type = slimsData.cntn_cf_fk_tissueType;
       } catch (error) {
         console.log(error);
       }
@@ -940,7 +912,6 @@ export default defineComponent({
         loading.value = false;
         assignMetadata(slimsData);
       } catch (error) {
-        console.log(error);
         loading.value = false;
         snackbar.dispatch({ text: 'Failed to create metadata', options: { color: 'error', right: true } });
       }
@@ -965,14 +936,33 @@ export default defineComponent({
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
-        console.log(resp);
         optionFlag.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
       } else {
         await getMeta();
         optionFlag.value = true;
-        snackbar.dispatch({ text: 'Failed to load metadata', options: { color: 'warning', right: true } });
+        snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
+      }
+    }
+    function loadGray() {
+      if (!client.value) return;
+      // path to image
+      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
+      try {
+        let c = crop.value.getCoordinatesOnImage();
+        if (optionUpdate.value) {
+          c = metadata.value.crop_area;
+        }
+        const x1 = c[0];
+        const y1 = c[1];
+        const x2 = c[2];
+        const y2 = c[3];
+        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
+        postB_image_promise.value = client.value.getGrayImageAsJPG(pl);
+      } catch (error) {
+        console.log(error);
+        loading.value = false;
       }
     }
     async function loadImage() {
@@ -982,7 +972,10 @@ export default defineComponent({
       let filename: any;
       // path to images
       if (optionUpdate.value) {
-        filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
+        filename = `${root}/${run_id.value}/spatial/figure/postB_BSA.tif`;
+        bsa_image_displayed.value = true;
+        postB_image_displayed.value = false;
+        bw_image_displayed.value = false;
       } else {
         filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       }
@@ -1007,11 +1000,15 @@ export default defineComponent({
               src: null,
               original_src: null,
             };
-            postB_or_bsa.value = temp;
+            bsa_image.value = temp;
+            // imgObj.onload = null;
           };
         }
         loading.value = false;
         runIdFlag.value = false;
+        if (optionUpdate.value) {
+          loadGray();
+        }
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -1060,10 +1057,7 @@ export default defineComponent({
       const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
-      // console.log(orientation.value.rotation);
       roi.value.loadTixels(csvHolder.value);
-      // c_val.value = metadata.value.cValue;
-      // neighbor_size.value = metadata.value.blockSize;
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
@@ -1142,9 +1136,6 @@ export default defineComponent({
       if (roi.value.polygons) {
         if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
         else roi.value.polygons[idx].fill = 'red';
-        // console.log(scaleFactor.value);
-        // console.log(roi.value.polygons[idx].centerx / scaleFactor.value);
-        // console.log(roi.value.polygons[idx].centery / scaleFactor.value);
       }
       isMouseDown.value = true;
     }
@@ -1227,64 +1218,74 @@ export default defineComponent({
       }
       grid.value = false;
     }
-    function extractChannels() {
-      let count = 0;
-      for (let i = 0; i < imageDataObj.value.data.length; i += 4) {
-        if (i < imageDataObj.value.data.length) {
-          // imageDataObj.value.data.set([0], i + 1);
-        //   // console.log(imageDataObj.value.data[i]);
-          const mean = ((imageDataObj.value.data[i] + imageDataObj.value.data[i + 2]) / 2);
-          if (mean * 1.2 < imageDataObj.value.data[i + 1]) {
-          // if (Math.max(imageDataObj.value.data[i], imageDataObj.value.data[i + 1], imageDataObj.value.data[i + 2]) === imageDataObj.value.data[i + 1]) {
-          // if (mean * 1.4 < imageDataObj.value.data[i + 1]) {
-            const setVal = Math.floor(200 + (Math.random() * 30));
-            const min = Math.min(imageDataObj.value.data[i], imageDataObj.value.data[i + 2]);
-            imageDataObj.value.data.set([mean], i + 1);
-            count += 1;
-            // imageDataObj.value.data.set([100], i + 1);
-          }
+    async function change_image(img: string) {
+      bsa_image_displayed.value = false;
+      postB_image_displayed.value = false;
+      bw_image_displayed.value = false;
+      let new_img = null;
+      if (img === 'postB') {
+        if (optionUpdate.value && postB_image_promise.value != null) {
+          await postB_image_promise.value.then((gray: any) => {
+            postB_image.value = URL.createObjectURL(gray);
+          });
         }
+        new_img = postB_image.value;
+        postB_image_displayed.value = true;
+      } else if (img === 'BSA') {
+        new_img = bsa_image.value;
+        bsa_image_displayed.value = true;
+      } else if (img === 'BW') {
+        new_img = bw_image.value;
+        bw_image_displayed.value = true;
       }
+      current_image.value.image.src = new_img;
     }
     function onCropButton(ev: any) {
-      cropFlag.value = true;
-      isCropMode.value = true;
-      active_roi_available.value = true;
       const coords = crop.value.getCoordinatesOnImage();
-      // console.log(coords);
-      const imgObj = new window.Image();
-      const newImage = new window.Image();
-      imgObj.src = URL.createObjectURL(imageh.value);
-      const canvas = document.createElement('canvas');
-      const ctxe = canvas.getContext('2d');
-      imgObj.onload = (v: any) => {
-        URL.revokeObjectURL(imgObj.src);
-        canvas.width = coords[2] - coords[0];
-        canvas.height = coords[3] - coords[1];
-        ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
-        imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
-        extractChannels();
-        canvas.toBlob((blob: any) => {
-          newImage.src = URL.createObjectURL(blob);
-          const temp = newImage.src;
-          newImage.onload = (e: any) => {
-            current_image.value = {
-              x: 0,
-              y: 0,
-              draggable: false,
-              scale: { x: scaleFactor.value, y: scaleFactor.value },
-              image: newImage,
-              src: null,
-              original_src: null,
-              alternative_src: null,
+      loadGray();
+      const { width, height } = current_image.value.image;
+      const [x1, y1, x2, y2] = coords;
+      if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
+        snackbar.dispatch({ text: 'Keeping Cropping on Image', options: { color: 'warning', right: true } });
+      } else {
+        cropLoading.value = true;
+        cropFlag.value = true;
+        isCropMode.value = true;
+        active_roi_available.value = true;
+        const imgObj = new window.Image();
+        const newImage = new window.Image();
+        imgObj.src = URL.createObjectURL(imageh.value);
+        const canvas = document.createElement('canvas');
+        const ctxe = canvas.getContext('2d');
+        imgObj.onload = (v: any) => {
+          URL.revokeObjectURL(imgObj.src);
+          canvas.width = coords[2] - coords[0];
+          canvas.height = coords[3] - coords[1];
+          ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
+          imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
+          // extractChannels();
+          canvas.toBlob((blob: any) => {
+            newImage.src = URL.createObjectURL(blob);
+            const temp = newImage.src;
+            newImage.onload = (e: any) => {
+              current_image.value = {
+                x: 0,
+                y: 0,
+                draggable: false,
+                scale: { x: scaleFactor.value, y: scaleFactor.value },
+                image: newImage,
+                src: null,
+                original_src: null,
+                alternative_src: null,
+              };
+              bsa_image.value = temp;
+              onChangeScale('');
+              cropLoading.value = false;
             };
-            postB_or_bsa.value = temp;
-            onChangeScale('');
-            cropLoading.value = false;
-          };
-        });
-      };
-      roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
+          });
+        };
+        roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
+      }
     }
     function finding_roi() {
       grid.value = true;
@@ -1308,22 +1309,14 @@ export default defineComponent({
       const context = canvas.getContext('2d');
       context!.putImageData(imageDataObj.value, 0, 0);
       return canvas.toDataURL();
-      // return new Promise((resolve) => {
-      //   canvas.toBlob(resolve);
-      // })
     }
-    function thresh_clicked() {
-      if (!current_image.value) return;
+
+    function threshold_image(img_src: any) {
       threshLoading.value = true;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
-      // loading.value = true;
-      let img_src = postB_or_bsa.value;
-      if (!optionUpdate.value) {
-        img_src = imageDataToBlob();
-      }
-      // current_image.value.image.src = img_src;
       getPixels(img_src, async (err, pixels) => {
+        const my_image = new window.Image();
         const compensation = Number(c_val.value);
         const size = Number(neighbor_size.value);
         const thresholded = adaptiveThreshold(pixels, { compensation, size });
@@ -1331,29 +1324,44 @@ export default defineComponent({
         const b = blobStream();
         savePixels(thresholded, 'jpeg').pipe(b).on('finish', () => {
           const newsrc = b.toBlobURL('image/jpeg');
-          const temp = newsrc;
-          // if (bsa_image_disp.value) {
-          //   current_image.value.image.original_src = current_image.value.image.src;
-          // }
+          my_image.src = newsrc;
           bw_image.value = newsrc;
-          current_image.value.image.src = newsrc;
-          current_image.value.scale = { x: sv, y: sv };
-          onChangeScale(sv);
+          my_image.onload = (e: any) => {
+            current_image.value = {
+              x: 0,
+              y: 0,
+              draggable: false,
+              scale: { x: scaleFactor.value, y: scaleFactor.value },
+              image: my_image,
+              src: null,
+              original_src: null,
+              alternative_src: null,
+            };
+            onChangeScale(sv);
+            // current_image.value.image.src = newsrc;
+            // current_image.value.scale = { x: sv, y: sv };
+          };
           thresh_same.value = true;
           loading.value = false;
-          bsa_image_disp.value = false;
           threshLoading.value = false;
+          change_image('BW');
         });
+      });
+    }
+    function thresh_clicked() {
+      if (!current_image.value) return;
+      if (!postB_image_promise.value) return;
+      loading.value = true;
+      postB_image_promise.value.then((gray: any) => {
+        const src = URL.createObjectURL(gray);
+        postB_image.value = src;
+        threshold_image(postB_image.value);
       });
       // setting the filled grid back to default state
       if (tixels_filled.value) {
         clear_filled_tixels();
-        tixels_filled.value = false;
       }
       tixels_filled.value = false;
-    }
-    async function generateReport(ev: any) {
-      //
     }
     const updateProgress = async (value: number) => {
       if (!client.value) return;
@@ -1361,32 +1369,6 @@ export default defineComponent({
       let valuetwo: any;
       let valuethree: any;
       one.value = value;
-      // if (value > 0 && value <= 40 && one.value <= 100) {
-      //   valueone = setTimeout(() => {
-      //     if (one.value === 100) {
-      //       clearTimeout(valueone);
-      //     }
-      //     one.value += 50;
-      //   }, 1000);
-      // }
-
-      // if (value > 40 && value < 80 && two.value <= 100) {
-      //   valuetwo = setTimeout(() => {
-      //     if (two.value === 100) {
-      //       clearTimeout(valuetwo);
-      //     }
-      //     two.value += 50;
-      //   }, 1000);
-      // }
-
-      // if (value >= 80 && three.value <= 100) {
-      //   valuethree = setTimeout(() => {
-      //     if (three.value === 100) {
-      //       clearTimeout(valuethree);
-      //     }
-      //     three.value += 50;
-      //   }, 1000);
-      // }
     };
     const updateH5ad = async (value: number) => {
       if (!client.value) return;
@@ -1484,7 +1466,7 @@ export default defineComponent({
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
-          barcodes: barcodes.value,
+          barcodes: Number(metadata.value.barcodes),
           diseaseState: metadata.value.diseaseState,
           diseaseName: metadata.value.diseaseName,
           tissueSlideExperiment: metadata.value.tissueSlideExperiment,
@@ -1497,6 +1479,7 @@ export default defineComponent({
           crosses_flowA: metadata.value.crosses_flowA,
           blocks_flowA: metadata.value.blocks_flowA,
           leak_flowA: metadata.value.leak_flowA,
+          onTissueTixels: roi.value.getOnTissue(),
         });
         const params = {
           run_id: run_id.value,
@@ -1506,7 +1489,7 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
-          barcodes: barcodes.value,
+          barcodes: Number(metadata.value.barcodes),
           root_dir: root,
           bucket: bucket_name,
         };
@@ -1534,6 +1517,7 @@ export default defineComponent({
           loadingMessage.value = false;
           return;
         }
+        snackbar.dispatch({ text: 'Spatial Folder Successfully Uploaded', options: { right: true, color: 'success' } });
         await updateProgress(taskStatus.value.progress);
         progressMessage.value = taskStatus.value.status;
         const resp = taskStatus.value.result;
@@ -1563,15 +1547,8 @@ export default defineComponent({
         generateSpatial();
       }
     }
-    function display_bsa() {
-      current_image.value.image.src = postB_or_bsa.value;
-      bsa_image_disp.value = true;
-    }
-    function display_bw() {
-      current_image.value.image.src = bw_image.value;
-      bsa_image_disp.value = false;
-    }
     function autoFill(ev: any) {
+      grid.value = true;
       if (roi.value.polygons.length === 0) {
         roi.value.generatePolygons();
       }
@@ -1643,6 +1620,7 @@ export default defineComponent({
         text: 'Run ID\'s',
         icon: 'mdi-magnify',
         tooltip: 'Run ID\'s',
+        enabled: true,
         disabled: loading.value,
         click: () => {
           runIdFlag.value = !runIdFlag.value;
@@ -1652,6 +1630,7 @@ export default defineComponent({
         text: 'Metadata',
         icon: 'mdi-filter-variant',
         tooltip: 'Metadata',
+        enabled: true,
         disabled: loading.value,
         click: () => {
           metaFlag.value = !metaFlag.value;
@@ -1725,7 +1704,6 @@ export default defineComponent({
       initialize,
       generateSpatial,
       generateh5ad,
-      generateReport,
       isCropMode,
       isBrushMode,
       setBrushMode,
@@ -1749,7 +1727,6 @@ export default defineComponent({
       three,
       four,
       channels,
-      barcodes,
       onOff,
       spatial,
       scaleFactor_json,
@@ -1776,12 +1753,14 @@ export default defineComponent({
       roi_active,
       finding_roi,
       thresh_image_created,
-      display_bsa,
+      // display_bsa,
       bw_image,
-      display_bw,
+      // display_bw,
       thresh_same,
       tixels_filled,
-      bsa_image_disp,
+      bsa_image_displayed,
+      change_image,
+      // display_postB,
       handle_spatial_call,
       rotate_image,
       saved_grid_state,
@@ -1799,8 +1778,13 @@ export default defineComponent({
       imageClick,
       root,
       bucket_name,
-      postB_or_bsa,
+      bsa_image,
       black_white,
+      loadGray,
+      postB_image_promise,
+      postB_image,
+      bw_image_displayed,
+      postB_image_displayed,
     };
   },
 });
@@ -1844,5 +1828,8 @@ export default defineComponent({
   margin-left: auto;
   margin-right: auto;
   width: 80%;
+}
+.vert-spaced-btn {
+  top: 8px;
 }
 </style>

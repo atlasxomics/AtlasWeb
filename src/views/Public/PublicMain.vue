@@ -42,7 +42,6 @@ export default defineComponent({
     onMounted(async () => {
       // await clientReady;
       store.commit.setSubmenu(null);
-      console.log('Mounted');
       const route = currentRoute.value;
       if (route.query.component) store.commit.setComponent(route.query);
       else store.commit.setComponent({ component: null });

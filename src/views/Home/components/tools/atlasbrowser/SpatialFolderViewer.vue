@@ -66,12 +66,14 @@ export default defineComponent({
         console.log('no client');
         return;
       }
-      const folder_path = props.root.concat('/').concat(props.selectedRunID);
+      const folder_path = props.root.concat('/').concat(props.selectedRunID).concat('/');
       const file_payload = { params: { bucket_name: props.bucket_name, path: folder_path } };
       const run_files = await client.value.getFileList(file_payload);
       for (let i = 0; i < run_files.length; i += 1) {
-        const temp_obj = { id: i, file: run_files[i] };
-        availableFiles.value.push(temp_obj);
+        if (run_files[i] !== folder_path) {
+          const temp_obj = { id: i, file: run_files[i] };
+          availableFiles.value.push(temp_obj);
+        }
       }
       // availableFiles.value = run_files;
       if (availableFiles.value.length === 0) {

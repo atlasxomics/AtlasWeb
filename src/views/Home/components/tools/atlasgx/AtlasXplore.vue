@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-container v-if="resolveAuthGroup(['admin', 'user']) || query.public" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
+    <v-container v-if="atlasXplore_displayed" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
           <v-tooltip bottom :disabled="metaFlag">
@@ -666,7 +666,7 @@
         </v-col>
       </v-row>
     </v-container>
-    <loading-page v-if="resolveAuthGroup(['collab']) && !query.public" :listRuns="collabData" :collabName="collabName" :loading="loading"/>
+    <loading-page @run-selected="run_selected_landing" v-if="landing_disp" :relevantRuns="collabData" :collabName="collabName"/>
   </v-app>
 </template>
 
@@ -747,6 +747,14 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const workers = computed(() => store.state.client?.workers);
+    const landing_disp = ref<boolean>(false);
+    // const search_enabled = ref<boolean>(false);
+    const search_enabled = computed(() => {
+      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
+        return true;
+      }
+      return !landing_disp.value;
+    });
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
     const holdMotif = ref<string | null>(null);
@@ -756,7 +764,7 @@ export default defineComponent({
     const items = ref<any[]>();
     const search = ref<string>();
     const selected = ref<any>();
-    const genes = ref<any[]>([]);
+    const genes = ref<any[] | null>([]);
     const loading = ref<boolean>(false);
     const selectedGenes = ref<any[]>([]);
     const childGenes = ref<any[]>([]);
@@ -796,8 +804,10 @@ export default defineComponent({
     const isDrawing = ref<boolean>(false);
     const isDrawingRect = ref<boolean>(false);
     const lengthClust = ref<number>(0);
+    const atlasXplore_displayed = ref<boolean>(false);
     const showFlag = ref<boolean[]>([false]);
     const runIdFlag = ref<boolean>(false);
+    const collaborator_specific_ids = ref<Set<string> | null>(null);
     const backgroundFlag = ref<boolean>(false);
     const heatmapFlag = ref<boolean>(false);
     const autoCompleteFlag = ref<boolean>(false);
@@ -1136,7 +1146,18 @@ export default defineComponent({
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
-      items.value = qc_data;
+      if (resolveAuthGroup(['collab']) && !props.query.public) {
+        for (let i = 0; i < qc_data.length; i += 1) {
+          if (collaborator_specific_ids.value?.has(qc_data[i].id)) {
+            items.value.push(qc_data[i]);
+          }
+        }
+      } else if (resolveAuthGroup(['admin', 'user'])) {
+        items.value = qc_data;
+      }
+      console.log(items);
+      console.log(qc_data);
+      // items.value = qc_data;
       loading.value = false;
     }
     async function updateFilename() {
@@ -1332,6 +1353,7 @@ export default defineComponent({
         }
       }
       collabName.value = slimsData.cntn_cf_source;
+      console.log(collabName);
       loading.value = false;
     }
     async function selectAction(ev: any) {
@@ -1359,43 +1381,14 @@ export default defineComponent({
       await runSpatial();
       await getMeta();
     }
-    async function loadingPage() {
+    async function loadingPage(collab_name: any) {
       loading.value = true;
-      const funcInsideLoad = (id: string, checker: any) => {
-        let v = false;
-        if (id.length > 1) {
-          checker.forEach((val: any, i: any) => {
-            if (val.includes(id)) {
-              v = val;
-            }
-          });
-        }
-        return v;
-      };
-      const val = await client.value!.getRunIdList();
-      await fetchFileList();
-      if (items.value) {
-        const checker = items.value.map((ids: any) => ids.id);
-        const matchedRuns: any[] = [];
-        val.forEach((value: any, i: any) => {
-          const yeah = funcInsideLoad(removeZeros(value['Run Id']), checker);
-          if (yeah && !matchedRuns.includes(yeah)) {
-            matchedRuns.push(yeah);
-          }
-        });
-        const dataStruct: any[] = [];
-        for (let i = 0; i < matchedRuns.length; i += 1) {
-          const rid = matchedRuns[i];
-          const fn = `data/${rid}/h5/obj/genes.h5ad`;
-          filename.value = fn;
-          await getMeta(rid);
-          await runSpatial(rid);
-          const valueHolder = { runId: `${cleanRunId(rid)}`, organ: `${metadata.value.organ}`, species: `${metadata.value.species}`, expcond: `${metadata.value.condition}`, date: `${metadata.value.date}`, link: `${publicLink.value}` };
-          dataStruct.push(valueHolder);
-        }
-        collabData.value = dataStruct;
+      const collab_run_data = await client.value!.getRunsCollaborator(collab_name, true);
+      collabData.value = collab_run_data;
+      collaborator_specific_ids.value = new Set<string>();
+      for (let i = 0; i < collabData.value.length; i += 1) {
+        collaborator_specific_ids.value!.add(collabData.value[i].cntn_id_NGS);
       }
-      loading.value = false;
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
@@ -1406,9 +1399,9 @@ export default defineComponent({
       }
     }
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
-    const acInstance = new GeneAutoCompleteClass({
+    const acInstance = ref<any>(new GeneAutoCompleteClass({
       vuetify,
-      propsData: { gene_list: genes, gene_button: geneButton },
+      propsData: { gene_list: genes, gene_button: geneButton, search_bar_enabled: search_enabled },
       created() {
         this.$on('changed', (ev: any[]) => {
           selectedGenes.value = ev;
@@ -1433,7 +1426,7 @@ export default defineComponent({
           }
         });
       },
-    });
+    }));
     watch(peakViewerFlag, (v: any) => {
       if (v) {
         visible.value = 'visible';
@@ -1525,93 +1518,144 @@ export default defineComponent({
       });
       runCellType(cleanedArray);
     });
-    const submenu = [
-      /* eslint-disable no-unused-expressions */
-      {
-        text: 'Run ID\'s',
-        icon: 'mdi-magnify',
-        tooltip: 'Run ID\'s',
-        disabled: loading.value,
-        click: () => {
-          runIdFlag.value = !runIdFlag.value;
-        },
+    const submenu = ref<any[]>([]);
+    const landing_page_revert = {
+      text: 'Menu',
+      icon: 'mdi-keyboard-backspace',
+      tooltip: 'Runs Display',
+      enabled: true,
+      click: () => {
+        selectedGenes.value = [];
+        atlasXplore_displayed.value = false;
+        for (let i = 0; i < submenu.value.length; i += 1) {
+          submenu.value[i].enabled = false;
+        }
+        store.commit.setSubmenu(submenu.value);
+        landing_disp.value = true;
+        filename.value = 'none';
       },
-      {
-        text: 'Metadata',
-        icon: 'mdi-filter-variant',
-        tooltip: 'Metadata',
-        disabled: loading.value,
-        click: () => {
-          metaFlag.value = !metaFlag.value;
-        },
+    };
+    const list_ids = {
+      text: 'Run ID\'s',
+      icon: 'mdi-magnify',
+      tooltip: 'Run ID\'s',
+      enabled: true,
+      click: () => {
+        runIdFlag.value = !runIdFlag.value;
       },
-      {
-        text: geneMotif.value,
-        icon: null,
-        tooltip: 'Gene/Motif',
-        disabled: loading.value,
-        ref: 'geneMotifButton',
-        click: () => {
-          (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
-        },
+    };
+    const metadata_button = {
+      text: 'Metadata',
+      icon: 'mdi-filter-variant',
+      tooltip: 'Metadata',
+      enabled: true,
+      disabled: loading.value,
+      click: () => {
+        metaFlag.value = !metaFlag.value;
       },
-      {
-        text: 'Background Color',
-        icon: 'mdi-palette',
-        tooltip: 'Background Color',
-        click: () => {
-          backgroundFlag.value = !backgroundFlag.value;
-        },
+    };
+    /* eslint-disable no-unused-expressions */
+    const gene_motif_button = {
+      text: geneMotif.value,
+      icon: null,
+      tooltip: 'Gene/Motif',
+      disabled: loading.value,
+      ref: 'geneMotifButton',
+      enabled: true,
+      click: () => {
+        (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
       },
-      {
-        text: 'Heat Map',
-        icon: 'mdi-fire',
-        tooltip: 'HeatMap Color',
-        click: () => {
-          heatmapFlag.value = !heatmapFlag.value;
-        },
+    };
+    const bg_color_button = {
+      text: 'Background Color',
+      icon: 'mdi-palette',
+      tooltip: 'Background Color',
+      enabled: true,
+      click: () => {
+        backgroundFlag.value = !backgroundFlag.value;
       },
-      {
-        type: 'component',
-        name: 'GeneAutoComplete',
-        id: 'geneac',
-        component: acInstance,
+    };
+    const heat_map_button = {
+      text: 'Heat Map',
+      icon: 'mdi-fire',
+      tooltip: 'HeatMap Color',
+      enabled: true,
+      click: () => {
+        heatmapFlag.value = !heatmapFlag.value;
       },
-    ];
+    };
+    const gene_ac_bar = {
+      type: 'component',
+      name: 'GeneAutoComplete',
+      id: 'geneac',
+      enabled: true,
+      component: acInstance,
+    };
+    function prep_sub_menu() {
+      if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
+        submenu.value.push(landing_page_revert);
+      }
+      submenu.value.push(list_ids, metadata_button, gene_motif_button, bg_color_button, heat_map_button, gene_ac_bar);
+    }
+    // async function initializeRun(run_id: string, use_specified: boolean) {
+    // }
+    async function prep_atlasxplore(run_id: string, use_specified: boolean) {
+      if (submenu.value.length < 1) {
+        prep_sub_menu();
+      }
+      store.commit.setSubmenu(submenu.value);
+      await fetchFileList();
+      if (props.query && !props.query.public) {
+        await fetchFileList();
+        if (use_specified || props.query.run_id) {
+          let run_num = run_id;
+          if (props.query.run_id && !use_specified) {
+            run_num = props.query.run_id;
+          }
+          // await initializeRun(props.query.run_id);
+          await selectAction({ id: run_num });
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
+        }
+      }
+      if (props.query && props.query.run_id && props.query.public) {
+        const mid = props.query.run_id.search(/motif/i);
+        const end = props.query.run_id.length;
+        const fn = props.query.run_id.slice(0, mid);
+        const fn2 = props.query.run_id.slice(mid + 5, end);
+        holdGene.value = fn;
+        holdMotif.value = fn2;
+        filename.value = fn;
+      }
+      acInstance.value.$mount('#geneac');
+    }
+
+    async function run_selected_landing(run_id: string) {
+      landing_disp.value = false;
+      // search_enabled.value = true;
+      atlasXplore_displayed.value = true;
+      for (let i = 0; i < submenu.value.length; i += 1) {
+        submenu.value[i].enabled = true;
+      }
+      // const stripped_id = removeZeros(run_id);
+      prep_atlasxplore(run_id, true);
+    }
     onMounted(async () => {
       await clientReady;
-      if (resolveAuthGroup(['collab']) && (props.query && !props.query.public)) {
-        await loadingPage();
-      } else {
-        store.commit.setSubmenu(submenu);
-        if (props.query && !props.query.public) {
-          await fetchFileList();
-          if (props.query.run_id) {
-            // loadCandidateWorkers('AtlasXploreX');
-            currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-            await selectAction({ id: props.query.run_id });
-          } else {
-            currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-          }
-        }
-        if (props.query) {
-          if (props.query.run_id && props.query.public) {
-            const mid = props.query.run_id.search(/motif/i);
-            const end = props.query.run_id.length;
-            const fn = props.query.run_id.slice(0, mid);
-            const fn2 = props.query.run_id.slice(mid + 5, end);
-            holdGene.value = fn;
-            holdMotif.value = fn2;
-            filename.value = fn;
-          }
-        }
-        acInstance.$mount('#geneac');
+      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
+        atlasXplore_displayed.value = true;
+        landing_disp.value = false;
+        prep_atlasxplore(props.query.run_id, false);
+      } else if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
+        landing_disp.value = true;
+        atlasXplore_displayed.value = false;
+        // loadingPage('Pieper');
+        loadingPage(client.value?.user?.groups[0]);
       }
     });
     onUnmounted(() => {
-      if (acInstance.$el) {
-        acInstance.$destroy();
-        acInstance.$el.parentNode!.removeChild(acInstance.$el);
+      if (acInstance.value.$el) {
+        acInstance.value.$destroy();
+        acInstance.value.$el.parentNode!.removeChild(acInstance.value.$el);
         store.commit.setSubmenu(null);
       }
     });
@@ -1646,6 +1690,7 @@ export default defineComponent({
       backgroundColor,
       updateCircles,
       heatMap,
+      search_enabled,
       progressMessage,
       selectAction,
       workers,
@@ -1712,6 +1757,7 @@ export default defineComponent({
       holdMotif,
       copyToClip,
       updateClusterLabel,
+      // search_bar_enabled,
       clickedCluster,
       userSelectedColor,
       colorRules,
@@ -1745,6 +1791,22 @@ export default defineComponent({
       dataToSingle,
       singleData,
       averageInd,
+      run_selected_landing,
+      landing_disp,
+      atlasXplore_displayed,
+      collaborator_specific_ids,
+      prep_atlasxplore,
+      acInstance,
+      submenu,
+      landing_page_revert,
+      list_ids,
+      metadata_button,
+      gene_motif_button,
+      bg_color_button,
+      heat_map_button,
+      gene_ac_bar,
+      prep_sub_menu,
+      // initializeRun,
     };
   },
 });
@@ -1814,5 +1876,8 @@ export default defineComponent({
   }
    .bold-disabled-Text .v-input__slot {
     margin-bottom: 0px !important;
+  }
+  .hidden {
+    visibility: hidden;
   }
 </style>

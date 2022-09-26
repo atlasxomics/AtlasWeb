@@ -335,7 +335,6 @@ export default class Client {
   }
   async getFileList(payload: FileListRequest): Promise<any> {
     try {
-      console.log(payload);
       const resp = await this.axios.get('api/v1/storage/list', payload);
       return resp.data;
     } catch (error) {
@@ -358,6 +357,14 @@ export default class Client {
       return Promise.reject(e);
     }
   }
+  async getGrayImageAsJPG(payload: ImageFileRequest): Promise<File> {
+    try {
+      const resp = await this.axios.get('/api/v1/storage/grayscale_image_jpg', { params: payload.params, responseType: 'blob' });
+      return new File([resp.data], payload.params.filename, { type: 'image/jpeg' });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
   async generateQcEntry(payload: QcEntryGenerationRequest): Promise<any> {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
     return resp.data;
@@ -367,7 +374,6 @@ export default class Client {
     const uri = '/api/v1/dataset/slimstest_runid';
     const run_id = `D${padzeros(Number(rid.split('D')[1]), 5)}`;
     const payload = { params: { run_id } };
-    console.log(payload);
     const resp = await this.axios.get(uri, payload);
     return resp.data;
   }
@@ -470,6 +476,12 @@ export default class Client {
   }
   async getWaferTrace(payload: DatasetRequest): Promise<any> {
     const resp = await this.axios.get('/api/v1/dataset/wafertrace', payload);
+    return resp.data;
+  }
+  async getRunsCollaborator(collaborator: string, web_objs: boolean) {
+    const table_name = 'dbit_metadata';
+    const payload = { params: { collaborator, table_name, web_objs } };
+    const resp = await this.axios.get('/api/v1/run_db/get_runs_collaborator', payload);
     return resp.data;
   }
 }
