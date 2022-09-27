@@ -484,4 +484,9 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/get_runs_collaborator', payload);
     return resp.data;
   }
+  async repopulateDB() {
+    console.log('here');
+    const resp = await this.axios.get('/api/v1/run_db/repopulate_database');
+    return resp.data;
+  }
 }
