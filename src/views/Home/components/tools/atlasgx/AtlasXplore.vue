@@ -604,6 +604,7 @@
                 :clickedCluster="clickedClusterFromChild"
                 :checkBoxCluster="selectedClusters"
                 :indFlag="averageInd"
+                :antiKey="tableKey"
                 ref="mainAtxViewer"/>
             </div>
             </v-col>
@@ -850,6 +851,7 @@ export default defineComponent({
     const colorBarFromSibling = ref<any>();
     const singleData = ref<any>();
     const averageInd = ref<boolean>(false);
+    const tableKey = ref<number>(1);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -1036,7 +1038,8 @@ export default defineComponent({
       isClusterView.value = false;
     }
     function sendCluster(ev: any) {
-      clickedClusterFromChild.value = [ev];
+      if (ev !== 'Anti') clickedClusterFromChild.value = [ev];
+      else tableKey.value *= -1;
     }
     async function loadExpressions() {
       if (!client.value) return;
@@ -1090,7 +1093,7 @@ export default defineComponent({
       const geneRank: any[] = [];
       const tableHeaders: any[] = [];
       clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
-      tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
+      tableHeaders.push({ text: 'Anti', value: 'id', sortable: false, key: tableKey.value });
       for (let i = 0; i < clusterItems.value.length; i += 1) {
         tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
       }
@@ -1378,6 +1381,7 @@ export default defineComponent({
       manualClusterFlag.value = false;
       cellTypeMap.value = {};
       cellTypeMapCopy.value = {};
+      tableKey.value = 1;
       await runSpatial();
       await getMeta();
     }
@@ -1433,6 +1437,18 @@ export default defineComponent({
       } else {
         visible.value = 'hidden';
       }
+    });
+    watch(tableKey, (v: any) => {
+      featureTableFlag.value = true;
+      peakViewerFlag.value = false;
+      histoFlag.value = false;
+      geneMotifFlag.value = false;
+      isClusterView.value = true;
+      selectedGenes.value = [];
+      showFlag.value = [false];
+      geneButton.value = [];
+      childGenes.value = [];
+      trackBrowserGenes.value = [];
     });
     watch(geneMotif, (v: any) => {
       if (!props.query.public) {
@@ -1807,6 +1823,7 @@ export default defineComponent({
       gene_ac_bar,
       prep_sub_menu,
       // initializeRun,
+      tableKey,
     };
   },
 });

@@ -254,7 +254,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag'],
+  props: ['query', 'filename', 'genelist', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'antiKey'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -353,6 +353,7 @@ export default defineComponent({
     const totalInClust = ref<any>({});
     const clickedClusterFromParent = computed(() => (props.clickedCluster));
     const checkedClusterFromParent = computed(() => (props.checkBoxCluster));
+    const tableKeyFromParent = computed(() => (props.antiKey));
     const averageInd = computed(() => (props.indFlag));
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
@@ -481,7 +482,6 @@ export default defineComponent({
       isHighlighted.value = true;
     }
     function makearray(stopValue: number, startValue: number): any[] {
-      if (highestCount.value === 0) return [];
       const arr = [];
       const steps = 5;
       const step = (stopValue - startValue) / (steps - 1);
@@ -615,7 +615,7 @@ export default defineComponent({
           circlesUMAP.push(c);
         });
       } else {
-        highestCount.value = 0;
+        highestCount.value = -10000;
         lowestCount.value = 10000;
         const geneColors = colormapBounded(colors_intensity, geneSum, selectedGenes.value.length);
         lodash.each(spatialData.value.clusters, (v: string, i: number) => {
@@ -669,7 +669,7 @@ export default defineComponent({
           });
           circlesUMAP.push(c);
         });
-        let highAvg = 0;
+        let highAvg = -10000000;
         let lowAvg = 10000000;
         circles.forEach((v: any, i: any) => {
           const avg = v.total / selectedGenes.value.length;
@@ -700,7 +700,7 @@ export default defineComponent({
         spatialRun.value = true;
         const task = currentTask.value;
         const queue = currentQueue.value;
-        const args = [filenameGene.value, selectedGenes.value, highlightIds.value];
+        const args = [filenameGene.value, selectedGenes.value, highlightIds.value, tableKeyFromParent.value];
         const kwargs = {};
         const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue) : await client.value.postTask(task, args, kwargs, queue);
         if (props.query.public && runId.value === null) {
@@ -1086,6 +1086,9 @@ export default defineComponent({
       if (typeof v === 'string') gene = [gene];
       selectedGenes.value = gene;
     });
+    watch(tableKeyFromParent, (v: number) => {
+      runSpatial();
+    });
     watch(loading, (v: any) => {
       ctx.emit('loading_value', v);
     });
@@ -1167,6 +1170,7 @@ export default defineComponent({
       clickedClusterFromParent,
       totalInClust,
       averageInd,
+      tableKeyFromParent,
     };
   },
 });
