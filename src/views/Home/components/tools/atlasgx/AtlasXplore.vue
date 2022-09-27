@@ -180,6 +180,14 @@
                 disabled
                 label="Type">
               </v-text-field>
+              <v-text-field
+                v-model="metadata.runid"
+                class="bold-disabled"
+                dense
+                outlined
+                disabled
+                label="Run ID">
+              </v-text-field>
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -604,11 +612,12 @@
                 :clickedCluster="clickedClusterFromChild"
                 :checkBoxCluster="selectedClusters"
                 :indFlag="averageInd"
+                :antiKey="tableKey"
                 ref="mainAtxViewer"/>
             </div>
             </v-col>
             <v-col cols="12" sm="2">
-              <table style="margin-bottom: 0;">
+              <table style="margin-bottom: 0;height: 37vh;overflow-y: scroll;display: block;">
                   <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'vertical-align': 'middle' }">
                     <template>
                       <td>
@@ -736,6 +745,7 @@ interface Metadata {
   organ: string | null;
   condition: string | null;
   date: string | null;
+  runid: string | null;
 }
 
 export default defineComponent({
@@ -792,6 +802,7 @@ export default defineComponent({
       organ: null,
       condition: null,
       date: null,
+      runid: null,
     });
     const backgroundColor = ref<string>('black');
     const heatMap = ref<string>('jet');
@@ -850,6 +861,7 @@ export default defineComponent({
     const colorBarFromSibling = ref<any>();
     const singleData = ref<any>();
     const averageInd = ref<boolean>(false);
+    const tableKey = ref<number>(1);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -1036,7 +1048,8 @@ export default defineComponent({
       isClusterView.value = false;
     }
     function sendCluster(ev: any) {
-      clickedClusterFromChild.value = [ev];
+      if (ev !== 'Anti') clickedClusterFromChild.value = [ev];
+      else tableKey.value *= -1;
     }
     async function loadExpressions() {
       if (!client.value) return;
@@ -1090,7 +1103,7 @@ export default defineComponent({
       const geneRank: any[] = [];
       const tableHeaders: any[] = [];
       clusterItems.value = lodash.uniq(spatialData.value.cluster_names).map((v: any) => ({ name: v }));
-      tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
+      tableHeaders.push({ text: 'Anti', value: 'id', sortable: false, key: tableKey.value });
       for (let i = 0; i < clusterItems.value.length; i += 1) {
         tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
       }
@@ -1342,6 +1355,7 @@ export default defineComponent({
       metadata.value.species = slimsData.cntn_cf_fk_species;
       metadata.value.type = slimsData.cntn_cf_fk_tissueType;
       metadata.value.assay = slimsData.cntn_cf_fk_workflow;
+      metadata.value.runid = slimsData.cntn_cf_runId;
       [metadata.value.date] = slimsData.sequenced_on.split(' ');
       if (slimsData.cntn_cf_experimentalCondition && slimsData.cntn_cf_sampleId) {
         const beginning = slimsData.cntn_cf_experimentalCondition;
@@ -1378,6 +1392,7 @@ export default defineComponent({
       manualClusterFlag.value = false;
       cellTypeMap.value = {};
       cellTypeMapCopy.value = {};
+      tableKey.value = 1;
       await runSpatial();
       await getMeta();
     }
@@ -1433,6 +1448,18 @@ export default defineComponent({
       } else {
         visible.value = 'hidden';
       }
+    });
+    watch(tableKey, (v: any) => {
+      featureTableFlag.value = true;
+      peakViewerFlag.value = false;
+      histoFlag.value = false;
+      geneMotifFlag.value = false;
+      isClusterView.value = true;
+      selectedGenes.value = [];
+      showFlag.value = [false];
+      geneButton.value = [];
+      childGenes.value = [];
+      trackBrowserGenes.value = [];
     });
     watch(geneMotif, (v: any) => {
       if (!props.query.public) {
@@ -1807,6 +1834,7 @@ export default defineComponent({
       gene_ac_bar,
       prep_sub_menu,
       // initializeRun,
+      tableKey,
     };
   },
 });
