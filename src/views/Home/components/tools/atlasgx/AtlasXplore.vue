@@ -180,6 +180,14 @@
                 disabled
                 label="Type">
               </v-text-field>
+              <v-text-field
+                v-model="metadata.runid"
+                class="bold-disabled"
+                dense
+                outlined
+                disabled
+                label="Run ID">
+              </v-text-field>
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -609,7 +617,7 @@
             </div>
             </v-col>
             <v-col cols="12" sm="2">
-              <table style="margin-bottom: 0;">
+              <table style="margin-bottom: 0;height: 37vh;overflow-y: scroll;display: block;">
                   <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'vertical-align': 'middle' }">
                     <template>
                       <td>
@@ -737,6 +745,7 @@ interface Metadata {
   organ: string | null;
   condition: string | null;
   date: string | null;
+  runid: string | null;
 }
 
 export default defineComponent({
@@ -793,6 +802,7 @@ export default defineComponent({
       organ: null,
       condition: null,
       date: null,
+      runid: null,
     });
     const backgroundColor = ref<string>('black');
     const heatMap = ref<string>('jet');
@@ -1345,6 +1355,7 @@ export default defineComponent({
       metadata.value.species = slimsData.cntn_cf_fk_species;
       metadata.value.type = slimsData.cntn_cf_fk_tissueType;
       metadata.value.assay = slimsData.cntn_cf_fk_workflow;
+      metadata.value.runid = slimsData.cntn_cf_runId;
       [metadata.value.date] = slimsData.sequenced_on.split(' ');
       if (slimsData.cntn_cf_experimentalCondition && slimsData.cntn_cf_sampleId) {
         const beginning = slimsData.cntn_cf_experimentalCondition;
