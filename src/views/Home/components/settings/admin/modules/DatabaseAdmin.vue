@@ -2,6 +2,12 @@
   <v-container>
     <v-row>
         <v-col>
+          <p>
+            Last Repopulation Attempt: {{updated_info.date}}
+            </p>
+          <p>
+            Attempt Status: {{updated_info.status}}
+          </p>
             <v-btn
             color="primary"
             :loading="button_loading"
@@ -40,6 +46,7 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const button_loading = ref<boolean>(false);
+    const updated_info = ref<Record<string, any>>({});
     async function repopulate_db() {
       button_loading.value = true;
       console.log('repopulating DB');
@@ -50,15 +57,18 @@ export default defineComponent({
       } else {
         snackbar.dispatch({ text: 'Database Updating Failed', options: { right: true, color: 'error', timeout: 10000 } });
       }
+      updated_info.value = await client.value?.getUpdateDate();
       console.log(value);
       button_loading.value = false;
     }
     onMounted(async () => {
       await clientReady;
+      updated_info.value = await client.value?.getUpdateDate();
     });
     return {
       button_loading,
       repopulate_db,
+      updated_info,
     };
   },
 });

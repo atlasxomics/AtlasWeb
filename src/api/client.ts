@@ -489,4 +489,8 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/repopulate_database');
     return resp.data;
   }
+  async getUpdateDate(): Promise<any> {
+    const resp = await this.axios.get('/api/v1/run_db/get_last_update');
+    return resp.data;
+  }
 }
