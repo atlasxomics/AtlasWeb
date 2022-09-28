@@ -129,7 +129,7 @@ export default defineComponent({
       if (!client.value) {
         return;
       }
-      const name = `data/${rid}/metadata.json`;
+      const name = `data/${rid}/h5/obj/metadata.json`;
       const jsonFileName = { params: { filename: name } };
       const metadata = await client.value?.getJsonFile(jsonFileName);
       selectedSpecies.value = metadata.cntn_cf_fk_species;

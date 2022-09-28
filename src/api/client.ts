@@ -239,13 +239,13 @@ export default class Client {
     await this.axios.put('/api/v1/auth/resetpassword', user);
   }
   // genes
-  async getGeneMotifSpatial(gene: string, motif: string, spatial: string): Promise<any> {
-    const payload = { gene, motif, spatial };
+  async getGeneMotifSpatial(filename: string): Promise<any> {
+    const payload = { filename };
     const resp = await this.axios.post('api/v1/genes/gms', payload);
     return resp.data;
   }
-  async getGeneMotifSpatialByToken(token: string): Promise<any> {
-    const payload = { };
+  async getGeneMotifSpatialByToken(token: string, key: number): Promise<any> {
+    const payload = { key };
     const resp = await this.axios.post(`api/v1/genes/gms/${token}`, payload);
     return resp.data;
   }

@@ -1,5 +1,6 @@
 <template v-if="geneList">
     <v-autocomplete
+      :disabled="(genes.length == 0) ? true : false"
       class="noScroll"
       id ="noScrollId"
       @paste="handlePaste"
@@ -19,7 +20,6 @@
       item-value="name"
       @input="acInputChanged"
       :search-input.sync="searchInput"
-      :loading="autocompleteLoading"
       :menu-props="{closeOnClick: false}"
       @change="onGenelistChanged"
       width="100%"
@@ -322,6 +322,7 @@ export default defineComponent({
       valueCollapse,
       fileContent,
       avgInd,
+      genes,
       acInputChanged,
       querySelections,
       onGenelistChanged,

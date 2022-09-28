@@ -13,7 +13,7 @@
                 icon
                 class="ml-1"
                 medium
-                :disabled="!spatialData || loading"
+                :disabled="!spatialData"
                 @click="metaFlag = !metaFlag">
                 <v-icon>mdi-filter-variant</v-icon>
               </v-btn>
@@ -28,7 +28,7 @@
                 class="ml-1"
                 medium
                 text
-                :disabled="!spatialData || loading"
+                :disabled="!spatialData"
                 @click="(geneMotif === 'gene') ? (geneMotif = 'motif') :  (geneMotif = 'gene')">{{geneMotif}}
               </v-btn>
             </template>
@@ -37,7 +37,7 @@
           <v-tooltip :disabled="backgroundFlag" bottom>
               <template v-slot:activator="{ on, attrs }">
                 <v-btn
-                  :disabled="!spatialData || loading"
+                  :disabled="!spatialData"
                   v-bind="attrs"
                   v-on="on"
                   class="ml-3"
@@ -52,7 +52,7 @@
               <template v-slot:activator="{ on, attrs }">
                 <v-btn
                   v-bind="attrs"
-                  :disabled="!spatialData || loading"
+                  :disabled="!spatialData"
                   v-on="on"
                   class="ml-3 mr-3"
                   small
@@ -108,7 +108,7 @@
             single-select
             hide-default-footer
             hide-default-header
-            :disabled="!spatialData || loading"
+            :disabled="!spatialData"
             :items="backgroundOptions"
             :headers="backgroundHeader"
             @click:row="chooseBackground"
@@ -128,7 +128,7 @@
             single-select
             hide-default-footer
             hide-default-header
-            :disabled="!spatialData || loading || !isClusterView"
+            :disabled="!spatialData || !isClusterView"
             :items="heatmapOptions"
             :headers="heatmapHeader">
               <template v-slot:item="row">
@@ -230,7 +230,7 @@
                 icon
                 class="ml-4"
                 v-model="isDrawing"
-                :disabled="!spatialData || isDrawingRect || !isClusterView || loading"
+                :disabled="!spatialData || isDrawingRect || !isClusterView"
                 :color="colorOnOff"
                 small
                 @click="isDrawing = !isDrawing">
@@ -247,7 +247,7 @@
               v-on="on"
               class="ml-4 mt-5"
               v-model="isDrawingRect"
-              :disabled="!spatialData || isDrawing || !isClusterView || loading"
+              :disabled="!spatialData || isDrawing || !isClusterView"
               :color="colorOnOffRect"
               small
               @click="isDrawingRect = !isDrawingRect">
@@ -265,7 +265,7 @@
                 v-bind="attrs"
                 color="black"
                 v-on="on"
-                :disabled="(!isDrawing && !isDrawingRect) || loading"
+                :disabled="(!isDrawing && !isDrawingRect)"
                 @click="listId = true"
                 small>
               <v-icon>mdi-eye</v-icon>
@@ -483,7 +483,7 @@
               icon
               v-model="isDrawing"
               color="black"
-              :disabled="!spatialData || loading"
+              :disabled="!spatialData"
               @click="cellTypeFlag = !cellTypeFlag"
               small>
             <v-icon>mdi-eyedropper-variant</v-icon>
@@ -500,7 +500,7 @@
               icon
               v-model="isDrawing"
               color="black"
-              :disabled="!spatialData || loading"
+              :disabled="!spatialData"
               @click="displayFlag = !displayFlag"
               small>
             <v-icon>mdi-download</v-icon>
@@ -534,7 +534,7 @@
                 color="black"
                 icon
                 class="ml-4"
-                :disabled="!spatialData || loading"
+                :disabled="!spatialData"
                 @click="featureTableFlag = true; peakViewerFlag = false; histoFlag = false"
                 small>
                 <v-icon>mdi-table-large</v-icon>
@@ -550,7 +550,7 @@
                 color="black"
                 icon
                 class="ml-4 mt-5"
-                :disabled="!spatialData || loading"
+                :disabled="!spatialData"
                 @click="peakViewerFlag = true; featureTableFlag = false; histoFlag = false"
                 small>
                 <v-icon>mdi-chart-line</v-icon>
@@ -566,7 +566,7 @@
                 color="black"
                 icon
                 class="ml-4 mt-5"
-                :disabled="!spatialData || loading"
+                :disabled="!spatialData"
                 @click="histoFlag = true; peakViewerFlag = false; featureTableFlag = false"
                 small>
                 <v-icon>mdi-chart-bar</v-icon>
@@ -646,16 +646,16 @@
             </v-row>
           </div>
           <v-col cols="12" sm="11">
-            <v-card class="mt-3" v-show="genes.length > 0 && featureTableFlag" :disabled="loading" flat>
+            <v-card class="mt-3" v-show="featureTableFlag" flat>
               <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
             </v-card>
             <div id="captureHisto">
-              <v-card class="mt-3" v-show="genes.length > 0 && histoFlag" flat>
+              <v-card class="mt-3" v-show="spatialCircleData.length > 0 && histoFlag" flat>
                 <histogram-graph v-show="histoFlag" :colorCode="colorMap" :idName="childGenes" :chartData="spatialCircleData"/>
               </v-card>
             </div>
             <div id="capturePeak" :style="{ visibility: visible }">
-              <v-card class="mt-3" v-show="genes.length > 0" v-resize="onResize" ref="peakContainer" :disabled="loading" flat>
+              <v-card class="mt-3" v-resize="onResize" ref="peakContainer" :disabled="loading" :loading="loading" flat>
                 <template v-if="geneMotif == 'gene'">
                     <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
                 </template>
@@ -896,9 +896,6 @@ export default defineComponent({
     function updateClusterLabel(ev: any) {
       clickedCluster.value = ev;
     }
-    function updateTen(ev: any) {
-      topTenIds.value = ev;
-    }
     function checkFieldColor(ev: any) {
       if (ev.indexOf('#') !== -1) {
         const cluster = ev.split('#')[0];
@@ -1123,6 +1120,13 @@ export default defineComponent({
       totalInClust.value = ev;
       updateSpatial();
     }
+    function updateTen(ev: any) {
+      topTenIds.value = ev;
+      if (Object.keys(totalInClust.value).length > 0) {
+        spatialData.value = false;
+        updateSpatial();
+      }
+    }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev;
       heatmapFlag.value = false;
@@ -1157,7 +1161,6 @@ export default defineComponent({
     }
     async function updateFilename() {
       if (!spatialData.value) return;
-      spatialData.value = false;
       /* eslint-disable no-lonely-if */
       try {
         if (!props.query.public) {
@@ -1169,7 +1172,6 @@ export default defineComponent({
             filename.value = hold!.replace(/motifs/i, 'genes');
           }
         }
-        await updateCircles();
       } catch (error) {
         console.log(error);
       }
@@ -1291,14 +1293,14 @@ export default defineComponent({
       const queue = 'creation_worker';
       const params = {
         data: null,
-        path: `${root}/${rid}`,
+        path: `${root}/${rid}/h5/obj`,
         file_type: 'json',
         file_name: 'metadata.json',
         bucket_name: 'atx-cloud-dev2',
       };
       const args: any[] = [params];
       const kwargs: any = {};
-      const name = `${root}/${rid}/metadata.json`;
+      const name = `${root}/${rid}/h5/obj/metadata.json`;
       const jsonFileName = { params: { filename: name } };
       const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
       let slimsData: any;
@@ -1366,6 +1368,7 @@ export default defineComponent({
       manualClusterFlag.value = false;
       cellTypeMap.value = {};
       cellTypeMapCopy.value = {};
+      spatialData.value = false;
       await runSpatial(runId.value);
       await getMeta(runId.value);
     }

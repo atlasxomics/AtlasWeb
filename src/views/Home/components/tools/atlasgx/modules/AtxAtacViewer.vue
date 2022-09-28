@@ -510,13 +510,6 @@ export default defineComponent({
       let colors_intensity: any[] = [];
       const totalHold: any = {};
       const numClusters = lodash.uniq(spatialData.value.spatial.map((v: any) => v[0])).length;
-      if ((selectedGenes.value.length === 0 || averageInd.value) && (!isDrawing.value && !isDrawingRect.value)) {
-        for (let i = 0; i < numClusters; i += 1) {
-          const cidx = `C${i + 1}`;
-          totalHold[cidx] = 0;
-        }
-        totalInClust.value = totalHold;
-      }
       if (!colorFromParent.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
         colors_raw.forEach((v: any, i: number) => {
@@ -558,7 +551,6 @@ export default defineComponent({
           if (v[0].includes('C')) {
             TSS.push(parseFloat(v[3]));
             nFrags.push(parseFloat(v[4]));
-            totalInClust.value[v[0]] += 1;
             const [tempX, tempY] = v[1].split(',');
             const [tempUX, tempUY] = v[2].split(',');
             const ax = parseFloat(tempX.slice(1));
@@ -724,21 +716,22 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
     async function retrieveData() {
+      /* eslint-disable no-lonely-if */
       if (spatialData.value === null) {
+        spatialData.value = {};
         if (!props.query.public) {
-          const geneFileName = `data/${runId.value}/gene.csv`;
-          const motifFileName = `data/${runId.value}/motif.csv`;
-          const tixelFileName = `data/${runId.value}/data.csv`;
-          const resp = await client.value!.getGeneMotifSpatial(geneFileName, motifFileName, tixelFileName);
-          spatialData.value = resp;
+          const tixelFileName = `data/${runId.value}/h5/obj/data.csv`;
+          const spatial = await client.value!.getCsvFile({ params: { filename: tixelFileName } });
+          spatialData.value.spatial = spatial;
         } else {
-          const resp = await client.value!.getGeneMotifSpatialByToken(filenameGene.value);
-          spatialData.value = resp;
+          const spatial = await client.value!.getGeneMotifSpatialByToken(filenameGene.value, 0);
+          spatialData.value.spatial = spatial;
         }
         const spatialX: number[] = [];
         const spatialY: number[] = [];
         const umapX: number[] = [];
         const umapY: number[] = [];
+        const totalHold: any = {};
         spatialData.value.spatial.forEach((list: string[], index: any) => {
           if (list[0].includes('C')) {
             const [tempX, tempY] = list[1].split(',');
@@ -751,6 +744,8 @@ export default defineComponent({
             spatialY.push(y);
             umapX.push(uX);
             umapY.push(uY);
+            if (!Object.keys(totalHold).includes(list[0])) totalHold[list[0]] = 1;
+            else totalHold[list[0]] += 1;
           }
         });
         minX.value = Math.min(...spatialX);
@@ -762,12 +757,36 @@ export default defineComponent({
         maxX_UMAP.value = Math.max(...umapX);
         maxY_UMAP.value = Math.max(...umapY);
         await updateCircles();
+        Object.keys(totalHold).forEach((v: any, index: any) => {
+          const key = `C${index + 1}`;
+          totalInClust.value[key] = totalHold[key];
+        });
+        ctx.emit('totalClust', totalInClust.value);
       }
-      ctx.emit('totalClust', totalInClust.value);
-      if (geneMotif.value === 'gene') {
-        ctx.emit('totalGM', Object.keys(spatialData.value.gene));
-      } else ctx.emit('totalGM', Object.keys(spatialData.value.motif));
       loading.value = false;
+      if (!props.query.public) {
+        if (geneMotif.value === 'gene') {
+          const geneFileName = `data/${runId.value}/h5/obj/gene.csv`;
+          const gene = await client.value!.getGeneMotifSpatial(geneFileName);
+          spatialData.value.gene = gene;
+          ctx.emit('totalGM', Object.keys(spatialData.value.gene));
+        } else {
+          const motifFileName = `data/${runId.value}/h5/obj/motif.csv`;
+          const motif = await client.value!.getGeneMotifSpatial(motifFileName);
+          spatialData.value.motif = motif;
+          ctx.emit('totalGM', Object.keys(spatialData.value.motif));
+        }
+      } else {
+        if (geneMotif.value === 'gene') {
+          const gene = await client.value!.getGeneMotifSpatialByToken(filenameGene.value, 1);
+          spatialData.value.gene = gene;
+          ctx.emit('totalGM', Object.keys(spatialData.value.gene));
+        } else {
+          const motif = await client.value!.getGeneMotifSpatialByToken(filenameGene.value, 2);
+          spatialData.value.motif = motif;
+          ctx.emit('totalGM', Object.keys(spatialData.value.motif));
+        }
+      }
     }
     async function runSpatial(change: boolean) {
       if (!client.value) return;
@@ -1123,25 +1142,24 @@ export default defineComponent({
       updateCircles();
     });
     watch(filenameFromParent, async (v: string) => {
-      if (v === '') {
-        ctx.emit('spatialFlag', false);
-      }
-      loading.value = true;
       filenameGene.value = v;
-      await runSpatial(true);
-      if (spatialData.value !== null) {
+      if (props.query.public) {
+        spatialData.value = null;
+        loading.value = true;
+        await runSpatial(true);
         await retrieveData();
       }
-      selectedGenes.value = [];
     });
     watch(runId, async (v: any) => {
-      if (v !== null) {
+      if (v !== null && !props.query.public) {
+        spatialData.value = null;
         loading.value = true;
+        await runSpatial(true);
         await retrieveData();
       }
     });
     watch(geneMotif, async (v: any) => {
-      if (props.query.public && spatialData.value !== null) {
+      if (spatialData.value !== null) {
         loading.value = true;
         await runSpatial(true);
         await retrieveData();

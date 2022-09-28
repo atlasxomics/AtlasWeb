@@ -165,12 +165,12 @@ export default defineComponent({
     async function runSpatial(path: any) {
       const existingCookie = readCookie();
       const split = existingCookie?.token.split('JWT ')[1];
-      const geneFileName = `data/${path}/gene.csv`;
-      const motifFileName = `data/${path}/motif.csv`;
-      const tixelFileName = `data/${path}/data.csv`;
-      const motifH5ad = `data/${path}/motifs.h5ad`;
-      const geneH5ad = `data/${path}/genes.h5ad`;
-      const motifCsv = `data/${path}/motifs.csv`;
+      const geneFileName = `data/${path}/h5/obj/gene.csv`;
+      const motifFileName = `data/${path}/h5/obj/motif.csv`;
+      const tixelFileName = `data/${path}/h5/obj/data.csv`;
+      const motifH5ad = `data/${path}/h5/obj/motifs.h5ad`;
+      const geneH5ad = `data/${path}/h5/obj/genes.h5ad`;
+      const motifCsv = `data/${path}/h5/obj/motifs.csv`;
       const { encoded: filenameToken } = await client.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: path } });
       const { host } = window.location;
       const publicLink = `http://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true&token=JWT%20${split}`;
@@ -181,15 +181,15 @@ export default defineComponent({
       if (filename !== null) {
         const name = filename;
         const jsonFileName = { params: { filename: name } };
-        const data = await client.value!.getJsonFile(jsonFileName);
-        return data;
+        const data = await client.value!.getData(jsonFileName);
+        return data[3];
       }
       return null;
     }
     async function getData() {
       loading.value = true;
       /* eslint-disable no-await-in-loop */
-      const groupsAndPub = await callJson('database/public.json');
+      const groupsAndPub = await callJson('public.json');
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
@@ -202,7 +202,7 @@ export default defineComponent({
       const precount: any = { 'Spatial Transcriptome': 0, 'Spatial ATAC': 0, 'Spatial Cut & Tag': 0 };
       const labMeta = Object.keys(groupsAndPub);
       for (let i = 0; i < labMeta.length; i += 1) {
-        predata[labMeta[i]] = await callJson(`database/${labMeta[i]}/metadata.json`);
+        predata[labMeta[i]] = await callJson(`${labMeta[i]}/metadata.json`);
         precount[decodeDT.value[labMeta[i]]] = 0;
       }
       const amountOfPub = Object.keys(predata);
@@ -214,12 +214,12 @@ export default defineComponent({
           const info = value[keys[i]];
           const pid = keys[i];
           for (let j = 0; j < parseInt(info.runs, 10); j += 1) {
-            const meta = await callJson(`database/${key}/publications/${pid}/D${j}/metadata.json`);
+            const meta = await callJson(`${key}/publications/${pid}/D${j}/metadata.json`);
             meta.keyPhrases.forEach((v: any, k: any) => {
               precount[decodeDT.value[v.trim()]] += 1;
             });
             precount[decodeDT.value[key]] += 1;
-            data.push({ id: `database/${key}/publications/${pid}/D${j}`, name: groupsAndPub[key].title, pmid: info.pmid, author: [...info.author], run: `D${j}`, meta });
+            data.push({ id: `${key}/publications/${pid}/D${j}`, name: groupsAndPub[key].title, pmid: info.pmid, author: [...info.author], run: `D${j}`, meta });
           }
         }
       }
