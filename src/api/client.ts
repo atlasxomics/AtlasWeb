@@ -14,6 +14,7 @@ import {
   Upload,
   UploadMeta,
   QcEntryGenerationRequest,
+  DBColumnsRequest,
 } from '@/types';
 
 // The time (10 minutes in ms) before the token expires to refresh it
@@ -368,6 +369,11 @@ export default class Client {
   async generateQcEntry(payload: QcEntryGenerationRequest): Promise<any> {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
     return resp.data;
+  }
+  async getDBColumns(payload: Record<string, any>): Promise<any> {
+    console.log(payload);
+    const resp = await this.axios.get('/api/v1/run_db/get_columns', payload);
+    return resp;
   }
   // SLIMS
   async getMetadataFromRunId(rid: string): Promise<any> {
