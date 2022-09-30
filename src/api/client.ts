@@ -219,6 +219,7 @@ export default class Client {
   // Requires Admin
   async registerUser(user: RegisterUserPayload): Promise<boolean> {
     try {
+      console.log(user);
       await this.axios.post('/api/v1/auth/user', user);
     } catch (error) {
       // If failed, user already exists
@@ -227,6 +228,15 @@ export default class Client {
 
     return true;
   }
+  async user_request_account(user_info: Record<string, any>) {
+    try {
+      console.log(user_info);
+      const res = this.axios.post('/api/v1/auth/user_account_request', user_info);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
   async confirmUser(user: string): Promise<any> {
     await this.axios.put(`/api/v1/auth/confirm/${user}`);
   }
@@ -234,7 +244,7 @@ export default class Client {
     await this.axios.delete(`/api/v1/auth/user/${user}`);
   }
   // Requires Admin
-  async resetUserPassword(user: ResetUserPasswordPayload): Promise<void> {
+  async resetUserPassword(user: any): Promise<void> {
     // This endpoint doesn't return anything useful, so nothing returned
     await this.axios.put('/api/v1/auth/resetpassword', user);
   }
@@ -482,6 +492,14 @@ export default class Client {
     const table_name = 'dbit_metadata';
     const payload = { params: { collaborator, table_name, web_objs } };
     const resp = await this.axios.get('/api/v1/run_db/get_runs_collaborator', payload);
+    return resp.data;
+  }
+  async get_user_list() {
+    const resp = await this.axios.get('/api/v1/auth/list_accounts');
+    return resp.data;
+  }
+  async get_group_list() {
+    const resp = await this.axios.get('/api/v1/auth/group');
     return resp.data;
   }
 }
