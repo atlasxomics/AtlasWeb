@@ -65,6 +65,10 @@ export interface RegisterUserPayload extends ResetUserPasswordPayload {
   groups: string[];
 }
 
+export interface UserRequestPayload extends RegisterUserPayload {
+  pi_name: string;
+}
+
 // Dataset Payloads
 export interface DatasetListingWafer {
   wafer_id: string;
