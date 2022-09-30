@@ -80,6 +80,10 @@
               <v-col
               v-if="!loginScreenDisplayed">
               <v-text-field
+              label="Name"
+              v-model="name_user">
+              </v-text-field>
+              <v-text-field
               label="Username"
               v-model="username">
               </v-text-field>
@@ -88,9 +92,26 @@
               v-model="email"
               >
               </v-text-field>
+              <v-text-field
+              label="Lab/PI Name"
+              v-model="pi_name"
+              >
+              </v-text-field>
+              <!-- <v-text-field
+              label="PI Name"
+              v-model="pi_name"
+              >
+              DOG
+              </v-text-field> -->
+              <v-text-field
+              label="Password"
+              v-model="password"
+              >
+              </v-text-field>
               <v-btn
               color="primary"
               :disabled="!username || !email"
+              @click="send_account_request"
               >
                 Request Account
               </v-btn>
@@ -110,28 +131,45 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watchEffect } from '@vue/composition-api';
+import { computed, defineComponent, onMounted, ref, watchEffect } from '@vue/composition-api';
 
-import { login, isClient } from '@/api';
+import { login, isClient, Client } from '@/api';
 import { loggedIn, saveCookie, readCookie, logout } from '@/utils/auth';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
+import { UserRequestPayload } from '@/types';
+
+const clientReady = new Promise((resolve) => {
+  const ready = computed(() => (
+    store.state.client !== null
+  ));
+  watchEffect(() => {
+    console.log(ready);
+    if (ready.value) { resolve(true); }
+  });
+});
 
 export default defineComponent({
   name: 'Login',
   setup(props, ctx) {
+    onMounted(async () => {
+      console.log('dog');
+    });
     // NOTE: May need to be computed ref
     const router = ctx.root.$router;
+    // const client = new Client();
+    // const client = computed(() => store.state.client);
     const loginScreenDisplayed = ref<boolean>(true);
-    const username = ref<string | null>(null);
-    const password = ref<string | null>(null);
-    const email = ref<string | null>(null);
+    const username = ref<string>('');
+    const password = ref<string>('');
+    const name_user = ref<string>('');
+    const pi_name = ref<string>('');
+    const email = ref<string>('');
     const loading = ref<boolean>(false);
     const loginErrorMessage = ref<string | null>(null);
     // const email_regex = new RegExp('[a-z]{3}@')
     const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
-
     // calls login function from index.ts which calls api to verify user.
     // If successful, returns a connected client
     async function loginUser() {
@@ -150,14 +188,34 @@ export default defineComponent({
           loginErrorMessage.value = resp;
         }
         loading.value = false;
-        username.value = null;
-        password.value = null;
+        username.value = '';
+        password.value = 'k';
       }
     }
+    async function send_account_request() {
+      // if (!client.value) return;
+      const pl = {
+        username: username.value,
+        password: password.value,
+        email: email.value,
+        name: name_user.value,
+        groups: ['collab'],
+        pi_name: pi_name.value,
+      };
+      const temp_client = new Client(
+        PROD_SERVER_URL,
+        '',
+      );
+      temp_client.user_request_account(pl);
+      console.log(temp_client);
+      // console.log(client);
+      // const resp = client.value?.user_request_account(pl);
+      // console.log(pl);
+    }
     function registrationClicked() {
-      password.value = null;
-      username.value = null;
-      email.value = null;
+      password.value = '';
+      username.value = '';
+      email.value = '';
       loginScreenDisplayed.value = false;
     }
     function request_available() {
@@ -173,20 +231,22 @@ export default defineComponent({
         router.push('/');
       }
     });
-
     return {
       SERVER_URL,
       loginUser,
       loginErrorMessage,
+      name_user,
+      pi_name,
       username,
       password,
+      email,
       showAdvanced,
       useTestServer,
       loading,
       loginScreenDisplayed,
       registrationClicked,
       request_available,
-      email,
+      send_account_request,
     };
   },
 });
