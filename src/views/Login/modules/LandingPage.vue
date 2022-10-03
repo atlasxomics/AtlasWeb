@@ -2,7 +2,7 @@
   <v-container fluid>
     <v-row no-gutters>
       <v-col cols="12" sm="3" style="padding-left:10px">
-        <v-card :loading="loading" flat v-if="numOfPubs.length > 0">
+        <v-card :loading="loading" flat>
           <v-card-title>Filters</v-card-title>
           <v-divider style="width:91%"/>
           <template v-for="item in groupsAndData">
@@ -34,11 +34,11 @@
           placeholder="Search eg. PMID, Author, Disease Type"
           clearable
           prepend-icon="mdi-magnify"/>
-        <v-card v-for="data in numOfPubsHold" v-bind:key="data.id">
-          <v-card-title style="pointer-events: auto" @click="runSpatial(data.meta.runId)">{{data.meta.title}}</v-card-title>
-          <v-card-subtitle>{{data.meta.time}}</v-card-subtitle>
-          <v-card-text>{{data.meta.description}}</v-card-text>
-          <v-card-subtitle v-for="keys in data.meta.keyPhrases" v-bind:key="keys+data.id">{{keys}}</v-card-subtitle>
+        <v-card v-for="data in numOfPubsHold" v-bind:key="data.run_id">
+          <v-card-title style="pointer-events: auto" @click="runSpatial(data)">{{data.run_title}}</v-card-title>
+          <v-card-subtitle>{{data.date}}</v-card-subtitle>
+          <v-card-text>{{data.description}}</v-card-text>
+          <v-card-subtitle v-for="keys in data.type" v-bind:key="keys+data.id">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-card-subtitle>
         </v-card>
       </v-col>
     </v-row>
@@ -48,7 +48,7 @@
 <script lang="ts">
 import { defineComponent, ref, watchEffect, onMounted, computed } from '@vue/composition-api';
 import { login, isClient } from '@/api';
-import lodash, { lte } from 'lodash';
+import lodash, { lte, update } from 'lodash';
 import { loggedIn, saveCookie, readCookie, logout } from '@/utils/auth';
 import { generateRouteByQuery } from '@/utils';
 import store from '@/store';
@@ -67,14 +67,7 @@ export default defineComponent({
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
     const signFlag = ref(false);
     const show = ref(false);
-    const groupsAndData = ref<any[]>([
-      {
-        action: 'mdi-ticket',
-        active: true,
-        items: ['Spatial Transcriptome', 'Spatial ATAC', 'Spatial Cut & Tag'],
-        title: 'Data Type',
-      },
-    ]);
+    const groupsAndData = ref<any[]>([]);
     const dataTypes = ref<any[]>([]);
     const numOfPubs = ref<any[]>([]);
     const numOfPubsHold = ref<any[]>([]);
@@ -83,7 +76,8 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const count = ref<any>({});
     const countHold = ref<any>({});
-    const decodeDT = ref<any>({ 'spatial transcriptome': 'Spatial Transcriptome', 'spatial atac': 'Spatial ATAC', 'spatial cut & tag': 'Spatial Cut & Tag', Rong: 'Rong Lab', Atlas: 'Atlas', Hurd: 'Hurd Lab' });
+    const decodeDT = ref<any>(['Transcriptome', 'ATAC', 'Cut&Tag', 'Atlas', 'Rong', 'Hurd']);
+    const decodeDTTwo = ref<any[]>(['Spatial Transcriptome', 'Spatial ATAC', 'Spatial Cut & Tag', 'Atlas', 'Rong Lab', 'Hurd Lab']);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -110,20 +104,21 @@ export default defineComponent({
           const bool: boolean[] = [];
           checkBoxArr.value.forEach((elements: any) => {
             if (elements.title === 'Groups') {
-              if (elements.key.trim() === value.name.trim()) bool.push(true);
+              if (decodeDT.value[decodeDTTwo.value.indexOf(elements.key.trim())] === value.groupName.trim()) bool.push(true);
               else bool.push(false);
             }
             if (elements.title === 'Data Type') {
-              if (value.meta.keyPhrases.includes(elements.key.toLowerCase().trim())) bool.push(true);
+              if (value.type.includes(decodeDT.value[decodeDTTwo.value.indexOf(elements.key.trim())])) bool.push(true);
               else bool.push(false);
             }
           });
           if (!bool.includes(false)) hold.push(value);
         });
         hold.forEach((value: any, key: any) => {
-          countHold.value[value.name] += 1;
-          value.meta.keyPhrases.forEach((v: any, k: any) => {
-            countHold.value[decodeDT.value[v.trim()]] += 1;
+          countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(value.groupName)]] += 1;
+          value.type.forEach((v: any, k: any) => {
+            // decodeDTTwo.value[decodeDT.value.indexOf(elements.key.toLowerCase().replaceAll(' ', ''))]
+            countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(v.trim())]] += 1;
           });
         });
         numOfPubsHold.value = hold;
@@ -153,7 +148,7 @@ export default defineComponent({
           if (digit) {
             if (ev === value.pmid) hold.push(value);
           } else {
-            value.author.forEach((auth: string, index: any) => {
+            value.authors.forEach((auth: string, index: any) => {
               if (auth.toLowerCase().startsWith(ev)) hold.push(value);
             });
           }
@@ -162,7 +157,8 @@ export default defineComponent({
       }
       loading.value = false;
     }
-    async function runSpatial(path: any) {
+    async function runSpatial(runObject: any) {
+      const path = runObject.run_id;
       const existingCookie = readCookie();
       const split = existingCookie?.token.split('JWT ')[1];
       const geneFileName = `data/${path}/h5/obj/gene.csv`;
@@ -171,58 +167,44 @@ export default defineComponent({
       const motifH5ad = `data/${path}/h5/obj/motifs.h5ad`;
       const geneH5ad = `data/${path}/h5/obj/genes.h5ad`;
       const motifCsv = `data/${path}/h5/obj/motifs.csv`;
-      const { encoded: filenameToken } = await client.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: path } });
+      const { encoded: filenameToken } = await client.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: path, species: runObject.species, tissue: runObject.tissue } });
       const { host } = window.location;
       const publicLink = `http://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true&token=JWT%20${split}`;
       router.push(`public?component=PublicGeneViewer&run_id=${filenameToken}&public=true&token=JWT%20${split}`);
       pushByQuery({ component: 'PublicGeneViewer', run_id: filenameToken, public: 'true', token: existingCookie?.token });
     }
-    async function callJson(filename: string) {
-      if (filename !== null) {
-        const name = filename;
-        const jsonFileName = { params: { filename: name } };
-        const data = await client.value!.getData(jsonFileName);
-        return data[3];
-      }
-      return null;
-    }
     async function getData() {
       loading.value = true;
       /* eslint-disable no-await-in-loop */
-      const groupsAndPub = await callJson('public.json');
+      const allRuns = await client.value?.getPublicRuns();
+      const data: any[] = [];
+      const labs: any[] = [];
+      const type: any[] = [];
+      const precount: any = {};
+      allRuns.forEach((json: any, index: any) => {
+        if (!labs.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)])) labs.push(decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)]);
+        if (!type.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.type)])) type.push(decodeDTTwo.value[decodeDT.value.indexOf(json.type)]);
+        if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)]] = 1;
+        else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)]] += 1;
+        if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.type)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.type)]] = 1;
+        else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.type)]] += 1;
+        const updateJson = json;
+        updateJson.authors = [...updateJson.authors.split(',')];
+        updateJson.type = [...updateJson.type.split(',')];
+        data.push(updateJson);
+      });
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
-        items: [...Object.values(groupsAndPub).map((value: any) => value.title)],
+        items: [...labs],
         title: 'Groups',
       });
-      groupsAndData.value.reverse();
-      const data: any[] = [];
-      const predata: any = {};
-      const precount: any = { 'Spatial Transcriptome': 0, 'Spatial ATAC': 0, 'Spatial Cut & Tag': 0 };
-      const labMeta = Object.keys(groupsAndPub);
-      for (let i = 0; i < labMeta.length; i += 1) {
-        predata[labMeta[i]] = await callJson(`${labMeta[i]}/metadata.json`);
-        precount[decodeDT.value[labMeta[i]]] = 0;
-      }
-      const amountOfPub = Object.keys(predata);
-      for (let x = 0; x < amountOfPub.length; x += 1) {
-        const value = predata[amountOfPub[x]];
-        const key = amountOfPub[x];
-        const keys = Object.keys(value);
-        for (let i = 0; i < keys.length; i += 1) {
-          const info = value[keys[i]];
-          const pid = keys[i];
-          for (let j = 0; j < parseInt(info.runs, 10); j += 1) {
-            const meta = await callJson(`${key}/publications/${pid}/D${j}/metadata.json`);
-            meta.keyPhrases.forEach((v: any, k: any) => {
-              precount[decodeDT.value[v.trim()]] += 1;
-            });
-            precount[decodeDT.value[key]] += 1;
-            data.push({ id: `${key}/publications/${pid}/D${j}`, name: groupsAndPub[key].title, pmid: info.pmid, author: [...info.author], run: `D${j}`, meta });
-          }
-        }
-      }
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        active: true,
+        items: [...type],
+        title: 'Data Type',
+      });
       lodash.each(precount, (v: any, i: any) => {
         countHold.value[i] = v;
         count.value[i] = v;
@@ -250,7 +232,6 @@ export default defineComponent({
       show,
       client,
       checkBoxSort,
-      callJson,
       numOfPubs,
       runSpatial,
       openLink,
@@ -262,6 +243,7 @@ export default defineComponent({
       count,
       countHold,
       decodeDT,
+      decodeDTTwo,
     };
   },
 });

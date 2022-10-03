@@ -657,7 +657,7 @@
             <div id="capturePeak" :style="{ visibility: visible }">
               <v-card class="mt-3" v-resize="onResize" ref="peakContainer" :disabled="loading" :loading="loading" flat>
                 <template v-if="geneMotif == 'gene'">
-                    <track-browser ref="trackbrowser" :run_id="runId" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
+                    <track-browser ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
                 </template>
                 <template v-if="geneMotif == 'motif'">
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
@@ -1288,62 +1288,14 @@ export default defineComponent({
       element.value = '';
     }
     async function getMeta(rid = runId.value) {
-      const root = 'data';
-      const task = 'creation.create_files';
-      const queue = 'creation_worker';
-      const params = {
-        data: null,
-        path: `${root}/${rid}/h5/obj`,
-        file_type: 'json',
-        file_name: 'metadata.json',
-        bucket_name: 'atx-cloud-dev2',
-      };
-      const args: any[] = [params];
-      const kwargs: any = {};
-      const name = `${root}/${rid}/h5/obj/metadata.json`;
-      const jsonFileName = { params: { filename: name } };
-      const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
-      let slimsData: any;
-      if (!jsonBoolean) {
-        loading.value = true;
-        slimsData = await client.value!.getMetadataFromRunId(`${cleanRunId(rid!)}`);
-        params.data = slimsData;
-        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
-        await checkTaskStatus(taskObject._id);
-        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
-          /* eslint-disable no-await-in-loop */
-          await new Promise((r) => {
-            taskTimeout.value = window.setTimeout(r, 1000);
-          });
-          taskTimeout.value = null;
-          await checkTaskStatus(taskObject._id);
-        }
-        /* eslint-disable no-await-in-loop */
-        if (taskStatus.value.status !== 'SUCCESS') {
-          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
-          loading.value = false;
-          return;
-        }
-        loading.value = false;
-      } else {
-        slimsData = jsonBoolean;
-      }
-      metadata.value.organ = slimsData.cntn_cf_fk_organ;
-      metadata.value.species = slimsData.cntn_cf_fk_species;
-      metadata.value.type = slimsData.cntn_cf_fk_tissueType;
-      metadata.value.assay = slimsData.cntn_cf_fk_workflow;
-      [metadata.value.date] = slimsData.sequenced_on.split(' ');
-      if (slimsData.cntn_cf_experimentalCondition && slimsData.cntn_cf_sampleId) {
-        const beginning = slimsData.cntn_cf_experimentalCondition;
-        if (slimsData.cntn_cf_sampleId.includes(beginning)) {
-          metadata.value.condition = slimsData.cntn_cf_sampleId;
-        } else {
-          const ending = `${beginning}-${slimsData.cntn_cf_sampleId}`;
-          metadata.value.condition = ending;
-        }
-      }
-      collabName.value = slimsData.cntn_cf_source;
+      const nullGetter = (rid === null) ? '' : rid;
+      const [runMetadata] = await client.value?.getGroupPublicRuns(nullGetter);
+      metadata.value.organ = runMetadata.tissue;
+      metadata.value.species = runMetadata.species.split(',')[1].replace('_', ' ');
+      // metadata.value.type = slimsData.cntn_cf_fk_tissueType;
+      metadata.value.assay = runMetadata.type;
+      metadata.value.date = runMetadata.date;
+      metadata.value.condition = runMetadata.condition;
       loading.value = false;
     }
     async function selectAction(ev: any) {
@@ -1411,7 +1363,10 @@ export default defineComponent({
       loading.value = false;
     }
     async function getPublicId(ev: any) {
-      runId.value = ev;
+      runId.value = ev.id;
+      metadata.value.organ = ev.organ;
+      const splitSpecies = ev.species.split(',')[1].replace('_', ' ');
+      metadata.value.species = splitSpecies;
       if (props.query && runId.value === null) {
         if (props.query.run_id) {
           await selectAction({ id: props.query.run_id });

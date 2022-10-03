@@ -801,7 +801,7 @@ export default defineComponent({
           const kwargs = {};
           const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, (geneMotif.value === 'gene') ? 3 : 4) : await client.value.postTask(task, args, kwargs, queue);
           if (props.query.public) {
-            ctx.emit('publicRun', taskObject.meta.run_id);
+            ctx.emit('publicRun', { id: taskObject.meta.run_id, species: taskObject.meta.species, organ: taskObject.meta.tissue });
           }
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */

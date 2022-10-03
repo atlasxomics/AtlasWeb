@@ -491,4 +491,29 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/dataset/wafertrace', payload);
     return resp.data;
   }
+  async getRunsCollaborator(collaborator: string, web_objs: boolean) {
+    const table_name = 'dbit_metadata';
+    const payload = { params: { collaborator, table_name, web_objs } };
+    const resp = await this.axios.get('/api/v1/run_db/get_runs_collaborator', payload);
+    return resp.data;
+  }
+  async getPublicRuns() {
+    const table_name = 'all_run_data';
+    const payload = { params: { table: table_name } };
+    const resp = await this.axios.get('/api/v1/run_db/get_runs', payload);
+    return resp.data;
+  }
+  async getGroupPublicRuns(group: string) {
+    const table_name = 'all_run_data';
+    const payload = { params: { table: table_name, group } };
+    const resp = await this.axios.get('/api/v1/run_db/get_group_runs', payload);
+    return resp.data;
+  }
+  async re_initialize_db() {
+    const database = 'public_data';
+    const payload = { params: { database } };
+    console.log(payload);
+    const resp = await this.axios.get('/api/v1/run_db/reinitialize_db', payload);
+    return resp.data;
+  }
 }
