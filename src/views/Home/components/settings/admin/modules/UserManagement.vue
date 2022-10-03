@@ -46,8 +46,9 @@
             >
             </v-select>
             <v-btn
-            v-if="changes_made"
+            :disabled="!changes_made"
             @click="write_changes"
+            color="primary"
             >
               Confirm Changes
             </v-btn>
