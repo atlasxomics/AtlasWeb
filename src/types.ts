@@ -131,3 +131,9 @@ export interface QcEntryGenerationRequest {
   }
 }
 
+export interface UpdatingGroupsRequest {
+    groups_adding: string[],
+    groups_removing: string[],
+    username: string,
+}
+

@@ -14,6 +14,7 @@ import {
   Upload,
   UploadMeta,
   QcEntryGenerationRequest,
+  UpdatingGroupsRequest,
 } from '@/types';
 
 // The time (10 minutes in ms) before the token expires to refresh it
@@ -496,10 +497,15 @@ export default class Client {
   }
   async get_user_list() {
     const resp = await this.axios.get('/api/v1/auth/list_accounts');
+    console.log(resp.data);
     return resp.data;
   }
   async get_group_list() {
     const resp = await this.axios.get('/api/v1/auth/group');
+    return resp.data;
+  }
+  async modify_group_list(payload: UpdatingGroupsRequest) {
+    const resp = await this.axios.put('/api/v1/auth/modify_group_list', payload);
     return resp.data;
   }
 }

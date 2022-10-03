@@ -52,16 +52,6 @@
             >
               Confirm Changes
             </v-btn>
-            <!-- <p v-for="(group, index) in selected_user.groups" :key="index">
-            {{ group }}
-            </p>
-            <p v-for="number in (number_new_groups_options.length + 1)" :key="number">
-              <v-select
-              :items="groups_list"
-              label="Add Group"
-              >
-              </v-select>
-            </p> -->
             </v-col>
         </v-row>
     </v-container>
@@ -70,7 +60,7 @@
 <script lang='ts'>
 import { defineComponent, ref, watchEffect, computed, onMounted, watch } from '@vue/composition-api';
 import store from '@/store';
-import { add } from 'lodash';
+import { UpdatingGroupsRequest } from '@/types';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -100,6 +90,7 @@ export default defineComponent({
     const original_group_lis = ref<string[]>([]);
 
     function groups_list_changed() {
+      console.log(original_group_lis.value);
       adding_group_lis.value = users_groups.value.filter(
         (val) => !original_group_lis.value.includes(val),
       );
@@ -125,9 +116,10 @@ export default defineComponent({
       confirm_user_status.value = true;
       changes_made.value = true;
     }
-    function write_changes() {
+    async function write_changes() {
       if (confirm_user_status.value) {
         console.log('confirming user status');
+        // client.value!.confirmUser(selected_user.name);
       }
       for (let i = 0; i < adding_group_lis.value.length; i += 1) {
         console.log('adding to group '.concat(adding_group_lis.value[i]));
@@ -135,15 +127,24 @@ export default defineComponent({
       for (let i = 0; i < removing_group_lis.value.length; i += 1) {
         console.log('removing from group '.concat(removing_group_lis.value[i]));
       }
+      if (adding_group_lis.value.length > 0 || removing_group_lis.value.length > 0) {
+        const payload: UpdatingGroupsRequest = {
+          groups_adding: adding_group_lis.value,
+          groups_removing: removing_group_lis.value,
+          username: selected_user.value.username,
+        };
+        const resp = await client.value?.modify_group_list(payload);
+        if (resp === 'Success') {
+          changes_made.value = false;
+        }
+      }
+      user_list.value = await client.value?.get_user_list();
+      original_group_lis.value = user_list.value[selected_user.value.username].groups;
     }
     onMounted(async () => {
       await clientReady;
-      console.log('bash');
       user_list.value = await client.value?.get_user_list();
       groups_list.value = await client.value?.get_group_list();
-      // client.value!.get_group_list().then((value: any) => {
-      //   groups_list.value = value;
-      // });
       console.log(user_list);
     });
     return {
