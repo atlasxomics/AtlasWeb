@@ -1,7 +1,10 @@
 <template>
     <v-container>
-        <v-row>
-            <v-col>
+        <v-row
+        >
+            <v-col
+            cols="2"
+            >
                 <h2> User List </h2>
                 <p v-for="(user, index) in user_list" :key="index">
                     <v-btn
@@ -11,8 +14,8 @@
                     </v-btn>
                 </p>
             </v-col>
-            <v-spacer/>
             <v-col
+            cols="3"
             v-if="selected_user"
             >
             <h2> Account Information </h2>
@@ -53,6 +56,23 @@
               Confirm Changes
             </v-btn>
             </v-col>
+            <v-col
+            cols="3"
+            >
+            <h2> Create Group </h2>
+            <v-text-field
+            class="add-group"
+            label="New Group Name"
+            v-model="new_group_name"
+            >
+            </v-text-field>
+            <v-btn
+            @click="add_group_clicked"
+            :disabled="!new_group_name || groups_list.includes(new_group_name)"
+            >
+            Add Group
+            </v-btn>
+            </v-col>
         </v-row>
     </v-container>
 </template>
@@ -88,6 +108,13 @@ export default defineComponent({
     const adding_group_lis = ref<string[]>([]);
     // const group_changes = new Map<string, boolean>();
     const original_group_lis = ref<string[]>([]);
+    const display_group_addition = ref<boolean>(false);
+    const new_group_name = ref<string | null>(null);
+    function add_group_clicked() {
+      if (!new_group_name) return;
+      console.log('creating group'.concat(new_group_name.value));
+      groups_list.value.push(new_group_name.value);
+    }
 
     function groups_list_changed() {
       console.log(original_group_lis.value);
@@ -164,7 +191,20 @@ export default defineComponent({
       removing_group_lis,
       adding_group_lis,
       write_changes,
+      add_group_clicked,
+      new_group_name,
+      display_group_addition,
     };
   },
 });
 </script>
+
+<style>
+.aligned {
+  text-align: center;
+}
+.add-group {
+  position: relative;
+  top: 15px;
+}
+</style>
