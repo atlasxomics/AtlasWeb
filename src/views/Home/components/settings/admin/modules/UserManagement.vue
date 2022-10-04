@@ -36,8 +36,9 @@
              <v-btn
              v-if="confirmation_status === 'UNCONFIRMED'"
              @click="confirm_user"
+             color="green"
              >
-             Confirm User
+             Confirm
               </v-btn>
             </p>
             <v-select
@@ -73,18 +74,17 @@
             >
             </v-text-field>
             <v-btn
-            class="center"
+            class="ma-2"
             @click="add_group_clicked"
             color="green"
-            :style="{left: '50%',top: '20px', transform:'translateX(-50%)'}"
             :disabled="(new_group_description === '' || entered_group_name === '' || groups_list.includes(entered_group_name))"
             >
-            Create Group
+            Modify Groups
             </v-btn>
             <v-btn
+            class="ma-2"
             @click="remove_group"
             color="red"
-            :style="{left: '50%',top: '30px', transform:'translateX(-50%)'}"
             :disabled="!(groups_list.includes(entered_group_name))"
             >
             Delete Group
