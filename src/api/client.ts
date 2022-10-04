@@ -15,6 +15,8 @@ import {
   UploadMeta,
   QcEntryGenerationRequest,
   UpdatingGroupsRequest,
+  GroupRequest,
+  CreateGroupRequest,
 } from '@/types';
 
 // The time (10 minutes in ms) before the token expires to refresh it
@@ -239,7 +241,9 @@ export default class Client {
     }
   }
   async confirmUser(user: string): Promise<any> {
-    await this.axios.put(`/api/v1/auth/confirm/${user}`);
+    console.log(user);
+    const pl = { data: { user } };
+    await this.axios.put('/api/v1/auth/confirm', pl);
   }
   async deleteUser(user: string): Promise<any> {
     await this.axios.delete(`/api/v1/auth/user/${user}`);
@@ -504,8 +508,23 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/auth/group');
     return resp.data;
   }
+  async create_group(group_name: string, description: string) {
+    const pl = {
+      data: {
+        group_name,
+        description,
+      },
+    };
+    const resp = await this.axios.post('/api/v1/auth/group', pl);
+    return resp.data;
+  }
   async modify_group_list(payload: UpdatingGroupsRequest) {
     const resp = await this.axios.put('/api/v1/auth/modify_group_list', payload);
+    return resp.data;
+  }
+  async delete_group(group_name: string) {
+    const pl = { data: { group_name } };
+    const resp = await this.axios.delete('/api/v1/auth/group', pl);
     return resp.data;
   }
 }

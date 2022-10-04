@@ -63,14 +63,31 @@
             <v-text-field
             class="add-group"
             label="New Group Name"
-            v-model="new_group_name"
+            v-model="entered_group_name"
+            >
+            </v-text-field>
+            <v-text-field
+            class="add-group"
+            label="Description"
+            v-model="new_group_description"
             >
             </v-text-field>
             <v-btn
+            class="center"
             @click="add_group_clicked"
-            :disabled="!new_group_name || groups_list.includes(new_group_name)"
+            color="green"
+            :style="{left: '50%',top: '20px', transform:'translateX(-50%)'}"
+            :disabled="(new_group_description === '' || entered_group_name === '' || groups_list.includes(entered_group_name))"
             >
-            Add Group
+            Create Group
+            </v-btn>
+            <v-btn
+            @click="remove_group"
+            color="red"
+            :style="{left: '50%',top: '30px', transform:'translateX(-50%)'}"
+            :disabled="!(groups_list.includes(entered_group_name))"
+            >
+            Delete Group
             </v-btn>
             </v-col>
         </v-row>
@@ -80,7 +97,7 @@
 <script lang='ts'>
 import { defineComponent, ref, watchEffect, computed, onMounted, watch } from '@vue/composition-api';
 import store from '@/store';
-import { UpdatingGroupsRequest } from '@/types';
+import { CreateGroupRequest, GroupRequest, UpdatingGroupsRequest } from '@/types';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -109,11 +126,27 @@ export default defineComponent({
     // const group_changes = new Map<string, boolean>();
     const original_group_lis = ref<string[]>([]);
     const display_group_addition = ref<boolean>(false);
-    const new_group_name = ref<string | null>(null);
+    const entered_group_name = ref<string>('');
+    const new_group_description = ref<string>('');
+
+    function remove_group() {
+      const resp = client.value?.delete_group(entered_group_name.value);
+      console.log(resp);
+      console.log('removing '.concat(entered_group_name.value));
+    }
+
     function add_group_clicked() {
-      if (!new_group_name) return;
-      console.log('creating group'.concat(new_group_name.value));
-      groups_list.value.push(new_group_name.value);
+      if (!entered_group_name.value) return;
+      if (!new_group_description.value) return;
+      const pl: CreateGroupRequest = {
+        params: {
+          group_name: entered_group_name.value,
+          description: new_group_description.value,
+        },
+      };
+      const resp = client.value?.create_group(entered_group_name.value, new_group_description.value);
+      console.log(resp);
+      groups_list.value.push(entered_group_name.value);
     }
 
     function groups_list_changed() {
@@ -146,7 +179,7 @@ export default defineComponent({
     async function write_changes() {
       if (confirm_user_status.value) {
         console.log('confirming user status');
-        // client.value!.confirmUser(selected_user.name);
+        client.value!.confirmUser(selected_user.value.username);
       }
       for (let i = 0; i < adding_group_lis.value.length; i += 1) {
         console.log('adding to group '.concat(adding_group_lis.value[i]));
@@ -192,8 +225,10 @@ export default defineComponent({
       adding_group_lis,
       write_changes,
       add_group_clicked,
-      new_group_name,
+      entered_group_name,
       display_group_addition,
+      new_group_description,
+      remove_group,
     };
   },
 });

@@ -137,3 +137,15 @@ export interface UpdatingGroupsRequest {
     username: string,
 }
 
+export interface GroupRequest {
+  params: {
+    group_name: string,
+  }
+}
+
+export interface CreateGroupRequest {
+  params: {
+    group_name: string,
+    description: string,
+  }
+}
