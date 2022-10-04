@@ -1024,7 +1024,7 @@ export default defineComponent({
       }
     }
     function sendGene(ev: any) {
-      if (!selectedGenes.value.includes(ev)) {
+      if (!selectedGenes.value.includes(ev) && genes.value.length > 0) {
         geneButton.value = [ev];
       }
       isClusterView.value = false;
@@ -1290,12 +1290,12 @@ export default defineComponent({
     async function getMeta(rid = runId.value) {
       const nullGetter = (rid === null) ? '' : rid;
       const [runMetadata] = await client.value?.getGroupPublicRuns(nullGetter);
-      metadata.value.organ = runMetadata.tissue;
-      metadata.value.species = runMetadata.species.split(',')[1].replace('_', ' ');
-      // metadata.value.type = slimsData.cntn_cf_fk_tissueType;
-      metadata.value.assay = runMetadata.type;
-      metadata.value.date = runMetadata.date;
-      metadata.value.condition = runMetadata.condition;
+      metadata.value.organ = runMetadata.Tissue;
+      metadata.value.species = runMetadata.Species.split(',')[1].replace('_', ' ');
+      metadata.value.type = runMetadata.Tissue_Type;
+      metadata.value.assay = runMetadata.Assay_Type;
+      metadata.value.date = runMetadata.Date;
+      metadata.value.condition = runMetadata.Condition;
       loading.value = false;
     }
     async function selectAction(ev: any) {
@@ -1364,7 +1364,7 @@ export default defineComponent({
     }
     async function getPublicId(ev: any) {
       runId.value = ev.id;
-      metadata.value.organ = ev.organ;
+      metadata.value.organ = ev.tissue;
       const splitSpecies = ev.species.split(',')[1].replace('_', ' ');
       metadata.value.species = splitSpecies;
       if (props.query && runId.value === null) {
@@ -1419,6 +1419,7 @@ export default defineComponent({
           span.innerText = 'MOTIF';
         }
       }
+      genes.value = [];
       featureTableFlag.value = true;
       peakViewerFlag.value = false;
       histoFlag.value = false;

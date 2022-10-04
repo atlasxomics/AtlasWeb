@@ -1,5 +1,6 @@
 <template v-if="geneList">
     <v-autocomplete
+      :loading="(genes.length == 0) ? true : false"
       :disabled="(genes.length == 0) ? true : false"
       class="noScroll"
       id ="noScrollId"

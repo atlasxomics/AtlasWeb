@@ -34,11 +34,11 @@
           placeholder="Search eg. PMID, Author, Disease Type"
           clearable
           prepend-icon="mdi-magnify"/>
-        <v-card v-for="data in numOfPubsHold" v-bind:key="data.run_id">
-          <v-card-title style="pointer-events: auto" @click="runSpatial(data)">{{data.run_title}}</v-card-title>
-          <v-card-subtitle>{{data.date}}</v-card-subtitle>
-          <v-card-text>{{data.description}}</v-card-text>
-          <v-card-subtitle v-for="keys in data.type" v-bind:key="keys+data.id">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-card-subtitle>
+        <v-card v-for="data in numOfPubsHold" v-bind:key="data.Run_id">
+          <v-card-title style="pointer-events: auto" @click="runSpatial(data)">{{data.Run_Title}}</v-card-title>
+          <v-card-subtitle>{{data.Date}}</v-card-subtitle>
+          <v-card-text>{{data.Description}}</v-card-text>
+          <v-card-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-card-subtitle>
         </v-card>
       </v-col>
     </v-row>
@@ -104,19 +104,19 @@ export default defineComponent({
           const bool: boolean[] = [];
           checkBoxArr.value.forEach((elements: any) => {
             if (elements.title === 'Groups') {
-              if (decodeDT.value[decodeDTTwo.value.indexOf(elements.key.trim())] === value.groupName.trim()) bool.push(true);
+              if (decodeDT.value[decodeDTTwo.value.indexOf(elements.key.trim())] === value.Group_Name.trim()) bool.push(true);
               else bool.push(false);
             }
             if (elements.title === 'Data Type') {
-              if (value.type.includes(decodeDT.value[decodeDTTwo.value.indexOf(elements.key.trim())])) bool.push(true);
+              if (value.Assay_Type.includes(decodeDT.value[decodeDTTwo.value.indexOf(elements.key.trim())])) bool.push(true);
               else bool.push(false);
             }
           });
           if (!bool.includes(false)) hold.push(value);
         });
         hold.forEach((value: any, key: any) => {
-          countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(value.groupName)]] += 1;
-          value.type.forEach((v: any, k: any) => {
+          countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(value.Group_Name)]] += 1;
+          value.Assay_Type.forEach((v: any, k: any) => {
             // decodeDTTwo.value[decodeDT.value.indexOf(elements.key.toLowerCase().replaceAll(' ', ''))]
             countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(v.trim())]] += 1;
           });
@@ -146,9 +146,9 @@ export default defineComponent({
         const hold: any[] = [];
         numOfPubs.value.forEach((value: any, key: any) => {
           if (digit) {
-            if (ev === value.pmid) hold.push(value);
+            if (ev === value.Pmid) hold.push(value);
           } else {
-            value.authors.forEach((auth: string, index: any) => {
+            value.Authors.forEach((auth: string, index: any) => {
               if (auth.toLowerCase().startsWith(ev)) hold.push(value);
             });
           }
@@ -158,7 +158,7 @@ export default defineComponent({
       loading.value = false;
     }
     async function runSpatial(runObject: any) {
-      const path = runObject.run_id;
+      const path = runObject.Run_ID;
       const existingCookie = readCookie();
       const split = existingCookie?.token.split('JWT ')[1];
       const geneFileName = `data/${path}/h5/obj/gene.csv`;
@@ -167,7 +167,7 @@ export default defineComponent({
       const motifH5ad = `data/${path}/h5/obj/motifs.h5ad`;
       const geneH5ad = `data/${path}/h5/obj/genes.h5ad`;
       const motifCsv = `data/${path}/h5/obj/motifs.csv`;
-      const { encoded: filenameToken } = await client.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: path, species: runObject.species, tissue: runObject.tissue } });
+      const { encoded: filenameToken } = await client.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: path, species: runObject.Species, tissue: runObject.Tissue } });
       const { host } = window.location;
       const publicLink = `http://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true&token=JWT%20${split}`;
       router.push(`public?component=PublicGeneViewer&run_id=${filenameToken}&public=true&token=JWT%20${split}`);
@@ -182,15 +182,15 @@ export default defineComponent({
       const type: any[] = [];
       const precount: any = {};
       allRuns.forEach((json: any, index: any) => {
-        if (!labs.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)])) labs.push(decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)]);
-        if (!type.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.type)])) type.push(decodeDTTwo.value[decodeDT.value.indexOf(json.type)]);
-        if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)]] = 1;
-        else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.groupName)]] += 1;
-        if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.type)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.type)]] = 1;
-        else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.type)]] += 1;
+        if (!labs.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.Group_Name)])) labs.push(decodeDTTwo.value[decodeDT.value.indexOf(json.Group_Name)]);
+        if (!type.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.Assay_Type)])) type.push(decodeDTTwo.value[decodeDT.value.indexOf(json.Assay_Type)]);
+        if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.Group_Name)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.Group_Name)]] = 1;
+        else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.Group_Name)]] += 1;
+        if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.Assay_Type)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.Assay_Type)]] = 1;
+        else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.Assay_Type)]] += 1;
         const updateJson = json;
-        updateJson.authors = [...updateJson.authors.split(',')];
-        updateJson.type = [...updateJson.type.split(',')];
+        updateJson.Authors = [...updateJson.Authors.split(',')];
+        updateJson.Assay_Type = [...updateJson.Assay_Type.split(',')];
         data.push(updateJson);
       });
       groupsAndData.value.push({
