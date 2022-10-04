@@ -516,4 +516,9 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/reinitialize_db', payload);
     return resp.data;
   }
+  async updatePublicData() {
+    const payload = {};
+    const resp = await this.axios.post('/api/v1/run_db/update_public', payload);
+    return resp.data;
+  }
 }
