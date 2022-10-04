@@ -243,7 +243,8 @@ export default class Client {
   async confirmUser(user: string): Promise<any> {
     console.log(user);
     const pl = { data: { user } };
-    await this.axios.put('/api/v1/auth/confirm', pl);
+    const resp = this.axios.put('/api/v1/auth/confirm', pl);
+    return resp;
   }
   async deleteUser(user: string): Promise<any> {
     await this.axios.delete(`/api/v1/auth/user/${user}`);
@@ -516,15 +517,21 @@ export default class Client {
       },
     };
     const resp = await this.axios.post('/api/v1/auth/group', pl);
-    return resp.data;
+    return resp;
   }
   async modify_group_list(payload: UpdatingGroupsRequest) {
     const resp = await this.axios.put('/api/v1/auth/modify_group_list', payload);
-    return resp.data;
+    return resp;
   }
   async delete_group(group_name: string) {
     const pl = { data: { group_name } };
     const resp = await this.axios.delete('/api/v1/auth/group', pl);
-    return resp.data;
+    console.log(resp);
+    return resp;
+  }
+  async disable_user(username: string) {
+    const pl = { data: { username } };
+    const resp = await this.axios.put('/api/v1/auth/disable_user', pl);
+    return resp;
   }
 }
