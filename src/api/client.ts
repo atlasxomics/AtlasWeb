@@ -246,8 +246,10 @@ export default class Client {
     const resp = this.axios.put('/api/v1/auth/confirm', pl);
     return resp;
   }
-  async deleteUser(user: string): Promise<any> {
-    await this.axios.delete(`/api/v1/auth/user/${user}`);
+  async deleteUser(user: string) {
+    console.log(user);
+    const resp = await this.axios.delete(`/api/v1/auth/user/${user}`);
+    return resp;
   }
   // Requires Admin
   async resetUserPassword(user: any): Promise<void> {

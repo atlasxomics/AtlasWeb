@@ -40,13 +40,6 @@
              >
              Confirm
             </v-btn>
-             <!-- <v-btn
-             v-if="displayed_user_status === 'CONFIRMED'"
-             @click="disable_user"
-             color="red"
-             >
-             Disable
-              </v-btn> -->
             </p>
             <v-select
             v-model="selected_user.groups"
@@ -63,6 +56,24 @@
             >
               Confirm Changes
             </v-btn>
+            <v-btn
+            :class="['ma-2','delete-btn']"
+            @click="delete_user_dialog = true"
+            color="red">
+            Delete User
+            </v-btn>
+            <v-dialog
+            v-model="delete_user_dialog"
+            >
+              <v-btn
+              @click="delete_user"
+              >
+                Delete User
+              </v-btn>
+              <v-btn>
+                Cancel
+              </v-btn>
+            </v-dialog>
             </v-col>
             <v-col
             cols="3"
@@ -136,6 +147,20 @@ export default defineComponent({
     const display_group_addition = ref<boolean>(false);
     const entered_group_name = ref<string>('');
     const entered_group_description = ref<string>('');
+    const delete_user_dialog = ref<boolean>(false);
+
+    async function delete_user() {
+      console.log('deleting user');
+      const resp = await client.value?.deleteUser(selected_user.value.username);
+      const sc = resp?.status;
+      if (sc === 200) {
+        delete_user_dialog.value = false;
+        snackbar.dispatch({ text: 'User: '.concat(selected_user.value.username).concat(' has been successfully deleted.') });
+        delete user_list.value[selected_user.value.username];
+        selected_user.value = null;
+      }
+      console.log(resp);
+    }
 
     function reset_fields() {
       entered_group_name.value = '';
@@ -146,7 +171,7 @@ export default defineComponent({
       const status = resp?.status;
       if (status === 200) {
         snackbar.dispatch({ text: 'Successfully Deleted '.concat(entered_group_name.value).concat('.') });
-        const inx = groups_list.value.indexOf(entered_group_name.value);
+        const inx = user_list.value.indexOf(entered_group_name.value);
         groups_list.value.splice(inx, 1);
         reset_fields();
       } else {
@@ -209,6 +234,7 @@ export default defineComponent({
             console.log(username);
             snackbar.dispatch({ text: 'Successfully confirmed user: '.concat(entered_group_name.value).concat('.') });
             user_list.value[username].status = 'CONFIRMED';
+            changes_made.value = false;
           } else {
             error = true;
             snackbar.dispatch({ text: 'Error. Unable to confirm user: '.concat(entered_group_name.value).concat('.') });
@@ -279,6 +305,8 @@ export default defineComponent({
       // disable_user,
       original_user_status,
       reset_fields,
+      delete_user_dialog,
+      delete_user,
     };
   },
 });
@@ -291,5 +319,9 @@ export default defineComponent({
 .add-group {
   position: relative;
   top: 15px;
+}
+.delete-btn {
+  position: relative;
+  top: 30px;
 }
 </style>
