@@ -126,6 +126,32 @@
           </v-card>
         </v-col>
       </v-row>
+      <v-dialog
+      v-model="show_user_creation_message"
+      width="600"
+      >
+      <v-card
+      width="600"
+      class="mx-auto"
+      >
+      <p
+      class="text-center"
+      >
+      Account has been requested, and is currently under review.
+      </p>
+      <p
+      class="text-center"
+      >
+      An email will be send to {{ email }} upon its approval.
+      </p>
+      <div
+      class="text-center">
+      <v-btn
+      @click="show_user_creation_message = false"
+      > Ok </v-btn>
+      </div>
+      </v-card>
+      </v-dialog>
     </v-container>
   </v-main>
 </template>
@@ -138,6 +164,7 @@ import { loggedIn, saveCookie, readCookie, logout } from '@/utils/auth';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import { UserRequestPayload } from '@/types';
+import { snackbar } from '@/components/GlobalSnackbar';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -170,6 +197,7 @@ export default defineComponent({
     // const email_regex = new RegExp('[a-z]{3}@')
     const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
+    const show_user_creation_message = ref<boolean>(false);
     // calls login function from index.ts which calls api to verify user.
     // If successful, returns a connected client
     async function loginUser() {
@@ -206,13 +234,19 @@ export default defineComponent({
         PROD_SERVER_URL,
         '',
       );
-      temp_client.user_request_account(pl);
+      const resp = await temp_client.user_request_account(pl);
       console.log(temp_client);
+      const { status } = resp;
+      if (status === 200) {
+        show_user_creation_message.value = true;
+        loginScreenDisplayed.value = true;
+      }
       // console.log(client);
       // const resp = client.value?.user_request_account(pl);
       // console.log(pl);
     }
     function registrationClicked() {
+      show_user_creation_message.value = true;
       password.value = '';
       username.value = '';
       email.value = '';
@@ -247,6 +281,7 @@ export default defineComponent({
       registrationClicked,
       request_available,
       send_account_request,
+      show_user_creation_message,
     };
   },
 });

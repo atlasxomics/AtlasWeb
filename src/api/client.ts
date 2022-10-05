@@ -232,16 +232,11 @@ export default class Client {
     return true;
   }
   async user_request_account(user_info: Record<string, any>) {
-    try {
-      console.log(user_info);
-      const res = this.axios.post('/api/v1/auth/user_account_request', user_info);
-      return true;
-    } catch (error) {
-      return false;
-    }
+    console.log(user_info);
+    const res = await this.axios.post('/api/v1/auth/user_account_request', user_info);
+    return res;
   }
   async confirmUser(user: string): Promise<any> {
-    console.log(user);
     const pl = { data: { user } };
     const resp = this.axios.put('/api/v1/auth/confirm', pl);
     return resp;
