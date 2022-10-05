@@ -110,7 +110,7 @@
               </v-text-field>
               <v-btn
               color="primary"
-              :disabled="!username || !email"
+              :disabled="!username || !email || !password"
               @click="send_account_request"
               >
                 Request Account
@@ -148,7 +148,52 @@
       class="text-center">
       <v-btn
       @click="show_user_creation_message = false"
-      > Ok </v-btn>
+      >
+      Ok
+      </v-btn>
+      </div>
+      </v-card>
+      </v-dialog>
+      <v-dialog
+      v-model="bad_pwd_message"
+      width="600"
+      >
+      <v-card
+      width="600"
+      class="mx-auto"
+      >
+      <p
+      class="text-center"
+      >
+        Password must be at least 8 characters including:
+      </p>
+      <p
+      class="text-center"
+      >
+        At least one lowercase letter.
+      </p>
+      <p
+      class="text-center"
+      >
+        At least one uppercase letter.
+      </p>
+      <p
+      class="text-center"
+      >
+        At least one number.
+      </p>
+      <p
+      class="text-center"
+      >
+        At least one symbol.
+      </p>
+      <div
+      class="text-center">
+      <v-btn
+      @click="bad_pwd_message = false"
+      >
+      Ok.
+      </v-btn>
       </div>
       </v-card>
       </v-dialog>
@@ -194,6 +239,7 @@ export default defineComponent({
     const email = ref<string>('');
     const loading = ref<boolean>(false);
     const loginErrorMessage = ref<string | null>(null);
+    const bad_pwd_message = ref<boolean>(false);
     // const email_regex = new RegExp('[a-z]{3}@')
     const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
@@ -217,11 +263,17 @@ export default defineComponent({
         }
         loading.value = false;
         username.value = '';
-        password.value = 'k';
+        password.value = '';
       }
     }
     async function send_account_request() {
-      // if (!client.value) return;
+      // const rExp = new RegExp('^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[*.!@$%^&(){}[]:;<>,.?/~_+-=|]).{8,32}$');
+      // eslint-disable-next-line
+      const rExp = new RegExp('^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[*.!@$%^&(){}[:;<>]).{8,32}');
+      const val = rExp.test(password.value);
+      if (!val) {
+        bad_pwd_message.value = true;
+      }
       const pl = {
         username: username.value,
         password: password.value,
@@ -234,13 +286,13 @@ export default defineComponent({
         PROD_SERVER_URL,
         '',
       );
-      const resp = await temp_client.user_request_account(pl);
-      console.log(temp_client);
-      const { status } = resp;
-      if (status === 200) {
-        show_user_creation_message.value = true;
-        loginScreenDisplayed.value = true;
-      }
+      // const resp = await temp_client.user_request_account(pl);
+      // console.log(temp_client);
+      // const { status } = resp;
+      // if (status === 200) {
+      //   show_user_creation_message.value = true;
+      //   loginScreenDisplayed.value = true;
+      // }
       // console.log(client);
       // const resp = client.value?.user_request_account(pl);
       // console.log(pl);
@@ -282,6 +334,7 @@ export default defineComponent({
       request_available,
       send_account_request,
       show_user_creation_message,
+      bad_pwd_message,
     };
   },
 });
