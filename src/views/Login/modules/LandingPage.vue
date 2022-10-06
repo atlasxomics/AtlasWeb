@@ -18,7 +18,7 @@
             <template v-if="item.active">
               <template v-for="child in item.items">
                 <v-card-actions v-bind:key="child">
-                  <v-checkbox :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox>
+                  <v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox>
                 </v-card-actions>
               </template>
             </template>
@@ -51,14 +51,36 @@
             </v-row>
           </v-col>
         </v-row>
-        <template v-for="data in numOfPubsHold[pageIteration]" >
-          <v-card v-bind:key="data.Run_id">
-            <v-card-title style="pointer-events: auto" @click="runSpatial(data)">{{data.Run_Title}}</v-card-title>
-            <v-card-subtitle>{{data.Date}}</v-card-subtitle>
-            <v-card-text>{{data.Description}}</v-card-text>
-            <v-card-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID"><v-chip>{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
-          </v-card>
-          <div style="width:100%; height:20px" v-bind:key="data.Run_id"></div>
+        <template v-if="!menuListFlag">
+`         <template v-for="(data, index) in numOfPubsHold[pageIteration]" >
+            <v-card :style="{'border-top': (index % 2) ? '6px solid #ac2c34' : '6px solid #182c3c'}" v-bind:key="data.Run_id">
+              <v-card-title style="pointer-events: auto" @click="runSpatial(data)">{{data.Run_Title}}</v-card-title>
+              <v-card-subtitle>{{data.Date}}</v-card-subtitle>
+              <v-card-text>{{data.Description}}</v-card-text>
+              <v-card-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID"><v-chip dark :color="(index % 2) ? '#ac2c34' : '#182c3c'">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
+            </v-card>
+            <div style="width:100%; height:20px" v-bind:key="data.Run_id"></div>
+          </template>`
+        </template>
+        <template v-else>
+          <v-list two-line>
+          <v-list-item-group
+            v-model="selected"
+            multiple>
+            <template v-for="data in numOfPubsHold[pageIteration]">
+              <v-list-item @click="runSpatial(data)" v-bind:key="data.Run_id">
+                  <v-list-item-content>
+                    <v-list-item-title v-text="data.Run_Title"></v-list-item-title>
+                    <v-list-item-subtitle
+                      v-text="data.Date"
+                    ></v-list-item-subtitle>
+                    <v-list-item-subtitle class="text--primary" v-text="data.Description"></v-list-item-subtitle>
+                    <v-list-item-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID"><v-chip dark x-small>{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-list-item-subtitle>
+                  </v-list-item-content>
+              </v-list-item>
+            </template>
+          </v-list-item-group>
+          </v-list>
         </template>
         <div>
           <ul style="list-style: none; display: flex; justify-content: center;">
@@ -315,6 +337,11 @@ export default defineComponent({
         const updateJson = json;
         updateJson.Authors = [...updateJson.Authors.split(',')];
         updateJson.Assay_Type = [...updateJson.Assay_Type.split(',')];
+        if (updateJson.Description.match(/\d+\s+um/)) {
+          const findUM = updateJson.Description.match(/\d+\s+um/)[0].replace('u', '\xB5');
+          const newText = updateJson.Description.replace(/\d+\s+um/, findUM);
+          updateJson.Description = newText;
+        }
         arrayOfAllRuns.value.push(updateJson);
         data[key].push(updateJson);
       });
