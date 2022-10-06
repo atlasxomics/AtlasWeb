@@ -26,20 +26,61 @@
         </v-card>
       </v-col>
       <v-col cols="12" sm="9" style="padding-right:10px">
-        <v-text-field
-          :loading="loading"
-          v-model="textSearch"
-          @click:prepend="searchRuns(textSearch)"
-          @click:clear="searchRuns('')"
-          placeholder="Search eg. PMID, Author, Disease Type"
-          clearable
-          prepend-icon="mdi-magnify"/>
-        <v-card v-for="data in numOfPubsHold" v-bind:key="data.Run_id">
-          <v-card-title style="pointer-events: auto" @click="runSpatial(data)">{{data.Run_Title}}</v-card-title>
-          <v-card-subtitle>{{data.Date}}</v-card-subtitle>
-          <v-card-text>{{data.Description}}</v-card-text>
-          <v-card-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-card-subtitle>
-        </v-card>
+        <v-row>
+          <v-col cols="12" sm="7">
+            <v-text-field
+              :loading="loading"
+              v-model="textSearch"
+              @click:prepend="searchRuns(textSearch)"
+              @click:clear="searchRuns('')"
+              placeholder="Search eg. PMID, Author, Disease Type"
+              clearable
+              prepend-icon="mdi-magnify"/>
+          </v-col>
+          <v-col cols="12" sm="3" class="d-flex justify-center align-center mt-4">
+            <p>Sort By:</p>
+          </v-col>
+          <v-col cols="12" sm="2" class="mt-4">
+            <v-row>
+              <v-col cols="6" sm="3">
+                <v-btn :ripple="false" plain depressed large :color="(!menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-menu</v-icon></v-btn>
+              </v-col>
+              <v-col cols="6" sm="3">
+                <v-btn :ripple="false" plain depressed large :color="(menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-format-list-bulleted</v-icon></v-btn>
+              </v-col>
+            </v-row>
+          </v-col>
+        </v-row>
+        <template v-for="data in numOfPubsHold[pageIteration]" >
+          <v-card v-bind:key="data.Run_id">
+            <v-card-title style="pointer-events: auto" @click="runSpatial(data)">{{data.Run_Title}}</v-card-title>
+            <v-card-subtitle>{{data.Date}}</v-card-subtitle>
+            <v-card-text>{{data.Description}}</v-card-text>
+            <v-card-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID"><v-chip>{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
+          </v-card>
+          <div style="width:100%; height:20px" v-bind:key="data.Run_id"></div>
+        </template>
+        <div>
+          <ul style="list-style: none; display: flex; justify-content: center;">
+            <li>
+              <v-btn
+                icon
+                @click="(pageIteration === 1) ? pageIteration = 1 : pageIteration -= 1">
+                <v-icon>mdi-chevron-left</v-icon>
+              </v-btn>
+            </li>
+            <template v-for="number in (numOfIt + 1)">
+              <li v-bind:key="number" style="padding: 0px" @click="nextPageIteration(number)"><v-btn id="resize-butt" :ripple="false" plain depressed text :color="(pageIteration === number) ? 'blue' : 'black'">{{number}}</v-btn></li>
+            </template>
+            <li>
+              <v-btn
+                icon
+                @click="(pageIteration === numOfIt+1) ? pageIteration = numOfIt+1 : pageIteration += 1">
+                <v-icon>mdi-chevron-right</v-icon>
+              </v-btn>
+            </li>
+          </ul>
+        </div>
       </v-col>
     </v-row>
   </v-container>
@@ -53,6 +94,17 @@ import { loggedIn, saveCookie, readCookie, logout } from '@/utils/auth';
 import { generateRouteByQuery } from '@/utils';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
+
+function makearray(stopValue: number, startValue: number, steps: number): any[] {
+  const arr = [];
+  const step = (stopValue - startValue) / (steps - 1);
+  for (let i = 0; i < steps; i += 1) {
+    arr.push(Math.ceil(startValue + (step * i)));
+  }
+  arr.shift();
+  arr.pop();
+  return arr;
+}
 
 export default defineComponent({
   name: 'LandingPage',
@@ -69,8 +121,8 @@ export default defineComponent({
     const show = ref(false);
     const groupsAndData = ref<any[]>([]);
     const dataTypes = ref<any[]>([]);
-    const numOfPubs = ref<any[]>([]);
-    const numOfPubsHold = ref<any[]>([]);
+    const numOfPubs = ref<any>({});
+    const numOfPubsHold = ref<any>({});
     const checkBoxArr = ref<any[]>([]);
     const textSearch = ref<string>('');
     const loading = ref<boolean>(false);
@@ -78,14 +130,24 @@ export default defineComponent({
     const countHold = ref<any>({});
     const decodeDT = ref<any>(['Transcriptome', 'ATAC', 'Cut&Tag', 'Atlas', 'Rong', 'Hurd']);
     const decodeDTTwo = ref<any[]>(['Spatial Transcriptome', 'Spatial ATAC', 'Spatial Cut & Tag', 'Atlas', 'Rong Lab', 'Hurd Lab']);
+    const menuListFlag = ref<boolean>(false);
+    const pageIteration = ref<number>(1);
+    const numOfIt = ref<number>(0);
+    const arrayOfAllRuns = ref<any[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
     function checkBoxSort(ev: string, title: any) {
+      pageIteration.value = 1;
       loading.value = true;
-      numOfPubsHold.value = [];
+      let pubsValues = [...Object.values(numOfPubsHold.value)];
+      let allData: any[] = [];
+      let key = '1';
+      let labs = allData.concat.apply([], pubsValues);
+      let split = 0;
+      numOfPubsHold.value = {};
       const countKeys = Object.keys(countHold.value);
       countKeys.forEach((v: any, k: any) => {
         countHold.value[v] = 0;
@@ -98,9 +160,10 @@ export default defineComponent({
         if (index > -1) checkBoxArr.value.splice(index, 1);
         else checkBoxArr.value.push(val);
       }
-      const hold: any[] = [];
+      const hold: any = {};
+      let modCount = -1;
       if (checkBoxArr.value.length > 0) {
-        numOfPubs.value.forEach((value: any, key: any) => {
+        labs.forEach((value: any, index: any) => {
           const bool: boolean[] = [];
           checkBoxArr.value.forEach((elements: any) => {
             if (elements.title === 'Groups') {
@@ -112,19 +175,31 @@ export default defineComponent({
               else bool.push(false);
             }
           });
-          if (!bool.includes(false)) hold.push(value);
+          if (!bool.includes(false)) {
+            modCount += 1;
+            if (modCount % 8 === 0 && Object.keys(hold).length > 0) {
+              key = (parseInt(key, 10) + 1).toString();
+              split += 1;
+            }
+            if (!Object.keys(hold).includes(key)) hold[key] = [];
+            hold[key].push(value);
+          }
         });
-        hold.forEach((value: any, key: any) => {
+        pubsValues = [...Object.values(hold)];
+        allData = [];
+        labs = allData.concat.apply([], pubsValues);
+        labs.forEach((value: any, i: any) => {
           countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(value.Group_Name)]] += 1;
           value.Assay_Type.forEach((v: any, k: any) => {
-            // decodeDTTwo.value[decodeDT.value.indexOf(elements.key.toLowerCase().replaceAll(' ', ''))]
             countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(v.trim())]] += 1;
           });
         });
+        numOfIt.value = split;
         numOfPubsHold.value = hold;
       } else {
-        numOfPubs.value.forEach((v: string, i: number) => {
-          numOfPubsHold.value.push(v);
+        numOfIt.value = Object.keys(numOfPubs.value).length - 1;
+        lodash.each(numOfPubs.value, (value: any, index: any) => {
+          numOfPubsHold.value[index] = value;
         });
         lodash.each(count.value, (v: any, i: any) => {
           countHold.value[i] = count.value[i];
@@ -133,29 +208,73 @@ export default defineComponent({
       loading.value = false;
     }
     function searchRuns(event: string) {
+      pageIteration.value = 1;
       const ev = event.toLowerCase();
       loading.value = true;
+      let pubsValues = [...Object.values(numOfPubsHold.value)];
+      let allData: any[] = [];
+      let key = '1';
+      let labs = allData.concat.apply([], pubsValues);
+      let split = 0;
+      const countKeys = Object.keys(countHold.value);
+      countKeys.forEach((v: any, k: any) => {
+        countHold.value[v] = 0;
+      });
       if (ev.length === 0) {
-        numOfPubsHold.value = [];
-        numOfPubs.value.forEach((v: string, i: number) => {
-          numOfPubsHold.value.push(v);
+        numOfIt.value = Object.keys(numOfPubs.value).length - 1;
+        lodash.each(numOfPubs.value, (value: any, index: any) => {
+          numOfPubsHold.value[index] = value;
+        });
+        lodash.each(count.value, (v: any, i: any) => {
+          countHold.value[i] = count.value[i];
         });
       } else {
         const digpat = /\d/;
         const digit = digpat.test(ev);
-        const hold: any[] = [];
-        numOfPubs.value.forEach((value: any, key: any) => {
+        const hold: any = {};
+        let modCount = -1;
+        labs.forEach((value: any, index: any) => {
           if (digit) {
-            if (ev === value.Pmid) hold.push(value);
+            if (ev === value.Pmid) {
+              modCount += 1;
+              if (modCount % 8 === 0 && Object.keys(hold).length > 0) {
+                key = (parseInt(key, 10) + 1).toString();
+                split += 1;
+              }
+              if (!Object.keys(hold).includes(key)) hold[key] = [];
+              hold[key].push(value);
+            }
           } else {
-            value.Authors.forEach((auth: string, index: any) => {
-              if (auth.toLowerCase().startsWith(ev)) hold.push(value);
+            value.Authors.forEach((auth: string, inde: any) => {
+              if (auth.toLowerCase().trim().startsWith(ev)) {
+                modCount += 1;
+                if (modCount % 8 === 0 && Object.keys(hold).length > 0) {
+                  key = (parseInt(key, 10) + 1).toString();
+                  split += 1;
+                }
+                if (!Object.keys(hold).includes(key)) hold[key] = [];
+                hold[key].push(value);
+              }
             });
           }
         });
+        pubsValues = [...Object.values(hold)];
+        allData = [];
+        labs = allData.concat.apply([], pubsValues);
         numOfPubsHold.value = hold;
+        numOfIt.value = split;
+        labs.forEach((value: any, i: any) => {
+          countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(value.Group_Name)]] += 1;
+          value.Assay_Type.forEach((v: any, k: any) => {
+            countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(v.trim())]] += 1;
+          });
+        });
       }
       loading.value = false;
+    }
+    function nextPageIteration(ev: any) {
+      pageIteration.value = ev;
+      // kmdnkasndk
     }
     async function runSpatial(runObject: any) {
       const path = runObject.Run_ID;
@@ -177,11 +296,16 @@ export default defineComponent({
       loading.value = true;
       /* eslint-disable no-await-in-loop */
       const allRuns = await client.value?.getPublicRuns();
-      const data: any[] = [];
+      numOfIt.value = (Math.ceil(allRuns.length / 8) - 1);
+      const split = makearray(0, allRuns.length, (Math.ceil(allRuns.length / 8) + 1));
+      const data: any = {};
       const labs: any[] = [];
       const type: any[] = [];
       const precount: any = {};
+      let key = '1';
       allRuns.forEach((json: any, index: any) => {
+        if (split.includes(index)) key = (parseInt(key, 10) + 1).toString();
+        if (!Object.keys(data).includes(key)) data[key] = [];
         if (!labs.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.Group_Name)])) labs.push(decodeDTTwo.value[decodeDT.value.indexOf(json.Group_Name)]);
         if (!type.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.Assay_Type)])) type.push(decodeDTTwo.value[decodeDT.value.indexOf(json.Assay_Type)]);
         if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.Group_Name)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.Group_Name)]] = 1;
@@ -191,7 +315,8 @@ export default defineComponent({
         const updateJson = json;
         updateJson.Authors = [...updateJson.Authors.split(',')];
         updateJson.Assay_Type = [...updateJson.Assay_Type.split(',')];
-        data.push(updateJson);
+        arrayOfAllRuns.value.push(updateJson);
+        data[key].push(updateJson);
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
@@ -244,10 +369,18 @@ export default defineComponent({
       countHold,
       decodeDT,
       decodeDTTwo,
+      menuListFlag,
+      pageIteration,
+      nextPageIteration,
+      numOfIt,
+      arrayOfAllRuns,
     };
   },
 });
 </script>
 
 <style scoped>
+  #resize-butt {
+    min-width: 44px !important;
+  }
 </style>
