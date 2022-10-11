@@ -780,7 +780,7 @@ export default defineComponent({
     const holdGene = ref<string | null>(null);
     const runId = ref<string | null>(null);
     const publicLink = ref<string | null>(null);
-    const items = ref<any[]>();
+    const items = ref<any[]>([]);
     const search = ref<string>();
     const selected = ref<any>();
     const genes = ref<any[] | null>([]);
@@ -1163,24 +1163,15 @@ export default defineComponent({
       if (!client.value) {
         return;
       }
-      items.value = [];
       search.value = '';
       loading.value = true;
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
-      if (resolveAuthGroup(['collab']) && !props.query.public) {
-        for (let i = 0; i < qc_data.length; i += 1) {
-          if (collaborator_specific_ids.value?.has(qc_data[i].id)) {
-            items.value.push(qc_data[i]);
-          }
-        }
-      } else if (resolveAuthGroup(['admin', 'user'])) {
+      console.log(qc_data);
+      if (resolveAuthGroup(['admin', 'user'])) {
         items.value = qc_data;
       }
-      console.log(items);
-      console.log(qc_data);
-      // items.value = qc_data;
       loading.value = false;
     }
     async function updateFilename() {
@@ -1321,9 +1312,7 @@ export default defineComponent({
     }
     async function getMeta(rid = runId.value) {
       if (!runId.value) return;
-      console.log(runId.value);
       const data = await client.value?.getDBColumns_row('ngs_id', ['species', 'organ_name', 'tissue_source', 'tissue_type', 'assay', 'created_on', 'experimental_condition', 'sample_id'], [runId.value]);
-      console.log(data);
       metadata.value.organ = data.organ_name;
       metadata.value.species = data.species;
       [metadata.value.date] = data.created_on.split(' ');
@@ -1363,10 +1352,14 @@ export default defineComponent({
       loading.value = true;
       const collab_run_data = await client.value!.getRunsCollaborator(collab_name, true);
       collabData.value = collab_run_data;
-      collaborator_specific_ids.value = new Set<string>();
       for (let i = 0; i < collabData.value.length; i += 1) {
-        collaborator_specific_ids.value!.add(collabData.value[i].cntn_id_NGS);
+        const temp_obj = { id: collabData.value[i].ngs_id };
+        items.value.push(temp_obj);
       }
+      // collaborator_specific_ids.value = new Set<string>();
+      // for (let i = 0; i < collabData.value.length; i += 1) {
+      //   collaborator_specific_ids.value!.add(collabData.value[i].cntn_id_NGS);
+      // }
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
