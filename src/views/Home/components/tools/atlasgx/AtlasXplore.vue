@@ -1323,15 +1323,7 @@ export default defineComponent({
     async function getMeta(rid = runId.value) {
       if (!runId.value) return;
       console.log(runId.value);
-      // const payload = {
-      //   params: {
-      //     match_on: 'cntn_id_NGS',
-      //     columns: ['cntn_cf_fk_organ'],
-      //     ids: [runId.value],
-      //   },
-      // };
-      // console.log(payload);
-      const data = await client.value?.getDBColumns_row('ngs_id', ['species', 'organ_name', 'tissue_type', 'assay', 'created_on', 'experimental_condition', 'sample_id'], [runId.value]);
+      const data = await client.value?.getDBColumns_row('ngs_id', ['species', 'organ_name', 'tissue_source', 'tissue_type', 'assay', 'created_on', 'experimental_condition', 'sample_id'], [runId.value]);
       console.log(data);
       metadata.value.organ = data.organ_name;
       metadata.value.species = data.species;
@@ -1340,22 +1332,7 @@ export default defineComponent({
       metadata.value.type = data.tissue_type;
       metadata.value.runid = data.run_id;
       metadata.value.ngsid = data.ngs_id;
-      console.log(metadata);
-      // metadata.value.organ = slimsData.cntn_cf_fk_organ;
-      // metadata.value.species = slimsData.cntn_cf_fk_species;
-      // metadata.value.type = slimsData.cntn_cf_fk_tissueType;
-      // metadata.value.assay = slimsData.cntn_cf_fk_workflow;
-      // [metadata.value.date] = slimsData.sequenced_on.split(' ');
-      // if (data.experimental_condition && data.sample_id) {
-      //   const beginning = data.experimental_condition;
-      //   if (data.sample_id.includes(beginning)) {
-      //     metadata.value.condition = data.sample_id;
-      //   } else {
-      //     const ending = `${beginning}-${data.sample_id}`;
-      //     metadata.value.condition = ending;
-      //   }
-      // }
-      // collabName.value = slimsData.cntn_cf_source;
+      collabName.value = data.tissue_source;
     }
     async function selectAction(ev: any) {
       const root = 'data';
