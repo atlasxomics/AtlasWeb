@@ -1632,7 +1632,16 @@ export default defineComponent({
         landing_disp.value = true;
         atlasXplore_displayed.value = false;
         // loadingPage('Pieper');
-        loadingPage(client.value?.user?.groups[0]);
+        const group_lis = client.value!.user!.groups;
+        let collab_groupname = '';
+        for (let i = 0; i < group_lis.length; i += 1) {
+          const group = group_lis[i];
+          if (group !== 'collab' && group !== 'user') {
+            collab_groupname = group;
+            break;
+          }
+        }
+        loadingPage(collab_groupname);
       }
     });
     onUnmounted(() => {
