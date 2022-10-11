@@ -14,7 +14,6 @@ import {
   Upload,
   UploadMeta,
   QcEntryGenerationRequest,
-  DBColumnsRequest,
 } from '@/types';
 
 // The time (10 minutes in ms) before the token expires to refresh it

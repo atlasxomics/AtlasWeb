@@ -707,7 +707,6 @@ import BarChart from './modules/BarChart.vue';
 import LoadingPage from './modules/LoadingPage.vue';
 import HistogramGraph from './modules/HistogramGraph.vue';
 import Singleview from './modules/Singleview.vue';
-import { DBColumnsRequest } from '../../../../../types';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (

@@ -126,13 +126,3 @@ export interface QcEntryGenerationRequest {
     bucket_name?: string;
   }
 }
-
-export interface DBColumnsRequest {
-  params: {
-    match_on: string;
-    columns: Array<string>;
-    ids: Array<string>;
-    table?: string;
-  }
-}
-
