@@ -1168,7 +1168,6 @@ export default defineComponent({
       const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
       const filelist = await client.value.getFileList(fl_payload);
       const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
-      console.log(qc_data);
       if (resolveAuthGroup(['admin', 'user'])) {
         items.value = qc_data;
       }
