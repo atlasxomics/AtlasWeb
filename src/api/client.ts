@@ -370,10 +370,17 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
     return resp.data;
   }
-  async getDBColumns(payload: Record<string, any>): Promise<any> {
-    console.log(payload);
-    const resp = await this.axios.get('/api/v1/run_db/get_columns', payload);
-    return resp;
+  async getDBColumns_row(match_on: string, columns: any, ids: any): Promise<any> {
+    const params = JSON.stringify(
+      {
+        match_on,
+        columns,
+        ids,
+      },
+    );
+    const payload = { params };
+    const resp = await this.axios.get('/api/v1/run_db/get_columns_row', payload);
+    return resp.data;
   }
   // SLIMS
   async getMetadataFromRunId(rid: string): Promise<any> {

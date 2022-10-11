@@ -177,7 +177,7 @@
                 class="bold-disabled"
                 dense
                 outlined
-                disabled
+                disatissue_bled
                 label="Type">
               </v-text-field>
               <v-text-field
@@ -188,6 +188,14 @@
                 disabled
                 label="Run ID">
               </v-text-field>
+              <!-- <v-text-field
+              v-model="metadata.ngsid"
+              class="bold-disabled"
+              dense
+              outlined
+              disabled
+              label="NGS ID">
+              </v-text-field> -->
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -747,6 +755,7 @@ interface Metadata {
   condition: string | null;
   date: string | null;
   runid: string | null;
+  ngsid: string | null;
 }
 
 export default defineComponent({
@@ -798,12 +807,13 @@ export default defineComponent({
     // Metadata
     const metadata = ref<Metadata>({
       type: '',
-      species: 'Mouse',
-      assay: 'mRNA',
+      species: null,
+      assay: null,
       organ: null,
       condition: null,
       date: null,
       runid: null,
+      ngsid: null,
     });
     const backgroundColor = ref<string>('black');
     const heatMap = ref<string>('jet');
@@ -1313,26 +1323,35 @@ export default defineComponent({
     async function getMeta(rid = runId.value) {
       if (!runId.value) return;
       console.log(runId.value);
-      const payload: DBColumnsRequest = {
-        params: {
-          match_on: 'cntn_id_NGS',
-          columns: ['cntn_cf_fk_organ'],
-          ids: [runId.value],
-        },
-      };
-      console.log(payload);
-      const data = await client.value?.getDBColumns(payload);
+      // const payload = {
+      //   params: {
+      //     match_on: 'cntn_id_NGS',
+      //     columns: ['cntn_cf_fk_organ'],
+      //     ids: [runId.value],
+      //   },
+      // };
+      // console.log(payload);
+      const data = await client.value?.getDBColumns_row('ngs_id', ['species', 'organ_name', 'tissue_type', 'assay', 'created_on', 'experimental_condition', 'sample_id'], [runId.value]);
+      console.log(data);
+      metadata.value.organ = data.organ_name;
+      metadata.value.species = data.species;
+      [metadata.value.date] = data.created_on.split(' ');
+      metadata.value.assay = data.assay;
+      metadata.value.type = data.tissue_type;
+      metadata.value.runid = data.run_id;
+      metadata.value.ngsid = data.ngs_id;
+      console.log(metadata);
       // metadata.value.organ = slimsData.cntn_cf_fk_organ;
       // metadata.value.species = slimsData.cntn_cf_fk_species;
       // metadata.value.type = slimsData.cntn_cf_fk_tissueType;
       // metadata.value.assay = slimsData.cntn_cf_fk_workflow;
       // [metadata.value.date] = slimsData.sequenced_on.split(' ');
-      // if (slimsData.cntn_cf_experimentalCondition && slimsData.cntn_cf_sampleId) {
-      //   const beginning = slimsData.cntn_cf_experimentalCondition;
-      //   if (slimsData.cntn_cf_sampleId.includes(beginning)) {
-      //     metadata.value.condition = slimsData.cntn_cf_sampleId;
+      // if (data.experimental_condition && data.sample_id) {
+      //   const beginning = data.experimental_condition;
+      //   if (data.sample_id.includes(beginning)) {
+      //     metadata.value.condition = data.sample_id;
       //   } else {
-      //     const ending = `${beginning}-${slimsData.cntn_cf_sampleId}`;
+      //     const ending = `${beginning}-${data.sample_id}`;
       //     metadata.value.condition = ending;
       //   }
       // }
