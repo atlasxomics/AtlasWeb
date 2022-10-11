@@ -273,6 +273,7 @@ export default defineComponent({
       const val = rExp.test(password.value);
       if (!val) {
         bad_pwd_message.value = true;
+        return;
       }
       const pl = {
         username: username.value,
@@ -286,19 +287,24 @@ export default defineComponent({
         PROD_SERVER_URL,
         '',
       );
-      // const resp = await temp_client.user_request_account(pl);
-      // console.log(temp_client);
-      // const { status } = resp;
-      // if (status === 200) {
-      //   show_user_creation_message.value = true;
-      //   loginScreenDisplayed.value = true;
-      // }
+      try {
+        const resp = await temp_client.user_request_account(pl);
+        const { data, status } = resp;
+        if (data !== 'exists') {
+          show_user_creation_message.value = true;
+          loginScreenDisplayed.value = true;
+        } else {
+          snackbar.dispatch({ text: 'Username already exists. Please choose another.', options: { color: 'red' } });
+        }
+      } catch (e) {
+        console.log('error');
+        snackbar.dispatch({ text: 'There was an error when requesting an account.', options: { color: 'red' } });
+      }
       // console.log(client);
-      // const resp = client.value?.user_request_account(pl);
+      // // const resp = client.value?.user_request_account(pl);
       // console.log(pl);
     }
     function registrationClicked() {
-      show_user_creation_message.value = true;
       password.value = '';
       username.value = '';
       email.value = '';
