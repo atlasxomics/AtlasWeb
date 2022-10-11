@@ -32,6 +32,7 @@
               :loading="loading"
               v-model="textSearch"
               @click:prepend="searchRuns(textSearch)"
+              @input="searchRuns(textSearch)"
               @click:clear="searchRuns('')"
               placeholder="Search eg. PMID, Author, Disease Type"
               clearable
@@ -52,12 +53,12 @@
           </v-col>
         </v-row>
         <template v-if="!menuListFlag">
-`         <template v-for="(data, index) in numOfPubsHold[pageIteration]" >
-            <v-card :style="{'border-top': (index % 2) ? '6px solid #ac2c34' : '6px solid #182c3c'}" v-bind:key="data.Run_id">
-              <v-card-title style="pointer-events: auto" @click="runSpatial(data)">{{data.Run_Title}}</v-card-title>
+`         <template v-for="data in numOfPubsHold[pageIteration]" >
+            <v-card :style="{'border-top': `6px solid ${labColors[data.Group_Name]}`}" v-bind:key="data.Run_id">
+              <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.Run_Title}}</v-card-title>
               <v-card-subtitle>{{data.Date}}</v-card-subtitle>
               <v-card-text>{{data.Description}}</v-card-text>
-              <v-card-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID"><v-chip dark :color="(index % 2) ? '#ac2c34' : '#182c3c'">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
+              <v-card-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID"><v-chip small dark :color="labColors[data.Group_Name]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
             </v-card>
             <div style="width:100%; height:20px" v-bind:key="data.Run_id"></div>
           </template>`
@@ -65,10 +66,9 @@
         <template v-else>
           <v-list two-line>
           <v-list-item-group
-            v-model="selected"
             multiple>
             <template v-for="data in numOfPubsHold[pageIteration]">
-              <v-list-item @click="runSpatial(data)" v-bind:key="data.Run_id">
+              <v-list-item  @click="runSpatial(data)" v-bind:key="data.Run_id">
                   <v-list-item-content>
                     <v-list-item-title v-text="data.Run_Title"></v-list-item-title>
                     <v-list-item-subtitle
@@ -152,6 +152,7 @@ export default defineComponent({
     const countHold = ref<any>({});
     const decodeDT = ref<any>(['Transcriptome', 'ATAC', 'Cut&Tag', 'Atlas', 'Rong', 'Hurd']);
     const decodeDTTwo = ref<any[]>(['Spatial Transcriptome', 'Spatial ATAC', 'Spatial Cut & Tag', 'Atlas', 'Rong Lab', 'Hurd Lab']);
+    const labColors = ref<any>({ Atlas: '#ac2c34', Rong: '#182c3c', Hurd: '#5D2C2C' });
     const menuListFlag = ref<boolean>(false);
     const pageIteration = ref<number>(1);
     const numOfIt = ref<number>(0);
@@ -164,7 +165,7 @@ export default defineComponent({
     function checkBoxSort(ev: string, title: any) {
       pageIteration.value = 1;
       loading.value = true;
-      let pubsValues = [...Object.values(numOfPubsHold.value)];
+      let pubsValues = [...Object.values(numOfPubs.value)];
       let allData: any[] = [];
       let key = '1';
       let labs = allData.concat.apply([], pubsValues);
@@ -233,7 +234,7 @@ export default defineComponent({
       pageIteration.value = 1;
       const ev = event.toLowerCase();
       loading.value = true;
-      let pubsValues = [...Object.values(numOfPubsHold.value)];
+      let pubsValues = [...Object.values(numOfPubs.value)];
       let allData: any[] = [];
       let key = '1';
       let labs = allData.concat.apply([], pubsValues);
@@ -269,17 +270,17 @@ export default defineComponent({
           } else {
             value.Authors.forEach((auth: string, inde: any) => {
               if (auth.toLowerCase().trim().startsWith(ev)) {
-                modCount += 1;
                 if (modCount % 8 === 0 && Object.keys(hold).length > 0) {
                   key = (parseInt(key, 10) + 1).toString();
                   split += 1;
                 }
                 if (!Object.keys(hold).includes(key)) hold[key] = [];
-                hold[key].push(value);
+                if (!hold[key].includes(value)) hold[key].push(value);
               }
             });
           }
         });
+        modCount += hold.length;
         pubsValues = [...Object.values(hold)];
         allData = [];
         labs = allData.concat.apply([], pubsValues);
@@ -401,6 +402,7 @@ export default defineComponent({
       nextPageIteration,
       numOfIt,
       arrayOfAllRuns,
+      labColors,
     };
   },
 });

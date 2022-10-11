@@ -3,7 +3,9 @@
     <v-container v-if="resolveAuthGroup(['admin', 'user']) || query.public" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
-          <v-btn @click="redirectToLogin" text>Home</v-btn>
+          <div style="cursor: pointer;">
+          <v-img @click="redirectToLogin" width="40px" src="favicon-nobg.png"></v-img>
+          </div>
           <v-tooltip bottom :disabled="metaFlag">
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -1026,8 +1028,8 @@ export default defineComponent({
     function sendGene(ev: any) {
       if (!selectedGenes.value.includes(ev) && genes.value.length > 0) {
         geneButton.value = [ev];
+        isClusterView.value = false;
       }
-      isClusterView.value = false;
     }
     function sendCluster(ev: any) {
       clickedClusterFromChild.value = [ev];

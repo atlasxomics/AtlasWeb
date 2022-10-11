@@ -2,13 +2,10 @@
   <v-container fluid>
     <div style="padding:0;display: flex; background-color: #182c3c; height: 80px;">
       <div style="width: 50%;">
-      <ul style="list-style: none; ">
-        <li>
-          <v-img width="80px" height="80px" src="favicon-nobg.png"></v-img>
-        </li>
-      </ul></div>
-      <div style="width: 50%;">
-      <ul style="list-style: none; display: flex; justify-content: right; ">
+        <v-img width="550px" src="company_logo.png"></v-img>
+      </div>
+      <div style="width: 50%; position: relative;">
+      <ul style="list-style: none; position: absolute; bottom: 11px; right: 0;">
         <li>
           <v-btn x-large color="white" text @click="signFlag = !signFlag">Sign In</v-btn>
         </li>
