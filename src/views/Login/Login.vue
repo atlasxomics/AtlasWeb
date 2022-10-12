@@ -66,7 +66,7 @@
                   </v-btn> -->
                   <v-btn
                   color="primary"
-                  @click="registrationClicked"
+                  @click="toggle_login_signup"
                   >
                     Register
                   </v-btn>
@@ -115,14 +115,14 @@
               </v-text-field>
               <v-btn
               color="primary"
-              :disabled="!username || !email || !password"
+              :disabled="!username || !email || !password || !name_user || !pi_name"
               @click="send_account_request"
               >
                 Request Account
               </v-btn>
               <v-btn
               color="red"
-              @click="loginScreenDisplayed = true"
+              @click="toggle_login_signup"
               >
                 Back
               </v-btn>
@@ -307,11 +307,13 @@ export default defineComponent({
       // // const resp = client.value?.user_request_account(pl);
       // console.log(pl);
     }
-    function registrationClicked() {
+    function toggle_login_signup() {
       password.value = '';
       username.value = '';
       email.value = '';
-      loginScreenDisplayed.value = false;
+      pi_name.value = '';
+      name_user.value = '';
+      loginScreenDisplayed.value = !loginScreenDisplayed.value;
     }
     function request_available() {
       if (username && password && email) {
@@ -339,7 +341,7 @@ export default defineComponent({
       useTestServer,
       loading,
       loginScreenDisplayed,
-      registrationClicked,
+      toggle_login_signup,
       request_available,
       send_account_request,
       show_user_creation_message,
