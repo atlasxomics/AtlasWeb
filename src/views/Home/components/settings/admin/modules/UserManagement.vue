@@ -31,6 +31,12 @@
             v-model="selected_user.email"
             >
             </v-text-field>
+            <v-text-field
+            v-model="selected_user.family_name"
+            label="Self Identified Group"
+            readonly
+            >
+            </v-text-field>
             <p>
              Status: {{ displayed_user_status }}
              <v-btn
@@ -171,7 +177,8 @@ export default defineComponent({
       const status = resp?.status;
       if (status === 200) {
         snackbar.dispatch({ text: 'Successfully Deleted '.concat(entered_group_name.value).concat('.') });
-        const inx = user_list.value.indexOf(entered_group_name.value);
+        const inx = groups_list.value.indexOf(entered_group_name.value);
+        console.log(inx);
         groups_list.value.splice(inx, 1);
         reset_fields();
       } else {
