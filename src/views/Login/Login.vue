@@ -36,10 +36,12 @@
                 <v-text-field
                   v-model="password"
                   label="Password"
-                  type="password"
                   :error-messages="loginErrorMessage"
                   @input="loginErrorMessage = null"
                   @keypress.enter="loginUser"
+                  :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
+                  @click:append="show_pass = !show_pass"
+                  :type="show_pass?'text': 'password'"
                 />
                 <v-card-actions>
                   <div>
@@ -104,8 +106,11 @@
               DOG
               </v-text-field> -->
               <v-text-field
+              :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
+              @click:append="show_pass = !show_pass"
               label="Password"
               v-model="password"
+              :type="show_pass?'text': 'password'"
               >
               </v-text-field>
               <v-btn
@@ -229,8 +234,6 @@ export default defineComponent({
     });
     // NOTE: May need to be computed ref
     const router = ctx.root.$router;
-    // const client = new Client();
-    // const client = computed(() => store.state.client);
     const loginScreenDisplayed = ref<boolean>(true);
     const username = ref<string>('');
     const password = ref<string>('');
@@ -240,7 +243,7 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const loginErrorMessage = ref<string | null>(null);
     const bad_pwd_message = ref<boolean>(false);
-    // const email_regex = new RegExp('[a-z]{3}@')
+    const show_pass = ref<boolean>(false);
     const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
     const show_user_creation_message = ref<boolean>(false);
@@ -341,6 +344,7 @@ export default defineComponent({
       send_account_request,
       show_user_creation_message,
       bad_pwd_message,
+      show_pass,
     };
   },
 });
