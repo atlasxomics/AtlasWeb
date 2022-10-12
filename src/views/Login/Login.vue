@@ -95,16 +95,10 @@
               >
               </v-text-field>
               <v-text-field
-              label="Lab/PI Name"
+              label="Group/PI Name"
               v-model="pi_name"
               >
               </v-text-field>
-              <!-- <v-text-field
-              label="PI Name"
-              v-model="pi_name"
-              >
-              DOG
-              </v-text-field> -->
               <v-text-field
               :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
               @click:append="show_pass = !show_pass"
@@ -276,6 +270,13 @@ export default defineComponent({
       const val = rExp.test(password.value);
       if (!val) {
         bad_pwd_message.value = true;
+        return;
+      }
+      // eslint-disable-next-line
+      const rExp_email = new RegExp(/^\S+@\S+\.\S+$/);
+      const val_email_test = rExp_email.test(email.value);
+      if (!val_email_test) {
+        snackbar.dispatch({ text: 'Must enter a valid email.', options: { color: 'red' } });
         return;
       }
       const pl = {
