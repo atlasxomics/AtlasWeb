@@ -1165,12 +1165,8 @@ export default defineComponent({
       }
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
-      const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
-      if (resolveAuthGroup(['admin', 'user'])) {
-        items.value = qc_data;
-      }
+      const qc_data = await client.value.getNGSIds();
+      items.value = qc_data;
       loading.value = false;
     }
     async function updateFilename() {
@@ -1586,15 +1582,21 @@ export default defineComponent({
         prep_sub_menu();
       }
       store.commit.setSubmenu(submenu.value);
-      await fetchFileList();
-      if (props.query && !props.query.public) {
-        await fetchFileList();
+      // await fetchFileList();
+      if (!props.query.public) {
+        // await fetchFileList();
+        if (resolveAuthGroup(['admin', 'user'])) {
+          await fetchFileList();
+        }
+        // code block used to handle incoming ngs id values from either the landing page
+        // where use specified is true, or from the tool bar where it is false and comes from props.query.runid
         if (use_specified || props.query.run_id) {
           let run_num = run_id;
           if (props.query.run_id && !use_specified) {
             run_num = props.query.run_id;
           }
           // await initializeRun(props.query.run_id);
+          console.log(run_num);
           await selectAction({ id: run_num });
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }

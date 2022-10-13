@@ -983,6 +983,16 @@ export default defineComponent({
         }
       }
     }
+    function loadAtxViewer_filename(v: string) {
+      if (v !== 'none') {
+        selectedGenes.value = [];
+        if (v === '') {
+          ctx.emit('spatialFlag', false);
+        }
+        filenameGene.value = v;
+        runSpatial();
+      }
+    }
     async function mouseOverClusterItem(ev: any) {
       highlightCluster([ev.name]);
     }
@@ -1053,15 +1063,9 @@ export default defineComponent({
       }
       updateCircles();
     });
-    watch(filenameFromParent, (v: string) => {
-      if (v !== 'none') {
-        selectedGenes.value = [];
-        if (v === '') {
-          ctx.emit('spatialFlag', false);
-        }
-        filenameGene.value = v;
-        runSpatial();
-      }
+    watch(props.filename, (v: string) => {
+      console.log('filename from parent watched');
+      loadAtxViewer_filename(v);
     });
     watch(scale, () => {
       reScale();
@@ -1100,6 +1104,9 @@ export default defineComponent({
       tooltipRight.add(tooltipTextRight);
       (ctx.refs.annotationLayerDualAtac as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerDualAtacRight as any).getNode().add(tooltipRight);
+      if (filenameFromParent.value !== 'none') {
+        loadAtxViewer_filename(filenameFromParent.value);
+      }
     });
     return {
       get_uuid,

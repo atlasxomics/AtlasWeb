@@ -505,4 +505,8 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/get_last_update');
     return resp.data;
   }
+  async getNGSIds(): Promise<any> {
+    const resp = await this.axios.get('/api/v1/run_db/get_ngs_ids');
+    return resp.data;
+  }
 }
