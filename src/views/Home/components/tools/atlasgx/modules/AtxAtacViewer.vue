@@ -1063,8 +1063,7 @@ export default defineComponent({
       }
       updateCircles();
     });
-    watch(props.filename, (v: string) => {
-      console.log('filename from parent watched');
+    watch(filenameFromParent, (v: string) => {
       loadAtxViewer_filename(v);
     });
     watch(scale, () => {
@@ -1104,7 +1103,8 @@ export default defineComponent({
       tooltipRight.add(tooltipTextRight);
       (ctx.refs.annotationLayerDualAtac as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerDualAtacRight as any).getNode().add(tooltipRight);
-      if (filenameFromParent.value !== 'none') {
+      console.log(filenameFromParent);
+      if (filenameFromParent.value !== 'none' && filenameFromParent.value !== null) {
         loadAtxViewer_filename(filenameFromParent.value);
       }
     });
