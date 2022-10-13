@@ -6,10 +6,10 @@
         align="center"
       >
         <v-col
-          xl="6"
-          lg="8"
-          md="10"
-          sm="12"
+          xl="5"
+          lg="7"
+          md="9"
+          sm="11"
         >
           <v-card
             class="pa-6"
