@@ -201,12 +201,12 @@
       <v-card-text
       class="text-center"
       >
-        At least one number.
+        Contain at least one number.
       </v-card-text>
       <v-card-text
       class="text-center"
       >
-        At least one symbol.
+        Contain at least one symbol.
       </v-card-text>
       <div
       class="text-center">
