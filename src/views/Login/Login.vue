@@ -6,10 +6,10 @@
         align="center"
       >
         <v-col
-          xl="6"
-          lg="8"
-          md="10"
-          sm="12"
+          xl="5"
+          lg="7"
+          md="9"
+          sm="11"
         >
           <v-card
             class="pa-6"
@@ -133,16 +133,16 @@
       width="600"
       class="mx-auto"
       >
-      <p
+      <v-card-title
+      class="text-h5 grey lighten-2 justify-center"
+      >
+      Account Request Successful!
+      </v-card-title>
+      <v-card-text
       class="text-center"
       >
-      Account has been requested, and is currently under review.
-      </p>
-      <p
-      class="text-center"
-      >
-      An email will be send to {{ email }} upon its approval.
-      </p>
+      An email will be send to {{ email }} upon approval.
+      </v-card-text>
       <div
       class="text-center">
       <v-btn
@@ -161,31 +161,41 @@
       width="600"
       class="mx-auto"
       >
-      <p
+      <v-card-title class="text-h5 grey lighten-2 justify-center">
+        Invalid Password
+      </v-card-title>
+      <v-card-text
       class="text-center"
       >
-        Password must be at least 8 characters including:
-      </p>
-      <p
+      <h2>
+        Password must:
+      </h2>
+      </v-card-text>
+      <v-card-text
       class="text-center"
       >
-        At least one lowercase letter.
-      </p>
-      <p
+       Be at least 8 characters long.
+      </v-card-text>
+      <v-card-text
       class="text-center"
       >
-        At least one uppercase letter.
-      </p>
-      <p
+        Contain at least one lowercase letter.
+      </v-card-text>
+      <v-card-text
+      class="text-center"
+      >
+        Contain at least one uppercase letter.
+      </v-card-text>
+      <v-card-text
       class="text-center"
       >
         At least one number.
-      </p>
-      <p
+      </v-card-text>
+      <v-card-text
       class="text-center"
       >
         At least one symbol.
-      </p>
+      </v-card-text>
       <div
       class="text-center">
       <v-btn
