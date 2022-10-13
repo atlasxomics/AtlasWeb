@@ -6,22 +6,25 @@
         align="center"
       >
         <v-col
-          xl="5"
-          lg="7"
-          md="9"
-          sm="11"
+          xl="6"
+          lg="8"
+          md="10"
+          sm="12"
         >
           <v-card
             class="pa-6"
             :disabled="loading"
           >
-            <v-card-title class="pt-0 pl-0">
+            <v-card-title class="pt-0 pl-6">
               ATX-CLOUD
             </v-card-title>
             <v-row>
-              <v-col cols="6">
-                <v-img src="company_logo.png" />
-              </v-col>
+              <v-container
+              >
+                <v-img
+                max-width="500"
+                src="company_logo.png" />
+              </v-container>
               <v-col
               v-if="loginScreenDisplayed"
               >
@@ -32,6 +35,7 @@
                   :error="!!loginErrorMessage"
                   @input="loginErrorMessage = null"
                   @keypress.enter="loginUser"
+                  prepend-icon="mdi-account-circle"
                 />
                 <v-text-field
                   v-model="password"
@@ -41,6 +45,7 @@
                   @keypress.enter="loginUser"
                   :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
                   @click:append="show_pass = !show_pass"
+                  prepend-icon="mdi-lock"
                   :type="show_pass?'text': 'password'"
                 />
                 <v-card-actions>
@@ -83,23 +88,30 @@
               v-if="!loginScreenDisplayed">
               <v-text-field
               label="Name"
-              v-model="name_user">
+              v-model="name_user"
+              prepend-icon="mdi-account"
+              >
               </v-text-field>
               <v-text-field
               label="Username"
-              v-model="username">
+              v-model="username"
+              prepend-icon="mdi-account-circle"
+              >
               </v-text-field>
               <v-text-field
               label="Email"
               v-model="email"
+              prepend-icon="mdi-email"
               >
               </v-text-field>
               <v-text-field
               label="Group/PI Name"
               v-model="pi_name"
+              prepend-icon="mdi-account-group"
               >
               </v-text-field>
               <v-text-field
+              prepend-icon="mdi-lock"
               :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
               @click:append="show_pass = !show_pass"
               label="Password"
