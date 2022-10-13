@@ -1103,7 +1103,6 @@ export default defineComponent({
       tooltipRight.add(tooltipTextRight);
       (ctx.refs.annotationLayerDualAtac as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerDualAtacRight as any).getNode().add(tooltipRight);
-      console.log(filenameFromParent);
       if (filenameFromParent.value !== 'none' && filenameFromParent.value !== null) {
         loadAtxViewer_filename(filenameFromParent.value);
       }
