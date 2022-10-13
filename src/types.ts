@@ -126,4 +126,3 @@ export interface QcEntryGenerationRequest {
     bucket_name?: string;
   }
 }
-

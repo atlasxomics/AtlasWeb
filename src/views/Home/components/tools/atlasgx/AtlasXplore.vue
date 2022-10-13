@@ -177,7 +177,7 @@
                 class="bold-disabled"
                 dense
                 outlined
-                disabled
+                disatissue_bled
                 label="Type">
               </v-text-field>
               <v-text-field
@@ -188,6 +188,14 @@
                 disabled
                 label="Run ID">
               </v-text-field>
+              <!-- <v-text-field
+              v-model="metadata.ngsid"
+              class="bold-disabled"
+              dense
+              outlined
+              disabled
+              label="NGS ID">
+              </v-text-field> -->
             </v-card-text>
           </v-card>
         </v-dialog>
@@ -746,6 +754,7 @@ interface Metadata {
   condition: string | null;
   date: string | null;
   runid: string | null;
+  ngsid: string | null;
 }
 
 export default defineComponent({
@@ -771,7 +780,7 @@ export default defineComponent({
     const holdGene = ref<string | null>(null);
     const runId = ref<string | null>(null);
     const publicLink = ref<string | null>(null);
-    const items = ref<any[]>();
+    const items = ref<any[]>([]);
     const search = ref<string>();
     const selected = ref<any>();
     const genes = ref<any[] | null>([]);
@@ -797,12 +806,13 @@ export default defineComponent({
     // Metadata
     const metadata = ref<Metadata>({
       type: '',
-      species: 'Mouse',
-      assay: 'mRNA',
+      species: null,
+      assay: null,
       organ: null,
       condition: null,
       date: null,
       runid: null,
+      ngsid: null,
     });
     const backgroundColor = ref<string>('black');
     const heatMap = ref<string>('jet');
@@ -1153,24 +1163,10 @@ export default defineComponent({
       if (!client.value) {
         return;
       }
-      items.value = [];
       search.value = '';
       loading.value = true;
-      const fl_payload = { params: { path: 'data', filter: 'obj/genes.h5ad' } };
-      const filelist = await client.value.getFileList(fl_payload);
-      const qc_data = filelist.map((v: string) => ({ id: `${v.split('/')[1]}` }));
-      if (resolveAuthGroup(['collab']) && !props.query.public) {
-        for (let i = 0; i < qc_data.length; i += 1) {
-          if (collaborator_specific_ids.value?.has(qc_data[i].id)) {
-            items.value.push(qc_data[i]);
-          }
-        }
-      } else if (resolveAuthGroup(['admin', 'user'])) {
-        items.value = qc_data;
-      }
-      console.log(items);
-      console.log(qc_data);
-      // items.value = qc_data;
+      const qc_data = await client.value.getNGSIds();
+      items.value = qc_data;
       loading.value = false;
     }
     async function updateFilename() {
@@ -1310,65 +1306,16 @@ export default defineComponent({
       element.value = '';
     }
     async function getMeta(rid = runId.value) {
-      const root = 'data';
-      const task = 'creation.create_files';
-      const queue = 'creation_worker';
-      const params = {
-        data: null,
-        path: `${root}/${rid}`,
-        file_type: 'json',
-        file_name: 'metadata.json',
-        bucket_name: 'atx-cloud-dev',
-      };
-      const args: any[] = [params];
-      const kwargs: any = {};
-      const name = `${root}/${rid}/metadata.json`;
-      const jsonFileName = { params: { filename: name } };
-      const jsonBoolean = await client.value?.getJsonFile(jsonFileName);
-      let slimsData: any;
-      if (!jsonBoolean) {
-        loading.value = true;
-        slimsData = await client.value!.getMetadataFromRunId(`${cleanRunId(rid!)}`);
-        params.data = slimsData;
-        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
-        await checkTaskStatus(taskObject._id);
-        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
-          progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
-          /* eslint-disable no-await-in-loop */
-          await new Promise((r) => {
-            taskTimeout.value = window.setTimeout(r, 1000);
-          });
-          taskTimeout.value = null;
-          await checkTaskStatus(taskObject._id);
-        }
-        /* eslint-disable no-await-in-loop */
-        if (taskStatus.value.status !== 'SUCCESS') {
-          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
-          loading.value = false;
-          return;
-        }
-        loading.value = false;
-      } else {
-        slimsData = jsonBoolean;
-      }
-      metadata.value.organ = slimsData.cntn_cf_fk_organ;
-      metadata.value.species = slimsData.cntn_cf_fk_species;
-      metadata.value.type = slimsData.cntn_cf_fk_tissueType;
-      metadata.value.assay = slimsData.cntn_cf_fk_workflow;
-      metadata.value.runid = slimsData.cntn_cf_runId;
-      [metadata.value.date] = slimsData.sequenced_on.split(' ');
-      if (slimsData.cntn_cf_experimentalCondition && slimsData.cntn_cf_sampleId) {
-        const beginning = slimsData.cntn_cf_experimentalCondition;
-        if (slimsData.cntn_cf_sampleId.includes(beginning)) {
-          metadata.value.condition = slimsData.cntn_cf_sampleId;
-        } else {
-          const ending = `${beginning}-${slimsData.cntn_cf_sampleId}`;
-          metadata.value.condition = ending;
-        }
-      }
-      collabName.value = slimsData.cntn_cf_source;
-      console.log(collabName);
-      loading.value = false;
+      if (!runId.value) return;
+      const data = await client.value?.getDBColumns_row('ngs_id', ['species', 'organ_name', 'tissue_source', 'tissue_type', 'assay', 'created_on', 'experimental_condition', 'sample_id'], [runId.value]);
+      metadata.value.organ = data.organ_name;
+      metadata.value.species = data.species;
+      [metadata.value.date] = data.created_on.split(' ');
+      metadata.value.assay = data.assay;
+      metadata.value.type = data.tissue_type;
+      metadata.value.runid = data.run_id;
+      metadata.value.ngsid = data.ngs_id;
+      collabName.value = data.tissue_source;
     }
     async function selectAction(ev: any) {
       const root = 'data';
@@ -1400,10 +1347,14 @@ export default defineComponent({
       loading.value = true;
       const collab_run_data = await client.value!.getRunsCollaborator(collab_name, true);
       collabData.value = collab_run_data;
-      collaborator_specific_ids.value = new Set<string>();
       for (let i = 0; i < collabData.value.length; i += 1) {
-        collaborator_specific_ids.value!.add(collabData.value[i].cntn_id_NGS);
+        const temp_obj = { id: collabData.value[i].ngs_id };
+        items.value.push(temp_obj);
       }
+      // collaborator_specific_ids.value = new Set<string>();
+      // for (let i = 0; i < collabData.value.length; i += 1) {
+      //   collaborator_specific_ids.value!.add(collabData.value[i].cntn_id_NGS);
+      // }
     }
     async function getPublicId(ev: any) {
       runId.value = ev;
@@ -1631,15 +1582,17 @@ export default defineComponent({
         prep_sub_menu();
       }
       store.commit.setSubmenu(submenu.value);
-      await fetchFileList();
-      if (props.query && !props.query.public) {
-        await fetchFileList();
+      if (!props.query.public) {
+        if (resolveAuthGroup(['admin', 'user'])) {
+          await fetchFileList();
+        }
+        // code block used to handle incoming ngs id values from either the landing page
+        // where use specified is true, or from the tool bar where it is false and comes from props.query.runid
         if (use_specified || props.query.run_id) {
           let run_num = run_id;
           if (props.query.run_id && !use_specified) {
             run_num = props.query.run_id;
           }
-          // await initializeRun(props.query.run_id);
           await selectAction({ id: run_num });
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
@@ -1676,7 +1629,16 @@ export default defineComponent({
         landing_disp.value = true;
         atlasXplore_displayed.value = false;
         // loadingPage('Pieper');
-        loadingPage(client.value?.user?.groups[0]);
+        const group_lis = client.value!.user!.groups;
+        let collab_groupname = '';
+        for (let i = 0; i < group_lis.length; i += 1) {
+          const group = group_lis[i];
+          if (group !== 'collab' && group !== 'user') {
+            collab_groupname = group;
+            break;
+          }
+        }
+        loadingPage(collab_groupname);
       }
     });
     onUnmounted(() => {
