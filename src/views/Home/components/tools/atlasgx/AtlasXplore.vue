@@ -1582,9 +1582,7 @@ export default defineComponent({
         prep_sub_menu();
       }
       store.commit.setSubmenu(submenu.value);
-      // await fetchFileList();
       if (!props.query.public) {
-        // await fetchFileList();
         if (resolveAuthGroup(['admin', 'user'])) {
           await fetchFileList();
         }
@@ -1595,8 +1593,6 @@ export default defineComponent({
           if (props.query.run_id && !use_specified) {
             run_num = props.query.run_id;
           }
-          // await initializeRun(props.query.run_id);
-          console.log(run_num);
           await selectAction({ id: run_num });
           currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }

@@ -497,7 +497,6 @@ export default class Client {
     return resp.data;
   }
   async repopulateDB() {
-    console.log('here');
     const resp = await this.axios.get('/api/v1/run_db/repopulate_database');
     return resp.data;
   }
