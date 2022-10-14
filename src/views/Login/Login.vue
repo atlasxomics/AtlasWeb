@@ -171,18 +171,17 @@
                 <p
                 class="password-text">
                 • At least 1 number present
-                  <v-icon
+                <v-icon
                   :inline="true"
                   v-if="number_present"
                   color="green">
                   {{'mdi-check'}}
-                  </v-icon>
+                </v-icon>
                 <v-icon
                   :inline="true"
                   v-if="!number_present"
-                  color="red"
-                  >
-                  {{'mdi-excel-box'}}
+                  color="red">
+                  {{'mdi-file-excel-box'}}
                 </v-icon>
                 </p>
                 <p
@@ -210,7 +209,7 @@
               <v-btn
               class="request-button"
               color="primary"
-              :disabled="!username || !email || !password || !name_user || !pi_name || !atleast_8_chars || !special_character_present || !lowercase_char_present || !uppercase_char_present"
+              :disabled="!username || !email || !password || !name_user || !pi_name || !atleast_8_chars || !special_character_present || !lowercase_char_present || !uppercase_char_present || !number_present"
               @click="send_account_request"
               >
                 Request Account
