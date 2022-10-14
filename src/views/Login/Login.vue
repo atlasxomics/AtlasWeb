@@ -109,7 +109,7 @@
               color="#E8E8E8"
               >
                 <v-card-title>
-                  Password Must Have:
+                  {{ (atleast_8_chars && lowercase_char_present && uppercase_char_present && special_character_present) ? 'Strong Password' : 'Password Must Have' }}
                 </v-card-title>
                 <p
                 class="password-text"
