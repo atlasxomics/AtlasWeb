@@ -101,16 +101,20 @@
               label="Password"
               v-model="password"
               :type="show_pass?'text': 'password'"
+              @mousedown="password_clicked = true"
               >
               </v-text-field>
-              <v-card>
+              <v-card
+              v-if="password.length > 0 & password_clicked"
+              color="#E8E8E8"
+              >
                 <v-card-title>
                   Password Must Have:
                 </v-card-title>
                 <p
                 class="password-text"
                 >
-                  At least 8 characters.
+                  • At least 8 characters.
                 <v-icon
                   :inline="true"
                   v-if="!atleast_8_chars"
@@ -129,7 +133,7 @@
                 <p
                 class="password-text"
                 >
-                  At least 1 lowercase character
+                  • At least 1 lowercase character
                   <v-icon
                   :inline="true"
                   color="red"
@@ -148,7 +152,7 @@
                 <p
                 class="password-text"
                 >
-                  At least 1 uppercase character
+                  • At least 1 uppercase character
                 <v-icon
                   :inline="true"
                   color="green"
@@ -167,7 +171,7 @@
                 <p
                 class="password-text"
                 >
-                  At least 1 symbol
+                  • At least 1 symbol
                   <v-icon
                   :inline="true"
                   v-if="!special_character_present"
@@ -189,7 +193,7 @@
               <v-btn
               class="request-button"
               color="primary"
-              :disabled="!username || !email || !password || !name_user || !pi_name"
+              :disabled="!username || !email || !password || !name_user || !pi_name || !atleast_8_chars || !special_character_present || !lowercase_char_present || !uppercase_char_present"
               @click="send_account_request"
               >
                 Request Account
@@ -323,6 +327,7 @@ export default defineComponent({
     const loginScreenDisplayed = ref<boolean>(true);
     const username = ref<string>('');
     const password = ref<string>('');
+    const password_clicked = ref<boolean>(false);
     const name_user = ref<string>('');
     const pi_name = ref<string>('');
     const email = ref<string>('');
@@ -410,6 +415,7 @@ export default defineComponent({
       email.value = '';
       pi_name.value = '';
       name_user.value = '';
+      password_clicked.value = false;
       loginScreenDisplayed.value = !loginScreenDisplayed.value;
     }
     function request_available() {
@@ -448,6 +454,7 @@ export default defineComponent({
       atleast_8_chars,
       lowercase_char_present,
       uppercase_char_present,
+      password_clicked,
     };
   },
 });
