@@ -1343,7 +1343,8 @@ export default defineComponent({
       tableKey.value = 1;
       await runSpatial();
       await getMeta();
-      if (geneMotif.value === 'gene' && isClusterView.value) {
+      console.log(colorMap.value);
+      if (geneMotif.value === 'gene' && isClusterView.value && Object.keys(colorMap.value).length > 0) {
         loading.value = true;
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
         loading.value = false;
