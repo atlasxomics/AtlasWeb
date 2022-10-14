@@ -169,6 +169,23 @@
                   </v-icon>
                 </p>
                 <p
+                class="password-text">
+                • At least 1 number present
+                  <v-icon
+                  :inline="true"
+                  v-if="number_present"
+                  color="green">
+                  {{'mdi-check'}}
+                  </v-icon>
+                <v-icon
+                  :inline="true"
+                  v-if="!number_present"
+                  color="red"
+                  >
+                  {{'mdi-excel-box'}}
+                </v-icon>
+                </p>
+                <p
                 class="password-text"
                 >
                   • At least 1 symbol
@@ -238,7 +255,7 @@
       </div>
       </v-card>
       </v-dialog>
-      <v-dialog
+      <!-- <v-dialog
       v-model="bad_pwd_message"
       width="600"
       >
@@ -290,7 +307,7 @@
       </v-btn>
       </div>
       </v-card>
-      </v-dialog>
+      </v-dialog> -->
     </v-container>
   </v-main>
 </template>
@@ -336,8 +353,9 @@ export default defineComponent({
     const atleast_8_chars = computed(() => password.value.length >= 8);
     const lowercase_char_present = computed(() => /.*[a-z].*/.test(password.value));
     const uppercase_char_present = computed(() => /.*[A-Z].*/.test(password.value));
+    const number_present = computed(() => /.*[0-9].*/.test(password.value));
     const loginErrorMessage = ref<string | null>(null);
-    const bad_pwd_message = ref<boolean>(false);
+    // const bad_pwd_message = ref<boolean>(false);
     const show_pass = ref<boolean>(false);
     const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
@@ -369,10 +387,10 @@ export default defineComponent({
       // eslint-disable-next-line
       const rExp = new RegExp('^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[*.!@$%^&(){}[:;<>]).{8,32}');
       const val = rExp.test(password.value);
-      if (!val) {
-        bad_pwd_message.value = true;
-        return;
-      }
+      // if (!val) {
+      //   bad_pwd_message.value = true;
+      //   return;
+      // }
       // eslint-disable-next-line
       const rExp_email = new RegExp(/^\S+@\S+\.\S+$/);
       const val_email_test = rExp_email.test(email.value);
@@ -448,12 +466,13 @@ export default defineComponent({
       request_available,
       send_account_request,
       show_user_creation_message,
-      bad_pwd_message,
+      // bad_pwd_message,
       show_pass,
       special_character_present,
       atleast_8_chars,
       lowercase_char_present,
       uppercase_char_present,
+      number_present,
       password_clicked,
     };
   },
