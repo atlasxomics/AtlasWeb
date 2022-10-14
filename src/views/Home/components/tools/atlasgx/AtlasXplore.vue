@@ -787,11 +787,11 @@ export default defineComponent({
     // Metadata
     const metadata = ref<Metadata>({
       type: '',
-      species: 'Mouse',
-      assay: 'mRNA',
-      organ: null,
-      condition: null,
-      date: null,
+      species: '',
+      assay: '',
+      organ: '',
+      condition: '',
+      date: '',
     });
     const backgroundColor = ref<string>('black');
     const heatMap = ref<string>('jet');
