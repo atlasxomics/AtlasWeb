@@ -22,6 +22,7 @@
       </v-tab-item>
       <v-tab-item key="UserManagement">
         <user-management/>
+      </v-tab-item>
       <v-tab-item key="DatabaseAdmin">
         <database-admin/>
       </v-tab-item>

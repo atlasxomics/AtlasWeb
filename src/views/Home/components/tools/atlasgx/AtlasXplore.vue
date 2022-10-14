@@ -808,7 +808,7 @@ export default defineComponent({
       type: '',
       species: '',
       assay: '',
-      organ: '', 
+      organ: '',
       condition: '',
       date: '',
       runid: '',
