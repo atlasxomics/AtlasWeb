@@ -671,7 +671,7 @@
             <div id="capturePeak" :style="{ visibility: visible }">
               <v-card class="mt-3" v-show="spatialData" v-resize="onResize" ref="peakContainer" :disabled="loading" flat>
                 <template v-if="geneMotif == 'gene'">
-                    <track-browser ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
+                    <track-browser v-if="metadata.species !== ''" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
                 </template>
                 <template v-if="geneMotif == 'motif'">
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
@@ -1104,7 +1104,7 @@ export default defineComponent({
           cellTypeMapCopy.value = cellmapCopy;
         }
       }
-      if (geneMotif.value === 'gene' && isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
+      if (geneMotif.value === 'gene' && isClusterView.value && (!isDrawing.value && !isDrawingRect.value) && metadata.value.species !== '') {
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
     }
@@ -1324,6 +1324,7 @@ export default defineComponent({
         filename.value = fn;
         holdMotif.value = '';
         runId.value = ev.id;
+        metadata.value.species = '';
         pushByQuery({ component: 'AtlasXplore', run_id: ev.id });
         selectedGenes.value = [];
         featureTableFlag.value = true;
@@ -1342,6 +1343,11 @@ export default defineComponent({
       tableKey.value = 1;
       await runSpatial();
       await getMeta();
+      if (geneMotif.value === 'gene' && isClusterView.value) {
+        loading.value = true;
+        (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+        loading.value = false;
+      }
     }
     async function loadingPage(collab_name: any) {
       loading.value = true;
