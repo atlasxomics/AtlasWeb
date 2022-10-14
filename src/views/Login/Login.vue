@@ -336,7 +336,7 @@ export default defineComponent({
   name: 'Login',
   setup(props, ctx) {
     onMounted(async () => {
-      console.log('dog');
+      console.log('');
     });
     // NOTE: May need to be computed ref
     const icon_var = ref<any>();
