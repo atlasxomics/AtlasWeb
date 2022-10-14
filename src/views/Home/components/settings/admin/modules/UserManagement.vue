@@ -239,12 +239,12 @@ export default defineComponent({
           if (confirm_status_sc === 200) {
             const { username } = selected_user.value;
             console.log(username);
-            snackbar.dispatch({ text: 'Successfully confirmed user: '.concat(entered_group_name.value).concat('.') });
+            snackbar.dispatch({ text: 'Successfully confirmed user: '.concat(username).concat('.') });
             user_list.value[username].status = 'CONFIRMED';
             changes_made.value = false;
           } else {
             error = true;
-            snackbar.dispatch({ text: 'Error. Unable to confirm user: '.concat(entered_group_name.value).concat('.') });
+            snackbar.dispatch({ text: 'Error. Unable to confirm user: '.concat(selected_user.value).concat('.') });
           }
         }
       }
