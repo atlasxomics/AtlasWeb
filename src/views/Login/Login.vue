@@ -15,9 +15,6 @@
             class="pa-6"
             :disabled="loading"
           >
-            <v-card-title class="pt-0 pl-6">
-              ATX-CLOUD
-            </v-card-title>
             <v-row>
               <v-container
               >
@@ -49,19 +46,6 @@
                   :type="show_pass?'text': 'password'"
                 />
                 <v-card-actions>
-                  <div>
-                    <a
-                      href="https://atlasxomics.com"
-                      target="_blank"
-                      rel="noopener"
-                      style="text-decoration: none;"
-                    >
-                      AtlasXomics
-                      <v-icon small>
-                        mdi-open-in-new
-                      </v-icon>
-                    </a>
-                  </div>
                   <v-spacer />
                   <!-- <v-btn
                     color="secondary"
@@ -119,7 +103,91 @@
               :type="show_pass?'text': 'password'"
               >
               </v-text-field>
+              <v-card>
+                <v-card-title>
+                  Password Must Have:
+                </v-card-title>
+                <p
+                class="password-text"
+                >
+                  At least 8 characters.
+                <v-icon
+                  :inline="true"
+                  v-if="!atleast_8_chars"
+                  color="red"
+                  >
+                  {{'mdi-file-excel-box'}}
+                  </v-icon>
+                <v-icon
+                  :inline="true"
+                  v-if="atleast_8_chars"
+                  color="green"
+                  >
+                  {{'mdi-check'}}
+                  </v-icon>
+                </p>
+                <p
+                class="password-text"
+                >
+                  At least 1 lowercase character
+                  <v-icon
+                  :inline="true"
+                  color="red"
+                  v-if="!lowercase_char_present"
+                  >
+                  {{'mdi-file-excel-box'}}
+                  </v-icon>
+                  <v-icon
+                  :inline="true"
+                  color="green"
+                  v-if="lowercase_char_present"
+                  >
+                  {{'mdi-check'}}
+                  </v-icon>
+                </p>
+                <p
+                class="password-text"
+                >
+                  At least 1 uppercase character
+                <v-icon
+                  :inline="true"
+                  color="green"
+                  v-if="uppercase_char_present"
+                >
+                  {{'mdi-check'}}
+                  </v-icon>
+                <v-icon
+                  :inline="true"
+                  color="red"
+                  v-if="!uppercase_char_present"
+                >
+                  {{'mdi-file-excel-box'}}
+                  </v-icon>
+                </p>
+                <p
+                class="password-text"
+                >
+                  At least 1 symbol
+                  <v-icon
+                  :inline="true"
+                  v-if="!special_character_present"
+                  color="red"
+                  >
+                  {{'mdi-file-excel-box'}}
+                  </v-icon>
+                  <v-icon
+                  :inline="true"
+                  v-if="special_character_present"
+                  color="green"
+                  >
+                  {{'mdi-check'}}
+                  </v-icon>
+                </p>
+              </v-card>
+              <v-card-actions>
+              <v-spacer />
               <v-btn
+              class="request-button"
               color="primary"
               :disabled="!username || !email || !password || !name_user || !pi_name"
               @click="send_account_request"
@@ -132,6 +200,7 @@
               >
                 Back
               </v-btn>
+              </v-card-actions>
               </v-col>
             </v-row>
           </v-card>
@@ -249,6 +318,7 @@ export default defineComponent({
       console.log('dog');
     });
     // NOTE: May need to be computed ref
+    const icon_var = ref<any>();
     const router = ctx.root.$router;
     const loginScreenDisplayed = ref<boolean>(true);
     const username = ref<string>('');
@@ -257,6 +327,10 @@ export default defineComponent({
     const pi_name = ref<string>('');
     const email = ref<string>('');
     const loading = ref<boolean>(false);
+    const special_character_present = computed(() => /.*[!@#$%^&&*()<>?/[{}].*/.test(password.value));
+    const atleast_8_chars = computed(() => password.value.length >= 8);
+    const lowercase_char_present = computed(() => /.*[a-z].*/.test(password.value));
+    const uppercase_char_present = computed(() => /.*[A-Z].*/.test(password.value));
     const loginErrorMessage = ref<string | null>(null);
     const bad_pwd_message = ref<boolean>(false);
     const show_pass = ref<boolean>(false);
@@ -370,7 +444,18 @@ export default defineComponent({
       show_user_creation_message,
       bad_pwd_message,
       show_pass,
+      special_character_present,
+      atleast_8_chars,
+      lowercase_char_present,
+      uppercase_char_present,
     };
   },
 });
 </script>
+
+<style scoped>
+.password-text {
+  /* padding-top: -10rem; */
+  margin-left: 2rem;
+}
+</style>
