@@ -806,13 +806,13 @@ export default defineComponent({
     // Metadata
     const metadata = ref<Metadata>({
       type: '',
-      species: null,
-      assay: null,
-      organ: null,
-      condition: null,
-      date: null,
-      runid: null,
-      ngsid: null,
+      species: '',
+      assay: '',
+      organ: '',
+      condition: '',
+      date: '',
+      runid: '',
+      ngsid: '',
     });
     const backgroundColor = ref<string>('black');
     const heatMap = ref<string>('jet');

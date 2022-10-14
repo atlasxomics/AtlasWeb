@@ -20,6 +20,9 @@
       <v-tab-item key="WorkerStatus">
         <worker-status/>
       </v-tab-item>
+      <v-tab-item key="UserManagement">
+        <user-management/>
+      </v-tab-item>
       <v-tab-item key="DatabaseAdmin">
         <database-admin/>
       </v-tab-item>
@@ -39,6 +42,7 @@ import ResetPassword from './modules/ResetPassword.vue';
 import WorkerStatus from './modules/WorkerStatus.vue';
 import AddRemoveGroup from './modules/AddRemoveGroup.vue';
 import AddRemoveUser from './modules/AddRemoveUser.vue';
+import UserManagement from './modules/UserManagement.vue';
 import DatabaseAdmin from './modules/DatabaseAdmin.vue';
 
 const clientReady = new Promise((resolve) => {
@@ -50,7 +54,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Add/Remove User', 'Add/Remove Group', 'Worker Status', 'Database Administration'];
+const tabs = ['Reset Password', 'Add/Remove User', 'Add/Remove Group', 'Worker Status', 'User Management', 'Database Administration'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -59,6 +63,7 @@ export default defineComponent({
     AddRemoveGroup,
     WorkerStatus,
     AddRemoveUser,
+    UserManagement,
     DatabaseAdmin,
   },
   setup(props, ctx) {

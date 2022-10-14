@@ -65,6 +65,10 @@ export interface RegisterUserPayload extends ResetUserPasswordPayload {
   groups: string[];
 }
 
+export interface UserRequestPayload extends RegisterUserPayload {
+  pi_name: string;
+}
+
 // Dataset Payloads
 export interface DatasetListingWafer {
   wafer_id: string;
@@ -124,5 +128,24 @@ export interface QcEntryGenerationRequest {
   params: {
     qc_dir: string;
     bucket_name?: string;
+  }
+}
+
+export interface UpdatingGroupsRequest {
+    groups_adding: string[],
+    groups_removing: string[],
+    username: string,
+}
+
+export interface GroupRequest {
+  params: {
+    group_name: string,
+  }
+}
+
+export interface CreateGroupRequest {
+  params: {
+    group_name: string,
+    description: string,
   }
 }

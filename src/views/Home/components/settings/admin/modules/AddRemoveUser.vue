@@ -84,7 +84,7 @@ export default defineComponent({
         const resp = await client.value.registerUser(payload);
         const resps = await client.value.confirmUser(userInfo.value.username);
         userInfo.value = { username: null, password: null, email: null, groups: [], name: null };
-        snackbar.dispatch({ text: 'User creation succesfull', options: { color: 'success', right: true } });
+        snackbar.dispatch({ text: 'User creation successful', options: { color: 'success', right: true } });
       } catch (e) {
         snackbar.dispatch({ text: `User creation failed ${e}`, options: { color: 'error', right: true } });
         userInfo.value = { username: null, password: null, email: null, groups: [], name: null };
@@ -95,7 +95,7 @@ export default defineComponent({
       try {
         const resp = await client.value.deleteUser(userInfo.value.username);
         userInfo.value = { username: null, password: null, email: null, groups: [], name: null };
-        snackbar.dispatch({ text: 'User deletion succesful', options: { color: 'success', right: true } });
+        snackbar.dispatch({ text: 'User deletion successful', options: { color: 'success', right: true } });
       } catch (e) {
         snackbar.dispatch({ text: `User deletion failed ${e}`, options: { color: 'error', right: true } });
         userInfo.value = { username: null, password: null, email: null, groups: [], name: null };
