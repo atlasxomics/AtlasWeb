@@ -6,11 +6,23 @@
     hide-default-footer
     hide-default-header
     :items="gene"
-    :headers="clusters"
+    :headers="cluster"
     :loading="loading"
     >
     <template v-slot:header="{ props }">
-      <th v-for="clust in props.headers" :key="clust.text"><v-btn text dense :color="colormap[clust.text]" :disabled="clust.text == 'Rank' ? true : false" @click="sendCluster(clust.text)">{{clust.text}}</v-btn></th>
+      <th v-for="clust in props.headers" :key="clust.text">
+        <template v-if="clust.text == 'Anti'">
+          <template v-if="clust.key == 1">
+            <v-btn text dense :color="colormap[clust.text]" @click="sendCluster(clust.text)">UP</v-btn>
+          </template>
+          <template v-else>
+            <v-btn text dense :color="colormap[clust.text]" @click="sendCluster(clust.text)">DOWN</v-btn>
+          </template>
+        </template>
+        <template v-else>
+          <v-btn text dense :color="colormap[clust.text]" @click="sendCluster(clust.text)">{{clust.text}}</v-btn>
+        </template>
+      </th>
     </template>
     <template v-slot:item="row">
       <tr>
@@ -46,7 +58,7 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const gene = computed(() => props.gene);
-    const clusters = computed(() => props.clusters);
+    const cluster = computed(() => props.clusters);
     const lengthClust = computed(() => props.lengthClust);
     const loading = computed(() => props.loading);
     const colormap = computed(() => props.colormap);
@@ -60,12 +72,13 @@ export default defineComponent({
       ctx.emit('sentGene', ev);
     }
     async function sendCluster(ev: any) {
+      if (ev === 'Anti') cluster.value[0].key *= -1;
       ctx.emit('sentCluster', ev);
     }
     onMounted(async () => {
       await clientReady;
     });
-    return { sendGene, sendCluster };
+    return { cluster, sendGene, sendCluster };
   },
 });
 

@@ -26,37 +26,37 @@
 
         <td style="text-align:center;">
           <div>
-            {{ runs.cntn_id_NGS }}
+            {{ runs.ngs_id }}
           </div>
         </td>
         <td style="text-align:center;">
           <div>
-            {{ runs.cntn_cf_runId }}
+            {{ runs.run_id }}
           </div>
         </td>
         <td style="text-align:center;">
           <div>
-            {{ runs.cntn_cf_sampleId }}
+            {{ runs.sample_id }}
           </div>
         </td>
         <td style="text-align:center;">
           <div>
-            {{ runs.cntn_cf_fk_tissueType }}
+            {{ runs.tissue_type }}
           </div>
         </td>
         <td style="text-align:center;">
           <div>
-            {{ runs.cntn_cf_fk_species }}
+            {{ runs.species }}
           </div>
         </td>
         <td style="text-align:center;">
           <div>
-            {{ runs.cntn_cf_experimentalCondition }}
+            {{ runs.experimental_condition }}
           </div>
         </td>
         <td style="text-align:center;">
           <div>
-            {{ runs.cntn_createdOn_NGS }}
+            {{ runs.created_on }}
           </div>
         </td>
         <td style="text-align:center;">
@@ -109,7 +109,7 @@ export default defineComponent({
       window.open(`${ev}`, '_blank');
     }
     function toAtlasXplore(run_data: any) {
-      this.$emit('run-selected', run_data.cntn_id_NGS);
+      this.$emit('run-selected', run_data.ngs_id);
     }
     onMounted(async () => {
       // dlskmk

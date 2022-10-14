@@ -382,6 +382,18 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
     return resp.data;
   }
+  async getDBColumns_row(match_on: string, columns: any, ids: any): Promise<any> {
+    const params = JSON.stringify(
+      {
+        match_on,
+        columns,
+        ids,
+      },
+    );
+    const payload = { params };
+    const resp = await this.axios.get('/api/v1/run_db/get_columns_row', payload);
+    return resp.data;
+  }
   // SLIMS
   async getMetadataFromRunId(rid: string): Promise<any> {
     const uri = '/api/v1/dataset/slimstest_runid';
@@ -530,5 +542,17 @@ export default class Client {
     const pl = { data: { username } };
     const resp = await this.axios.put('/api/v1/auth/disable_user', pl);
     return resp;
+  }
+  async repopulateDB() {
+    const resp = await this.axios.get('/api/v1/run_db/repopulate_database');
+    return resp.data;
+  }
+  async getUpdateDate(): Promise<any> {
+    const resp = await this.axios.get('/api/v1/run_db/get_last_update');
+    return resp.data;
+  }
+  async getNGSIds(): Promise<any> {
+    const resp = await this.axios.get('/api/v1/run_db/get_ngs_ids');
+    return resp.data;
   }
 }
