@@ -60,7 +60,7 @@ export default defineComponent({
     const pageId = `svgHolder-${get_uuid()}`;
     const selectedSpecies = ref<any | null>();
     const trackBrowserParams = ref<any>();
-    const speciesMap: any = { 'Homo sapien': 'grch38', rattus_norvegicus: 'rn6', mus_musculus: 'mm10' };
+    const speciesMap: any = { homo_sapiens: 'grch38', rattus_norvegicus: 'rn6', mus_musculus: 'mm10' };
     const species: string[] = [];
     const loading = ref<boolean>(false);
     lodash.forIn(speciesMap, (v: string, k: string) => {
@@ -135,10 +135,7 @@ export default defineComponent({
       if (!client.value) {
         return;
       }
-      const name = `data/${rid}/metadata.json`;
-      const jsonFileName = { params: { filename: name } };
-      const metadata = await client.value?.getJsonFile(jsonFileName);
-      selectedSpecies.value = metadata.cntn_cf_fk_species;
+      selectedSpecies.value = metadataFromParents.value;
       trackBrowserParams.value = {
         chr: '1',
         viewStart: 0,
