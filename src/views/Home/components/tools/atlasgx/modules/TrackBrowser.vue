@@ -60,7 +60,7 @@ export default defineComponent({
     const pageId = `svgHolder-${get_uuid()}`;
     const selectedSpecies = ref<any | null>();
     const trackBrowserParams = ref<any>();
-    const speciesMap: any = { 'Homo_sapiens': 'grch38', 'Rattus_norvegicus': 'rn6', 'Mus_musculus': 'mm10' };
+    const speciesMap: any = { Homo_sapiens: 'grch38', Rattus_norvegicus: 'rn6', Mus_musculus: 'mm10' };
     const species: string[] = [];
     const loading = ref<boolean>(false);
     lodash.forIn(speciesMap, (v: string, k: string) => {
