@@ -1,13 +1,13 @@
 <template>
   <v-container fluid>
-    <div style="padding:0;display: flex; background-color: #182c3c; height: 80px;">
-      <div style="width: 50%;">
-        <v-img width="550px" src="company_logo.png"></v-img>
+    <div style="padding:0;display: flex; background-color: #182c3c; height: 50px;">
+      <div style="width: 50%;margin-top: 5px;">
+        <v-img width="264px" src="company_logo.png"></v-img>
       </div>
       <div style="width: 50%; position: relative;">
-      <ul style="list-style: none; position: absolute; bottom: 11px; right: 0;">
+      <ul style="list-style: none; position: absolute; bottom: 5px; right: 0;">
         <li>
-          <v-btn x-large color="white" text @click="signFlag = !signFlag">Sign In</v-btn>
+          <v-btn medium color="white" text @click="signFlag = !signFlag">Sign In</v-btn>
         </li>
       </ul></div>
     </div>

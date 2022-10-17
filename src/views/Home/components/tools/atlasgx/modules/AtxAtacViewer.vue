@@ -254,7 +254,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun'],
+  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -351,6 +351,7 @@ export default defineComponent({
     const totalInClust = ref<any>({});
     const clickedClusterFromParent = computed(() => (props.clickedCluster));
     const checkedClusterFromParent = computed(() => (props.checkBoxCluster));
+    const tableKeyFromParent = computed(() => (props.antiKey));
     const averageInd = computed(() => (props.indFlag));
     const geneObject = ref<any>({});
     const motifObject = ref<any>({});
@@ -491,7 +492,6 @@ export default defineComponent({
       isHighlighted.value = true;
     }
     function makearray(stopValue: number, startValue: number): any[] {
-      if (highestCount.value === 0) return [];
       const arr = [];
       const steps = 5;
       const step = (stopValue - startValue) / (steps - 1);
@@ -579,6 +579,7 @@ export default defineComponent({
               cluster: v[0],
               total: 0,
               inactive: false,
+              hitStrokeWidth: radius * 2,
               genes: { },
             };
             const ci = {
@@ -676,9 +677,9 @@ export default defineComponent({
             circlesUMAP.push(ci);
           }
         });
-        highestCount.value = 0;
+        highestCount.value = -10000;
         lowestCount.value = 10000;
-        let highAvg = 0;
+        let highAvg = -10000;
         let lowAvg = 10000000;
         const geneColors = colormapBounded(colors_intensity, geneSum, selectedGenes.value.length);
         circles.forEach((v: any, i: any) => {
@@ -797,11 +798,11 @@ export default defineComponent({
           spatialRun.value = true;
           const task = currentTask.value;
           const queue = currentQueue.value;
-          const args = [filenameGene.value, selectedGenes.value, highlightIds.value];
+          const args = [filenameGene.value, selectedGenes.value, highlightIds.value, tableKeyFromParent.value];
           const kwargs = {};
           const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, (geneMotif.value === 'gene') ? 3 : 4) : await client.value.postTask(task, args, kwargs, queue);
           if (props.query.public) {
-            ctx.emit('publicRun', { id: taskObject.meta.run_id, species: taskObject.meta.species, organ: taskObject.meta.tissue });
+            ctx.emit('publicRun', { id: taskObject.meta.run_id, species: taskObject.meta.species, organ: taskObject.meta.tissue, assay: taskObject.meta.assay });
           }
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */
@@ -860,58 +861,10 @@ export default defineComponent({
       }
     }
     async function mouseOutOnSpatial(ev: any) {
-      if ((isDrawing.value || isDrawingRect.value)) {
-        tooltip.hide();
-        tooltipRight.hide();
-        return;
-      }
-      if (selectedGenes.value.length > 0) {
-        tooltip.hide();
-        tooltipRight.hide();
-        unHighlighCluster();
-        return;
-      }
-      const mousePos = { x: ev.evt.layerX, y: ev.evt.layerY };
-      const stageWidth = (ctx as any).refs.konvaStageDualAtac.$el.offsetWidth;
-      const stageHeight = (ctx as any).refs.konvaStageDualAtac.$el.offsetHeight;
-      const first = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[0].getNode().absolutePosition();
-      const second = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[49].getNode().absolutePosition();
-      const third = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[circlesSpatial.value.length - 50].getNode().absolutePosition();
-      const end = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[circlesSpatial.value.length - 1].getNode().absolutePosition();
-      const boundaries = [first, second, third, end];
-      let leftmost = 1000;
-      let bottommost = 0;
-      let rightmost = 0;
-      let topmost = 1000;
-      boundaries.forEach((v: any, i: number) => {
-        if (v.x > rightmost) {
-          if (v.x > stageWidth) {
-            rightmost = stageWidth - 2;
-          } else rightmost = v.x;
-        }
-        if (v.x < leftmost) {
-          if (v.x < 0) {
-            leftmost = 15;
-          } else leftmost = v.x;
-        }
-        if (v.y > bottommost) {
-          if (v.y > stageHeight) {
-            bottommost = stageHeight - 2;
-          } else bottommost = v.y;
-        }
-        if (v.y < topmost) {
-          if (v.y < 0) {
-            topmost = 15;
-          } else topmost = v.y;
-        }
-      });
-      const finale = [leftmost, topmost, rightmost, bottommost];
       isHighlighted.value = false;
-      if ((!isDrawing.value && !isDrawingRect.value) && (mousePos.x < finale[0] || mousePos.y < finale[1] || mousePos.x > finale[2] || mousePos.y > finale[3])) {
-        tooltip.hide();
-        tooltipRight.hide();
-        unHighlighCluster();
-      }
+      tooltip.hide();
+      tooltipRight.hide();
+      if ((!isDrawing.value && !isDrawingRect.value)) unHighlighCluster();
     }
     async function mouseMoveOnSpatialRight(ev: any) {
       const mousePosRight = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();
@@ -1006,9 +959,6 @@ export default defineComponent({
           rectangle.value.endPointy = mousePos.y;
           (ctx as any).refs.drawingLayerRect.getNode().batchDraw(); // forced update since due to pointer issue
         }
-      }
-      if (!isDrawingRect.value && !isDrawing.value && !isClicked.value && spatialData.value && selectedGenes.value.length === 0) {
-        mouseOutOnSpatial(ev);
       }
     }
     function mouseMoveOnStageRight(ev: any) {
@@ -1153,6 +1103,7 @@ export default defineComponent({
     watch(runId, async (v: any) => {
       if (v !== null && !props.query.public) {
         spatialData.value = null;
+        totalInClust.value = {};
         loading.value = true;
         await runSpatial(true);
         await retrieveData();
@@ -1189,6 +1140,9 @@ export default defineComponent({
       if (typeof v === 'undefined') gene = [];
       if (typeof v === 'string') gene = [gene];
       selectedGenes.value = gene;
+    });
+    watch(tableKeyFromParent, (v: number) => {
+      runSpatial(true);
     });
     watch(loading, (v: any) => {
       ctx.emit('loading_value', v);
@@ -1282,6 +1236,7 @@ export default defineComponent({
       maxX_UMAP,
       maxY_UMAP,
       geneMotif,
+      tableKeyFromParent,
     };
   },
 });

@@ -25,7 +25,7 @@
           </template>
         </v-card>
       </v-col>
-      <v-col cols="12" sm="9" style="padding-right:10px">
+      <v-col cols="12" sm="8" style="padding-right:10px">
         <v-row>
           <v-col cols="12" sm="7">
             <v-text-field
@@ -53,12 +53,21 @@
           </v-col>
         </v-row>
         <template v-if="!menuListFlag">
-`         <template v-for="data in numOfPubsHold[pageIteration]" >
-            <v-card :style="{'border-top': `6px solid ${labColors[data.Group_Name]}`}" v-bind:key="data.Run_id">
-              <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.Run_Title}}</v-card-title>
-              <v-card-subtitle>{{data.Date}}</v-card-subtitle>
-              <v-card-text>{{data.Description}}</v-card-text>
-              <v-card-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID"><v-chip small dark :color="labColors[data.Group_Name]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
+          <template v-for="data in numOfPubsHold[pageIteration]" >
+            <v-card :style="{'border-top': `6px solid ${labColors[data.Group_Name]}`}" v-bind:key="data.Run_ID">
+              <v-row>
+                <v-col cols="12" sm="8">
+                  <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{(data.Title === 'None') ? data.Run_Title : data.Title}}</v-card-title>
+                  <v-card-subtitle>{{data.Date}}</v-card-subtitle>
+                  <v-card-text>{{data.Description}}</v-card-text>
+                  <v-card-subtitle v-for="keys in data.Assay_Type" v-bind:key="keys+data.Pub_ID"><v-chip small dark :color="labColors[data.Group_Name]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
+                </v-col>
+                <v-col cols="12" sm="4">
+                  <div style="height:inherit; width: 100%;">
+                    <img style="position: absolute;right: 0;padding-top: 13px;" :src="`frontPage_${data.Run_ID}.png`" />
+                  </div>
+                </v-col>
+              </v-row>
             </v-card>
             <div style="width:100%; height:20px" v-bind:key="data.Run_id"></div>
           </template>`
@@ -70,7 +79,7 @@
             <template v-for="data in numOfPubsHold[pageIteration]">
               <v-list-item  @click="runSpatial(data)" v-bind:key="data.Run_id">
                   <v-list-item-content>
-                    <v-list-item-title v-text="data.Run_Title"></v-list-item-title>
+                    <v-list-item-title v-text="(data.Title === 'None') ? data.Run_Title : data.Title"></v-list-item-title>
                     <v-list-item-subtitle
                       v-text="data.Date"
                     ></v-list-item-subtitle>
@@ -150,8 +159,8 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const count = ref<any>({});
     const countHold = ref<any>({});
-    const decodeDT = ref<any>(['Transcriptome', 'ATAC', 'Cut&Tag', 'Atlas', 'Rong', 'Hurd']);
-    const decodeDTTwo = ref<any[]>(['Spatial Transcriptome', 'Spatial ATAC', 'Spatial Cut & Tag', 'Atlas', 'Rong Lab', 'Hurd Lab']);
+    const decodeDT = ref<any>(['ATAC', 'Cut&Tag', 'RNA', 'Atlas', 'Rong', 'Hurd']);
+    const decodeDTTwo = ref<any[]>(['Spatial ATAC', 'Spatial Cut & Tag', 'Spatial Transcriptome', 'Atlas', 'Rong Lab', 'Hurd Lab']);
     const labColors = ref<any>({ Atlas: '#ac2c34', Rong: '#182c3c', Hurd: '#5D2C2C' });
     const menuListFlag = ref<boolean>(false);
     const pageIteration = ref<number>(1);
@@ -309,7 +318,7 @@ export default defineComponent({
       const motifH5ad = `data/${path}/h5/obj/motifs.h5ad`;
       const geneH5ad = `data/${path}/h5/obj/genes.h5ad`;
       const motifCsv = `data/${path}/h5/obj/motifs.csv`;
-      const { encoded: filenameToken } = await client.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: path, species: runObject.Species, tissue: runObject.Tissue } });
+      const { encoded: filenameToken } = await client.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: path, species: runObject.Species, tissue: runObject.Tissue, assay: runObject.Assay_Type } });
       const { host } = window.location;
       const publicLink = `http://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true&token=JWT%20${split}`;
       router.push(`public?component=PublicGeneViewer&run_id=${filenameToken}&public=true&token=JWT%20${split}`);

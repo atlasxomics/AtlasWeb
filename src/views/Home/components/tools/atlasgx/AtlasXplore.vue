@@ -30,7 +30,7 @@
                 class="ml-1"
                 medium
                 text
-                :disabled="!spatialData"
+                :disabled="!spatialData || assayFlag"
                 @click="(geneMotif === 'gene') ? (geneMotif = 'motif') :  (geneMotif = 'gene')">{{geneMotif}}
               </v-btn>
             </template>
@@ -552,7 +552,7 @@
                 color="black"
                 icon
                 class="ml-4 mt-5"
-                :disabled="!spatialData"
+                :disabled="!spatialData || assayFlag"
                 @click="peakViewerFlag = true; featureTableFlag = false; histoFlag = false"
                 small>
                 <v-icon>mdi-chart-line</v-icon>
@@ -607,13 +607,14 @@
                 :clickedCluster="clickedClusterFromChild"
                 :checkBoxCluster="selectedClusters"
                 :indFlag="averageInd"
+                :antiKey="tableKey"
                 :geneOmotif="geneMotif"
                 :idOfRun="runId"
                 ref="mainAtxViewer"/>
             </div>
             </v-col>
             <v-col cols="12" sm="2">
-              <table style="margin-bottom: 0;">
+              <table style="margin-bottom: 0; height: 37vh;overflow-y: scroll;display: block;">
                   <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'vertical-align': 'middle' }">
                     <template>
                       <td>
@@ -657,7 +658,7 @@
               </v-card>
             </div>
             <div id="capturePeak" :style="{ visibility: visible }">
-              <v-card class="mt-3" v-resize="onResize" ref="peakContainer" :disabled="loading" :loading="loading" flat>
+              <v-card v-if="!assayFlag" class="mt-3" v-resize="onResize" ref="peakContainer" :disabled="loading" :loading="loading" flat>
                 <template v-if="geneMotif == 'gene'">
                     <track-browser ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
                 </template>
@@ -846,6 +847,8 @@ export default defineComponent({
     const singleData = ref<any>();
     const averageInd = ref<boolean>(false);
     const topTenIds = ref<any>();
+    const tableKey = ref<number>(1);
+    const assayFlag = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -949,7 +952,7 @@ export default defineComponent({
         });
         heatMap.value = heatcmap;
         colorMap.value = cmap;
-        if (geneMotif.value === 'gene' && isClusterView.value) {
+        if (geneMotif.value === 'gene' && isClusterView.value && !assayFlag.value) {
           loading.value = true;
           (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
           loading.value = false;
@@ -1032,7 +1035,8 @@ export default defineComponent({
       }
     }
     function sendCluster(ev: any) {
-      clickedClusterFromChild.value = [ev];
+      if (ev !== 'Anti') clickedClusterFromChild.value = [ev];
+      else tableKey.value *= -1;
     }
     async function loadExpressions(ev: any) {
       if (!client.value) return;
@@ -1078,7 +1082,7 @@ export default defineComponent({
           cellTypeMapCopy.value = cellmapCopy;
         }
       }
-      if (geneMotif.value === 'gene' && isClusterView.value && (!isDrawing.value && !isDrawingRect.value)) {
+      if (geneMotif.value === 'gene' && isClusterView.value && (!isDrawing.value && !isDrawingRect.value) && !assayFlag.value) {
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
     }
@@ -1089,9 +1093,10 @@ export default defineComponent({
         const geneRank: any[] = [];
         const tableHeaders: any[] = [];
         const clustMap: any[] = [];
+        console.log(totalInClust.value);
         const clustKeys = Object.keys(totalInClust.value);
         clusterItems.value = clustKeys.map((v: any) => ({ name: v }));
-        tableHeaders.push({ text: 'Rank', value: 'id', sortable: false });
+        tableHeaders.push({ text: 'Anti', value: 'id', sortable: false, key: tableKey.value });
         for (let i = 0; i < clusterItems.value.length; i += 1) {
           tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
         }
@@ -1120,14 +1125,16 @@ export default defineComponent({
     }
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
+      console.log('total');
       updateSpatial();
     }
     function updateTen(ev: any) {
       topTenIds.value = ev;
-      if (Object.keys(totalInClust.value).length > 0) {
-        spatialData.value = false;
-        updateSpatial();
-      }
+      // if (Object.keys(totalInClust.value).length > 0) {
+      //   console.log('ten');
+      //   spatialData.value = false;
+      //   updateSpatial();
+      // }
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev;
@@ -1296,6 +1303,7 @@ export default defineComponent({
       metadata.value.species = runMetadata.Species.split(',')[1].replace('_', ' ');
       metadata.value.type = runMetadata.Tissue_Type;
       metadata.value.assay = runMetadata.Assay_Type;
+      if (runMetadata.Assay_Type.includes('RNA')) assayFlag.value = true;
       metadata.value.date = runMetadata.Date;
       metadata.value.condition = runMetadata.Condition;
       loading.value = false;
@@ -1322,6 +1330,7 @@ export default defineComponent({
       manualClusterFlag.value = false;
       cellTypeMap.value = {};
       cellTypeMapCopy.value = {};
+      tableKey.value = 1;
       spatialData.value = false;
       await runSpatial(runId.value);
       await getMeta(runId.value);
@@ -1367,6 +1376,7 @@ export default defineComponent({
     async function getPublicId(ev: any) {
       runId.value = ev.id;
       metadata.value.organ = ev.tissue;
+      if (ev.assay.includes('RNA')) assayFlag.value = true;
       const splitSpecies = ev.species.split(',')[1].replace('_', ' ');
       metadata.value.species = splitSpecies;
       if (props.query && runId.value === null) {
@@ -1412,27 +1422,29 @@ export default defineComponent({
       }
     });
     watch(geneMotif, (v: any) => {
-      if (!props.query.public) {
-        const btn = document.getElementById('geneMotifButton')!;
-        const span = btn.childNodes[0] as HTMLElement;
-        if (v === 'gene') {
-          span.innerText = 'GENE';
-        } else if (v === 'motif') {
-          span.innerText = 'MOTIF';
+      if (!assayFlag.value) {
+        if (!props.query.public) {
+          const btn = document.getElementById('geneMotifButton')!;
+          const span = btn.childNodes[0] as HTMLElement;
+          if (v === 'gene') {
+            span.innerText = 'GENE';
+          } else if (v === 'motif') {
+            span.innerText = 'MOTIF';
+          }
         }
+        genes.value = [];
+        featureTableFlag.value = true;
+        peakViewerFlag.value = false;
+        histoFlag.value = false;
+        geneMotifFlag.value = false;
+        isClusterView.value = true;
+        selectedGenes.value = [];
+        showFlag.value = [false];
+        geneButton.value = [];
+        childGenes.value = [];
+        trackBrowserGenes.value = [];
+        updateFilename();
       }
-      genes.value = [];
-      featureTableFlag.value = true;
-      peakViewerFlag.value = false;
-      histoFlag.value = false;
-      geneMotifFlag.value = false;
-      isClusterView.value = true;
-      selectedGenes.value = [];
-      showFlag.value = [false];
-      geneButton.value = [];
-      childGenes.value = [];
-      trackBrowserGenes.value = [];
-      updateFilename();
     });
     watch(isDrawing, (v: boolean) => {
       setDraggable(!v);
@@ -1460,6 +1472,18 @@ export default defineComponent({
         isDrawing.value = false;
         isDrawingRect.value = false;
       }
+    });
+    watch(tableKey, (v: any) => {
+      featureTableFlag.value = true;
+      peakViewerFlag.value = false;
+      histoFlag.value = false;
+      geneMotifFlag.value = false;
+      isClusterView.value = true;
+      selectedGenes.value = [];
+      showFlag.value = [false];
+      geneButton.value = [];
+      childGenes.value = [];
+      trackBrowserGenes.value = [];
     });
     watch(showFlag, (v: any[]) => {
       const bool = v[0];
@@ -1523,7 +1547,7 @@ export default defineComponent({
         disabled: loading.value,
         ref: 'geneMotifButton',
         click: () => {
-          (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
+          (geneMotif.value === 'gene' && assayFlag.value === false) ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
         },
       },
       {
@@ -1714,6 +1738,8 @@ export default defineComponent({
       topTenIds,
       updateTen,
       redirectToLogin,
+      tableKey,
+      assayFlag,
     };
   },
 });
