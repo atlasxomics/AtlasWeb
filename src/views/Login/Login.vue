@@ -22,6 +22,7 @@
                 max-width="500"
                 src="company_logo.png" />
               </v-container>
+              <!-- Sign In Page -->
               <v-col
               v-if="loginScreenDisplayed"
               >
@@ -47,15 +48,8 @@
                 />
                 <v-card-actions>
                   <v-spacer />
-                  <!-- <v-btn
-                    color="secondary"
-                    @click="LoginDialogActive = false"
-                  >
-                    Cancel
-                  </v-btn> -->
                   <v-btn
                   color="primary"
-                  @click="toggle_login_signup"
                   @click="clearCreds(); loginScreenDisplayed = false; registrationScreenDisplayed = true"
                   >
                     Register
@@ -262,12 +256,12 @@
       <v-card-title
       class="text-h5 grey lighten-2 justify-center"
       >
-      Account Request Successful!
+      Account Successfully Confirmed
       </v-card-title>
       <v-card-text
       class="text-center"
       >
-      An email will be send to {{ email }} upon approval.
+      An email will be sent to {{ email.value }} once you are given access to the site.
       </v-card-text>
       <div
       class="text-center">
@@ -441,8 +435,8 @@ export default defineComponent({
         const resp = await temp_client.user_request_account(pl);
         const { data, status } = resp;
         if (data !== 'exists') {
-          show_user_creation_message.value = true;
-          loginScreenDisplayed.value = true;
+          confirmationScreenDisplayed.value = true;
+          registrationScreenDisplayed.value = false;
         } else {
           snackbar.dispatch({ text: 'Username already exists. Please choose another.', options: { color: 'red' } });
         }
@@ -454,7 +448,28 @@ export default defineComponent({
       // // const resp = client.value?.user_request_account(pl);
       // console.log(pl);
     }
-    function toggle_login_signup() {
+    async function check_registration_code() {
+      try {
+        const temp_client = new Client(
+          PROD_SERVER_URL,
+          '',
+        );
+        console.log('checking registration code');
+        const resp = await temp_client.confirm_user_status_via_email(username.value, user_confirmation_code.value);
+        if (resp === 'Success') {
+          console.log('Successfully confirmed users email');
+          loginScreenDisplayed.value = true;
+          confirmationScreenDisplayed.value = false;
+          show_user_creation_message.value = true;
+        } else {
+          snackbar.dispatch({ text: 'Wrong confirmation code entered. Try again.', options: { color: 'red' } });
+          user_confirmation_code.value = '';
+        }
+      } catch (e) {
+        console.log('error');
+        snackbar.dispatch({ text: 'There was an error when attempting to confirm user.' });
+      }
+    }
       password.value = '';
       username.value = '';
       email.value = '';

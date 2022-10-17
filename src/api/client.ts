@@ -555,4 +555,15 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/get_ngs_ids');
     return resp.data;
   }
+  async confirm_user_status_via_email(username: string, confirmation_code: string) {
+    const pl = {
+      params: {
+        username,
+        confirmation_code,
+      },
+    };
+    console.log(pl);
+    const resp = await this.axios.get('/api/v1/auth/confirm_user_via_email', pl);
+    return resp.data;
+  }
 }
