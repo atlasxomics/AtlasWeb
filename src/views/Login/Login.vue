@@ -56,6 +56,7 @@
                   <v-btn
                   color="primary"
                   @click="toggle_login_signup"
+                  @click="clearCreds(); loginScreenDisplayed = false; registrationScreenDisplayed = true"
                   >
                     Register
                   </v-btn>
@@ -68,8 +69,9 @@
                   </v-btn>
                 </v-card-actions>
               </v-col>
+              <!-- Sign Up / Registration Page -->
               <v-col
-              v-if="!loginScreenDisplayed">
+              v-if="registrationScreenDisplayed">
               <v-text-field
               label="Name"
               v-model="name_user"
@@ -214,13 +216,36 @@
               >
                 Request Account
               </v-btn>
+              <!-- clicking back clears fields and returns the screen to login -->
               <v-btn
               color="red"
-              @click="toggle_login_signup"
+              @click="clearCreds(); loginScreenDisplayed = true; registrationScreenDisplayed = false;"
               >
                 Back
               </v-btn>
               </v-card-actions>
+              </v-col>
+              <v-col
+              v-if="confirmationScreenDisplayed"
+              >
+              <p> Please Enter the code sent to {{ email }} </p>
+              <v-text-field
+              label='Confirmation Code'
+              v-model="user_confirmation_code"
+              >
+              </v-text-field>
+              <v-btn
+              color="primary"
+              @click="check_registration_code"
+              >
+                Confirm
+              </v-btn>
+              <v-btn
+              color="gray"
+              @click="resend_registration_code"
+              >
+                Re-Send Code
+              </v-btn>
               </v-col>
             </v-row>
           </v-card>
@@ -341,6 +366,9 @@ export default defineComponent({
     const icon_var = ref<any>();
     const router = ctx.root.$router;
     const loginScreenDisplayed = ref<boolean>(true);
+    const registrationScreenDisplayed = ref<boolean>(false);
+    const confirmationScreenDisplayed = ref<boolean>(false);
+    const user_confirmation_code = ref<string>('');
     const username = ref<string>('');
     const password = ref<string>('');
     const password_clicked = ref<boolean>(false);
