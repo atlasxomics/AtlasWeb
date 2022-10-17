@@ -72,6 +72,7 @@ export default defineComponent({
       ctx.emit('sentGene', ev);
     }
     async function sendCluster(ev: any) {
+      if (ev === 'Anti') cluster.value[0].key *= -1;
       ctx.emit('sentCluster', ev);
     }
     onMounted(async () => {

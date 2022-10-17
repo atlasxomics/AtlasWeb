@@ -1086,38 +1086,39 @@ export default defineComponent({
         (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
       }
     }
+    async function updateTable() {
+      const geneRank: any[] = [];
+      const tableHeaders: any[] = [];
+      const clustKeys = Object.keys(totalInClust.value);
+      clusterItems.value = clustKeys.map((v: any) => ({ name: v }));
+      tableHeaders.push({ text: 'Anti', value: 'id', sortable: false, key: tableKey.value });
+      for (let i = 0; i < clusterItems.value.length; i += 1) {
+        tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
+      }
+      topHeaders.value = tableHeaders;
+      lodash.each(topTenIds.value, (v: string[], i: number) => {
+        const tenGenes: {[k: string]: any} = {};
+        const key = [];
+        const value = [];
+        key.push('id');
+        value.push(i);
+        for (let x = 0; x < clusterItems.value!.length; x += 1) {
+          key.push(clusterItems.value![x].name);
+          value.push(v[x]);
+        }
+        for (let j = 0; j < key.length; j += 1) {
+          tenGenes[key[j]] = value[j];
+        }
+        geneRank.push(tenGenes);
+      });
+      geneNames.value = geneRank;
+      lengthClust.value = clusterItems.value.length;
+    }
     async function updateSpatial() {
       if (!spatialData.value) {
         loading.value = true;
         spatialData.value = true;
-        const geneRank: any[] = [];
-        const tableHeaders: any[] = [];
-        const clustMap: any[] = [];
-        console.log(totalInClust.value);
-        const clustKeys = Object.keys(totalInClust.value);
-        clusterItems.value = clustKeys.map((v: any) => ({ name: v }));
-        tableHeaders.push({ text: 'Anti', value: 'id', sortable: false, key: tableKey.value });
-        for (let i = 0; i < clusterItems.value.length; i += 1) {
-          tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
-        }
-        topHeaders.value = tableHeaders;
-        lodash.each(topTenIds.value, (v: string[], i: number) => {
-          const tenGenes: {[k: string]: any} = {};
-          const key = [];
-          const value = [];
-          key.push('id');
-          value.push(i);
-          for (let x = 0; x < clusterItems.value!.length; x += 1) {
-            key.push(clusterItems.value![x].name);
-            value.push(v[x]);
-          }
-          for (let j = 0; j < key.length; j += 1) {
-            tenGenes[key[j]] = value[j];
-          }
-          geneRank.push(tenGenes);
-        });
-        geneNames.value = geneRank;
-        lengthClust.value = clusterItems.value.length;
+        await updateTable();
         await updateCircles();
         onResize();
         loading.value = false;
@@ -1130,11 +1131,10 @@ export default defineComponent({
     }
     function updateTen(ev: any) {
       topTenIds.value = ev;
-      // if (Object.keys(totalInClust.value).length > 0) {
-      //   console.log('ten');
-      //   spatialData.value = false;
-      //   updateSpatial();
-      // }
+      if (Object.keys(topHeaders.value).length > 0) {
+        spatialData.value = false;
+        updateTable();
+      }
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev;
@@ -1740,6 +1740,7 @@ export default defineComponent({
       redirectToLogin,
       tableKey,
       assayFlag,
+      updateTable,
     };
   },
 });
