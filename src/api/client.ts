@@ -566,4 +566,9 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/auth/confirm_user_via_email', pl);
     return resp.data;
   }
+  async resend_registration_code(username: string) {
+    const pl = { params: { username } };
+    const resp = await this.axios.get('/api/v1/auth/resend_confirmation_via_email', pl);
+    return resp.data;
+  }
 }

@@ -222,24 +222,28 @@
               <v-col
               v-if="confirmationScreenDisplayed"
               >
-              <p> Please Enter the code sent to {{ email }} </p>
+              <h3>Code sent to: {{ email }}</h3>
               <v-text-field
               label='Confirmation Code'
               v-model="user_confirmation_code"
               >
               </v-text-field>
-              <v-btn
-              color="primary"
-              @click="check_registration_code"
-              >
-                Confirm
-              </v-btn>
+              <v-card-actions>
+                <v-spacer/>
               <v-btn
               color="gray"
               @click="resend_registration_code"
               >
-                Re-Send Code
+                Re-Send
               </v-btn>
+              <v-btn
+              color="primary"
+              @click="check_registration_code"
+              :disabled="user_confirmation_code.length === 0"
+              >
+                Confirm
+              </v-btn>
+              </v-card-actions>
               </v-col>
             </v-row>
           </v-card>
@@ -273,59 +277,6 @@
       </div>
       </v-card>
       </v-dialog>
-      <!-- <v-dialog
-      v-model="bad_pwd_message"
-      width="600"
-      >
-      <v-card
-      width="600"
-      class="mx-auto"
-      >
-      <v-card-title class="text-h5 grey lighten-2 justify-center">
-        Invalid Password
-      </v-card-title>
-      <v-card-text
-      class="text-center"
-      >
-      <h2>
-        Password must:
-      </h2>
-      </v-card-text>
-      <v-card-text
-      class="text-center"
-      >
-       Be at least 8 characters long.
-      </v-card-text>
-      <v-card-text
-      class="text-center"
-      >
-        Contain at least one lowercase letter.
-      </v-card-text>
-      <v-card-text
-      class="text-center"
-      >
-        Contain at least one uppercase letter.
-      </v-card-text>
-      <v-card-text
-      class="text-center"
-      >
-        Contain at least one number.
-      </v-card-text>
-      <v-card-text
-      class="text-center"
-      >
-        Contain at least one symbol.
-      </v-card-text>
-      <div
-      class="text-center">
-      <v-btn
-      @click="bad_pwd_message = false"
-      >
-      Ok.
-      </v-btn>
-      </div>
-      </v-card>
-      </v-dialog> -->
     </v-container>
   </v-main>
 </template>
@@ -359,9 +310,9 @@ export default defineComponent({
     // NOTE: May need to be computed ref
     const icon_var = ref<any>();
     const router = ctx.root.$router;
-    const loginScreenDisplayed = ref<boolean>(true);
+    const loginScreenDisplayed = ref<boolean>(false);
     const registrationScreenDisplayed = ref<boolean>(false);
-    const confirmationScreenDisplayed = ref<boolean>(false);
+    const confirmationScreenDisplayed = ref<boolean>(true);
     const user_confirmation_code = ref<string>('');
     const username = ref<string>('');
     const password = ref<string>('');
@@ -404,15 +355,9 @@ export default defineComponent({
       }
     }
     async function send_account_request() {
-      // const rExp = new RegExp('^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[*.!@$%^&(){}[]:;<>,.?/~_+-=|]).{8,32}$');
       // eslint-disable-next-line
       const rExp = new RegExp('^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[*.!@$%^&(){}[:;<>]).{8,32}');
       const val = rExp.test(password.value);
-      // if (!val) {
-      //   bad_pwd_message.value = true;
-      //   return;
-      // }
-      // eslint-disable-next-line
       const rExp_email = new RegExp(/^\S+@\S+\.\S+$/);
       const val_email_test = rExp_email.test(email.value);
       if (!val_email_test) {
@@ -470,13 +415,24 @@ export default defineComponent({
         snackbar.dispatch({ text: 'There was an error when attempting to confirm user.' });
       }
     }
+    async function resend_registration_code() {
+      try {
+        const temp_client = new Client(
+          PROD_SERVER_URL,
+          '',
+        );
+        const resp = temp_client.resend_registration_code(username.value);
+      } catch (e) {
+        console.log('error');
+      }
+    }
+    function clearCreds() {
       password.value = '';
       username.value = '';
       email.value = '';
       pi_name.value = '';
       name_user.value = '';
       password_clicked.value = false;
-      loginScreenDisplayed.value = !loginScreenDisplayed.value;
     }
     function request_available() {
       if (username && password && email) {
@@ -504,9 +460,9 @@ export default defineComponent({
       useTestServer,
       loading,
       loginScreenDisplayed,
-      toggle_login_signup,
       request_available,
       send_account_request,
+      clearCreds,
       show_user_creation_message,
       // bad_pwd_message,
       show_pass,
@@ -516,6 +472,11 @@ export default defineComponent({
       uppercase_char_present,
       number_present,
       password_clicked,
+      registrationScreenDisplayed,
+      confirmationScreenDisplayed,
+      user_confirmation_code,
+      check_registration_code,
+      resend_registration_code,
     };
   },
 });
