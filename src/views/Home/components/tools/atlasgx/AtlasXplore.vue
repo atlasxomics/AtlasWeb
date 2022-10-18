@@ -654,7 +654,7 @@
             </v-card>
             <div id="captureHisto">
               <v-card class="mt-3" v-show="spatialCircleData.length > 0 && histoFlag" flat>
-                <histogram-graph v-show="histoFlag" :colorCode="colorMap" :idName="childGenes" :chartData="spatialCircleData"/>
+                <histogram-graph v-show="histoFlag" :colorCode="colorMap" :idName="childGenes" :chartData="spatialCircleData" :assay="assayFlag"/>
               </v-card>
             </div>
             <div id="capturePeak" :style="{ visibility: visible }">
@@ -1332,6 +1332,8 @@ export default defineComponent({
       cellTypeMapCopy.value = {};
       tableKey.value = 1;
       spatialData.value = false;
+      assayFlag.value = false;
+      genes.value = [];
       await runSpatial(runId.value);
       await getMeta(runId.value);
     }

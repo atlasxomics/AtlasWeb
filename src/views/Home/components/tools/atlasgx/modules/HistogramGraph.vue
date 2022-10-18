@@ -36,11 +36,12 @@ import { Plotly } from 'vue-plotly';
 export default defineComponent({
   name: 'HistogramGraph',
   components: { Plotly },
-  props: ['colorCode', 'chartData', 'idName'],
+  props: ['colorCode', 'chartData', 'idName', 'assay'],
   setup(props, ctx) {
     const colorMap = computed(() => props.colorCode);
     const dataFromParent = computed(() => props.chartData);
     const idName = computed(() => props.idName);
+    const assayFromParent = computed(() => props.assay);
     const data = ref<any>({});
     const layout = ref<any>();
     const created = ref<any>();
@@ -69,8 +70,8 @@ export default defineComponent({
             collectiveData.push(trace);
           });
           collectiveData.sort((a: any, b: any) => {
-            const x = a.name.toLowerCase();
-            const y = b.name.toLowerCase();
+            const x = parseFloat(a.name.split('C')[1]);
+            const y = parseFloat(b.name.split('C')[1]);
             if (x < y) { return -1; }
             if (x > y) { return 1; }
             return 0;
@@ -81,12 +82,13 @@ export default defineComponent({
       } else {
         for (let i = 0; i < tixels.length; i += 1) {
           const trace = {
-            x: Object.values((i === 0) ? tixels[i] : tixels[i].map((v: number) => Math.log10(v + 1))),
+            x: (!assayFromParent.value) ? Object.values((i === 0) ? tixels[i] : tixels[i].map((v: number) => Math.log10(v + 1))) : Object.values(tixels[i].map((v: number) => Math.log10(v + 1))),
             marker: { color: 'red' },
             histnorm: 'count',
             type: 'histogram',
           };
-          multGenes[i] = { id: i, data: [trace], layout: { title: (i === 0) ? 'TSSEnrichment' : 'Fragments', traceorder: 'normal' } };
+          const titleArray = [(!assayFromParent.value) ? 'TSSEnrichment' : 'Gene Count', (!assayFromParent.value) ? 'Fragments' : 'UMI Count'];
+          multGenes[i] = { id: i, data: [trace], layout: { title: titleArray[i], traceorder: 'normal' } };
         }
         data.value = multGenes;
       }
@@ -97,7 +99,7 @@ export default defineComponent({
     watch(dataFromParent, (v: any) => {
       constructChart(v);
     });
-    return { data, layout, created, constructChart };
+    return { data, layout, created, assayFromParent, constructChart };
   },
 });
 </script>
