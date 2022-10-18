@@ -60,7 +60,7 @@ export default defineComponent({
     }
     function register_user() {
       console.log('registration selected');
-      this.$emit('register-user');
+      this.$emit('registration-selected');
     }
     function forgot_password() {
       console.log('forgot password selected');

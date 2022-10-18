@@ -39,6 +39,12 @@
               @account-requested="send_account_request"
               >
               </user-registration-page>
+              <user-confirmation-screen
+              v-if="confirmationScreenDisplayed"
+              @resend-code="resend_verification"
+              @verification-code-submitted="check_registration_code_signup"
+              >
+              </user-confirmation-screen>
               <!-- forgot password screen -->
               <forgot-password-screen
               v-if="forgotPasswordScreenDisplayed"
@@ -103,6 +109,7 @@ import UserRegistrationPage from '@/views/Login/components/UserRegistrationPage.
 import SignInPage from '@/views/Login/components/SignInPage.vue';
 import ForgotPasswordScreen from '@/views/Login/components/ForgotPasswordScreen.vue';
 import PasswordResetScreen from '@/views/Login/components/PasswordResetScreen.vue';
+import UserConfirmationScreen from '@/views/Login/components/UserConfirmationScreen.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -121,6 +128,7 @@ export default defineComponent({
     SignInPage,
     ForgotPasswordScreen,
     PasswordResetScreen,
+    UserConfirmationScreen,
   },
   setup(props, ctx) {
     onMounted(async () => {
@@ -134,7 +142,7 @@ export default defineComponent({
     const confirmationScreenDisplayed = ref<boolean>(false);
     const forgotPasswordScreenDisplayed = ref<boolean>(false);
     const resetPassScreenDisplayed = ref<boolean>(false);
-    const user_confirmation_code = ref<string>('');
+    // const user_confirmation_code = ref<string>('');
     const username_from_child = ref<string>('');
     // const password = ref<string>('');
     const password_clicked = ref<boolean>(false);
@@ -142,11 +150,6 @@ export default defineComponent({
     const pi_name = ref<string>('');
     const email = ref<string>('');
     const loading = ref<boolean>(false);
-    // const special_character_present = computed(() => /.*[!@#$%^&&*()<>?/[{}].*/.test(password.value));
-    // const atleast_8_chars = computed(() => password.value.length >= 8);
-    // const lowercase_char_present = computed(() => /.*[a-z].*/.test(password.value));
-    // const uppercase_char_present = computed(() => /.*[A-Z].*/.test(password.value));
-    // const number_present = computed(() => /.*[0-9].*/.test(password.value));
     const loginErrorMessage = ref<string>('');
     // const bad_pwd_message = ref<boolean>(false);
     const show_pass = ref<boolean>(false);
@@ -157,6 +160,7 @@ export default defineComponent({
     // If successful, returns a connected client
     async function loginUser(pl: any) {
       const { username, password } = pl;
+      console.log(pl);
       loading.value = true;
       const serverUrl = PROD_SERVER_URL;
       const resp = await login(serverUrl, username, password);
@@ -187,6 +191,8 @@ export default defineComponent({
           snackbar.dispatch({ text: 'Account Signup Successful.', options: { color: 'green' } });
           confirmationScreenDisplayed.value = true;
           registrationScreenDisplayed.value = false;
+          const { username } = pl;
+          username_from_child.value = username;
         } else {
           snackbar.dispatch({ text: 'Username already exists. Please choose another.', options: { color: 'red' } });
         }
@@ -221,14 +227,14 @@ export default defineComponent({
     }
     // calls api to check whether code entered by user matches one sent to email.
     // used when validating user
-    async function check_registration_code_signup() {
+    async function check_registration_code_signup(code: string) {
       try {
         const temp_client = new Client(
           PROD_SERVER_URL,
           '',
         );
         const resp = 'Success';
-        // const resp = await temp_client.confirm_user_status_via_email(username.value, user_confirmation_code.value);
+        // const resp = await temp_client.confirm_user_status_via_email(username_from_child.value, code);
         if (resp === 'Success') {
           console.log('Successfully confirmed users email');
           loginScreenDisplayed.value = true;
@@ -236,7 +242,7 @@ export default defineComponent({
           show_user_creation_message.value = true;
         } else {
           snackbar.dispatch({ text: 'Wrong confirmation code entered. Try again.', options: { color: 'red' } });
-          user_confirmation_code.value = '';
+          // user_confirmation_code.value = '';
         }
       } catch (e) {
         console.log('error');
@@ -304,29 +310,19 @@ export default defineComponent({
       name_user,
       pi_name,
       username_from_child,
-      // password,
       email,
       showAdvanced,
       useTestServer,
       loading,
       show_user_creation_message,
-      // bad_pwd_message,
       show_pass,
-      // special_character_present,
-      // atleast_8_chars,
-      // lowercase_char_present,
-      // uppercase_char_present,
-      // number_present,
       password_clicked,
       forgotPasswordScreenDisplayed,
       loginScreenDisplayed,
       registrationScreenDisplayed,
       confirmationScreenDisplayed,
       resetPassScreenDisplayed,
-      user_confirmation_code,
-      // request_available,
       send_account_request,
-      // clearCreds,
       resend_verification,
       forgot_password_request,
       check_registration_code_signup,
