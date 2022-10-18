@@ -69,161 +69,12 @@
                 </v-card-actions>
               </v-col>
               <!-- Sign Up / Registration Page -->
-              <v-col
-              v-if="registrationScreenDisplayed">
-              <v-text-field
-              label="Name"
-              v-model="name_user"
-              prepend-icon="mdi-account"
+              <user-registration-page
+              v-if="registrationScreenDisplayed"
+              @back-selected="loginScreenDisplayed = true; registrationScreenDisplayed = false"
+              @account-requested="send_account_request"
               >
-              </v-text-field>
-              <v-text-field
-              label="Username"
-              v-model="username"
-              prepend-icon="mdi-account-circle"
-              >
-              </v-text-field>
-              <v-text-field
-              label="Email"
-              v-model="email"
-              prepend-icon="mdi-email"
-              >
-              </v-text-field>
-              <v-text-field
-              label="Group/PI Name"
-              v-model="pi_name"
-              prepend-icon="mdi-account-group"
-              >
-              </v-text-field>
-              <v-text-field
-              prepend-icon="mdi-lock"
-              :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
-              @click:append="show_pass = !show_pass"
-              label="Password"
-              v-model="password"
-              :type="show_pass?'text': 'password'"
-              @mousedown="password_clicked = true"
-              >
-              </v-text-field>
-              <v-card
-              v-if="password.length > 0 & password_clicked"
-              color="#E8E8E8"
-              >
-                <v-card-title>
-                  {{ (atleast_8_chars && lowercase_char_present && uppercase_char_present && special_character_present) ? 'Strong Password' : 'Password Must Have' }}
-                </v-card-title>
-                <p
-                class="password-text"
-                >
-                  • At least 8 characters.
-                <v-icon
-                  :inline="true"
-                  v-if="!atleast_8_chars"
-                  color="red"
-                  >
-                  {{'mdi-file-excel-box'}}
-                  </v-icon>
-                <v-icon
-                  :inline="true"
-                  v-if="atleast_8_chars"
-                  color="green"
-                  >
-                  {{'mdi-check'}}
-                  </v-icon>
-                </p>
-                <p
-                class="password-text"
-                >
-                  • At least 1 lowercase character
-                  <v-icon
-                  :inline="true"
-                  color="red"
-                  v-if="!lowercase_char_present"
-                  >
-                  {{'mdi-file-excel-box'}}
-                  </v-icon>
-                  <v-icon
-                  :inline="true"
-                  color="green"
-                  v-if="lowercase_char_present"
-                  >
-                  {{'mdi-check'}}
-                  </v-icon>
-                </p>
-                <p
-                class="password-text"
-                >
-                  • At least 1 uppercase character
-                <v-icon
-                  :inline="true"
-                  color="green"
-                  v-if="uppercase_char_present"
-                >
-                  {{'mdi-check'}}
-                  </v-icon>
-                <v-icon
-                  :inline="true"
-                  color="red"
-                  v-if="!uppercase_char_present"
-                >
-                  {{'mdi-file-excel-box'}}
-                  </v-icon>
-                </p>
-                <p
-                class="password-text">
-                • At least 1 number present
-                <v-icon
-                  :inline="true"
-                  v-if="number_present"
-                  color="green">
-                  {{'mdi-check'}}
-                </v-icon>
-                <v-icon
-                  :inline="true"
-                  v-if="!number_present"
-                  color="red">
-                  {{'mdi-file-excel-box'}}
-                </v-icon>
-                </p>
-                <p
-                class="password-text"
-                >
-                  • At least 1 symbol
-                  <v-icon
-                  :inline="true"
-                  v-if="!special_character_present"
-                  color="red"
-                  >
-                  {{'mdi-file-excel-box'}}
-                  </v-icon>
-                  <v-icon
-                  :inline="true"
-                  v-if="special_character_present"
-                  color="green"
-                  >
-                  {{'mdi-check'}}
-                  </v-icon>
-                </p>
-              </v-card>
-              <v-card-actions>
-              <v-spacer />
-              <v-btn
-              class="request-button"
-              color="primary"
-              :disabled="!username || !email || !password || !name_user || !pi_name || !atleast_8_chars || !special_character_present || !lowercase_char_present || !uppercase_char_present || !number_present"
-              @click="send_account_request"
-              >
-                Request Account
-              </v-btn>
-              <!-- clicking back clears fields and returns the screen to login -->
-              <v-btn
-              color="red"
-              @click="clearCreds(); loginScreenDisplayed = true; registrationScreenDisplayed = false;"
-              >
-                Back
-              </v-btn>
-              </v-card-actions>
-              </v-col>
+              </user-registration-page>
               <v-col
               v-if="confirmationScreenDisplayed"
               >
@@ -271,9 +122,6 @@
                 </v-btn>
               </v-card-actions>
               </v-col>
-              <v-col
-              v-if="forgotPasswordConfirmationScreenDisplayed">
-              </v-col>
             </v-row>
           </v-card>
         </v-col>
@@ -319,6 +167,7 @@ import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import { UserRequestPayload } from '@/types';
 import { snackbar } from '@/components/GlobalSnackbar';
+import UserRegistrationPage from '@/views/Login/components/UserRegistrationPage.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -332,6 +181,7 @@ const clientReady = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'Login',
+  components: { UserRegistrationPage },
   setup(props, ctx) {
     onMounted(async () => {
       console.log('');
@@ -386,32 +236,18 @@ export default defineComponent({
         password.value = '';
       }
     }
-    async function send_account_request() {
-      // eslint-disable-next-line
-      const rExp = new RegExp('^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[*.!@$%^&(){}[:;<>]).{8,32}');
-      const val = rExp.test(password.value);
-      const rExp_email = new RegExp(/^\S+@\S+\.\S+$/);
-      const val_email_test = rExp_email.test(email.value);
-      if (!val_email_test) {
-        snackbar.dispatch({ text: 'Must enter a valid email.', options: { color: 'red' } });
-        return;
-      }
-      const pl = {
-        username: username.value,
-        password: password.value,
-        email: email.value,
-        name: name_user.value,
-        groups: ['collab'],
-        pi_name: pi_name.value,
-      };
+    async function send_account_request(pl: any) {
+      console.log(pl);
       const temp_client = new Client(
         PROD_SERVER_URL,
         '',
       );
       try {
+        // const resp = { data: 'Success', status: 'bar' };
         const resp = await temp_client.user_request_account(pl);
         const { data, status } = resp;
         if (data !== 'exists') {
+          snackbar.dispatch({ text: 'Account Signup Successful.', options: { color: 'green' } });
           confirmationScreenDisplayed.value = true;
           registrationScreenDisplayed.value = false;
         } else {
@@ -421,9 +257,6 @@ export default defineComponent({
         console.log('error');
         snackbar.dispatch({ text: 'There was an error when requesting an account.', options: { color: 'red' } });
       }
-      // console.log(client);
-      // // const resp = client.value?.user_request_account(pl);
-      // console.log(pl);
     }
     async function forgot_password_request() {
       const temp_client = new Client(
@@ -450,7 +283,6 @@ export default defineComponent({
           PROD_SERVER_URL,
           '',
         );
-        console.log('checking registration code');
         const resp = await temp_client.confirm_user_status_via_email(username.value, user_confirmation_code.value);
         if (resp === 'Success') {
           console.log('Successfully confirmed users email');
