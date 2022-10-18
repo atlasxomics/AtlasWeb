@@ -1,0 +1,60 @@
+<template>
+    <v-col>
+    <h3>Check email for code.</h3>
+    <v-text-field
+    label='Confirmation Code'
+    v-model="user_confirmation_code"
+    >
+    </v-text-field>
+    <v-text-field
+    label="New Password"
+    v-model="new_password"
+    >
+    </v-text-field>
+    <v-card-actions>
+    <v-spacer/>
+    <v-btn
+    color="gray"
+    @click="resend_code"
+    >
+    Re-Send
+    </v-btn>
+    <v-btn
+    color="primary"
+    @click="code_submitted"
+    :disabled="user_confirmation_code.length === 0"
+    >
+    Confirm
+    </v-btn>
+    </v-card-actions>
+    </v-col>
+</template>
+
+<script lang="ts">
+import { user } from '@/filemenu/admin/state';
+import { defineComponent, ref } from '@vue/composition-api';
+
+export default defineComponent({
+  name: 'PasswordResetScreen',
+  props: { username: { type: String, required: true } },
+  setup(props, ctx) {
+    const user_confirmation_code = ref<string>('');
+    const new_password = ref<string>('');
+    function resend_code() {
+      console.log('resending code');
+      this.$emit('resend-code');
+    }
+    function code_submitted() {
+      console.log('submitted code');
+      const pl = { code: user_confirmation_code.value, password: new_password.value, username: props.username };
+      this.$emit('code-submitted', pl);
+    }
+    return {
+      user_confirmation_code,
+      new_password,
+      resend_code,
+      code_submitted,
+    };
+  },
+});
+</script>
