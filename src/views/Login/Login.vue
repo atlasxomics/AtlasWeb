@@ -49,6 +49,11 @@
                 <v-card-actions>
                   <v-spacer />
                   <v-btn
+                  @click="forgotPasswordScreenDisplayed=true;loginScreenDisplayed=false;"
+                  >
+                    Forgot Password
+                  </v-btn>
+                  <v-btn
                   color="primary"
                   @click="clearCreds(); loginScreenDisplayed = false; registrationScreenDisplayed = true"
                   >
@@ -245,6 +250,30 @@
               </v-btn>
               </v-card-actions>
               </v-col>
+              <v-col
+              v-if="forgotPasswordScreenDisplayed">
+              Enter username for password reset:
+              <v-text-field
+              label="Username"
+              v-model="username"
+              >
+              </v-text-field>
+              <v-card-actions>
+                <v-btn
+                @click="forgot_password_request"
+                >
+                  Submit
+                </v-btn>
+                <v-btn
+                @click="loginScreenDisplayed = true; forgotPasswordScreenDisplayed = false"
+                >
+                  Back
+                </v-btn>
+              </v-card-actions>
+              </v-col>
+              <v-col
+              v-if="forgotPasswordConfirmationScreenDisplayed">
+              </v-col>
             </v-row>
           </v-card>
         </v-col>
@@ -310,9 +339,12 @@ export default defineComponent({
     // NOTE: May need to be computed ref
     const icon_var = ref<any>();
     const router = ctx.root.$router;
-    const loginScreenDisplayed = ref<boolean>(false);
+    const loginScreenDisplayed = ref<boolean>(true);
     const registrationScreenDisplayed = ref<boolean>(false);
-    const confirmationScreenDisplayed = ref<boolean>(true);
+    const confirmationScreenDisplayed = ref<boolean>(false);
+    const forgotPasswordScreenDisplayed = ref<boolean>(false);
+    const forgotPassConfirmationScreenDisplayed = ref<boolean>(false);
+    const resetting_password = ref<boolean>(false);
     const user_confirmation_code = ref<string>('');
     const username = ref<string>('');
     const password = ref<string>('');
@@ -393,7 +425,26 @@ export default defineComponent({
       // // const resp = client.value?.user_request_account(pl);
       // console.log(pl);
     }
-    async function check_registration_code() {
+    async function forgot_password_request() {
+      const temp_client = new Client(
+        PROD_SERVER_URL,
+        '',
+      );
+      try {
+        const resp = await temp_client.forgotPasswordRequest(username.value);
+        if (resp === 'Success') {
+          forgotPasswordScreenDisplayed.value = false;
+          confirmationScreenDisplayed.value = true;
+          resetting_password.value = true;
+        } else if (resp === 'user_na') {
+          console.log('user does not exist');
+          snackbar.dispatch({ text: 'Username does not exist.' });
+        }
+      } catch (e) {
+        console.log('error');
+      }
+    }
+    async function check_registration_code_signup() {
       try {
         const temp_client = new Client(
           PROD_SERVER_URL,
@@ -413,6 +464,29 @@ export default defineComponent({
       } catch (e) {
         console.log('error');
         snackbar.dispatch({ text: 'There was an error when attempting to confirm user.' });
+      }
+    }
+    async function check_registration_code_forgot_password() {
+      try {
+        const temp_client = new Client(
+          PROD_SERVER_URL,
+          '',
+        );
+        const resp = await temp_client.forgot_password_code_confirmation(username.value, user_confirmation_code.value);
+        if (resp === 'Success') {
+          console.log('Success');
+        } else if (resp === 'wrong_code') {
+          snackbar.dispatch({ text: 'Wrong Code. Please try again.' });
+        }
+      } catch (e) {
+        console.log('error');
+      }
+    }
+    async function check_registration_code() {
+      if (resetting_password.value) {
+        check_registration_code_forgot_password();
+      } else {
+        check_registration_code_signup();
       }
     }
     async function resend_registration_code() {
@@ -459,10 +533,7 @@ export default defineComponent({
       showAdvanced,
       useTestServer,
       loading,
-      loginScreenDisplayed,
-      request_available,
-      send_account_request,
-      clearCreds,
+      resetting_password,
       show_user_creation_message,
       // bad_pwd_message,
       show_pass,
@@ -472,11 +543,20 @@ export default defineComponent({
       uppercase_char_present,
       number_present,
       password_clicked,
+      forgotPasswordScreenDisplayed,
+      loginScreenDisplayed,
       registrationScreenDisplayed,
       confirmationScreenDisplayed,
+      forgotPassConfirmationScreenDisplayed,
       user_confirmation_code,
+      request_available,
+      send_account_request,
+      clearCreds,
       check_registration_code,
       resend_registration_code,
+      forgot_password_request,
+      check_registration_code_signup,
+      check_registration_code_forgot_password,
     };
   },
 });
