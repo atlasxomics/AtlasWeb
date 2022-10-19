@@ -100,7 +100,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref } from '@vue/composition-api';
+import { defineComponent, computed, ref, onMounted } from '@vue/composition-api';
 import { watch } from 'fs';
 
 export default defineComponent({
@@ -113,6 +113,10 @@ export default defineComponent({
     const special_character_present = computed(() => /.*[!@#$%^&&*()<>?/[{}].*/.test(props.password));
     const number_present = computed(() => /.*[0-9].*/.test(props.password));
     const pass_valid = computed(() => number_present.value && atleast_8_chars.value && lowercase_char_present.value && uppercase_char_present.value && special_character_present.value);
+    function emit_valid_pass() {
+      this.$emit('pass-changed', pass_valid.value);
+    }
+    // onMounted(emit_valid_pass);
     return {
       atleast_8_chars,
       lowercase_char_present,
@@ -120,12 +124,13 @@ export default defineComponent({
       special_character_present,
       number_present,
       pass_valid,
+      emit_valid_pass,
     };
   },
   watch: {
     password() {
       console.log('pass_changed_called');
-      this.$emit('pass-changed', this.pass_valid);
+      this.emit_valid_pass();
     },
   },
 });

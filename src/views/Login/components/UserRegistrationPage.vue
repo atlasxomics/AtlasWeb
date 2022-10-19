@@ -36,13 +36,15 @@
         :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
         @click:append="show_pass = !show_pass"
         label="Password"
+        @mousedown="password_clicked = true"
         v-model="password"
         :type="show_pass?'text': 'password'"
         >
         </v-text-field>
         <password-checker
+        ref="password-checker"
+        v-if="password_clicked | password.length > 0"
         :password="password"
-        @pass-changed="password_changed"
         >
         </password-checker>
         <v-card-actions>
@@ -66,7 +68,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref } from '@vue/composition-api';
+import { defineComponent, computed, ref, onMounted } from '@vue/composition-api';
 import PasswordChecker from '@/views/Login/components/PasswordChecker.vue';
 
 export default defineComponent({
@@ -79,12 +81,20 @@ export default defineComponent({
     const pi_name = ref<string>('');
     const organization = ref<string>('');
     const show_pass = ref<boolean>(false);
-    const valid_password = ref<boolean>(false);
+    // const valid_password = ref<boolean>(false);
+    const password_clicked = ref<boolean>(false);
+    const atleast_8_chars = computed(() => password.value.length >= 8);
+    const lowercase_char_present = computed(() => /.*[a-z].*/.test(password.value));
+    const uppercase_char_present = computed(() => /.*[A-Z].*/.test(password.value));
+    const special_character_present = computed(() => /.*[!@#$%^&&*()<>?/[{}].*/.test(password.value));
+    const number_present = computed(() => /.*[0-9].*/.test(password.value));
     const valid_email = computed(() => /^\S+@\S+\.\S+$/.test(email.value));
+    const valid_password = computed(() => atleast_8_chars.value && lowercase_char_present.value && uppercase_char_present.value && special_character_present.value && number_present.value);
     const register_available = computed(() => valid_password.value && valid_email.value && name_user.value.length > 0 && username.value.length > 0 && pi_name.value.length > 0 && organization.value.length > 0);
-    function password_changed(val: boolean) {
-      valid_password.value = val;
-    }
+    // function password_changed(val: boolean) {
+    //   console.log('pass changed register');
+    //   valid_password.value = val;
+    // }
     function back_selected() {
       this.$emit('back-selected');
     }
@@ -99,7 +109,21 @@ export default defineComponent({
       };
       this.$emit('account-requested', pl);
     }
+    function clear_fields() {
+      name_user.value = '';
+      username.value = '';
+      password.value = '';
+      email.value = '';
+      pi_name.value = '';
+      organization.value = '';
+    }
+    onMounted(clear_fields);
     return {
+      atleast_8_chars,
+      lowercase_char_present,
+      uppercase_char_present,
+      special_character_present,
+      number_present,
       name_user,
       username,
       password,
@@ -110,9 +134,11 @@ export default defineComponent({
       register_available,
       valid_password,
       valid_email,
+      password_clicked,
       account_request,
       back_selected,
-      password_changed,
+      // password_changed,
+      clear_fields,
     };
   },
 });

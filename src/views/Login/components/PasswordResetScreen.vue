@@ -22,24 +22,35 @@
     <v-btn
     color="primary"
     @click="code_submitted"
-    :disabled="user_confirmation_code.length === 0"
+    :disabled="(user_confirmation_code.length === 0 || !pass_valid)"
     >
     Confirm
     </v-btn>
     </v-card-actions>
+    <password-checker
+    :password="new_password"
+    @pass-changed="pass_changed"
+    >
+    </password-checker>
     </v-col>
 </template>
 
 <script lang="ts">
 import { user } from '@/filemenu/admin/state';
 import { defineComponent, ref } from '@vue/composition-api';
+import PasswordChecker from './PasswordChecker.vue';
 
 export default defineComponent({
   name: 'PasswordResetScreen',
+  components: { PasswordChecker },
   props: { username: { type: String, required: true } },
   setup(props, ctx) {
     const user_confirmation_code = ref<string>('');
     const new_password = ref<string>('');
+    const pass_valid = ref<boolean>(false);
+    function pass_changed(new_val: boolean) {
+      pass_valid.value = new_val;
+    }
     function resend_code() {
       console.log('resending code');
       this.$emit('resend-code');
@@ -52,8 +63,10 @@ export default defineComponent({
     return {
       user_confirmation_code,
       new_password,
+      pass_valid,
       resend_code,
       code_submitted,
+      pass_changed,
     };
   },
 });

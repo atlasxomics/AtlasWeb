@@ -233,8 +233,8 @@ export default defineComponent({
           PROD_SERVER_URL,
           '',
         );
-        const resp = 'Success';
-        // const resp = await temp_client.confirm_user_status_via_email(username_from_child.value, code);
+        // const resp = 'Success';
+        const resp = await temp_client.confirm_user_status_via_email(username_from_child.value, code);
         if (resp === 'Success') {
           console.log('Successfully confirmed users email');
           loginScreenDisplayed.value = true;
