@@ -501,7 +501,7 @@ export default defineComponent({
       return arr;
     }
     async function updateCircles() {
-      if (spatialData.value === null) return;
+      if (spatialData.value === null || spatialData.value.spatial === undefined) return;
       isHighlighted.value = false;
       const circles: any[] = [];
       const circlesUMAP: any[] = [];
@@ -579,7 +579,7 @@ export default defineComponent({
               cluster: v[0],
               total: 0,
               inactive: false,
-              hitStrokeWidth: radius * 3,
+              hitStrokeWidth: radius * 4,
               genes: { },
             };
             const ci = {
@@ -762,29 +762,29 @@ export default defineComponent({
         maxX_UMAP.value = Math.max(...umapX);
         maxY_UMAP.value = Math.max(...umapY);
         ctx.emit('totalClust', totalInClust.value);
-        await updateCircles();
+        updateCircles();
       }
       loading.value = false;
       if (!props.query.public) {
+        const geneFileName = `data/${runId.value}/h5/obj/gene.csv`;
+        const gene = await client.value!.getGeneMotifSpatial(geneFileName);
+        spatialData.value.gene = gene;
+        const motifFileName = `data/${runId.value}/h5/obj/motif.csv`;
+        const motif = await client.value!.getGeneMotifSpatial(motifFileName);
+        spatialData.value.motif = motif;
         if (geneMotif.value === 'gene') {
-          const geneFileName = `data/${runId.value}/h5/obj/gene.csv`;
-          const gene = await client.value!.getGeneMotifSpatial(geneFileName);
-          spatialData.value.gene = gene;
           ctx.emit('totalGM', Object.keys(spatialData.value.gene));
         } else {
-          const motifFileName = `data/${runId.value}/h5/obj/motif.csv`;
-          const motif = await client.value!.getGeneMotifSpatial(motifFileName);
-          spatialData.value.motif = motif;
           ctx.emit('totalGM', Object.keys(spatialData.value.motif));
         }
       } else {
+        const gene = await client.value!.getGeneMotifSpatialByToken(filenameGene.value, 1);
+        spatialData.value.gene = gene;
+        const motif = await client.value!.getGeneMotifSpatialByToken(filenameGene.value, 2);
+        spatialData.value.motif = motif;
         if (geneMotif.value === 'gene') {
-          const gene = await client.value!.getGeneMotifSpatialByToken(filenameGene.value, 1);
-          spatialData.value.gene = gene;
           ctx.emit('totalGM', Object.keys(spatialData.value.gene));
         } else {
-          const motif = await client.value!.getGeneMotifSpatialByToken(filenameGene.value, 2);
-          spatialData.value.motif = motif;
           ctx.emit('totalGM', Object.keys(spatialData.value.motif));
         }
       }
@@ -861,10 +861,45 @@ export default defineComponent({
       }
     }
     async function mouseOutOnSpatial(ev: any) {
+      const mousePos = { x: ev.evt.layerX, y: ev.evt.layerY };
+      const stageWidth = (ctx as any).refs.konvaStageDualAtac.$el.offsetWidth;
+      const stageHeight = (ctx as any).refs.konvaStageDualAtac.$el.offsetHeight;
+      const first = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[0].getNode().absolutePosition();
+      const second = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[49].getNode().absolutePosition();
+      const third = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[circlesSpatial.value.length - 50].getNode().absolutePosition();
+      const end = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[circlesSpatial.value.length - 1].getNode().absolutePosition();
+      const boundaries = [first, second, third, end];
+      let leftmost = 1000;
+      let bottommost = 0;
+      let rightmost = 0;
+      let topmost = 1000;
+      boundaries.forEach((v: any, i: number) => {
+        if (v.x > rightmost) {
+          if (v.x > stageWidth) {
+            rightmost = stageWidth - 2;
+          } else rightmost = v.x;
+        }
+        if (v.x < leftmost) {
+          if (v.x < 0) {
+            leftmost = 15;
+          } else leftmost = v.x;
+        }
+        if (v.y > bottommost) {
+          if (v.y > stageHeight) {
+            bottommost = stageHeight - 2;
+          } else bottommost = v.y;
+        }
+        if (v.y < topmost) {
+          if (v.y < 0) {
+            topmost = 15;
+          } else topmost = v.y;
+        }
+      });
+      const finale = [leftmost, topmost, rightmost, bottommost];
       isHighlighted.value = false;
       tooltip.hide();
       tooltipRight.hide();
-      if ((!isDrawing.value && !isDrawingRect.value)) unHighlighCluster();
+      if ((!isDrawing.value && !isDrawingRect.value) && (mousePos.x < finale[0] || mousePos.y < finale[1] || mousePos.x > finale[2] || mousePos.y > finale[3])) unHighlighCluster();
     }
     async function mouseMoveOnSpatialRight(ev: any) {
       const mousePosRight = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();

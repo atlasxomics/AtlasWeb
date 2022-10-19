@@ -72,8 +72,8 @@ export default defineComponent({
           collectiveData.sort((a: any, b: any) => {
             const x = parseFloat(a.name.split('C')[1]);
             const y = parseFloat(b.name.split('C')[1]);
-            if (x < y) { return -1; }
-            if (x > y) { return 1; }
+            if (x < y) return -1;
+            if (x > y) return 1;
             return 0;
           });
           multGenes[idName.value[i]] = { id: idName.value[i], data: collectiveData, layout: { barmode: 'overlay', title: idName.value[i], traceorder: 'normal' } };

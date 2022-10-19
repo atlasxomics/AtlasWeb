@@ -1117,7 +1117,7 @@ export default defineComponent({
       if (!spatialData.value) {
         loading.value = true;
         spatialData.value = true;
-        await updateTable();
+        updateTable();
         await updateCircles();
         onResize();
         loading.value = false;
@@ -1125,7 +1125,7 @@ export default defineComponent({
     }
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
-      if (topTenIds.value.length > 0) {
+      if (topTenIds.value === undefined) {
         updateSpatial();
       }
     }

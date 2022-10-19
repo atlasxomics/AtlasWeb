@@ -157,6 +157,16 @@ export default defineComponent({
       const fl_payload = { params: { path: 'data', filter: `${rid}/tracks` } };
       const fl_payload_ref = { params: { bucket_name: ref_bucket, path: '', filter: `${speciesMap[selectedSpecies.value]}` } };
       const resp = await client.value.getFileList(fl_payload);
+      resp.sort((a: any, b: any) => {
+        if (a.match(/C\d+/) === null || b.match(/C\d+/) === null) return 0;
+        const xCsplit = a.match(/C\d+/)[0];
+        const yCsplit = b.match(/C\d+/)[0];
+        const x = parseFloat(xCsplit.split('C')[1]);
+        const y = parseFloat(yCsplit.split('C')[1]);
+        if (x < y) return -1;
+        if (x > y) return 1;
+        return 0;
+      });
       const resp_ref = await client.value.getFileList(fl_payload_ref);
       const merged_list = resp.concat(...resp_ref);
       const filelist = merged_list.filter((x: string) => x.includes('.bw') || x.includes('.bb') || x.includes('.2bit') || x.includes('.bed') || x.endsWith('.ix') || x.endsWith('.ixx'));
