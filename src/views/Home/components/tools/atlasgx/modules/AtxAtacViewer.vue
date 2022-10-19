@@ -749,6 +749,10 @@ export default defineComponent({
             else totalHold[list[0]] += 1;
           }
         });
+        Object.keys(totalHold).forEach((v: any, index: any) => {
+          const key = `C${index + 1}`;
+          totalInClust.value[key] = totalHold[key];
+        });
         minX.value = Math.min(...spatialX);
         minY.value = Math.min(...spatialY);
         maxX.value = Math.max(...spatialX);
@@ -757,12 +761,8 @@ export default defineComponent({
         minY_UMAP.value = Math.min(...umapY);
         maxX_UMAP.value = Math.max(...umapX);
         maxY_UMAP.value = Math.max(...umapY);
-        await updateCircles();
-        Object.keys(totalHold).forEach((v: any, index: any) => {
-          const key = `C${index + 1}`;
-          totalInClust.value[key] = totalHold[key];
-        });
         ctx.emit('totalClust', totalInClust.value);
+        await updateCircles();
       }
       loading.value = false;
       if (!props.query.public) {
@@ -1096,8 +1096,8 @@ export default defineComponent({
       if (props.query.public) {
         spatialData.value = null;
         loading.value = true;
-        await runSpatial(true);
         await retrieveData();
+        await runSpatial(true);
       }
     });
     watch(runId, async (v: any) => {
@@ -1105,15 +1105,15 @@ export default defineComponent({
         spatialData.value = null;
         totalInClust.value = {};
         loading.value = true;
-        await runSpatial(true);
         await retrieveData();
+        await runSpatial(true);
       }
     });
     watch(geneMotif, async (v: any) => {
       if (spatialData.value !== null) {
         loading.value = true;
-        await runSpatial(true);
         await retrieveData();
+        await runSpatial(true);
         selectedGenes.value = [];
         loading.value = false;
       }

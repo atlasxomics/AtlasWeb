@@ -1040,7 +1040,6 @@ export default defineComponent({
     }
     async function loadExpressions(ev: any) {
       if (!client.value) return;
-      if (!spatialData.value) return;
       genes.value = ev.map((v: string) => ({ name: v }));
       loading.value = false;
     }
@@ -1126,15 +1125,11 @@ export default defineComponent({
     }
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
-      console.log('total');
-      updateSpatial();
     }
     function updateTen(ev: any) {
       topTenIds.value = ev;
-      if (Object.keys(topHeaders.value).length > 0) {
-        spatialData.value = false;
-        updateTable();
-      }
+      spatialData.value = false;
+      updateSpatial();
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev;
