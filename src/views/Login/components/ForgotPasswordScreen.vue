@@ -29,11 +29,9 @@ export default defineComponent({
   setup() {
     const username = ref<string>('');
     function back_selected() {
-      console.log('back selected');
       this.$emit('back');
     }
     function forgot_password_request() {
-      console.log('forgot password request');
       this.$emit('forgot-password', username.value);
     }
     return {

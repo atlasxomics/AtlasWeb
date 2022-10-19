@@ -28,6 +28,7 @@
     </v-btn>
     </v-card-actions>
     <password-checker
+    v-if="new_password.length > 0"
     :password="new_password"
     @pass-changed="pass_changed"
     >
@@ -52,11 +53,9 @@ export default defineComponent({
       pass_valid.value = new_val;
     }
     function resend_code() {
-      console.log('resending code');
       this.$emit('resend-code');
     }
     function code_submitted() {
-      console.log('submitted code');
       const pl = { code: user_confirmation_code.value, password: new_password.value, username: props.username };
       this.$emit('code-submitted', pl);
     }

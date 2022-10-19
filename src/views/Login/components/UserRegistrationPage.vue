@@ -91,10 +91,6 @@ export default defineComponent({
     const valid_email = computed(() => /^\S+@\S+\.\S+$/.test(email.value));
     const valid_password = computed(() => atleast_8_chars.value && lowercase_char_present.value && uppercase_char_present.value && special_character_present.value && number_present.value);
     const register_available = computed(() => valid_password.value && valid_email.value && name_user.value.length > 0 && username.value.length > 0 && pi_name.value.length > 0 && organization.value.length > 0);
-    // function password_changed(val: boolean) {
-    //   console.log('pass changed register');
-    //   valid_password.value = val;
-    // }
     function back_selected() {
       this.$emit('back-selected');
     }

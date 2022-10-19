@@ -129,7 +129,6 @@ export default defineComponent({
   },
   watch: {
     password() {
-      console.log('pass_changed_called');
       this.emit_valid_pass();
     },
   },

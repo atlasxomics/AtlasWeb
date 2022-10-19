@@ -222,7 +222,6 @@ export default class Client {
   // Requires Admin
   async registerUser(user: RegisterUserPayload): Promise<boolean> {
     try {
-      console.log(user);
       await this.axios.post('/api/v1/auth/user', user);
     } catch (error) {
       // If failed, user already exists
@@ -232,7 +231,6 @@ export default class Client {
     return true;
   }
   async user_request_account(user_info: Record<string, any>) {
-    console.log(user_info);
     const res = await this.axios.post('/api/v1/auth/user_account_request', user_info);
     return res;
   }
@@ -242,7 +240,6 @@ export default class Client {
     return resp;
   }
   async deleteUser(user: string) {
-    console.log(user);
     const resp = await this.axios.delete(`/api/v1/auth/user/${user}`);
     return resp;
   }
@@ -511,7 +508,6 @@ export default class Client {
   }
   async get_user_list() {
     const resp = await this.axios.get('/api/v1/auth/list_accounts');
-    console.log(resp.data);
     return resp.data;
   }
   async get_group_list() {
@@ -535,7 +531,6 @@ export default class Client {
   async delete_group(group_name: string) {
     const pl = { data: { group_name } };
     const resp = await this.axios.delete('/api/v1/auth/group', pl);
-    console.log(resp);
     return resp;
   }
   async disable_user(username: string) {
@@ -562,7 +557,6 @@ export default class Client {
         confirmation_code,
       },
     };
-    console.log(pl);
     const resp = await this.axios.get('/api/v1/auth/confirm_user_via_email', pl);
     return resp.data;
   }
@@ -574,7 +568,6 @@ export default class Client {
   async forgotPasswordRequest(username: string): Promise<any> {
     const pl = { params: { username } };
     const resp = await this.axios.get('/api/v1/auth/forgot_password_request', pl);
-    console.log(resp);
     return resp.data;
   }
   async resetPassword(username: string, password: string, code: string): Promise<any> {

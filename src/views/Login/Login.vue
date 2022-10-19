@@ -80,12 +80,44 @@
       <v-card-text
       class="text-center"
       >
-      An email will be sent to {{ email.value }} once you are given access to the site.
+      {{ from_confirmation_to_password_reset? 'Email verified! Check email for a new code to be used to reset account password.' : 'An email will be sent to '.concat(email).concat( 'once you are authorized to access your data.') }}
       </v-card-text>
       <div
       class="text-center">
       <v-btn
       @click="show_user_creation_message = false"
+      >
+      Ok
+      </v-btn>
+      </div>
+      </v-card>
+      </v-dialog>
+      <v-dialog
+      v-model="show_account_requires_verification_message"
+      width="600"
+      >
+      <v-card
+      width="600"
+      class="mx-auto"
+      >
+      <v-card-title
+      class="text-h5 grey lighten-2 justify-center"
+      >
+      Account has never verified email.
+      </v-card-title>
+      <v-card-text
+      class="text-center"
+      >
+      Prior to resetting password first verify email used in registration.
+      </v-card-text>
+      <v-card-text
+      class="text-center">
+      Email sent to address associated with {{ username_from_child }}.
+      </v-card-text>
+      <div
+      class="text-center">
+      <v-btn
+      @click="show_account_requires_verification_message = false"
       >
       Ok
       </v-btn>
@@ -131,9 +163,6 @@ export default defineComponent({
     UserConfirmationScreen,
   },
   setup(props, ctx) {
-    onMounted(async () => {
-      console.log('');
-    });
     // NOTE: May need to be computed ref
     const icon_var = ref<any>();
     const router = ctx.root.$router;
@@ -156,11 +185,12 @@ export default defineComponent({
     const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
     const show_user_creation_message = ref<boolean>(false);
+    const show_account_requires_verification_message = ref<boolean>(false);
+    const from_confirmation_to_password_reset = ref<boolean>(false);
     // calls login function from index.ts which calls api to verify user.
     // If successful, returns a connected client
     async function loginUser(pl: any) {
       const { username, password } = pl;
-      console.log(pl);
       loading.value = true;
       const serverUrl = PROD_SERVER_URL;
       const resp = await login(serverUrl, username, password);
@@ -178,7 +208,6 @@ export default defineComponent({
     }
     // calls api to create account and sends verification email
     async function send_account_request(pl: any) {
-      console.log(pl);
       const temp_client = new Client(
         PROD_SERVER_URL,
         '',
@@ -220,8 +249,7 @@ export default defineComponent({
       );
       try {
         const resp = await temp_client.forgotPasswordRequest(username);
-        console.log(resp);
-        // const resp = 'Success';
+        username_from_child.value = username;
         if (resp.state === 'Success' && resp.CodeDeliveryDetails.DeliveryMedium.toLowerCase() === 'email') {
           forgotPasswordScreenDisplayed.value = false;
           resetPassScreenDisplayed.value = true;
@@ -231,11 +259,11 @@ export default defineComponent({
         } else if (resp.state.toLowerCase() === 'user_na') {
           snackbar.dispatch({ text: 'Username does not exist.' });
         } else if (resp.state.toLowerCase() === 'needs_confirmation') {
-          console.log('user never confirmed');
-          console.log('direct user to reconfirm pw');
+          show_account_requires_verification_message.value = true;
           forgotPasswordScreenDisplayed.value = false;
           confirmationScreenDisplayed.value = true;
           username_from_child.value = username;
+          from_confirmation_to_password_reset.value = true;
           resend_verification();
         } else if (resp.state === 'Failure' && resp.msg.includes('Attempt limit exceeded')) {
           snackbar.dispatch({ text: 'Must wait before resetting password again.' });
@@ -255,10 +283,14 @@ export default defineComponent({
         // const resp = 'Success';
         const resp = await temp_client.confirm_user_status_via_email(username_from_child.value, code);
         if (resp === 'Success') {
-          console.log('Successfully confirmed users email');
-          loginScreenDisplayed.value = true;
           confirmationScreenDisplayed.value = false;
           show_user_creation_message.value = true;
+          if (from_confirmation_to_password_reset.value) {
+            forgot_password_request(username_from_child.value);
+            resetPassScreenDisplayed.value = true;
+          } else {
+            loginScreenDisplayed.value = true;
+          }
         } else {
           snackbar.dispatch({ text: 'Wrong confirmation code entered. Try again.', options: { color: 'red' } });
           // user_confirmation_code.value = '';
@@ -279,7 +311,6 @@ export default defineComponent({
         // const resp = 'Success';
         const resp = await temp_client.resetPassword(username, password, code);
         if (resp === 'Success') {
-          console.log('Success');
           snackbar.dispatch({ text: 'Password has been reset.', options: { color: 'green' } });
           loginScreenDisplayed.value = true;
           resetPassScreenDisplayed.value = false;
@@ -324,6 +355,7 @@ export default defineComponent({
       useTestServer,
       loading,
       show_user_creation_message,
+      show_account_requires_verification_message,
       show_pass,
       password_clicked,
       forgotPasswordScreenDisplayed,
@@ -331,6 +363,7 @@ export default defineComponent({
       registrationScreenDisplayed,
       confirmationScreenDisplayed,
       resetPassScreenDisplayed,
+      from_confirmation_to_password_reset,
       send_account_request,
       resend_verification,
       forgot_password_request,
