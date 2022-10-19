@@ -201,6 +201,17 @@ export default defineComponent({
         snackbar.dispatch({ text: 'There was an error when requesting an account.', options: { color: 'red' } });
       }
     }
+    async function resend_verification() {
+      try {
+        const temp_client = new Client(
+          PROD_SERVER_URL,
+          '',
+        );
+        const resp = temp_client.resend_registration_code(username_from_child.value);
+      } catch (e) {
+        console.log('error');
+      }
+    }
     // calls api and checks if user exists. If so then a code is sent to their email
     async function forgot_password_request(username: string) {
       const temp_client = new Client(
@@ -208,17 +219,25 @@ export default defineComponent({
         '',
       );
       try {
-        console.log('calling forgot pw');
         const resp = await temp_client.forgotPasswordRequest(username);
         console.log(resp);
         // const resp = 'Success';
-        if (resp === 'Success') {
+        if (resp.state === 'Success' && resp.CodeDeliveryDetails.DeliveryMedium.toLowerCase() === 'email') {
           forgotPasswordScreenDisplayed.value = false;
           resetPassScreenDisplayed.value = true;
           username_from_child.value = username;
-        } else if (resp.toLowerCase() === 'user_na') {
+        } else if (resp.state === 'Success' && resp.CodeDeliveryDetails.DeliveryMedium.toLowerCase() === 'sms') {
+          snackbar.dispatch({ text: 'Error! Try Again. Contact support if further help is required.' });
+        } else if (resp.state.toLowerCase() === 'user_na') {
           snackbar.dispatch({ text: 'Username does not exist.' });
-        } else if (resp.includes('Attempt limit exceeded')) {
+        } else if (resp.state.toLowerCase() === 'needs_confirmation') {
+          console.log('user never confirmed');
+          console.log('direct user to reconfirm pw');
+          forgotPasswordScreenDisplayed.value = false;
+          confirmationScreenDisplayed.value = true;
+          username_from_child.value = username;
+          resend_verification();
+        } else if (resp.state === 'Failure' && resp.msg.includes('Attempt limit exceeded')) {
           snackbar.dispatch({ text: 'Must wait before resetting password again.' });
         }
       } catch (e) {
@@ -271,17 +290,7 @@ export default defineComponent({
         console.log('error');
       }
     }
-    async function resend_verification() {
-      try {
-        const temp_client = new Client(
-          PROD_SERVER_URL,
-          '',
-        );
-        const resp = temp_client.resend_registration_code(username_from_child.value);
-      } catch (e) {
-        console.log('error');
-      }
-    }
+
     // function clearCreds() {
     //   password.value = '';
     //   username.value = '';

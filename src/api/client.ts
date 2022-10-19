@@ -574,9 +574,7 @@ export default class Client {
   async forgotPasswordRequest(username: string): Promise<any> {
     const pl = { params: { username } };
     const resp = await this.axios.get('/api/v1/auth/forgot_password_request', pl);
-    if (typeof resp.data === 'object') {
-      return resp.data.msg;
-    }
+    console.log(resp);
     return resp.data;
   }
   async resetPassword(username: string, password: string, code: string): Promise<any> {
