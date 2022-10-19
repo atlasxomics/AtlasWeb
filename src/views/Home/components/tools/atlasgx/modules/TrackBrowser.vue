@@ -1,5 +1,5 @@
 <template>
-  <v-card flat>
+  <v-card flat :loading="loading">
     <v-card-text>
       <div :id="pageId"></div>
     </v-card-text>
@@ -215,7 +215,7 @@ export default defineComponent({
       onClickSearch(null);
     });
     watch(loading, (v: any) => {
-      ctx.emit('loading_value', v);
+      // ctx.emit('loading_value', v);
     });
     onMounted(async () => {
       await clientReady;

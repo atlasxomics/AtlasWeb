@@ -1125,11 +1125,16 @@ export default defineComponent({
     }
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
+      if (topTenIds.value.length > 0) {
+        updateSpatial();
+      }
     }
     function updateTen(ev: any) {
       topTenIds.value = ev;
       spatialData.value = false;
-      updateSpatial();
+      if (Object.keys(totalInClust.value).length > 1) {
+        updateSpatial();
+      }
     }
     function chooseHeatmap(ev: any) {
       heatMap.value = ev;

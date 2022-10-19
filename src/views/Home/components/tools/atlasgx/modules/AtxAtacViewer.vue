@@ -579,7 +579,7 @@ export default defineComponent({
               cluster: v[0],
               total: 0,
               inactive: false,
-              hitStrokeWidth: radius * 2,
+              hitStrokeWidth: radius * 3,
               genes: { },
             };
             const ci = {
@@ -1096,8 +1096,8 @@ export default defineComponent({
       if (props.query.public) {
         spatialData.value = null;
         loading.value = true;
-        await retrieveData();
-        await runSpatial(true);
+        retrieveData();
+        runSpatial(true);
       }
     });
     watch(runId, async (v: any) => {
@@ -1105,15 +1105,15 @@ export default defineComponent({
         spatialData.value = null;
         totalInClust.value = {};
         loading.value = true;
-        await retrieveData();
-        await runSpatial(true);
+        retrieveData();
+        runSpatial(true);
       }
     });
     watch(geneMotif, async (v: any) => {
       if (spatialData.value !== null) {
         loading.value = true;
-        await retrieveData();
-        await runSpatial(true);
+        retrieveData();
+        runSpatial(true);
         selectedGenes.value = [];
         loading.value = false;
       }
