@@ -1091,7 +1091,7 @@ export default defineComponent({
         tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
       }
       topHeaders.value = tableHeaders;
-      lodash.each(topTenIds.value[tableKey.value], (v: string[], i: number) => {
+      lodash.each(topTenIds.value[geneMotif.value][tableKey.value], (v: string[], i: number) => {
         const tenGenes: {[k: string]: any} = {};
         const key = [];
         const value = [];
@@ -1127,9 +1127,12 @@ export default defineComponent({
       }
     }
     async function updateTen() {
-      const fileName = { params: { filename: `data/${runId.value}/h5/topTen.json` } };
-      const topTen_json = await client.value?.getJsonFile(fileName);
-      topTenIds.value = topTen_json;
+      const fileName = { params: { filename: `data/${runId.value}/h5/topTen_genes.json` } };
+      const fileNameMotif = { params: { filename: `data/${runId.value}/h5/topTen_motifs.json` } };
+      const topTen_gene_json = await client.value?.getJsonFile(fileName);
+      const topTen_motif_json = await client.value?.getJsonFile(fileNameMotif);
+      topTenIds.value.gene = topTen_gene_json;
+      topTenIds.value.motif = topTen_motif_json;
       spatialData.value = false;
       if (Object.keys(totalInClust.value).length > 1) {
         updateSpatial();
