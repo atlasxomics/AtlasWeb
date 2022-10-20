@@ -221,7 +221,6 @@ import { rainbow } from '@indot/rainbowvis';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
-import template from '../../../_empty/template.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -721,7 +720,7 @@ export default defineComponent({
       if (spatialData.value === null) {
         spatialData.value = {};
         if (!props.query.public) {
-          const tixelFileName = `data/${runId.value}/h5/obj/data.csv`;
+          const tixelFileName = `data/${runId.value}/h5/data.csv`;
           const spatial = await client.value!.getCsvFile({ params: { filename: tixelFileName } });
           spatialData.value.spatial = spatial;
         } else {
@@ -766,10 +765,10 @@ export default defineComponent({
       updateCircles();
       loading.value = false;
       if (!props.query.public) {
-        const geneFileName = `data/${runId.value}/h5/obj/gene.csv`;
+        const geneFileName = `data/${runId.value}/h5/gene.csv`;
         const gene = await client.value!.getGeneMotifSpatial(geneFileName);
         spatialData.value.gene = gene;
-        const motifFileName = `data/${runId.value}/h5/obj/motif.csv`;
+        const motifFileName = `data/${runId.value}/h5/motif.csv`;
         const motif = await client.value!.getGeneMotifSpatial(motifFileName);
         spatialData.value.motif = motif;
         if (geneMotif.value === 'gene') {
@@ -789,21 +788,18 @@ export default defineComponent({
         }
       }
     }
-    async function runSpatial(change: boolean) {
+    async function runSpatial() {
       if (!client.value) return;
       // if (!selectedFiles.value) return;
       try {
-        if (highlightIds.value.length > 0 || change === true) {
+        if (highlightIds.value.length > 0) {
           progressMessage.value = null;
           spatialRun.value = true;
           const task = currentTask.value;
           const queue = currentQueue.value;
-          const args = [filenameGene.value, selectedGenes.value, highlightIds.value, tableKeyFromParent.value];
+          const args = [filenameGene.value, highlightIds.value, tableKeyFromParent.value];
           const kwargs = {};
           const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, (geneMotif.value === 'gene') ? 3 : 4) : await client.value.postTask(task, args, kwargs, queue);
-          if (props.query.public) {
-            ctx.emit('publicRun', { id: taskObject.meta.run_id, species: taskObject.meta.species, organ: taskObject.meta.tissue, assay: taskObject.meta.assay });
-          }
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */
           while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -824,14 +820,10 @@ export default defineComponent({
           progressMessage.value = taskStatus.value.status;
           const resp = taskStatus.value.result;
           ctx.emit('highlightedId', { ids: highlightIds.value, genes: resp.top_selected });
-          if (change) {
-            ctx.emit('topTen', resp.top_ten);
-          }
         } else {
           await fitStageToParent();
         }
       } catch (error) {
-        ctx.emit('spatialFlag', false);
         console.log(error);
         loading.value = false;
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
@@ -1025,7 +1017,7 @@ export default defineComponent({
         polygon.value.points = [];
         highlightRegion();
         if (highlightCount.value > 0) {
-          runSpatial(false);
+          runSpatial();
         }
       }
       if (isDrawingRect.value) {
@@ -1033,7 +1025,7 @@ export default defineComponent({
         regions.value.push(deepCopy(rectangle.value));
         highlightRegion();
         if (highlightCount.value > 0) {
-          runSpatial(false);
+          runSpatial();
         }
       }
     }
@@ -1044,7 +1036,7 @@ export default defineComponent({
         polygonUMAP.value.points = [];
         highlightRegion();
         if (highlightCount.value > 0) {
-          runSpatial(false);
+          runSpatial();
         }
       }
       if (isDrawingRect.value) {
@@ -1052,7 +1044,7 @@ export default defineComponent({
         regionsUMAP.value.push(deepCopy(rectangleUMAP.value));
         highlightRegion();
         if (highlightCount.value > 0) {
-          runSpatial(false);
+          runSpatial();
         }
       }
     }
@@ -1132,7 +1124,6 @@ export default defineComponent({
         spatialData.value = null;
         loading.value = true;
         retrieveData();
-        runSpatial(true);
       }
     });
     watch(runId, async (v: any) => {
@@ -1141,14 +1132,12 @@ export default defineComponent({
         totalInClust.value = {};
         loading.value = true;
         retrieveData();
-        runSpatial(true);
       }
     });
     watch(geneMotif, async (v: any) => {
       if (spatialData.value !== null) {
         loading.value = true;
         retrieveData();
-        runSpatial(true);
         selectedGenes.value = [];
         loading.value = false;
       }
@@ -1175,9 +1164,6 @@ export default defineComponent({
       if (typeof v === 'undefined') gene = [];
       if (typeof v === 'string') gene = [gene];
       selectedGenes.value = gene;
-    });
-    watch(tableKeyFromParent, (v: number) => {
-      runSpatial(true);
     });
     watch(loading, (v: any) => {
       ctx.emit('loading_value', v);

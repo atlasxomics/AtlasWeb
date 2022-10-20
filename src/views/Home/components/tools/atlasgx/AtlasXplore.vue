@@ -585,13 +585,11 @@
               <atx-atac-viewer
                 @loading_value="updateLoading"
                 @highlightedId='updateSelectors'
-                @publicRun='getPublicId'
                 @totalClust="updateClustTotal"
                 @spatialCircleData="updateHistograph"
                 @singleCircleData="dataToSingle"
                 @sendColorBar="colorBarToSingle"
                 @totalGM="loadExpressions"
-                @topTen="updateTen"
                 :query="{ public: query.public}"
                 :filename="filename"
                 :standalone="false"
@@ -846,7 +844,7 @@ export default defineComponent({
     const colorBarFromSibling = ref<any>();
     const singleData = ref<any>();
     const averageInd = ref<boolean>(false);
-    const topTenIds = ref<any>();
+    const topTenIds = ref<any>({});
     const tableKey = ref<number>(1);
     const assayFlag = ref<boolean>(false);
     function pushByQuery(query: any) {
@@ -1093,7 +1091,7 @@ export default defineComponent({
         tableHeaders.push({ text: clusterItems.value[i].name, value: clusterItems.value[i].name, sortable: false });
       }
       topHeaders.value = tableHeaders;
-      lodash.each(topTenIds.value, (v: string[], i: number) => {
+      lodash.each(topTenIds.value[tableKey.value], (v: string[], i: number) => {
         const tenGenes: {[k: string]: any} = {};
         const key = [];
         const value = [];
@@ -1124,12 +1122,14 @@ export default defineComponent({
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
       selectedClusters.value = Object.keys(totalInClust.value).map((v: any) => v);
-      if (topTenIds.value !== undefined) {
+      if (Object.keys(topTenIds.value).length > 0) {
         updateSpatial();
       }
     }
-    function updateTen(ev: any) {
-      topTenIds.value = ev;
+    async function updateTen() {
+      const fileName = { params: { filename: `data/${runId.value}/h5/topTen.json` } };
+      const topTen_json = await client.value?.getJsonFile(fileName);
+      topTenIds.value = topTen_json;
       spatialData.value = false;
       if (Object.keys(totalInClust.value).length > 1) {
         updateSpatial();
@@ -1191,9 +1191,9 @@ export default defineComponent({
         if (!props.query.public) {
           const existingCookie = readCookie();
           const split = existingCookie?.token.split('JWT ')[1];
-          const geneFileName = `data/${rid}/gene.csv`;
-          const motifFileName = `data/${rid}/motif.csv`;
-          const tixelFileName = `data/${rid}/data.csv`;
+          const geneFileName = `data/${rid}/h5/gene.csv`;
+          const motifFileName = `data/${rid}/h5/motif.csv`;
+          const tixelFileName = `data/${rid}/h5/data.csv`;
           const motifHold = filename.value;
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, motifHold!.replace(/motifs/i, 'genes'), motifHold!.replace(/genes/i, 'motifs'), `data/${runId.value}/h5/obj/motifs.csv`], meta: { run_id: rid } });
           const { host } = window.location;
@@ -1333,8 +1333,9 @@ export default defineComponent({
       spatialData.value = false;
       assayFlag.value = false;
       genes.value = [];
-      await runSpatial(runId.value);
-      await getMeta(runId.value);
+      runSpatial(runId.value);
+      getMeta(runId.value);
+      updateTen();
     }
     async function loadingPage() {
       loading.value = true;
@@ -1375,11 +1376,12 @@ export default defineComponent({
       loading.value = false;
     }
     async function getPublicId(ev: any) {
-      runId.value = ev.id;
+      runId.value = ev.run_id;
       metadata.value.organ = ev.tissue;
       if (ev.assay.includes('RNA')) assayFlag.value = true;
       const splitSpecies = ev.species.split(',')[1].replace('_', ' ');
       metadata.value.species = splitSpecies;
+      updateTen();
       if (props.query && runId.value === null) {
         if (props.query.run_id) {
           await selectAction({ id: props.query.run_id });
@@ -1592,6 +1594,8 @@ export default defineComponent({
         }
         if (props.query) {
           if (props.query.run_id && props.query.public) {
+            const value = await client.value?.decodeMetadata(props.query.run_id);
+            getPublicId(value);
             const fn = props.query.run_id;
             filename.value = fn;
           }

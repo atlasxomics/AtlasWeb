@@ -312,9 +312,9 @@ export default defineComponent({
       const path = runObject.Run_ID;
       const existingCookie = readCookie();
       const split = existingCookie?.token.split('JWT ')[1];
-      const geneFileName = `data/${path}/h5/obj/gene.csv`;
-      const motifFileName = `data/${path}/h5/obj/motif.csv`;
-      const tixelFileName = `data/${path}/h5/obj/data.csv`;
+      const geneFileName = `data/${path}/h5/gene.csv`;
+      const motifFileName = `data/${path}/h5/motif.csv`;
+      const tixelFileName = `data/${path}/h5/data.csv`;
       const motifH5ad = `data/${path}/h5/obj/motifs.h5ad`;
       const geneH5ad = `data/${path}/h5/obj/genes.h5ad`;
       const motifCsv = `data/${path}/h5/obj/motifs.csv`;

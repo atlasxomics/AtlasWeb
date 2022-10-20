@@ -316,6 +316,12 @@ export default class Client {
     return resp.data;
   }
 
+  async decodeMetadata(token: string) {
+    const endpoint = `/api/v1/storage/decode_meta/${token}`;
+    const resp = await this.axios.get(endpoint);
+    return resp.data;
+  }
+
   async getTaskStatus(task_id: string): Promise<any> {
     const endpoint = `/api/v1/task/${task_id}`;
     const resp = await this.axios.get(endpoint);
