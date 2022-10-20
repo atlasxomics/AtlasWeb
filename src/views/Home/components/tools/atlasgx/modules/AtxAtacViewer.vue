@@ -762,8 +762,8 @@ export default defineComponent({
         maxX_UMAP.value = Math.max(...umapX);
         maxY_UMAP.value = Math.max(...umapY);
         ctx.emit('totalClust', totalInClust.value);
-        updateCircles();
       }
+      updateCircles();
       loading.value = false;
       if (!props.query.public) {
         const geneFileName = `data/${runId.value}/h5/obj/gene.csv`;
@@ -829,7 +829,6 @@ export default defineComponent({
           }
         } else {
           await fitStageToParent();
-          spatialRun.value = false;
         }
       } catch (error) {
         ctx.emit('spatialFlag', false);
@@ -837,6 +836,7 @@ export default defineComponent({
         loading.value = false;
         snackbar.dispatch({ text: error, options: { right: true, color: 'error' } });
       }
+      spatialRun.value = false;
     }
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {

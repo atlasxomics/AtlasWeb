@@ -1060,7 +1060,6 @@ export default defineComponent({
       const cmapCopy: any = {};
       const colors: any[] = [];
       const numClusters = Object.keys(totalInClust.value).length;
-      selectedClusters.value = [];
       if (!manualClusterFlag.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
         colors_raw.forEach((v: any, i: number) => {
@@ -1072,7 +1071,6 @@ export default defineComponent({
           cmapCopy[cidx] = colors[i];
           cellmap[cidx] = '';
           cellmapCopy[cidx] = '';
-          selectedClusters.value.push(cidx);
         }
         colorMap.value = cmap;
         colorMapCopy.value = cmapCopy;
@@ -1125,7 +1123,8 @@ export default defineComponent({
     }
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
-      if (topTenIds.value === undefined) {
+      selectedClusters.value = Object.keys(totalInClust.value).map((v: any) => v);
+      if (topTenIds.value !== undefined) {
         updateSpatial();
       }
     }
