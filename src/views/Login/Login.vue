@@ -170,23 +170,20 @@ export default defineComponent({
     const registrationScreenDisplayed = ref<boolean>(false);
     const confirmationScreenDisplayed = ref<boolean>(false);
     const forgotPasswordScreenDisplayed = ref<boolean>(false);
+    const show_user_creation_message = ref<boolean>(false);
+    const show_pass = ref<boolean>(false);
+    const showAdvanced = ref(false);
+    const show_account_requires_verification_message = ref<boolean>(false);
+    const from_confirmation_to_password_reset = ref<boolean>(false);
     const resetPassScreenDisplayed = ref<boolean>(false);
-    // const user_confirmation_code = ref<string>('');
-    const username_from_child = ref<string>('');
-    // const password = ref<string>('');
     const password_clicked = ref<boolean>(false);
+    const loading = ref<boolean>(false);
+    const username_from_child = ref<string>('');
     const name_user = ref<string>('');
     const pi_name = ref<string>('');
     const email = ref<string>('');
-    const loading = ref<boolean>(false);
     const loginErrorMessage = ref<string>('');
-    // const bad_pwd_message = ref<boolean>(false);
-    const show_pass = ref<boolean>(false);
-    const showAdvanced = ref(false);
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
-    const show_user_creation_message = ref<boolean>(false);
-    const show_account_requires_verification_message = ref<boolean>(false);
-    const from_confirmation_to_password_reset = ref<boolean>(false);
     // calls login function from index.ts which calls api to verify user.
     // If successful, returns a connected client
     async function loginUser(pl: any) {

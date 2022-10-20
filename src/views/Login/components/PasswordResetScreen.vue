@@ -7,6 +7,9 @@
     >
     </v-text-field>
     <v-text-field
+    :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
+    @click:append="show_pass = !show_pass"
+    :type="show_pass ? 'text': 'password'"
     label="New Password"
     v-model="new_password"
     >
@@ -49,6 +52,7 @@ export default defineComponent({
     const user_confirmation_code = ref<string>('');
     const new_password = ref<string>('');
     const pass_valid = ref<boolean>(false);
+    const show_pass = ref<boolean>(false);
     function pass_changed(new_val: boolean) {
       pass_valid.value = new_val;
     }
@@ -63,6 +67,7 @@ export default defineComponent({
       user_confirmation_code,
       new_password,
       pass_valid,
+      show_pass,
       resend_code,
       code_submitted,
       pass_changed,

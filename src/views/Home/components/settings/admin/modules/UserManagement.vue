@@ -33,7 +33,13 @@
             </v-text-field>
             <v-text-field
             v-model="selected_user.family_name"
-            label="Self Identified Group"
+            label="PI Name"
+            readonly
+            >
+            </v-text-field>
+            <v-text-field
+            v-model="selected_user.given_name"
+            label="Organization"
             readonly
             >
             </v-text-field>

@@ -9,6 +9,8 @@
     <v-card-actions>
     <v-btn
     @click="forgot_password_request"
+    color="primary"
+    :disabled="username.length === 0"
     >
         Submit
     </v-btn>
