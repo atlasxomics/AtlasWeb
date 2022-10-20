@@ -1576,7 +1576,7 @@ export default defineComponent({
       component: acInstance,
     };
     function prep_sub_menu() {
-      if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
+      if (resolveAuthGroup(['collab'])) {
         submenu.value.push(landing_page_revert);
       }
       submenu.value.push(list_ids, metadata_button, gene_motif_button, bg_color_button, heat_map_button, gene_ac_bar);
@@ -1631,7 +1631,7 @@ export default defineComponent({
         atlasXplore_displayed.value = true;
         landing_disp.value = false;
         prep_atlasxplore(props.query.run_id, false);
-      } else if (resolveAuthGroup(['collab']) && !resolveAuthGroup(['public'])) {
+      } else {
         landing_disp.value = true;
         atlasXplore_displayed.value = false;
         // loadingPage('Pieper');
