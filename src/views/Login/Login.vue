@@ -93,6 +93,38 @@
       </v-card>
       </v-dialog>
       <v-dialog
+      v-model="show_email_never_verified_message"
+      width="600"
+      >
+      <v-card
+      width="600"
+      class="mx-auto"
+      >
+      <v-card-title
+      class="text-h5 grey lighten-2 justify-center"
+      >
+      Error! Account has never verified email.
+      </v-card-title>
+      <v-card-text
+      class="text-center"
+      >
+      As the account never verified it's associated email. Cannot use forget password functionality.
+      </v-card-text>
+      <v-card-text
+      class="text-center">
+      Please contact support at help@atlasxomics.com for assistance or create another free account.
+      </v-card-text>
+      <div
+      class="text-center">
+      <v-btn
+      @click="show_email_never_verified_message = false"
+      >
+      Ok
+      </v-btn>
+      </div>
+      </v-card>
+      </v-dialog>
+      <v-dialog
       v-model="show_account_requires_verification_message"
       width="600"
       >
@@ -171,6 +203,7 @@ export default defineComponent({
     const confirmationScreenDisplayed = ref<boolean>(false);
     const forgotPasswordScreenDisplayed = ref<boolean>(false);
     const show_user_creation_message = ref<boolean>(false);
+    const show_email_never_verified_message = ref<boolean>(false);
     const show_pass = ref<boolean>(false);
     const showAdvanced = ref(false);
     const show_account_requires_verification_message = ref<boolean>(false);
@@ -246,15 +279,20 @@ export default defineComponent({
       );
       try {
         const resp = await temp_client.forgotPasswordRequest(username);
+        console.log(resp);
         username_from_child.value = username;
         if (resp.state === 'Success' && resp.CodeDeliveryDetails.DeliveryMedium.toLowerCase() === 'email') {
           forgotPasswordScreenDisplayed.value = false;
           resetPassScreenDisplayed.value = true;
           username_from_child.value = username;
         } else if (resp.state === 'Success' && resp.CodeDeliveryDetails.DeliveryMedium.toLowerCase() === 'sms') {
-          snackbar.dispatch({ text: 'Error! Try Again. Contact support if further help is required.' });
+          snackbar.dispatch({ text: 'Error! Contact support for further help.' });
         } else if (resp.state.toLowerCase() === 'user_na') {
           snackbar.dispatch({ text: 'Username does not exist.' });
+        } else if (resp.state.toLowerCase() === 'email_unconfirmed') {
+          show_email_never_verified_message.value = true;
+          loginScreenDisplayed.value = true;
+          forgotPasswordScreenDisplayed.value = false;
         } else if (resp.state.toLowerCase() === 'needs_confirmation') {
           show_account_requires_verification_message.value = true;
           forgotPasswordScreenDisplayed.value = false;
@@ -361,6 +399,7 @@ export default defineComponent({
       confirmationScreenDisplayed,
       resetPassScreenDisplayed,
       from_confirmation_to_password_reset,
+      show_email_never_verified_message,
       send_account_request,
       resend_verification,
       forgot_password_request,
