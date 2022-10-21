@@ -1450,6 +1450,7 @@ export default defineComponent({
         childGenes.value = [];
         trackBrowserGenes.value = [];
         updateFilename();
+        updateTable();
       }
     });
     watch(isDrawing, (v: boolean) => {
