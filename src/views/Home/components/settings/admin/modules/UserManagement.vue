@@ -31,6 +31,16 @@
             v-model="selected_user.email"
             >
             </v-text-field>
+            <p>
+             Email Confirmed: {{ displayed_email_status }}
+             <v-btn
+             v-if="displayed_email_status === 'false'"
+             @click="confirm_user_email"
+             color="green"
+             >
+             Confirm Email
+            </v-btn>
+            </p>
             <v-text-field
             v-model="selected_user.family_name"
             label="PI Name"
@@ -47,7 +57,7 @@
              Status: {{ displayed_user_status }}
              <v-btn
              v-if="displayed_user_status === 'UNCONFIRMED' || displayed_user_status === 'DISABLED'"
-             @click="confirm_user"
+             @click="confirm_user_display"
              color="green"
              >
              Confirm
@@ -61,6 +71,13 @@
             multiple
             >
             </v-select>
+            <input
+            type="checkbox"
+            id = "email_checkbox"
+            v-model="email_user">
+            <label for="email_checkbox">
+              Email User
+            </label>
             <v-btn
             :disabled="!changes_made"
             @click="write_changes"
@@ -82,7 +99,9 @@
               >
                 Delete User
               </v-btn>
-              <v-btn>
+              <v-btn
+              @click="delete_user_dialog = false"
+              >
                 Cancel
               </v-btn>
             </v-dialog>
@@ -151,6 +170,9 @@ export default defineComponent({
     const changes_made = ref<boolean>(false);
     const displayed_user_status = ref<string>('');
     const confirm_user_status = ref<boolean>(false);
+    const displayed_email_status = ref<string>('');
+    const confirm_user_email_bool = ref<boolean>(false);
+    const email_user = ref<boolean>(true);
     const original_user_status = ref<string>('');
     const removing_group_lis = ref<string[]>([]);
     const adding_group_lis = ref<string[]>([]);
@@ -160,7 +182,11 @@ export default defineComponent({
     const entered_group_name = ref<string>('');
     const entered_group_description = ref<string>('');
     const delete_user_dialog = ref<boolean>(false);
-
+    function confirm_user_email() {
+      changes_made.value = true;
+      displayed_email_status.value = 'true';
+      confirm_user_email_bool.value = true;
+    }
     async function delete_user() {
       console.log('deleting user');
       const resp = await client.value?.deleteUser(selected_user.value.username);
@@ -223,69 +249,96 @@ export default defineComponent({
     function user_selected(user: any) {
       changes_made.value = false;
       selected_user.value = user;
-      // users_groups.value = user.groups;
       displayed_user_status.value = user.status;
       original_group_lis.value = user.groups;
-      // original_group_lis.value = users_groups.value;
       original_user_status.value = user.status;
+      displayed_email_status.value = user.email_verified;
+      confirm_user_email_bool.value = false;
     }
-    function confirm_user() {
+    function confirm_user_display() {
       console.log('confirming user');
       displayed_user_status.value = 'CONFIRMED';
       confirm_user_status.value = true;
       changes_made.value = true;
     }
-    async function write_changes() {
-      let error = false;
-      if (original_user_status.value !== displayed_user_status.value) {
-        if (displayed_user_status.value === 'CONFIRMED') {
-          console.log('confirming user');
-          const resp = await client.value!.confirmUser(selected_user.value.username);
-          const confirm_status_sc = resp.status;
-          if (confirm_status_sc === 200) {
-            const { username } = selected_user.value;
-            console.log(username);
-            snackbar.dispatch({ text: 'Successfully confirmed user: '.concat(username).concat('.') });
-            user_list.value[username].status = 'CONFIRMED';
-            changes_made.value = false;
-          } else {
-            error = true;
-            snackbar.dispatch({ text: 'Error. Unable to confirm user: '.concat(selected_user.value).concat('.') });
-          }
+    async function confirm_user_write(username: any) {
+      changes_made.value = true;
+      try {
+        const resp = await client.value!.confirmUser(selected_user.value.username);
+        const confirm_status_sc = resp.status;
+        if (confirm_status_sc === 200) {
+          snackbar.dispatch({ text: 'Successfully confirmed user: '.concat(username).concat('.') });
+          user_list.value[username].status = 'CONFIRMED';
+          changes_made.value = false;
+        } else {
+          snackbar.dispatch({ text: 'Error. Unable to confirm user: '.concat(selected_user.value).concat('.') });
         }
+      } catch (e) {
+        console.log('error in confirming user');
       }
-      if (adding_group_lis.value.length > 0 || removing_group_lis.value.length > 0) {
-        const payload: UpdatingGroupsRequest = {
-          groups_adding: adding_group_lis.value,
-          groups_removing: removing_group_lis.value,
-          username: selected_user.value.username,
-        };
+    }
+    async function add_user_groups() {
+      const payload: UpdatingGroupsRequest = {
+        groups_adding: adding_group_lis.value,
+        groups_removing: removing_group_lis.value,
+        username: selected_user.value.username,
+      };
+      try {
         const resp = await client.value?.modify_group_list(payload);
         const group_list_sc = resp?.status;
-        if (group_list_sc === 200) {
-          snackbar.dispatch({ text: 'Successfully modified user`s groups.' });
-          adding_group_lis.value = [];
-          removing_group_lis.value = [];
-          original_group_lis.value = selected_user.value.groups;
-        } else {
-          error = true;
-          snackbar.dispatch({ text: 'Error when modifying user`s groups.' });
+        snackbar.dispatch({ text: 'Successfully modified user`s groups.' });
+        adding_group_lis.value = [];
+        removing_group_lis.value = [];
+        original_group_lis.value = selected_user.value.groups;
+        for (let i = 0; i < removing_group_lis.value.length; i += 1) {
+          const group = adding_group_lis.value[i];
+          const inx = selected_user.value.groups.indexOf(group);
+          selected_user.value.groups.splice(inx, 1);
+          console.log('adding to group '.concat(adding_group_lis.value[i]));
         }
-        if (error === false) {
+        for (let i = 0; i < adding_group_lis.value.length; i += 1) {
+          const group = removing_group_lis.value[i];
+          selected_user.value.groups.push(group);
+          console.log('removing from group '.concat(removing_group_lis.value[i]));
+        }
+        changes_made.value = false;
+      } catch (e) {
+        snackbar.dispatch({ text: 'Error when modifying user`s groups.', options: { color: 'red' } });
+        console.log('error modifying groups');
+      }
+    }
+    async function admin_confirm_email(username: any) {
+      if (user_list.value[username].status === 'CONFIRMED') {
+        try {
+          const email_confirm = await client.value!.confirm_user_email_admin(username);
           changes_made.value = false;
-          // user_list.value = await client.value?.get_user_list();
+          snackbar.dispatch({ text: 'Successfully confirmed user`s email', options: { color: 'green' } });
+        } catch (e) {
+          snackbar.dispatch({ text: 'Error! Unable to confirm user`s email', options: { color: 'red' } });
         }
+      } else {
+        snackbar.dispatch({ text: 'Unable to confirm email of an unconfirmed user.', options: { color: 'red' } });
       }
-      for (let i = 0; i < removing_group_lis.value.length; i += 1) {
-        const group = adding_group_lis.value[i];
-        const inx = selected_user.value.groups.indexOf(group);
-        selected_user.value.groups.splice(inx, 1);
-        console.log('adding to group '.concat(adding_group_lis.value[i]));
+    }
+    async function write_changes() {
+      const { username } = selected_user.value;
+      // confirms user status
+      if (original_user_status.value !== displayed_user_status.value) {
+        changes_made.value = true;
+        await confirm_user_write(username);
       }
-      for (let i = 0; i < adding_group_lis.value.length; i += 1) {
-        const group = removing_group_lis.value[i];
-        selected_user.value.groups.push(group);
-        console.log('removing from group '.concat(removing_group_lis.value[i]));
+      // adds user to user groups
+      if (adding_group_lis.value.length > 0 || removing_group_lis.value.length > 0) {
+        changes_made.value = true;
+        await add_user_groups();
+      }
+      // verifies user's email
+      if (confirm_user_email_bool.value) {
+        changes_made.value = true;
+        await admin_confirm_email(username);
+      }
+      if (email_user.value && changes_made.value === false) {
+        console.log('email user their settings have been updated.');
       }
     }
     onMounted(async () => {
@@ -300,10 +353,12 @@ export default defineComponent({
       selected_user,
       user_selected,
       number_new_groups_options,
+      email_user,
       // users_groups,
       changes_made,
       groups_list_changed,
-      confirm_user,
+      confirm_user_display,
+      confirm_user_write,
       displayed_user_status,
       confirm_user_status,
       original_group_lis,
@@ -320,6 +375,9 @@ export default defineComponent({
       reset_fields,
       delete_user_dialog,
       delete_user,
+      displayed_email_status,
+      confirm_user_email,
+      confirm_user_email_bool,
     };
   },
 });
