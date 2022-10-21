@@ -579,4 +579,12 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/auth/forgot_password_confirmation', pl);
     return resp.data;
   }
+  async confirm_user_email_admin(username: string) {
+    const pl = { username };
+    console.log(pl);
+    const resp = await this.axios.post('/api/v1/auth/confirm_user_email_admin', pl);
+    console.log(resp);
+    console.log(resp.data);
+    return resp.data;
+  }
 }
