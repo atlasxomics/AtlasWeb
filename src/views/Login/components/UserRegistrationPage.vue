@@ -41,10 +41,19 @@
         :type="show_pass?'text': 'password'"
         >
         </v-text-field>
+        <v-text-field
+        v-if="password_clicked || password.length > 0"
+        prepend-icon="mdi-lock"
+        label="Confirm Password"
+        v-model="password2"
+        :type="show_pass?'text': 'password'"
+        >
+        </v-text-field>
         <password-checker
         ref="password-checker"
         v-if="password_clicked | password.length > 0"
         :password="password"
+        :password2="password2"
         >
         </password-checker>
         <v-card-actions>
@@ -77,6 +86,7 @@ export default defineComponent({
     const name_user = ref<string>('');
     const username = ref<string>('');
     const password = ref<string>('');
+    const password2 = ref<string>('');
     const email = ref<string>('');
     const pi_name = ref<string>('');
     const organization = ref<string>('');
@@ -89,8 +99,9 @@ export default defineComponent({
     const special_character_present = computed(() => /.*[!@#$%^&&*()<>?/[{}].*/.test(password.value));
     const number_present = computed(() => /.*[0-9].*/.test(password.value));
     const valid_email = computed(() => /^\S+@\S+\.\S+$/.test(email.value));
+    const passwords_match = computed(() => password.value === password2.value);
     const valid_password = computed(() => atleast_8_chars.value && lowercase_char_present.value && uppercase_char_present.value && special_character_present.value && number_present.value);
-    const register_available = computed(() => valid_password.value && valid_email.value && name_user.value.length > 0 && username.value.length > 0 && pi_name.value.length > 0 && organization.value.length > 0);
+    const register_available = computed(() => valid_password.value && valid_email.value && name_user.value.length > 0 && username.value.length > 0 && pi_name.value.length > 0 && organization.value.length > 0 && passwords_match.value);
     function back_selected() {
       this.$emit('back-selected');
     }
@@ -131,6 +142,7 @@ export default defineComponent({
       valid_password,
       valid_email,
       password_clicked,
+      password2,
       account_request,
       back_selected,
       // password_changed,

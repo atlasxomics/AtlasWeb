@@ -96,6 +96,25 @@
             {{'mdi-check'}}
             </v-icon>
         </p>
+        <p
+        class="password-text"
+        >
+            • Passwords match
+            <v-icon
+            :inline="true"
+            v-if="!pass_repeated"
+            color="red"
+            >
+            {{'mdi-file-excel-box'}}
+            </v-icon>
+            <v-icon
+            :inline="true"
+            v-if="pass_repeated"
+            color="green"
+            >
+            {{'mdi-check'}}
+            </v-icon>
+        </p>
     </v-card>
 </template>
 
@@ -105,14 +124,15 @@ import { watch } from 'fs';
 
 export default defineComponent({
   name: 'PasswordChecker',
-  props: { password: { type: String, required: true } },
+  props: { password: { type: String, required: true }, password2: { type: String, required: true } },
   setup(props, ctx) {
     const atleast_8_chars = computed(() => props.password.length >= 8);
     const lowercase_char_present = computed(() => /.*[a-z].*/.test(props.password));
     const uppercase_char_present = computed(() => /.*[A-Z].*/.test(props.password));
     const special_character_present = computed(() => /.*[!@#$%^&&*()<>?/[{}].*/.test(props.password));
     const number_present = computed(() => /.*[0-9].*/.test(props.password));
-    const pass_valid = computed(() => number_present.value && atleast_8_chars.value && lowercase_char_present.value && uppercase_char_present.value && special_character_present.value);
+    const pass_repeated = computed(() => props.password === props.password2);
+    const pass_valid = computed(() => number_present.value && atleast_8_chars.value && lowercase_char_present.value && uppercase_char_present.value && special_character_present.value && pass_repeated.value);
     function emit_valid_pass() {
       this.$emit('pass-changed', pass_valid.value);
     }
@@ -124,6 +144,7 @@ export default defineComponent({
       special_character_present,
       number_present,
       pass_valid,
+      pass_repeated,
       emit_valid_pass,
     };
   },

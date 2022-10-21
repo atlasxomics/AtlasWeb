@@ -1,6 +1,6 @@
 <template>
     <v-col>
-    <h3>Check email for code.</h3>
+    <h3>{{ username }}, check email for code.</h3>
     <v-text-field
     label='Confirmation Code'
     v-model="confirmation_code"
@@ -30,6 +30,7 @@ import { defineComponent, ref } from '@vue/composition-api';
 
 export default defineComponent({
   name: 'PasswordResetScreen',
+  props: { username: { type: String, required: true } },
   setup(props, ctx) {
     const confirmation_code = ref<string>('');
     function resend_code() {

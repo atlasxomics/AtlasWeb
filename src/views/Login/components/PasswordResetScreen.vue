@@ -1,6 +1,6 @@
 <template>
     <v-col>
-    <h3>Check email for code.</h3>
+    <h3>{{username}}, check email for code.</h3>
     <v-text-field
     label='Confirmation Code'
     v-model="user_confirmation_code"
@@ -14,6 +14,12 @@
     v-model="new_password"
     >
     </v-text-field>
+    <v-text-field
+    :type="show_pass ? 'text': 'password'"
+    label="Confirm Password"
+    v-model="new_password_2"
+    >
+    </v-text-field>
     <v-card-actions>
     <v-spacer/>
     <v-btn
@@ -25,7 +31,7 @@
     <v-btn
     color="primary"
     @click="code_submitted"
-    :disabled="(user_confirmation_code.length === 0 || !pass_valid)"
+    :disabled="!reset_available"
     >
     Confirm
     </v-btn>
@@ -33,7 +39,7 @@
     <password-checker
     v-if="new_password.length > 0"
     :password="new_password"
-    @pass-changed="pass_changed"
+    :password2="new_password_2"
     >
     </password-checker>
     </v-col>
@@ -41,7 +47,7 @@
 
 <script lang="ts">
 import { user } from '@/filemenu/admin/state';
-import { defineComponent, ref } from '@vue/composition-api';
+import { defineComponent, ref, computed } from '@vue/composition-api';
 import PasswordChecker from './PasswordChecker.vue';
 
 export default defineComponent({
@@ -51,11 +57,16 @@ export default defineComponent({
   setup(props, ctx) {
     const user_confirmation_code = ref<string>('');
     const new_password = ref<string>('');
-    const pass_valid = ref<boolean>(false);
+    const new_password_2 = ref<string>('');
     const show_pass = ref<boolean>(false);
-    function pass_changed(new_val: boolean) {
-      pass_valid.value = new_val;
-    }
+    const atleast_8_chars = computed(() => new_password.value.length >= 8);
+    const lowercase_char_present = computed(() => /.*[a-z].*/.test(new_password.value));
+    const uppercase_char_present = computed(() => /.*[A-Z].*/.test(new_password.value));
+    const special_character_present = computed(() => /.*[!@#$%^&&*()<>?/[{}].*/.test(new_password.value));
+    const number_present = computed(() => /.*[0-9].*/.test(new_password.value));
+    const pass_repeated = computed(() => new_password.value === new_password_2.value);
+    const pass_valid = computed(() => pass_repeated && number_present.value && atleast_8_chars.value && lowercase_char_present.value && uppercase_char_present.value && special_character_present.value);
+    const reset_available = computed(() => pass_valid && user_confirmation_code.value.length > 0);
     function resend_code() {
       this.$emit('resend-code');
     }
@@ -66,11 +77,18 @@ export default defineComponent({
     return {
       user_confirmation_code,
       new_password,
-      pass_valid,
       show_pass,
+      new_password_2,
+      atleast_8_chars,
+      lowercase_char_present,
+      uppercase_char_present,
+      special_character_present,
+      number_present,
+      pass_repeated,
+      pass_valid,
+      reset_available,
       resend_code,
       code_submitted,
-      pass_changed,
     };
   },
 });

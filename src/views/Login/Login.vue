@@ -43,6 +43,7 @@
               v-if="confirmationScreenDisplayed"
               @resend-code="resend_verification"
               @verification-code-submitted="check_registration_code_signup"
+              :username="username_from_child"
               >
               </user-confirmation-screen>
               <!-- forgot password screen -->
@@ -55,7 +56,7 @@
               <!-- password reset screen -->
               <password-reset-screen
               v-if="resetPassScreenDisplayed"
-              @resend-code="resend_verification"
+              @resend-code="send_forgot_password_code(username_from_child)"
               @code-submitted="reset_password"
               :username="username_from_child"
               >
@@ -271,14 +272,25 @@ export default defineComponent({
         console.log('error');
       }
     }
+    async function send_forgot_password_code(username: string) {
+      console.log('sending forgot pw request');
+      try {
+        const temp_client = new Client(
+          PROD_SERVER_URL,
+          '',
+        );
+        const resp = await temp_client.forgotPasswordRequest(username);
+        console.log(resp);
+        return resp;
+      } catch (e) {
+        snackbar.dispatch({ text: 'Error when sending password reset code.', options: { color: 'red' } });
+        return 'Error';
+      }
+    }
     // calls api and checks if user exists. If so then a code is sent to their email
     async function forgot_password_request(username: string) {
-      const temp_client = new Client(
-        PROD_SERVER_URL,
-        '',
-      );
       try {
-        const resp = await temp_client.forgotPasswordRequest(username);
+        const resp = await send_forgot_password_code(username);
         console.log(resp);
         username_from_child.value = username;
         if (resp.state === 'Success' && resp.CodeDeliveryDetails.DeliveryMedium.toLowerCase() === 'email') {
@@ -400,6 +412,7 @@ export default defineComponent({
       resetPassScreenDisplayed,
       from_confirmation_to_password_reset,
       show_email_never_verified_message,
+      send_forgot_password_code,
       send_account_request,
       resend_verification,
       forgot_password_request,

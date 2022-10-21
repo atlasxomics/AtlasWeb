@@ -42,13 +42,13 @@
             </v-btn>
             </p>
             <v-text-field
-            v-model="selected_user.family_name"
+            v-model="selected_user.piname"
             label="PI Name"
             readonly
             >
             </v-text-field>
             <v-text-field
-            v-model="selected_user.given_name"
+            v-model="selected_user.organization"
             label="Organization"
             readonly
             >
