@@ -840,9 +840,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (selectedGenes.value.length > 0) {
-        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(2)}`;
+        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(3)}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          text = `${text}\n${k}: ${v.toFixed(2)}`;
+          text = `${text}\n${k}: ${v}`;
         });
       }
       tooltipText.text(text);
@@ -902,9 +902,9 @@ export default defineComponent({
       });
       let text = `Cluster: ${item.cluster}`;
       if (selectedGenes.value.length > 0) {
-        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(2)}`;
+        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(3)}`;
         lodash.forIn(item.genes, (v: number, k: string) => {
-          text = `${text}\n${k}: ${v.toFixed(2)}`;
+          text = `${text}\n${k}: ${v}`;
         });
       }
       tooltipTextRight.text(text);
