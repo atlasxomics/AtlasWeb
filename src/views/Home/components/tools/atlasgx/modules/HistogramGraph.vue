@@ -69,8 +69,8 @@ export default defineComponent({
             collectiveData.push(trace);
           });
           collectiveData.sort((a: any, b: any) => {
-            const x = a.name.toLowerCase();
-            const y = b.name.toLowerCase();
+            const x = parseFloat(a.name.split('C')[1]);
+            const y = parseFloat(b.name.split('C')[1]);
             if (x < y) { return -1; }
             if (x > y) { return 1; }
             return 0;

@@ -14,6 +14,9 @@ import {
   Upload,
   UploadMeta,
   QcEntryGenerationRequest,
+  UpdatingGroupsRequest,
+  GroupRequest,
+  CreateGroupRequest,
 } from '@/types';
 
 // The time (10 minutes in ms) before the token expires to refresh it
@@ -219,6 +222,7 @@ export default class Client {
   // Requires Admin
   async registerUser(user: RegisterUserPayload): Promise<boolean> {
     try {
+      console.log(user);
       await this.axios.post('/api/v1/auth/user', user);
     } catch (error) {
       // If failed, user already exists
@@ -227,14 +231,23 @@ export default class Client {
 
     return true;
   }
-  async confirmUser(user: string): Promise<any> {
-    await this.axios.put(`/api/v1/auth/confirm/${user}`);
+  async user_request_account(user_info: Record<string, any>) {
+    console.log(user_info);
+    const res = await this.axios.post('/api/v1/auth/user_account_request', user_info);
+    return res;
   }
-  async deleteUser(user: string): Promise<any> {
-    await this.axios.delete(`/api/v1/auth/user/${user}`);
+  async confirmUser(user: string): Promise<any> {
+    const pl = { data: { user } };
+    const resp = this.axios.put('/api/v1/auth/confirm', pl);
+    return resp;
+  }
+  async deleteUser(user: string) {
+    console.log(user);
+    const resp = await this.axios.delete(`/api/v1/auth/user/${user}`);
+    return resp;
   }
   // Requires Admin
-  async resetUserPassword(user: ResetUserPasswordPayload): Promise<void> {
+  async resetUserPassword(user: any): Promise<void> {
     // This endpoint doesn't return anything useful, so nothing returned
     await this.axios.put('/api/v1/auth/resetpassword', user);
   }
@@ -369,6 +382,18 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
     return resp.data;
   }
+  async getDBColumns_row(match_on: string, columns: any, ids: any): Promise<any> {
+    const params = JSON.stringify(
+      {
+        match_on,
+        columns,
+        ids,
+      },
+    );
+    const payload = { params };
+    const resp = await this.axios.get('/api/v1/run_db/get_columns_row', payload);
+    return resp.data;
+  }
   // SLIMS
   async getMetadataFromRunId(rid: string): Promise<any> {
     const uri = '/api/v1/dataset/slimstest_runid';
@@ -482,6 +507,52 @@ export default class Client {
     const table_name = 'dbit_metadata';
     const payload = { params: { collaborator, table_name, web_objs } };
     const resp = await this.axios.get('/api/v1/run_db/get_runs_collaborator', payload);
+    return resp.data;
+  }
+  async get_user_list() {
+    const resp = await this.axios.get('/api/v1/auth/list_accounts');
+    console.log(resp.data);
+    return resp.data;
+  }
+  async get_group_list() {
+    const resp = await this.axios.get('/api/v1/auth/group');
+    return resp.data;
+  }
+  async create_group(group_name: string, description: string) {
+    const pl = {
+      data: {
+        group_name,
+        description,
+      },
+    };
+    const resp = await this.axios.post('/api/v1/auth/group', pl);
+    return resp;
+  }
+  async modify_group_list(payload: UpdatingGroupsRequest) {
+    const resp = await this.axios.put('/api/v1/auth/modify_group_list', payload);
+    return resp;
+  }
+  async delete_group(group_name: string) {
+    const pl = { data: { group_name } };
+    const resp = await this.axios.delete('/api/v1/auth/group', pl);
+    console.log(resp);
+    return resp;
+  }
+  async disable_user(username: string) {
+    const pl = { data: { username } };
+    const resp = await this.axios.put('/api/v1/auth/disable_user', pl);
+    return resp;
+  }
+  async repopulateDB() {
+    const resp = await this.axios.get('/api/v1/run_db/repopulate_database');
+    return resp.data;
+  }
+  async getUpdateDate(): Promise<any> {
+    const resp = await this.axios.get('/api/v1/run_db/get_last_update');
+    return resp.data;
+  }
+  async getNGSIds(): Promise<any> {
+    const resp = await this.axios.get('/api/v1/run_db/get_ngs_ids');
     return resp.data;
   }
 }
