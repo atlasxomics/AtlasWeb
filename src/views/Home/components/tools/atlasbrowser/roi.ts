@@ -285,16 +285,11 @@ export class ROI {
         const ID = (i * this.channels) + j;
         let current_fill = '0';
         // dummy variables so current_fill can be reassigned if we are including filled tixels
-        let a = 'a';
-        let b = 'a';
-        let c = 'b';
-        let d = 'a';
-        let e = 'e';
-        let value = tixel_array[(i * this.channels) + j];
-        if (!value) {
-          value = ['a', '0', 'c', 'd', 'd', 'd'];
+        const value = tixel_array[(i * this.channels) + j];
+        if (value) {
+          const { 1: fill } = value;
+          current_fill = fill;
         }
-        [a, current_fill, b, c, d, e] = value;
         const polyConfig = {
           sceneFunc: (context: any, shape: any) => {
             context.beginPath();
