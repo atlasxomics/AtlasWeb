@@ -143,8 +143,8 @@ export class ROI {
       if (count === 0) {
         count += 1;
       }
-      const y = Math.round(v.centerx / this.scalefactor);
-      const x = Math.round(v.centery / this.scalefactor);
+      const y = Math.round(v.centery / this.scalefactor);
+      const x = Math.round(v.centerx / this.scalefactor);
       const r = Math.round(v.radius / this.scalefactor);
       let pixval = 0.0;
       for (let row = x - r; row < x + r; row += 1) {
