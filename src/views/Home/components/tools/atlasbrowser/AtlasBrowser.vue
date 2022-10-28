@@ -837,9 +837,9 @@ export default defineComponent({
       // metaFlag.value = false;
     }
     function imageClick(ev: any) {
-      console.log(scaleFactor.value);
-      console.log('y: '.concat((ev.evt.layerY / scaleFactor.value).toString()));
-      console.log(ev.evt.layerX / scaleFactor.value);
+      // console.log(scaleFactor.value);
+      // console.log('y: '.concat((ev.evt.layerY / scaleFactor.value).toString()));
+      // console.log(ev.evt.layerX / scaleFactor.value);
       // console.log(ev);
     }
     function changeDiseaseState() {
