@@ -11,18 +11,28 @@
           md="9"
           sm="11"
         >
-          <v-card
-            class="pa-6"
-            :disabled="loading"
-          >
             <v-row>
               <v-container
               >
                 <v-img
-                max-width="500"
-                src="company_logo.png" />
+                max-width="1000"
+                max-height="1000"
+                :src="require('./atlasbg.png')"/>
               </v-container>
               <!-- Sign In Page -->
+              <v-overlay
+              opacity="0"
+              :absolute="true"
+              :dark="false"
+              >
+              <v-card
+              width="700"
+              class="pa-6"
+              :disabled="loading"
+              >
+              <v-img
+                max-width="500"
+                src="company_logo.png" />
               <sign-in-page
               v-if="loginScreenDisplayed"
               :loading="loading"
@@ -61,8 +71,9 @@
               :username="username_from_child"
               >
               </password-reset-screen>
+              </v-card>
+              </v-overlay>
             </v-row>
-          </v-card>
         </v-col>
       </v-row>
       <v-dialog
