@@ -15,6 +15,7 @@ import {
   UploadMeta,
   QcEntryGenerationRequest,
   UpdatingGroupsRequest,
+  UserGroupAssignmentInform,
   GroupRequest,
   CreateGroupRequest,
 } from '@/types';
@@ -233,6 +234,9 @@ export default class Client {
   async user_request_account(user_info: Record<string, any>) {
     const res = await this.axios.post('/api/v1/auth/user_account_request', user_info);
     return res;
+  }
+  async notify_user_group_assignment(pl: UserGroupAssignmentInform) {
+    const res = await this.axios.post('/api/v1/auth/inform_user_assignment', pl);
   }
   async confirmUser(user: string): Promise<any> {
     const pl = { data: { user } };

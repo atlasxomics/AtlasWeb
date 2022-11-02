@@ -248,7 +248,6 @@ export default defineComponent({
         const resp = await temp_client.user_request_account(pl);
         const { data, status } = resp;
         if (data !== 'exists') {
-          snackbar.dispatch({ text: 'Account Signup Successful.', options: { color: 'green' } });
           confirmationScreenDisplayed.value = true;
           registrationScreenDisplayed.value = false;
           const { username } = pl;
@@ -261,6 +260,7 @@ export default defineComponent({
         snackbar.dispatch({ text: 'There was an error when requesting an account.', options: { color: 'red' } });
       }
     }
+    // calls api to resend the verification code to the user when verifying their email
     async function resend_verification() {
       try {
         const temp_client = new Client(
@@ -272,6 +272,7 @@ export default defineComponent({
         console.log('error');
       }
     }
+    // calls api and sends a code to user's email when they forget password
     async function send_forgot_password_code(username: string) {
       console.log('sending forgot pw request');
       try {

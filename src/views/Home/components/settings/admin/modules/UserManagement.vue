@@ -146,7 +146,7 @@
 <script lang='ts'>
 import { defineComponent, ref, watchEffect, computed, onMounted, watch } from '@vue/composition-api';
 import store from '@/store';
-import { CreateGroupRequest, GroupRequest, UpdatingGroupsRequest } from '@/types';
+import { CreateGroupRequest, GroupRequest, UpdatingGroupsRequest, UserGroupAssignmentInform } from '@/types';
 import { snackbar } from '@/components/GlobalSnackbar';
 
 const clientReady = new Promise((resolve) => {
@@ -287,6 +287,14 @@ export default defineComponent({
         const resp = await client.value?.modify_group_list(payload);
         const group_list_sc = resp?.status;
         snackbar.dispatch({ text: 'Successfully modified user`s groups.' });
+        if (adding_group_lis.value.length > 0 && email_user.value) {
+          const assignment_pl: UserGroupAssignmentInform = {
+            group: adding_group_lis.value[0],
+            username: selected_user.value.username,
+            email: selected_user.value.email,
+          };
+          client.value!.notify_user_group_assignment(assignment_pl);
+        }
         adding_group_lis.value = [];
         removing_group_lis.value = [];
         original_group_lis.value = selected_user.value.groups;
@@ -294,12 +302,10 @@ export default defineComponent({
           const group = adding_group_lis.value[i];
           const inx = selected_user.value.groups.indexOf(group);
           selected_user.value.groups.splice(inx, 1);
-          console.log('adding to group '.concat(adding_group_lis.value[i]));
         }
         for (let i = 0; i < adding_group_lis.value.length; i += 1) {
           const group = removing_group_lis.value[i];
           selected_user.value.groups.push(group);
-          console.log('removing from group '.concat(removing_group_lis.value[i]));
         }
         changes_made.value = false;
       } catch (e) {
