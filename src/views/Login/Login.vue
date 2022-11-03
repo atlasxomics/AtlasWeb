@@ -12,13 +12,11 @@
           sm="11"
         >
             <v-row>
-              <v-container
-              >
                 <v-img
                 max-width="1000"
                 max-height="1000"
+                class="ml-auto"
                 :src="require('./atlasbg.png')"/>
-              </v-container>
               <!-- Sign In Page -->
               <v-overlay
               opacity="0"
