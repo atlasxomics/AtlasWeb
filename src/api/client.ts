@@ -640,6 +640,8 @@ export default class Client {
   }
   async grabPaths() {
     const resp = await this.axios.get('/api/v1/run_db/retrieve_paths');
+    return resp.data;
+  }
   async confirm_user_status_via_email(username: string, confirmation_code: string) {
     const pl = {
       params: {
