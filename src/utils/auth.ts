@@ -44,6 +44,7 @@ export async function loginAnonymous(url: string) {
 export function resolveAuthGroup(access_list: string[]) {
   if (!client.value) return false;
   if (!client.value.user) return false;
+  if (access_list[0] === 'any' && client.value.user.groups.length > 0) return true;
   let resolved = false;
   lodash.each(client.value.user.groups, (g: string) => {
     if (access_list.includes(g)) resolved = true;

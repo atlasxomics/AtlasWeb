@@ -11,219 +11,67 @@
           md="9"
           sm="11"
         >
-          <v-card
-            class="pa-6"
-            :disabled="loading"
-          >
             <v-row>
-              <v-container
-              >
                 <v-img
+                max-width="1000"
+                max-height="1000"
+                class="ml-auto"
+                :src="require('./atlasbg.png')"/>
+              <!-- Sign In Page -->
+              <v-overlay
+              opacity="0"
+              :absolute="true"
+              :dark="false"
+              >
+              <v-card
+              width="700"
+              class="pa-6"
+              :disabled="loading"
+              >
+              <v-img
                 max-width="500"
                 src="company_logo.png" />
-              </v-container>
-              <v-col
+              <sign-in-page
               v-if="loginScreenDisplayed"
+              :loading="loading"
+              :loginErrorMessage_prop="loginErrorMessage"
+              @login-selected="loginUser"
+              @registration-selected="loginScreenDisplayed = false; registrationScreenDisplayed = true;"
+              @forgot-password="loginScreenDisplayed = false; forgotPasswordScreenDisplayed = true;"
               >
-                <v-text-field
-                  v-model="username"
-                  label="Username"
-                  :loading="loading"
-                  :error="!!loginErrorMessage"
-                  @input="loginErrorMessage = null"
-                  @keypress.enter="loginUser"
-                  prepend-icon="mdi-account-circle"
-                />
-                <v-text-field
-                  v-model="password"
-                  label="Password"
-                  :error-messages="loginErrorMessage"
-                  @input="loginErrorMessage = null"
-                  @keypress.enter="loginUser"
-                  :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
-                  @click:append="show_pass = !show_pass"
-                  prepend-icon="mdi-lock"
-                  :type="show_pass?'text': 'password'"
-                />
-                <v-card-actions>
-                  <v-spacer />
-                  <!-- <v-btn
-                    color="secondary"
-                    @click="LoginDialogActive = false"
-                  >
-                    Cancel
-                  </v-btn> -->
-                  <v-btn
-                  color="primary"
-                  @click="toggle_login_signup"
-                  >
-                    Register
-                  </v-btn>
-                  <v-btn
-                    color="success"
-                    :disabled="!(username && password)"
-                    @click="loginUser"
-                  >
-                    Sign In
-                  </v-btn>
-                </v-card-actions>
-              </v-col>
-              <v-col
-              v-if="!loginScreenDisplayed">
-              <v-text-field
-              label="Name"
-              v-model="name_user"
-              prepend-icon="mdi-account"
+              </sign-in-page>
+              <!-- Sign Up / Registration Page -->
+              <user-registration-page
+              v-if="registrationScreenDisplayed"
+              @back-selected="loginScreenDisplayed = true; registrationScreenDisplayed = false"
+              @account-requested="send_account_request"
               >
-              </v-text-field>
-              <v-text-field
-              label="Username"
-              v-model="username"
-              prepend-icon="mdi-account-circle"
+              </user-registration-page>
+              <user-confirmation-screen
+              v-if="confirmationScreenDisplayed"
+              @resend-code="resend_verification"
+              @verification-code-submitted="check_registration_code_signup"
+              :username="username_from_child"
               >
-              </v-text-field>
-              <v-text-field
-              label="Email"
-              v-model="email"
-              prepend-icon="mdi-email"
+              </user-confirmation-screen>
+              <!-- forgot password screen -->
+              <forgot-password-screen
+              v-if="forgotPasswordScreenDisplayed"
+              @back="loginScreenDisplayed = true; forgotPasswordScreenDisplayed = false;"
+              @forgot-password="forgot_password_request"
               >
-              </v-text-field>
-              <v-text-field
-              label="Group/PI Name"
-              v-model="pi_name"
-              prepend-icon="mdi-account-group"
+              </forgot-password-screen>
+              <!-- password reset screen -->
+              <password-reset-screen
+              v-if="resetPassScreenDisplayed"
+              @resend-code="send_forgot_password_code(username_from_child)"
+              @code-submitted="reset_password"
+              :username="username_from_child"
               >
-              </v-text-field>
-              <v-text-field
-              prepend-icon="mdi-lock"
-              :append-icon="show_pass ? 'mdi-eye' : 'mdi-eye-off'"
-              @click:append="show_pass = !show_pass"
-              label="Password"
-              v-model="password"
-              :type="show_pass?'text': 'password'"
-              @mousedown="password_clicked = true"
-              >
-              </v-text-field>
-              <v-card
-              v-if="password.length > 0 & password_clicked"
-              color="#E8E8E8"
-              >
-                <v-card-title>
-                  {{ (atleast_8_chars && lowercase_char_present && uppercase_char_present && special_character_present) ? 'Strong Password' : 'Password Must Have' }}
-                </v-card-title>
-                <p
-                class="password-text"
-                >
-                  • At least 8 characters.
-                <v-icon
-                  :inline="true"
-                  v-if="!atleast_8_chars"
-                  color="red"
-                  >
-                  {{'mdi-file-excel-box'}}
-                  </v-icon>
-                <v-icon
-                  :inline="true"
-                  v-if="atleast_8_chars"
-                  color="green"
-                  >
-                  {{'mdi-check'}}
-                  </v-icon>
-                </p>
-                <p
-                class="password-text"
-                >
-                  • At least 1 lowercase character
-                  <v-icon
-                  :inline="true"
-                  color="red"
-                  v-if="!lowercase_char_present"
-                  >
-                  {{'mdi-file-excel-box'}}
-                  </v-icon>
-                  <v-icon
-                  :inline="true"
-                  color="green"
-                  v-if="lowercase_char_present"
-                  >
-                  {{'mdi-check'}}
-                  </v-icon>
-                </p>
-                <p
-                class="password-text"
-                >
-                  • At least 1 uppercase character
-                <v-icon
-                  :inline="true"
-                  color="green"
-                  v-if="uppercase_char_present"
-                >
-                  {{'mdi-check'}}
-                  </v-icon>
-                <v-icon
-                  :inline="true"
-                  color="red"
-                  v-if="!uppercase_char_present"
-                >
-                  {{'mdi-file-excel-box'}}
-                  </v-icon>
-                </p>
-                <p
-                class="password-text">
-                • At least 1 number present
-                <v-icon
-                  :inline="true"
-                  v-if="number_present"
-                  color="green">
-                  {{'mdi-check'}}
-                </v-icon>
-                <v-icon
-                  :inline="true"
-                  v-if="!number_present"
-                  color="red">
-                  {{'mdi-file-excel-box'}}
-                </v-icon>
-                </p>
-                <p
-                class="password-text"
-                >
-                  • At least 1 symbol
-                  <v-icon
-                  :inline="true"
-                  v-if="!special_character_present"
-                  color="red"
-                  >
-                  {{'mdi-file-excel-box'}}
-                  </v-icon>
-                  <v-icon
-                  :inline="true"
-                  v-if="special_character_present"
-                  color="green"
-                  >
-                  {{'mdi-check'}}
-                  </v-icon>
-                </p>
+              </password-reset-screen>
               </v-card>
-              <v-card-actions>
-              <v-spacer />
-              <v-btn
-              class="request-button"
-              color="primary"
-              :disabled="!username || !email || !password || !name_user || !pi_name || !atleast_8_chars || !special_character_present || !lowercase_char_present || !uppercase_char_present || !number_present"
-              @click="send_account_request"
-              >
-                Request Account
-              </v-btn>
-              <v-btn
-              color="red"
-              @click="toggle_login_signup"
-              >
-                Back
-              </v-btn>
-              </v-card-actions>
-              </v-col>
+              </v-overlay>
             </v-row>
-          </v-card>
         </v-col>
       </v-row>
       <v-dialog
@@ -237,12 +85,12 @@
       <v-card-title
       class="text-h5 grey lighten-2 justify-center"
       >
-      Account Request Successful!
+      Account Successfully Confirmed
       </v-card-title>
       <v-card-text
       class="text-center"
       >
-      An email will be send to {{ email }} upon approval.
+      {{ from_confirmation_to_password_reset? 'Email verified! Check email for a new code to be used to reset account password.' : 'An email will be sent to '.concat(email).concat( 'once you are authorized to access your data.') }}
       </v-card-text>
       <div
       class="text-center">
@@ -254,59 +102,70 @@
       </div>
       </v-card>
       </v-dialog>
-      <!-- <v-dialog
-      v-model="bad_pwd_message"
+      <v-dialog
+      v-model="show_email_never_verified_message"
       width="600"
       >
       <v-card
       width="600"
       class="mx-auto"
       >
-      <v-card-title class="text-h5 grey lighten-2 justify-center">
-        Invalid Password
+      <v-card-title
+      class="text-h5 grey lighten-2 justify-center"
+      >
+      Error! Account has never verified email.
       </v-card-title>
       <v-card-text
       class="text-center"
       >
-      <h2>
-        Password must:
-      </h2>
+      As the account never verified it's associated email. Cannot use forget password functionality.
       </v-card-text>
       <v-card-text
-      class="text-center"
-      >
-       Be at least 8 characters long.
-      </v-card-text>
-      <v-card-text
-      class="text-center"
-      >
-        Contain at least one lowercase letter.
-      </v-card-text>
-      <v-card-text
-      class="text-center"
-      >
-        Contain at least one uppercase letter.
-      </v-card-text>
-      <v-card-text
-      class="text-center"
-      >
-        Contain at least one number.
-      </v-card-text>
-      <v-card-text
-      class="text-center"
-      >
-        Contain at least one symbol.
+      class="text-center">
+      Please contact support at help@atlasxomics.com for assistance or create another free account.
       </v-card-text>
       <div
       class="text-center">
       <v-btn
-      @click="bad_pwd_message = false"
+      @click="show_email_never_verified_message = false"
       >
-      Ok.
+      Ok
       </v-btn>
       </div>
       </v-card>
-      </v-dialog> -->
+      </v-dialog>
+      <v-dialog
+      v-model="show_account_requires_verification_message"
+      width="600"
+      >
+      <v-card
+      width="600"
+      class="mx-auto"
+      >
+      <v-card-title
+      class="text-h5 grey lighten-2 justify-center"
+      >
+      Account has never verified email.
+      </v-card-title>
+      <v-card-text
+      class="text-center"
+      >
+      Prior to resetting password first verify email used in registration.
+      </v-card-text>
+      <v-card-text
+      class="text-center">
+      Email sent to address associated with {{ username_from_child }}.
+      </v-card-text>
+      <div
+      class="text-center">
+      <v-btn
+      @click="show_account_requires_verification_message = false"
+      >
+      Ok
+      </v-btn>
+      </div>
+      </v-card>
+      </v-dialog>
     </v-container>
   </v-main>
 </template>
@@ -321,6 +180,11 @@ import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import { UserRequestPayload } from '@/types';
 import { snackbar } from '@/components/GlobalSnackbar';
+import UserRegistrationPage from '@/views/Login/components/UserRegistrationPage.vue';
+import SignInPage from '@/views/Login/components/SignInPage.vue';
+import ForgotPasswordScreen from '@/views/Login/components/ForgotPasswordScreen.vue';
+import PasswordResetScreen from '@/views/Login/components/PasswordResetScreen.vue';
+import UserConfirmationScreen from '@/views/Login/components/UserConfirmationScreen.vue';
 
 // const clientReady = new Promise((resolve) => {
 //   const ready = computed(() => (
@@ -334,94 +198,71 @@ import { snackbar } from '@/components/GlobalSnackbar';
 
 export default defineComponent({
   name: 'Login',
+  components: {
+    UserRegistrationPage,
+    SignInPage,
+    ForgotPasswordScreen,
+    PasswordResetScreen,
+    UserConfirmationScreen,
+  },
   setup(props, ctx) {
-    onMounted(async () => {
-      console.log('');
-    });
     // NOTE: May need to be computed ref
     const icon_var = ref<any>();
     const router = ctx.root.$router;
     const currentRoute = computed(() => ctx.root.$route);
     const loginScreenDisplayed = ref<boolean>(true);
-    const username = ref<string>('');
-    const password = ref<string>('');
+    const registrationScreenDisplayed = ref<boolean>(false);
+    const confirmationScreenDisplayed = ref<boolean>(false);
+    const forgotPasswordScreenDisplayed = ref<boolean>(false);
+    const show_user_creation_message = ref<boolean>(false);
+    const show_email_never_verified_message = ref<boolean>(false);
+    const show_pass = ref<boolean>(false);
+    const showAdvanced = ref(false);
+    const show_account_requires_verification_message = ref<boolean>(false);
+    const from_confirmation_to_password_reset = ref<boolean>(false);
+    const resetPassScreenDisplayed = ref<boolean>(false);
     const password_clicked = ref<boolean>(false);
+    const loading = ref<boolean>(false);
+    const username_from_child = ref<string>('');
     const name_user = ref<string>('');
     const pi_name = ref<string>('');
     const email = ref<string>('');
-    const loading = ref<boolean>(false);
-    const special_character_present = computed(() => /.*[!@#$%^&&*()<>?/[{}].*/.test(password.value));
-    const atleast_8_chars = computed(() => password.value.length >= 8);
-    const lowercase_char_present = computed(() => /.*[a-z].*/.test(password.value));
-    const uppercase_char_present = computed(() => /.*[A-Z].*/.test(password.value));
-    const number_present = computed(() => /.*[0-9].*/.test(password.value));
-    const loginErrorMessage = ref<string | null>(null);
-    // const bad_pwd_message = ref<boolean>(false);
-    const show_pass = ref<boolean>(false);
-    const showAdvanced = ref(false);
+    const loginErrorMessage = ref<string>('');
     const useTestServer = ref(SERVER_URL === TEST_SERVER_URL);
-    const show_user_creation_message = ref<boolean>(false);
     // calls login function from index.ts which calls api to verify user.
     // If successful, returns a connected client
-    function pushByQuery(query: any) {
-      const newRoute = generateRouteByQuery(currentRoute, query);
-      const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
-      if (shouldPush) router.push(newRoute);
-    }
-    async function loginUser() {
-      if (username.value && password.value) {
-        loading.value = true;
-        const serverUrl = PROD_SERVER_URL;
-        const resp = await login(serverUrl, username.value, password.value);
-        if (isClient(resp)) {
-          const existingCookie = readCookie();
-          if (existingCookie) {
-            logout();
-          }
-          saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
-          store.commit.setClient(resp);
-        } else {
-          loginErrorMessage.value = resp;
+    async function loginUser(pl: any) {
+      const { username, password } = pl;
+      loading.value = true;
+      const serverUrl = PROD_SERVER_URL;
+      const resp = await login(serverUrl, username, password);
+      if (isClient(resp)) {
+        const existingCookie = readCookie();
+        if (existingCookie) {
+          logout();
         }
-        loading.value = false;
-        username.value = '';
-        password.value = '';
+        saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
+        store.commit.setClient(resp);
+      } else {
+        loginErrorMessage.value = resp;
       }
+      loading.value = false;
     }
-    async function send_account_request() {
-      // const rExp = new RegExp('^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[*.!@$%^&(){}[]:;<>,.?/~_+-=|]).{8,32}$');
-      // eslint-disable-next-line
-      const rExp = new RegExp('^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[*.!@$%^&(){}[:;<>]).{8,32}');
-      const val = rExp.test(password.value);
-      // if (!val) {
-      //   bad_pwd_message.value = true;
-      //   return;
-      // }
-      // eslint-disable-next-line
-      const rExp_email = new RegExp(/^\S+@\S+\.\S+$/);
-      const val_email_test = rExp_email.test(email.value);
-      if (!val_email_test) {
-        snackbar.dispatch({ text: 'Must enter a valid email.', options: { color: 'red' } });
-        return;
-      }
-      const pl = {
-        username: username.value,
-        password: password.value,
-        email: email.value,
-        name: name_user.value,
-        groups: ['collab'],
-        pi_name: pi_name.value,
-      };
+    // calls api to create account and sends verification email
+    async function send_account_request(pl: any) {
       const temp_client = new Client(
         PROD_SERVER_URL,
         '',
       );
       try {
+        // const resp = { data: 'Success', status: 'bar' };
         const resp = await temp_client.user_request_account(pl);
         const { data, status } = resp;
         if (data !== 'exists') {
-          show_user_creation_message.value = true;
-          loginScreenDisplayed.value = true;
+          confirmationScreenDisplayed.value = true;
+          registrationScreenDisplayed.value = false;
+          const { username } = pl;
+          username_from_child.value = username;
         } else {
           snackbar.dispatch({ text: 'Username already exists. Please choose another.', options: { color: 'red' } });
         }
@@ -429,25 +270,131 @@ export default defineComponent({
         console.log('error');
         snackbar.dispatch({ text: 'There was an error when requesting an account.', options: { color: 'red' } });
       }
-      // console.log(client);
-      // // const resp = client.value?.user_request_account(pl);
-      // console.log(pl);
     }
-    function toggle_login_signup() {
-      password.value = '';
-      username.value = '';
-      email.value = '';
-      pi_name.value = '';
-      name_user.value = '';
-      password_clicked.value = false;
-      loginScreenDisplayed.value = !loginScreenDisplayed.value;
-    }
-    function request_available() {
-      if (username && password && email) {
-        return false;
+    // calls api to resend the verification code to the user when verifying their email
+    async function resend_verification() {
+      try {
+        const temp_client = new Client(
+          PROD_SERVER_URL,
+          '',
+        );
+        const resp = temp_client.resend_registration_code(username_from_child.value);
+      } catch (e) {
+        console.log('error');
       }
-      return true;
     }
+    // calls api and sends a code to user's email when they forget password
+    async function send_forgot_password_code(username: string) {
+      console.log('sending forgot pw request');
+      try {
+        const temp_client = new Client(
+          PROD_SERVER_URL,
+          '',
+        );
+        const resp = await temp_client.forgotPasswordRequest(username);
+        console.log(resp);
+        return resp;
+      } catch (e) {
+        snackbar.dispatch({ text: 'Error when sending password reset code.', options: { color: 'red' } });
+        return 'Error';
+      }
+    }
+    // calls api and checks if user exists. If so then a code is sent to their email
+    async function forgot_password_request(username: string) {
+      try {
+        const resp = await send_forgot_password_code(username);
+        console.log(resp);
+        username_from_child.value = username;
+        if (resp.state === 'Success' && resp.CodeDeliveryDetails.DeliveryMedium.toLowerCase() === 'email') {
+          forgotPasswordScreenDisplayed.value = false;
+          resetPassScreenDisplayed.value = true;
+          username_from_child.value = username;
+        } else if (resp.state === 'Success' && resp.CodeDeliveryDetails.DeliveryMedium.toLowerCase() === 'sms') {
+          snackbar.dispatch({ text: 'Error! Contact support for further help.' });
+        } else if (resp.state.toLowerCase() === 'user_na') {
+          snackbar.dispatch({ text: 'Username does not exist.' });
+        } else if (resp.state.toLowerCase() === 'email_unconfirmed') {
+          show_email_never_verified_message.value = true;
+          loginScreenDisplayed.value = true;
+          forgotPasswordScreenDisplayed.value = false;
+        } else if (resp.state.toLowerCase() === 'needs_confirmation') {
+          show_account_requires_verification_message.value = true;
+          forgotPasswordScreenDisplayed.value = false;
+          confirmationScreenDisplayed.value = true;
+          username_from_child.value = username;
+          from_confirmation_to_password_reset.value = true;
+          resend_verification();
+        } else if (resp.state === 'Failure' && resp.msg.includes('Attempt limit exceeded')) {
+          snackbar.dispatch({ text: 'Must wait before resetting password again.' });
+        }
+      } catch (e) {
+        console.log('error');
+      }
+    }
+    // calls api to check whether code entered by user matches one sent to email.
+    // used when validating user
+    async function check_registration_code_signup(code: string) {
+      try {
+        const temp_client = new Client(
+          PROD_SERVER_URL,
+          '',
+        );
+        // const resp = 'Success';
+        const resp = await temp_client.confirm_user_status_via_email(username_from_child.value, code);
+        if (resp === 'Success') {
+          confirmationScreenDisplayed.value = false;
+          show_user_creation_message.value = true;
+          if (from_confirmation_to_password_reset.value) {
+            forgot_password_request(username_from_child.value);
+            resetPassScreenDisplayed.value = true;
+          } else {
+            loginScreenDisplayed.value = true;
+          }
+        } else {
+          snackbar.dispatch({ text: 'Wrong confirmation code entered. Try again.', options: { color: 'red' } });
+          // user_confirmation_code.value = '';
+        }
+      } catch (e) {
+        console.log('error');
+        snackbar.dispatch({ text: 'There was an error when attempting to confirm user.' });
+      }
+    }
+    // calls api to verify verification code entered by user. If valid, password is changed
+    async function reset_password(pl: any) {
+      try {
+        const { code, password, username } = pl;
+        const temp_client = new Client(
+          PROD_SERVER_URL,
+          '',
+        );
+        // const resp = 'Success';
+        const resp = await temp_client.resetPassword(username, password, code);
+        if (resp === 'Success') {
+          snackbar.dispatch({ text: 'Password has been reset.', options: { color: 'green' } });
+          loginScreenDisplayed.value = true;
+          resetPassScreenDisplayed.value = false;
+        } else if (resp === 'wrong_code') {
+          snackbar.dispatch({ text: 'Wrong Code. Please try again.' });
+        }
+      } catch (e) {
+        console.log('error');
+      }
+    }
+
+    // function clearCreds() {
+    //   password.value = '';
+    //   username.value = '';
+    //   email.value = '';
+    //   pi_name.value = '';
+    //   name_user.value = '';
+    //   password_clicked.value = false;
+    // }
+    // function request_available() {
+    //   if (username && password && email) {
+    //     return false;
+    //   }
+    //   return true;
+    // }
     // Will re-route as soon as user is logged in
     watchEffect(() => {
       if (user.value !== null && !loading.value) {
@@ -461,25 +408,28 @@ export default defineComponent({
       loginErrorMessage,
       name_user,
       pi_name,
-      username,
-      password,
+      username_from_child,
       email,
       showAdvanced,
       useTestServer,
       loading,
-      loginScreenDisplayed,
-      toggle_login_signup,
-      request_available,
-      send_account_request,
       show_user_creation_message,
-      // bad_pwd_message,
+      show_account_requires_verification_message,
       show_pass,
-      special_character_present,
-      atleast_8_chars,
-      lowercase_char_present,
-      uppercase_char_present,
-      number_present,
       password_clicked,
+      forgotPasswordScreenDisplayed,
+      loginScreenDisplayed,
+      registrationScreenDisplayed,
+      confirmationScreenDisplayed,
+      resetPassScreenDisplayed,
+      from_confirmation_to_password_reset,
+      show_email_never_verified_message,
+      send_forgot_password_code,
+      send_account_request,
+      resend_verification,
+      forgot_password_request,
+      check_registration_code_signup,
+      reset_password,
     };
   },
 });

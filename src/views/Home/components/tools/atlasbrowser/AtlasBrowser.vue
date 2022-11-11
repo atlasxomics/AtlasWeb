@@ -838,7 +838,7 @@ export default defineComponent({
     }
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
-      // console.log(ev.evt.layerY / scaleFactor.value);
+      // console.log('y: '.concat((ev.evt.layerY / scaleFactor.value).toString()));
       // console.log(ev.evt.layerX / scaleFactor.value);
       // console.log(ev);
     }
@@ -1054,6 +1054,8 @@ export default defineComponent({
       cropFlag.value = true;
       onOff.value = true;
       const partitioned = splitarray(metadata.value.points, 2);
+      // conversion of the x and y coordinates designated in the tissue_positions_list file
+      // to being in memory of the app
       const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
@@ -1358,10 +1360,10 @@ export default defineComponent({
         threshold_image(postB_image.value);
       });
       // setting the filled grid back to default state
-      if (tixels_filled.value) {
-        clear_filled_tixels();
-      }
-      tixels_filled.value = false;
+      // if (tixels_filled.value) {
+      //   clear_filled_tixels();
+      // }
+      // tixels_filled.value = false;
     }
     const updateProgress = async (value: number) => {
       if (!client.value) return;
