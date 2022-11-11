@@ -67,6 +67,12 @@ export default class Client {
     return client;
   }
 
+  static async CreatePublic(serverURL: string, token: string): Promise<Client> {
+    const client = new Client(serverURL, token);
+
+    return client;
+  }
+
   constructor(serverURL: string, token: string) {
     this.axios = axios.create({
       baseURL: serverURL,
@@ -253,6 +259,31 @@ export default class Client {
     await this.axios.put('/api/v1/auth/resetpassword', user);
   }
   // genes
+  async getGeneMotifNames(filename: string): Promise<any> {
+    const payload = { filename };
+    const resp = await this.axios.post('api/v1/genes/gmnames', payload);
+    return resp.data;
+  }
+  async getGeneMotifNamesByToken(token: string, key: number): Promise<any> {
+    const payload = { key };
+    const resp = await this.axios.post(`api/v1/genes/gmnames/${token}`, payload);
+    return resp.data;
+  }
+  async getSpatialData(filename: string): Promise<any> {
+    const payload = { filename };
+    const resp = await this.axios.post('api/v1/genes/get_spatial_data', payload);
+    return resp.data;
+  }
+  async getSpatialDataByToken(token: string, key: number): Promise<any> {
+    const payload = { key };
+    const resp = await this.axios.post(`api/v1/genes/get_spatial_data/${token}`, payload);
+    return resp.data;
+  }
+  async getSummation(filename: string, rows: any[]): Promise<any> {
+    const payload = { filename, rows };
+    const resp = await this.axios.post('api/v1/genes/get_summation', payload);
+    return resp.data;
+  }
   async getGeneExpressions(filename: string): Promise<any> {
     const payload = { filename };
     const resp = await this.axios.post('api/v1/genes/expressions', payload);
@@ -265,7 +296,7 @@ export default class Client {
   }
   async getGeneSpatial(filename: string, genes: string[]): Promise<any> {
     const payload = { filename, genes };
-    const resp = await this.axios.post('api/v1/genes/spatial', payload, { timeout: 1000 * 300 });
+    const resp = await this.axios.post('api/v1/genes/get_spatial_data', payload, { timeout: 1000 * 300 });
     return resp.data;
   }
   // Link Generation
@@ -307,15 +338,23 @@ export default class Client {
     return resp.data;
   }
 
-  async postPublicTask(task: string | null, args: any[] | null, kwargs: any | null, queue: string | null): Promise<any> {
+  async postPublicTask(task: string | null, args: any[] | null, kwargs: any | null, queue: string | null, key: number): Promise<any> {
     const endpoint = '/api/v1/public_task';
     const payload = {
       queue,
       task,
       args,
       kwargs,
+      key,
     };
+    console.log(payload);
     const resp = await this.axios.post(endpoint, payload);
+    return resp.data;
+  }
+
+  async decodeMetadata(token: string) {
+    const endpoint = `/api/v1/storage/decode_meta/${token}`;
+    const resp = await this.axios.get(endpoint);
     return resp.data;
   }
 
@@ -325,12 +364,15 @@ export default class Client {
     return resp.data;
   }
 
-  async getPublicTaskStatus(task_id: string): Promise<any> {
-    const endpoint = `/api/v1/public_task/${task_id}`;
-    const resp = await this.axios.get(endpoint);
-    return resp.data;
-  }
   // storage
+  async getData(payload: FileRequest): Promise<any> {
+    try {
+      const resp = await this.axios.get('/api/v1/storage/data', payload);
+      return resp.data;
+    } catch (e) {
+      return false;
+    }
+  }
   async getJsonFile(payload: FileRequest): Promise<any> {
     try {
       const resp = await this.axios.get('/api/v1/storage/json', payload);
@@ -542,6 +584,10 @@ export default class Client {
     const resp = await this.axios.put('/api/v1/auth/disable_user', pl);
     return resp;
   }
+  async logIntoPublic() {
+    const resp = await this.axios.get('api/v1/auth/log_into_public');
+    return resp.data;
+  }
   async repopulateDB() {
     const resp = await this.axios.get('/api/v1/run_db/repopulate_database');
     return resp.data;
@@ -554,6 +600,46 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/get_ngs_ids');
     return resp.data;
   }
+  async getSlimsData(): Promise<any> {
+    const resp = await this.axios.get('/api/v1/run_db/get_slims_data');
+    return resp.data;
+  }
+  async getPublicRuns() {
+    const table_name = 'all_public_run_data';
+    const payload = { params: { table: table_name } };
+    const resp = await this.axios.get('/api/v1/run_db/populate_homepage');
+    return resp.data;
+  }
+  async getGroupPublicRuns(group: string) {
+    const table_name = 'all_public_run_data';
+    const payload = { params: { table: table_name, group } };
+    const resp = await this.axios.get('/api/v1/run_db/get_group_runs', payload);
+    return resp.data;
+  }
+  async re_initialize_db() {
+    const database = 'public_data';
+    const payload = { params: { database } };
+    console.log(payload);
+    const resp = await this.axios.get('/api/v1/run_db/reinitialize_db', payload);
+    return resp.data;
+  }
+  async updatePublicData() {
+    const payload = {};
+    const resp = await this.axios.post('/api/v1/run_db/update_public', payload);
+    return resp.data;
+  }
+  async searchPMID(query: string) {
+    const payload = { query };
+    const resp = await this.axios.post('/api/v1/run_db/search_pmid', payload);
+    return resp.data;
+  }
+  async searchAuthors(query: string) {
+    const payload = { query };
+    const resp = await this.axios.post('/api/v1/run_db/search_authors', payload);
+    return resp.data;
+  }
+  async grabPaths() {
+    const resp = await this.axios.get('/api/v1/run_db/retrieve_paths');
   async confirm_user_status_via_email(username: string, confirmation_code: string) {
     const pl = {
       params: {

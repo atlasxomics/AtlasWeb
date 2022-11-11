@@ -174,7 +174,8 @@
 import { computed, defineComponent, onMounted, ref, watchEffect } from '@vue/composition-api';
 
 import { login, isClient, Client } from '@/api';
-import { loggedIn, saveCookie, readCookie, logout } from '@/utils/auth';
+import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
+import { user, saveCookie, readCookie, logout } from '@/utils/auth';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import { UserRequestPayload } from '@/types';
@@ -185,15 +186,15 @@ import ForgotPasswordScreen from '@/views/Login/components/ForgotPasswordScreen.
 import PasswordResetScreen from '@/views/Login/components/PasswordResetScreen.vue';
 import UserConfirmationScreen from '@/views/Login/components/UserConfirmationScreen.vue';
 
-const clientReady = new Promise((resolve) => {
-  const ready = computed(() => (
-    store.state.client !== null
-  ));
-  watchEffect(() => {
-    console.log(ready);
-    if (ready.value) { resolve(true); }
-  });
-});
+// const clientReady = new Promise((resolve) => {
+//   const ready = computed(() => (
+//     store.state.client !== null
+//   ));
+//   watchEffect(() => {
+//     console.log(store.state.client);
+//     if (ready.value) { resolve(true); }
+//   });
+// });
 
 export default defineComponent({
   name: 'Login',
@@ -208,6 +209,7 @@ export default defineComponent({
     // NOTE: May need to be computed ref
     const icon_var = ref<any>();
     const router = ctx.root.$router;
+    const currentRoute = computed(() => ctx.root.$route);
     const loginScreenDisplayed = ref<boolean>(true);
     const registrationScreenDisplayed = ref<boolean>(false);
     const confirmationScreenDisplayed = ref<boolean>(false);
@@ -395,7 +397,7 @@ export default defineComponent({
     // }
     // Will re-route as soon as user is logged in
     watchEffect(() => {
-      if (loggedIn.value && !loading.value) {
+      if (user.value !== null && !loading.value) {
         store.commit.setComponent({ component: null });
         router.push('/');
       }
