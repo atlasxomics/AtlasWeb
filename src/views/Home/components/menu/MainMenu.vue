@@ -36,7 +36,7 @@ const menu = [
   {
     groupname: 'Home',
     items: [
-      { name: 'Home', icon: 'mdi-home', access_control: ['admin', 'user', 'collab'], color: 'primary', query: { component: null } },
+      { name: 'Home', icon: 'mdi-home', access_control: ['any'], color: 'primary', query: { component: null } },
     ],
   },
   {
@@ -51,7 +51,7 @@ const menu = [
     items: [
       { name: 'AtlasXbrowser', icon: 'mdi-grid', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasBrowser' } },
       { name: 'Atlas Viewer', icon: 'mdi-checkbox-multiple-marked', access_control: ['admin'], color: 'cyan', query: { component: 'AtlasViewer' } },
-      { name: 'AtlasXplore', icon: 'mdi-magnify', access_control: ['admin', 'user', 'collab'], color: 'cyan', query: { component: 'AtlasXplore' } },
+      { name: 'AtlasXplore', icon: 'mdi-magnify', access_control: ['any'], color: 'cyan', query: { component: 'AtlasXplore' } },
       { name: 'Atlas Compare', icon: 'mdi-compare', access_control: ['admin'], color: 'red', query: { component: 'AtlasCompare' } },
       // { name: 'Atlas Test', icon: 'mdi-test-tube', access_control: ['admin'], color: 'red', query: { component: 'AtlasTest' } },
       { name: 'Atlas Analytics', icon: 'mdi-sigma', access_control: ['admin'], color: 'cyan', query: { component: 'AtlasAnalytics' } },

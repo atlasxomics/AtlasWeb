@@ -15,6 +15,7 @@ import {
   UploadMeta,
   QcEntryGenerationRequest,
   UpdatingGroupsRequest,
+  UserGroupAssignmentInform,
   GroupRequest,
   CreateGroupRequest,
 } from '@/types';
@@ -222,7 +223,6 @@ export default class Client {
   // Requires Admin
   async registerUser(user: RegisterUserPayload): Promise<boolean> {
     try {
-      console.log(user);
       await this.axios.post('/api/v1/auth/user', user);
     } catch (error) {
       // If failed, user already exists
@@ -232,9 +232,11 @@ export default class Client {
     return true;
   }
   async user_request_account(user_info: Record<string, any>) {
-    console.log(user_info);
     const res = await this.axios.post('/api/v1/auth/user_account_request', user_info);
     return res;
+  }
+  async notify_user_group_assignment(pl: UserGroupAssignmentInform) {
+    const res = await this.axios.post('/api/v1/auth/inform_user_assignment', pl);
   }
   async confirmUser(user: string): Promise<any> {
     const pl = { data: { user } };
@@ -242,7 +244,6 @@ export default class Client {
     return resp;
   }
   async deleteUser(user: string) {
-    console.log(user);
     const resp = await this.axios.delete(`/api/v1/auth/user/${user}`);
     return resp;
   }
@@ -511,7 +512,6 @@ export default class Client {
   }
   async get_user_list() {
     const resp = await this.axios.get('/api/v1/auth/list_accounts');
-    console.log(resp.data);
     return resp.data;
   }
   async get_group_list() {
@@ -535,7 +535,6 @@ export default class Client {
   async delete_group(group_name: string) {
     const pl = { data: { group_name } };
     const resp = await this.axios.delete('/api/v1/auth/group', pl);
-    console.log(resp);
     return resp;
   }
   async disable_user(username: string) {
@@ -553,6 +552,43 @@ export default class Client {
   }
   async getNGSIds(): Promise<any> {
     const resp = await this.axios.get('/api/v1/run_db/get_ngs_ids');
+    return resp.data;
+  }
+  async confirm_user_status_via_email(username: string, confirmation_code: string) {
+    const pl = {
+      params: {
+        username,
+        confirmation_code,
+      },
+    };
+    const resp = await this.axios.get('/api/v1/auth/confirm_user_via_email', pl);
+    return resp.data;
+  }
+  async resend_registration_code(username: string) {
+    const pl = { params: { username } };
+    const resp = await this.axios.get('/api/v1/auth/resend_confirmation_via_email', pl);
+    return resp.data;
+  }
+  async forgotPasswordRequest(username: string): Promise<any> {
+    const pl = { params: { username } };
+    const resp = await this.axios.get('/api/v1/auth/forgot_password_request', pl);
+    return resp.data;
+  }
+  async resetPassword(username: string, password: string, code: string): Promise<any> {
+    const pl = {
+      username,
+      password,
+      code,
+    };
+    const resp = await this.axios.post('/api/v1/auth/forgot_password_confirmation', pl);
+    return resp.data;
+  }
+  async confirm_user_email_admin(username: string) {
+    const pl = { username };
+    console.log(pl);
+    const resp = await this.axios.post('/api/v1/auth/confirm_user_email_admin', pl);
+    console.log(resp);
+    console.log(resp.data);
     return resp.data;
   }
 }
