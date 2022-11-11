@@ -26,6 +26,9 @@
       <v-tab-item key="DatabaseAdmin">
         <database-admin/>
       </v-tab-item>
+      <v-tab-item key="PublicDatabaseAdmin">
+        <public-database-admin/>
+      </v-tab-item>
     </v-tabs-items>
   </v-container>
 </template>
@@ -44,6 +47,7 @@ import AddRemoveGroup from './modules/AddRemoveGroup.vue';
 import AddRemoveUser from './modules/AddRemoveUser.vue';
 import UserManagement from './modules/UserManagement.vue';
 import DatabaseAdmin from './modules/DatabaseAdmin.vue';
+import PublicDatabaseAdmin from './modules/PublicDatabaseAdmin.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -54,7 +58,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Add/Remove User', 'Add/Remove Group', 'Worker Status', 'User Management', 'Database Administration'];
+const tabs = ['Reset Password', 'Add/Remove User', 'Add/Remove Group', 'Worker Status', 'User Management', 'Database Administration', 'Public DB Administration'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -65,6 +69,7 @@ export default defineComponent({
     AddRemoveUser,
     UserManagement,
     DatabaseAdmin,
+    PublicDatabaseAdmin,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;

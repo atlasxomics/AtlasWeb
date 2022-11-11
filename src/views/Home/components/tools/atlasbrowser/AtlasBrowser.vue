@@ -1653,6 +1653,7 @@ export default defineComponent({
       }
     });
     onUnmounted(async () => {
+      store.commit.setSubmenu(null);
       window.removeEventListener('resize', handleResize);
     });
     return {
