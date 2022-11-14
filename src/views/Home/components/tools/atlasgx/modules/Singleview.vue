@@ -271,9 +271,6 @@ export default defineComponent({
     });
     watch([coordGene, selectedGenesFromParent, colorsValues], ([v, x, y], [prevv, prevx, prevy]) => {
       if (v !== undefined && x !== undefined && y !== undefined && v !== prevv) {
-        console.log(v);
-        console.log(x);
-        console.log(y);
         coordinates.value = v.coords;
         colors_intensity.value = v.intense;
         colorBarmap.value = y.color;

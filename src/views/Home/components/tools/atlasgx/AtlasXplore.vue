@@ -1584,7 +1584,10 @@ export default defineComponent({
 
     onMounted(async () => {
       await clientReady;
-      if ((resolveAuthGroup(['admin', 'user']) || props.query.public) && globalXploreData.value !== null) {
+      if (resolveAuthGroup(['admin', 'user']) && globalXploreData.value !== null) {
+        atlasXplore_displayed.value = true;
+        prep_atlasxplore(props.query.run_id, false);
+      } else if (props.query.public) {
         atlasXplore_displayed.value = true;
         prep_atlasxplore(props.query.run_id, false);
       } else redirectToVisual();
