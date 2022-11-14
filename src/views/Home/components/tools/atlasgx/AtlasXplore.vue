@@ -587,7 +587,7 @@
                 :heatmap="heatMap"
                 :manualColor="manualClusterFlag"
                 :task="'gene.compute_qc'"
-                :queue="'joshua_gene'"
+                :queue="'atxcloud_gene'"
                 :lasso="isDrawing"
                 :rect="isDrawingRect"
                 :clickedCluster="clickedClusterFromChild"
@@ -1205,7 +1205,7 @@ export default defineComponent({
       try {
         const root = 'data';
         const task = 'gene.seq_logo';
-        const queue = 'joshua_gene';
+        const queue = 'atxcloud_gene';
         const args = [props.query.public ? filename.value : `${root}/${runId.value}/h5/obj/motifs.csv`, trackBrowserGenes.value[0]];
         const kwargs: any = {};
         const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue, 5) : await client.value!.postTask(task, args, kwargs, queue);
@@ -1239,7 +1239,7 @@ export default defineComponent({
       if (marker) {
         loading.value = true;
         const task = 'gene.compute_cell_type';
-        const queue = 'joshua_gene';
+        const queue = 'atxcloud_gene';
         const args = [filename.value, marker];
         const kwargs = {};
         const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue, (geneMotif.value === 'gene') ? 3 : 4) : await client.value!.postTask(task, args, kwargs, queue);
@@ -1570,7 +1570,7 @@ export default defineComponent({
             run_num = props.query.run_id;
           }
           await selectAction({ id: run_num });
-          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
+          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
         }
       }
       if (props.query && props.query.run_id && props.query.public) {
