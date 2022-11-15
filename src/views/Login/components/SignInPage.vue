@@ -26,20 +26,23 @@
             >
             Sign In
             </v-btn>
-            <v-btn
+            <div
             @click="forgot_password"
-            style="position: relative; left: 225px; margin-top: 10px"
-            outlined
+            style="position: relative; left: 225px; top: 5px"
             >
-            Forgot Password
-            </v-btn>
-            <v-btn
+            <a href="#!">
+            Forgot Password?
+            </a>
+            </div>
+            <div
             @click="register_user"
-             style="position: relative; left: 295px; margin-top: 10px"
-            outlined
+            style="position: relative; left: 430px; bottom: 18px"
             >
-            Register
-            </v-btn>
+            No Account?
+            <a href="#!">
+              Register
+            </a>
+            </div>
 
     </v-col>
 </template>
