@@ -22,13 +22,13 @@
             color="success"
             :disabled="!(username && password)"
             @click="loginUser"
-            style="position: relative; width: 370px; left: 144px"
+            style="position: relative; width: 100px; left: 500px; bottom:15px;"
             >
             Sign In
             </v-btn>
             <div
             @click="forgot_password"
-            style="position: relative; left: 150px; top: 5px"
+            style="position: relative; left: 160px; top: 60px;"
             >
             <a href="#!">
             Forgot Password?
@@ -36,7 +36,7 @@
             </div>
             <div
             @click="register_user"
-            style="position: relative; left: 355px; bottom: 18px"
+            style="position: relative; left: 310px; top: 35px;"
             >
             No Account?
             <a href="#!">
