@@ -6,7 +6,7 @@
 
 <script lang='ts'>
 
-import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
+import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import lodash from 'lodash';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
@@ -43,11 +43,14 @@ export default defineComponent({
       // await clientReady;
       store.commit.setSubmenu(null);
       const route = currentRoute.value;
+      console.log(route);
       if (route.query.component) store.commit.setComponent(route.query);
       else store.commit.setComponent({ component: null });
-      const cookie = { token: component.value.token, url: PROD_SERVER_URL };
-      saveCookie(cookie);
-      loginExisting();
+      store.commit.setClient(await Client.CreatePublic(PROD_SERVER_URL, component.value.token));
+    });
+    onUnmounted(async () => {
+      // await clientReady;
+      // store.commit.setClient(await Client.Create(PROD_SERVER_URL, ''));
     });
     return { component };
   },

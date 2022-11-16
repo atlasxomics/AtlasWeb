@@ -3,6 +3,9 @@
     app
     dense
   >
+      <div style="cursor: pointer;">
+      <v-img @click="redirectToVisual" width="40px" src="favicon-nobg.png"></v-img>
+      </div>
       <v-app-bar-nav-icon @click="$emit('openDrawer')"></v-app-bar-nav-icon>
       <v-tooltip
         v-for="menu in subMenu"
@@ -106,19 +109,18 @@ export default defineComponent({
   name: 'Appbar',
   components: { VueFileToolbarMenu, ...components, ChangePasswordMenu },
   setup(props, ctx) {
+    const router = ctx.root.$router;
     const user = computed(() => store.state.client?.user?.username);
     const urlPostfix = computed(() => store.state.client?.urlPostfix);
     const filemenuStyle = computed(() => (filemenuStyleLight));
     const currentRoute = computed(() => ctx.root.$route);
+    const component = computed(() => store.state.currentComponent);
     const userMenu = ref(false);
     const changePasswordMenu = ref(false);
     const subMenu = computed(() => store.state.subMenu);
-    const searchbar_enabled = computed(() => {
-      if (store.state.subMenu == null) {
-        return false;
-      }
-      return store.state.subMenu[6].enabled;
-    });
+    function redirectToVisual() {
+      if (currentRoute.value.fullPath !== '/') router.push('/');
+    }
     return {
       filemenu,
       filemenuStyle,
@@ -131,7 +133,8 @@ export default defineComponent({
       changePasswordMenu,
       subMenu,
       urlPostfix,
-      searchbar_enabled,
+      redirectToVisual,
+      component,
     };
   },
 });

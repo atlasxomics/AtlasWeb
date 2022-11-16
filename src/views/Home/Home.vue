@@ -7,8 +7,8 @@
       <template v-if="component.component">
         <component v-bind:is="component.component" :query="component"/>
       </template>
-      <template v-if="!component.component">
-        <home-page/>
+      <template v-if="(user !== null && user !== undefined) && currentRoute.fullPath === '/'">
+        <landing-page/>
       </template>
 <!--       <v-footer absolute>AtlasXomics, 2021</v-footer> -->
     </v-sheet>
@@ -39,6 +39,7 @@ import AtlasUploader from './components/tools/filetools/AtlasUploader.vue';
 import AdminPanel from './components/settings/admin/AdminPanel.vue';
 import UserSettings from './components/settings/users/UserSettings.vue';
 import AtlasRunViewer from './components/tools/atlasRunViewer/AtlasRunViewer.vue';
+import LandingPage from '../Login/LandingPage.vue';
 
 const appReadyForClient = new Promise((resolve) => {
   const ready = computed(() => (
@@ -71,6 +72,7 @@ export default defineComponent({
     AdminPanel,
     UserSettings,
     AtlasRunViewer,
+    LandingPage,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -81,6 +83,9 @@ export default defineComponent({
     const subMenu = computed(() => store.state.subMenu);
     function redirectToLogin() {
       router.push('/login');
+    }
+    function redirectToVisual() {
+      router.push('/visualization');
     }
     function redirectToPublic() {
       router.push('/public');
@@ -102,13 +107,6 @@ export default defineComponent({
         router.push(newRoute);
       }
     }
-    // Login Existing User
-    onBeforeMount(async () => {
-      await loginExisting();
-      if (!loggedIn.value) {
-        redirectToLogin();
-      }
-    });
 
     // Display message on user login/logout
     watch(() => user.value, (newUser, oldUser) => {
@@ -116,17 +114,23 @@ export default defineComponent({
         snackbar.dispatch({ text: `Welcome ${newUser.username}`, options: { right: true } });
       } else if (oldUser) {
         snackbar.dispatch({ text: `Goodbye ${oldUser.username}`, options: { right: true } });
-        redirectToLogin();
+        redirectToVisual();
       }
     });
     watch(currentRoute, (route) => {
       if (route.query.component) store.commit.setComponent(route.query);
       else store.commit.setComponent({ component: null });
     });
-    onMounted(() => {
+    onMounted(async () => {
+      await loginExisting();
       const route = currentRoute.value;
-      if (readCookie()) store.commit.setComponent(route.query);
-      else store.commit.setComponent({ component: null });
+      if (currentRoute.value.fullPath !== '/') {
+        store.commit.setComponent(route.query);
+      } else {
+        if ((user.value === null || user.value === undefined) && !loggedIn.value) redirectToVisual();
+        else if ((user.value !== null && user.value !== undefined) && !loggedIn.value) redirectToLogin();
+        store.commit.setComponent({ component: null });
+      }
     });
     return {
       component,
@@ -134,6 +138,7 @@ export default defineComponent({
       openDrawer,
       menuClicked,
       subMenu,
+      currentRoute,
     };
   },
 });

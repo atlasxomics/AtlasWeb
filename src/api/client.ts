@@ -15,6 +15,7 @@ import {
   UploadMeta,
   QcEntryGenerationRequest,
   UpdatingGroupsRequest,
+  UserGroupAssignmentInform,
   GroupRequest,
   CreateGroupRequest,
 } from '@/types';
@@ -62,6 +63,12 @@ export default class Client {
   static async Create(serverURL: string, token: string): Promise<Client> {
     const client = new Client(serverURL, token);
     await client.initAsync();
+
+    return client;
+  }
+
+  static async CreatePublic(serverURL: string, token: string): Promise<Client> {
+    const client = new Client(serverURL, token);
 
     return client;
   }
@@ -222,7 +229,6 @@ export default class Client {
   // Requires Admin
   async registerUser(user: RegisterUserPayload): Promise<boolean> {
     try {
-      console.log(user);
       await this.axios.post('/api/v1/auth/user', user);
     } catch (error) {
       // If failed, user already exists
@@ -232,9 +238,11 @@ export default class Client {
     return true;
   }
   async user_request_account(user_info: Record<string, any>) {
-    console.log(user_info);
     const res = await this.axios.post('/api/v1/auth/user_account_request', user_info);
     return res;
+  }
+  async notify_user_group_assignment(pl: UserGroupAssignmentInform) {
+    const res = await this.axios.post('/api/v1/auth/inform_user_assignment', pl);
   }
   async confirmUser(user: string): Promise<any> {
     const pl = { data: { user } };
@@ -242,7 +250,6 @@ export default class Client {
     return resp;
   }
   async deleteUser(user: string) {
-    console.log(user);
     const resp = await this.axios.delete(`/api/v1/auth/user/${user}`);
     return resp;
   }
@@ -252,6 +259,31 @@ export default class Client {
     await this.axios.put('/api/v1/auth/resetpassword', user);
   }
   // genes
+  async getGeneMotifNames(filename: string): Promise<any> {
+    const payload = { filename };
+    const resp = await this.axios.post('api/v1/genes/gmnames', payload);
+    return resp.data;
+  }
+  async getGeneMotifNamesByToken(token: string, key: number): Promise<any> {
+    const payload = { key };
+    const resp = await this.axios.post(`api/v1/genes/gmnames/${token}`, payload);
+    return resp.data;
+  }
+  async getSpatialData(filename: string): Promise<any> {
+    const payload = { filename };
+    const resp = await this.axios.post('api/v1/genes/get_spatial_data', payload);
+    return resp.data;
+  }
+  async getSpatialDataByToken(token: string, key: number): Promise<any> {
+    const payload = { key };
+    const resp = await this.axios.post(`api/v1/genes/get_spatial_data/${token}`, payload);
+    return resp.data;
+  }
+  async getSummation(filename: string, rows: any[]): Promise<any> {
+    const payload = { filename, rows };
+    const resp = await this.axios.post('api/v1/genes/get_summation', payload);
+    return resp.data;
+  }
   async getGeneExpressions(filename: string): Promise<any> {
     const payload = { filename };
     const resp = await this.axios.post('api/v1/genes/expressions', payload);
@@ -264,7 +296,7 @@ export default class Client {
   }
   async getGeneSpatial(filename: string, genes: string[]): Promise<any> {
     const payload = { filename, genes };
-    const resp = await this.axios.post('api/v1/genes/spatial', payload, { timeout: 1000 * 300 });
+    const resp = await this.axios.post('api/v1/genes/get_spatial_data', payload, { timeout: 1000 * 300 });
     return resp.data;
   }
   // Link Generation
@@ -306,15 +338,23 @@ export default class Client {
     return resp.data;
   }
 
-  async postPublicTask(task: string | null, args: any[] | null, kwargs: any | null, queue: string | null): Promise<any> {
+  async postPublicTask(task: string | null, args: any[] | null, kwargs: any | null, queue: string | null, key: number): Promise<any> {
     const endpoint = '/api/v1/public_task';
     const payload = {
       queue,
       task,
       args,
       kwargs,
+      key,
     };
+    console.log(payload);
     const resp = await this.axios.post(endpoint, payload);
+    return resp.data;
+  }
+
+  async decodeMetadata(token: string) {
+    const endpoint = `/api/v1/storage/decode_meta/${token}`;
+    const resp = await this.axios.get(endpoint);
     return resp.data;
   }
 
@@ -324,11 +364,6 @@ export default class Client {
     return resp.data;
   }
 
-  async getPublicTaskStatus(task_id: string): Promise<any> {
-    const endpoint = `/api/v1/public_task/${task_id}`;
-    const resp = await this.axios.get(endpoint);
-    return resp.data;
-  }
   // storage
   async getJsonFile(payload: FileRequest): Promise<any> {
     try {
@@ -357,6 +392,14 @@ export default class Client {
   async getImage(payload: ImageFileRequest, image_type = 'image/png'): Promise<File> {
     try {
       const resp = await this.axios.get('/api/v1/storage', { params: { filename: payload.params.filename, bucket_name: payload.params.bucket }, responseType: 'blob' });
+      return new File([resp.data], payload.params.filename, { type: image_type });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+  async getHomePageImages(payload: ImageFileRequest, image_type = 'image/png'): Promise<File> {
+    try {
+      const resp = await this.axios.get('/api/v1/storage/png', { params: { filename: payload.params.filename, bucket_name: payload.params.bucket }, responseType: 'blob' });
       return new File([resp.data], payload.params.filename, { type: image_type });
     } catch (e) {
       return Promise.reject(e);
@@ -511,7 +554,6 @@ export default class Client {
   }
   async get_user_list() {
     const resp = await this.axios.get('/api/v1/auth/list_accounts');
-    console.log(resp.data);
     return resp.data;
   }
   async get_group_list() {
@@ -535,13 +577,16 @@ export default class Client {
   async delete_group(group_name: string) {
     const pl = { data: { group_name } };
     const resp = await this.axios.delete('/api/v1/auth/group', pl);
-    console.log(resp);
     return resp;
   }
   async disable_user(username: string) {
     const pl = { data: { username } };
     const resp = await this.axios.put('/api/v1/auth/disable_user', pl);
     return resp;
+  }
+  async logIntoPublic() {
+    const resp = await this.axios.get('api/v1/auth/log_into_public');
+    return resp.data;
   }
   async repopulateDB() {
     const resp = await this.axios.get('/api/v1/run_db/repopulate_database');
@@ -553,6 +598,85 @@ export default class Client {
   }
   async getNGSIds(): Promise<any> {
     const resp = await this.axios.get('/api/v1/run_db/get_ngs_ids');
+    return resp.data;
+  }
+  async getSlimsData(): Promise<any> {
+    const resp = await this.axios.get('/api/v1/run_db/get_slims_data');
+    return resp.data;
+  }
+  async getPublicRuns() {
+    const table_name = 'all_public_run_data';
+    const payload = { params: { table: table_name } };
+    const resp = await this.axios.get('/api/v1/run_db/populate_homepage');
+    return resp.data;
+  }
+  async getGroupPublicRuns(group: string) {
+    const table_name = 'all_public_run_data';
+    const payload = { params: { table: table_name, group } };
+    const resp = await this.axios.get('/api/v1/run_db/get_group_runs', payload);
+    return resp.data;
+  }
+  async re_initialize_db() {
+    const database = 'public_data';
+    const payload = { params: { database } };
+    console.log(payload);
+    const resp = await this.axios.get('/api/v1/run_db/reinitialize_db', payload);
+    return resp.data;
+  }
+  async updatePublicData() {
+    const payload = {};
+    const resp = await this.axios.post('/api/v1/run_db/update_public', payload);
+    return resp.data;
+  }
+  async searchPMID(query: string) {
+    const payload = { query };
+    const resp = await this.axios.post('/api/v1/run_db/search_pmid', payload);
+    return resp.data;
+  }
+  async searchAuthors(query: string) {
+    const payload = { query };
+    const resp = await this.axios.post('/api/v1/run_db/search_authors', payload);
+    return resp.data;
+  }
+  async grabPaths() {
+    const resp = await this.axios.get('/api/v1/run_db/retrieve_paths');
+    return resp.data;
+  }
+  async confirm_user_status_via_email(username: string, confirmation_code: string) {
+    const pl = {
+      params: {
+        username,
+        confirmation_code,
+      },
+    };
+    const resp = await this.axios.get('/api/v1/auth/confirm_user_via_email', pl);
+    return resp.data;
+  }
+  async resend_registration_code(username: string) {
+    const pl = { params: { username } };
+    const resp = await this.axios.get('/api/v1/auth/resend_confirmation_via_email', pl);
+    return resp.data;
+  }
+  async forgotPasswordRequest(username: string): Promise<any> {
+    const pl = { params: { username } };
+    const resp = await this.axios.get('/api/v1/auth/forgot_password_request', pl);
+    return resp.data;
+  }
+  async resetPassword(username: string, password: string, code: string): Promise<any> {
+    const pl = {
+      username,
+      password,
+      code,
+    };
+    const resp = await this.axios.post('/api/v1/auth/forgot_password_confirmation', pl);
+    return resp.data;
+  }
+  async confirm_user_email_admin(username: string) {
+    const pl = { username };
+    console.log(pl);
+    const resp = await this.axios.post('/api/v1/auth/confirm_user_email_admin', pl);
+    console.log(resp);
+    console.log(resp.data);
     return resp.data;
   }
 }

@@ -13,6 +13,8 @@ export async function login(
   serverURL: string, username: string, password: string,
 ): Promise<Client | string> {
   try {
+    console.log(username);
+    console.log(password);
     const { data: { access_token: rawAccessToken } } = await axios.post(`${serverURL}/api/v1/auth/login`, { username, password });
     const accessToken = `JWT ${rawAccessToken}`;
 

@@ -111,7 +111,7 @@ function colormapBounded(cmap: string[], values: any, amount: number) {
 }
 
 export default defineComponent({
-  name: 'AtxAtacViewer',
+  name: 'Singleview',
   props: ['query', 'gene', 'heatmap', 'background', 'circleData', 'colorBar', 'loadingProp'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
@@ -156,7 +156,6 @@ export default defineComponent({
     const circlesSpatialSingle = ref<any[]>([]);
     const maxMin = ref<any[]>([]);
     const colors_intensity = ref<any>();
-    const geneSum = ref<any>();
     const coordinates = ref<any>();
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
@@ -180,8 +179,9 @@ export default defineComponent({
       return arr;
     }
     async function updateCircles() {
-      if (geneSum.value === undefined) return;
+      if (coordinates.value === undefined) return;
       const circles: any[] = [];
+      const geneSum: number[] = [];
       const minX = maxMin.value[0];
       const minY = maxMin.value[1];
       const maxX = maxMin.value[2];
@@ -192,28 +192,36 @@ export default defineComponent({
       const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
       highestCount.value = 0;
       lowestCount.value = 10000;
-      const geneColors = colormapBounded(colors_intensity.value, geneSum.value, 1);
-      lodash.each(geneSum.value, (v: any, i: number) => {
-        highestCount.value = v > highestCount.value ? v : highestCount.value;
-        lowestCount.value = v < lowestCount.value ? v : lowestCount.value;
-        const clr = (i + 12 > 0) ? geneColors[i] : 'grey';
+      coordinates.value.forEach((v: any, i: any) => {
         const c = {
           id: get_uuid(),
-          x: coordinates.value[i][0] * scale.value * viewScale + paddingX,
-          y: coordinates.value[i][1] * scale.value * viewScale + paddingY,
+          x: v.ogx * scale.value * viewScale + paddingX,
+          y: v.ogy * scale.value * viewScale + paddingY,
           radius,
-          originalColor: clr,
-          fill: clr,
-          stroke: clr,
+          originalColor: 'grey',
+          fill: 'grey',
+          stroke: 'grey',
           strokeWidth: 1.0,
-          cluster: coordinates.value[i][2],
-          total: v,
+          cluster: v.cluster,
+          total: v.genes[selectedGenesFromParent.value],
           inactive: false,
-          genes: { [selectedGenesFromParent.value]: v },
+          genes: { [selectedGenesFromParent.value]: v.genes[selectedGenesFromParent.value] },
         };
         circles.push(c);
+        geneSum.push(c.total);
       });
       circlesSpatialSingle.value = circles;
+      highestCount.value = 0;
+      lowestCount.value = 10000;
+      const geneColors = colormapBounded(colors_intensity.value, geneSum, 1);
+      circles.forEach((v: any, i: any) => {
+        const clr = (geneSum[i] + (12 * 1) > 0) ? geneColors[i] : 'grey';
+        highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
+        lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
+        circles[i].originalColor = clr;
+        circles[i].fill = clr;
+        circles[i].stroke = clr;
+      });
       stepArray.value = makearray(highestCount.value, lowestCount.value);
     }
     // Drawing
@@ -263,12 +271,11 @@ export default defineComponent({
     });
     watch([coordGene, selectedGenesFromParent, colorsValues], ([v, x, y], [prevv, prevx, prevy]) => {
       if (v !== undefined && x !== undefined && y !== undefined && v !== prevv) {
-        geneSum.value = v.geneSum[x];
         coordinates.value = v.coords;
         colors_intensity.value = v.intense;
         colorBarmap.value = y.color;
         maxMin.value = y.maxMin;
-        updateCircles();
+        onResize();
       }
     }, { deep: true });
     watch(scale, () => {
@@ -305,7 +312,6 @@ export default defineComponent({
       maxMin,
       circlesSpatialSingle,
       colors_intensity,
-      geneSum,
       coordinates,
       backgroundColor,
     };

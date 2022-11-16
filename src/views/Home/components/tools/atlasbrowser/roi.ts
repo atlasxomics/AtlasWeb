@@ -143,8 +143,8 @@ export class ROI {
       if (count === 0) {
         count += 1;
       }
-      const y = Math.round(v.centerx / this.scalefactor);
-      const x = Math.round(v.centery / this.scalefactor);
+      const y = Math.round(v.centery / this.scalefactor);
+      const x = Math.round(v.centerx / this.scalefactor);
       const r = Math.round(v.radius / this.scalefactor);
       let pixval = 0.0;
       for (let row = x - r; row < x + r; row += 1) {
@@ -171,7 +171,7 @@ export class ROI {
 
   setPolygonsInCircle(x: number, y: number, radius: number, key: string, value: any) {
     lodash.each(this.polygons, (v: any, i: number) => {
-      const tf = ((v.centery - x)) ** 2 + ((v.centerx - y) ** 2) < (radius ** 2);
+      const tf = ((v.centerx - x)) ** 2 + ((v.centery - y) ** 2) < (radius ** 2);
       if (tf) this.polygons[i][key] = value;
     });
   }
@@ -283,8 +283,13 @@ export class ROI {
         const botLC = [bL[0], bL[1]];
         const botRC = [bR[0], bR[1]];
         const ID = (i * this.channels) + j;
+        let current_fill = '0';
+        // dummy variables so current_fill can be reassigned if we are including filled tixels
         const value = tixel_array[(i * this.channels) + j];
-        const [ge, f, r, c, x, y] = value;
+        if (value) {
+          const { 1: fill } = value;
+          current_fill = fill;
+        }
         const polyConfig = {
           sceneFunc: (context: any, shape: any) => {
             context.beginPath();
@@ -298,13 +303,14 @@ export class ROI {
             context.fillStrokeShape(shape);
           },
           id: ID.toString(),
-          fill: (f === '1') ? 'red' : null,
-          centerx: center[1],
-          centery: center[0],
+          fill: (current_fill === '1') ? 'red' : null,
+          centerx: center[0],
+          centery: center[1],
           radius: slope[0],
-          stroke: 'gray',
+          stroke: 'black',
           strokeWidth: 1,
-          posit: [i, j],
+          // postit: [row, col]
+          posit: [j, i],
           scaleX: 1.0,
           scaleY: 1.0,
         };
@@ -318,83 +324,7 @@ export class ROI {
   }
 
   generatePolygons() {
-    const [p1, p2, p3, p4] = this.getCoordinates();
-    const ratioNum = (this.channels * 2) - 1;
-    const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
-    const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
-    const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
-    const slopeT = [(topS[1] - p1.y), (topS[0] - p1.x)];
-    const slopeO = [slope[0] * 2, slope[1] * 2];
-    const slopeTO = [slopeT[0] * 2, slopeT[1] * 2];
-    const prev = [];
-    prev.push(p1.x);
-    prev.push(p1.y);
-    let tL: (number)[];
-    let tR: (number)[];
-    let bL: (number)[];
-    let bR: (number)[];
-    let center: (number)[];
-    const top = [0, 0];
-    const left = [0, 0];
-    let flag = false;
-    this.polygons = [];
-    for (let i = 0; i < this.channels; i += 1) {
-      top.fill(prev[0] + slopeT[1], 0);
-      top.fill(prev[1] + slopeT[0], 1);
-      flag = false;
-      for (let j = 0; j < this.channels; j += 1) {
-        if (flag === false) {
-          left.fill(prev[0], 0);
-          left.fill(prev[1], 1);
-          tL = [left[0], left[1]];
-          tR = [top[0], top[1]];
-          bL = [tL[0] + slope[1], tL[1] + slope[0]];
-          bR = [tR[0] + slope[1], tR[1] + slope[0]];
-          flag = true;
-        } else {
-          left[0] += slopeO[1];
-          left[1] += slopeO[0];
-          tL = [left[0], left[1]];
-          tR = [top[0], top[1]];
-          bL = [tL[0] + slope[1], tL[1] + slope[0]];
-          bR = [tR[0] + slope[1], tR[1] + slope[0]];
-        }
-        center = ROI.center(tL, tR, bR, bL);
-        const topLC = [tL[0], tL[1]];
-        const topRC = [tR[0], tR[1]];
-        const botLC = [bL[0], bL[1]];
-        const botRC = [bR[0], bR[1]];
-        const ID = (i * this.channels) + j;
-        const polyConfig = {
-          sceneFunc: (context: any, shape: any) => {
-            context.beginPath();
-            context.moveTo(topLC[0], topLC[1]);
-            context.lineTo(topRC[0], topRC[1]);
-            context.lineTo(botRC[0], botRC[1]);
-            context.lineTo(botLC[0], botLC[1]);
-            context.closePath();
-
-            // special Konva.js method
-            context.fillStrokeShape(shape);
-          },
-          id: ID.toString(),
-          fill: null,
-          centerx: center[1],
-          centery: center[0],
-          radius: slope[0],
-          stroke: 'black',
-          strokeWidth: 1,
-          posit: [i, j],
-          scaleX: 1.0,
-          scaleY: 1.0,
-        };
-        this.polygons.push(polyConfig);
-        top[0] += slopeO[1];
-        top[1] += slopeO[0];
-      }
-      prev[0] += slopeTO[1];
-      prev[1] += slopeTO[0];
-    }
+    this.loadTixels([]);
     return this.polygons;
   }
 }

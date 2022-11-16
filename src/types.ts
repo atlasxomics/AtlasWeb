@@ -149,3 +149,9 @@ export interface CreateGroupRequest {
     description: string,
   }
 }
+
+export interface UserGroupAssignmentInform {
+  group: string,
+  username: string,
+  email: string,
+}

@@ -1,6 +1,7 @@
-<template>
+<template v-if="geneList">
     <v-autocomplete
-      v-if="search_enabled.value"
+      :loading="(genes.length == 0) ? true : false"
+      :disabled="(genes.length == 0) ? true : false"
       class="noScroll"
       id ="noScrollId"
       @paste="handlePaste"
@@ -20,7 +21,6 @@
       item-value="name"
       @input="acInputChanged"
       :search-input.sync="searchInput"
-      :loading="autocompleteLoading"
       :menu-props="{closeOnClick: false}"
       @change="onGenelistChanged"
       width="100%"
@@ -126,10 +126,6 @@ export default defineComponent({
   setup(props, ctx) {
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
-    const search_enabled = computed(() => {
-      console.log(props.search_bar_enabled);
-      return props.search_bar_enabled;
-    });
     const currentRoute = computed(() => ctx.root.$route);
     const selectedGenes = ref<any[]>([]);
     const filteredGenes = ref<any[]>([]);
@@ -266,9 +262,6 @@ export default defineComponent({
     watch(avgInd, (v: any) => {
       ctx.emit('avgind', avgInd.value);
     });
-    // watch(props.gene_list, (v: any[]) => {
-    //   geneList.value = v;
-    // })
     watch(geneList.value, (v: any[]) => {
       genes.value = v;
     });
@@ -316,7 +309,6 @@ export default defineComponent({
       await clientReady;
     });
     return {
-      search_enabled,
       selectedGenes,
       filteredGenes,
       searchInput,
@@ -331,6 +323,7 @@ export default defineComponent({
       valueCollapse,
       fileContent,
       avgInd,
+      genes,
       acInputChanged,
       querySelections,
       onGenelistChanged,
