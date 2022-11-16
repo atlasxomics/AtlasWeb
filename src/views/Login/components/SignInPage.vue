@@ -18,27 +18,32 @@
             prepend-icon="mdi-lock"
             :type="show_pass?'text': 'password'"
         />
-        <v-card-actions>
-            <v-spacer />
-            <v-btn
-            @click="forgot_password"
-            >
-            Forgot Password
-            </v-btn>
-            <v-btn
-            @click="register_user"
-            color="primary"
-            >
-            Register
-            </v-btn>
             <v-btn
             color="success"
             :disabled="!(username && password)"
             @click="loginUser"
+            style="position: relative; width: 100px; left: 500px; bottom:15px;"
             >
             Sign In
             </v-btn>
-        </v-card-actions>
+            <div
+            @click="forgot_password"
+            style="position: relative; left: 160px; top: 60px;"
+            >
+            <a href="#!">
+            Forgot Password?
+            </a>
+            </div>
+            <div
+            @click="register_user"
+            style="position: relative; left: 310px; top: 35px;"
+            >
+            No Account?
+            <a href="#!">
+              Register
+            </a>
+            </div>
+
     </v-col>
 </template>
 
@@ -78,3 +83,11 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+
+.sign_in_right {
+  margin-left: 190px;
+}
+
+</style>
