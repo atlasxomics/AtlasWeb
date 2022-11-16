@@ -365,14 +365,6 @@ export default class Client {
   }
 
   // storage
-  async getData(payload: FileRequest): Promise<any> {
-    try {
-      const resp = await this.axios.get('/api/v1/storage/data', payload);
-      return resp.data;
-    } catch (e) {
-      return false;
-    }
-  }
   async getJsonFile(payload: FileRequest): Promise<any> {
     try {
       const resp = await this.axios.get('/api/v1/storage/json', payload);
@@ -400,6 +392,14 @@ export default class Client {
   async getImage(payload: ImageFileRequest, image_type = 'image/png'): Promise<File> {
     try {
       const resp = await this.axios.get('/api/v1/storage', { params: { filename: payload.params.filename, bucket_name: payload.params.bucket }, responseType: 'blob' });
+      return new File([resp.data], payload.params.filename, { type: image_type });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+  async getHomePageImages(payload: ImageFileRequest, image_type = 'image/png'): Promise<File> {
+    try {
+      const resp = await this.axios.get('/api/v1/storage/png', { params: { filename: payload.params.filename, bucket_name: payload.params.bucket }, responseType: 'blob' });
       return new File([resp.data], payload.params.filename, { type: image_type });
     } catch (e) {
       return Promise.reject(e);

@@ -118,12 +118,6 @@ export default defineComponent({
     const userMenu = ref(false);
     const changePasswordMenu = ref(false);
     const subMenu = computed(() => store.state.subMenu);
-    const searchbar_enabled = computed(() => {
-      if (store.state.subMenu == null) {
-        return false;
-      }
-      return store.state.subMenu[6].enabled;
-    });
     function redirectToVisual() {
       if (currentRoute.value.fullPath !== '/') router.push('/');
     }
@@ -139,7 +133,6 @@ export default defineComponent({
       changePasswordMenu,
       subMenu,
       urlPostfix,
-      searchbar_enabled,
       redirectToVisual,
       component,
     };

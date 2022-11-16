@@ -748,7 +748,6 @@ export default defineComponent({
     const runId = ref<string | null>(null);
     const publicLink = ref<string | null>(null);
     const items = ref<any[]>([]);
-    const search = ref<string>();
     const selected = ref<any>();
     const genes = ref<any[]>([]);
     const loading = ref<boolean>(false);
@@ -1152,17 +1151,6 @@ export default defineComponent({
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
-    async function fetchFileList() {
-      if (!client.value) {
-        return;
-      }
-      search.value = '';
-      loading.value = true;
-      const qc_data = await client.value.grabPaths();
-      const matched_qc_data = qc_data.map((v: any) => ({ id: v.results_folder_path.match(/(data\/)(.+)(\/)/)[2] }));
-      items.value = matched_qc_data;
-      loading.value = false;
-    }
     async function updateFilename() {
       if (!spatialData.value) return;
       /* eslint-disable no-lonely-if */
@@ -1310,36 +1298,10 @@ export default defineComponent({
         holdMotif.value = '';
         runId.value = ev.id;
         metadata.value.species = '';
-        pushByQuery({ component: 'AtlasXplore', run_id: ev.id });
-        selectedGenes.value = [];
-        featureTableFlag.value = true;
-        peakViewerFlag.value = false;
-        histoFlag.value = false;
       }
-      selectedGenes.value = [];
-      isClusterView.value = true;
-      isDrawing.value = false;
-      isDrawingRect.value = false;
-      heatMap.value = 'jet';
-      manualClusterFlag.value = false;
-      cellTypeMap.value = {};
-      cellTypeMapCopy.value = {};
-      tableKey.value = 1;
-      spatialData.value = false;
-      assayFlag.value = false;
-      genes.value = [];
       runSpatial(runId.value);
       getMeta(runId.value);
       updateTen();
-    }
-    async function loadingPage(collab_name: any) {
-      loading.value = true;
-      const collab_run_data = await client.value!.getRunsCollaborator(collab_name, true);
-      collabData.value = collab_run_data;
-      for (let i = 0; i < collabData.value.length; i += 1) {
-        const temp_obj = { id: collabData.value[i].ngs_id };
-        items.value.push(temp_obj);
-      }
     }
     async function getPublicId(ev: any) {
       runId.value = ev.run_id;
@@ -1553,25 +1515,15 @@ export default defineComponent({
     function prep_sub_menu() {
       submenu.value.push(metadata_button, gene_motif_button, bg_color_button, heat_map_button, gene_ac_bar);
     }
-    async function prep_atlasxplore(run_id: string, use_specified: boolean) {
+    async function prep_atlasxplore(run_id: string) {
       if (submenu.value.length < 1) {
         prep_sub_menu();
       }
       store.commit.setSubmenu(submenu.value);
       if (!props.query.public) {
-        if (resolveAuthGroup(['admin', 'user'])) {
-          await fetchFileList();
-        }
-        // code block used to handle incoming ngs id values from either the landing page
-        // where use specified is true, or from the tool bar where it is false and comes from props.query.runid
-        if (use_specified || props.query.run_id) {
-          let run_num = run_id;
-          if (props.query.run_id && !use_specified) {
-            run_num = props.query.run_id;
-          }
-          await selectAction({ id: run_num });
-          currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-        }
+        await new Promise((f: any) => setTimeout(f, 1000));
+        await selectAction({ id: run_id });
+        currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
       }
       if (props.query && props.query.run_id && props.query.public) {
         const value = await client.value?.decodeMetadata(props.query.run_id);
@@ -1584,12 +1536,10 @@ export default defineComponent({
 
     onMounted(async () => {
       await clientReady;
-      if (resolveAuthGroup(['admin', 'user']) && globalXploreData.value !== null) {
+      if (globalXploreData.value !== null) {
+        runId.value = null;
         atlasXplore_displayed.value = true;
-        prep_atlasxplore(props.query.run_id, false);
-      } else if (props.query.public) {
-        atlasXplore_displayed.value = true;
-        prep_atlasxplore(props.query.run_id, false);
+        prep_atlasxplore(props.query.run_id);
       } else redirectToVisual();
     });
     onUnmounted(() => {
@@ -1606,7 +1556,6 @@ export default defineComponent({
       publicLink,
       items,
       headers,
-      search,
       selected,
       loading,
       loadExpressions,
@@ -1713,7 +1662,6 @@ export default defineComponent({
       fileContent,
       runCellType,
       resetFile,
-      loadingPage,
       collabData,
       removeZeros,
       collabName,

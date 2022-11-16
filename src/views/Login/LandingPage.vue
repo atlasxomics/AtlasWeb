@@ -84,7 +84,7 @@
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
-                      <img style="position: absolute;right: 0;padding-top: 13px;" :src="`frontPage_${data.public_run_id}.png`" />
+                      <img style="position: absolute;right: 0;padding-top: 13px;" :src="data.imageLink"/>
                     </div>
                   </v-col>
                 </v-row>
@@ -95,13 +95,13 @@
                 <v-row>
                   <v-col cols="12" sm="8">
                     <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{`Spatial ${data.assay.join('/')} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-card-title>
-                    <v-card-subtitle>{{data.created_on}}</v-card-subtitle>
+                    <v-card-subtitle>{{data.date}}</v-card-subtitle>
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `Epitope: ${data.epitope}/ Regulation: ${data.regulation}` : ''}`}}</v-card-text>
                     <v-card-subtitle v-for="keys in data.assay" v-bind:key="data.results_id+keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
-                      <img style="position: absolute;right: 0;padding-top: 13px;" :src="`frontPage_${data.public_run_id}.png`" />
+                      <v-img style="position: absolute;right: 0;padding-top: 13px;" :src="data.imageLink"/>
                     </div>
                   </v-col>
                 </v-row>
@@ -178,7 +178,6 @@ import { generateRouteByQuery } from '@/utils';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import colormap from 'colormap';
-import { loadavg } from 'os';
 
 function makearray(stopValue: number, startValue: number, steps: number): any[] {
   const arr = [];
@@ -346,7 +345,6 @@ export default defineComponent({
         } else {
           const lab = await client.value.searchAuthors(ev);
           const foundIds: any[] = [];
-          console.log(lab);
           lab.forEach((value: any, i: any) => {
             const correctRun = indexOfRuns.value[value.results_id];
             if (!foundIds.includes(correctRun.results_id)) {
@@ -385,12 +383,21 @@ export default defineComponent({
         const geneH5ad = `data/${xploreId}/h5/obj/genes.h5ad`;
         const motifCsv = `data/${xploreId}/h5/obj/motifs.csv`;
         const { encoded: filenameToken } = await client!.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: xploreId, species: runObject.species, tissue: runObject.organ, assay: runObject.assay } });
+        store.commit.setXploreData(runObject);
         router.push(`public?component=PublicGeneViewer&run_id=${filenameToken.trim()}&public=true&token=JWT%20${jwtToken.value.trim()}`);
         // pushByQuery({ component: 'PublicGeneViewer', run_id: filenameToken, public: 'true', token: `JWT ${jwtToken.value}` });
       } else {
         store.commit.setXploreData(runObject);
         pushByQuery({ component: 'AtlasXplore', run_id: xploreId });
       }
+    }
+    function grabImages(path: string, pub: number, group: string) {
+      let imageLink = '';
+      const matchPath = path.match(/(data\/)(.+)(\/)/);
+      const xploreId = matchPath![2];
+      if (pub !== 1) imageLink = `${group}/frontPage_${xploreId}.png`;
+      else imageLink = `frontPage_${xploreId}.png`;
+      return imageLink;
     }
     async function getData() {
       loading.value = true;
@@ -405,8 +412,8 @@ export default defineComponent({
       const raw_group: any = [];
       const indexingRuns: any = {};
       let key = '1';
-      console.log(allRuns);
-      allRuns.forEach((json: any, index: any) => {
+      for (let index = 0; index < allRuns.length; index += 1) {
+        const json = allRuns[index];
         if (split.includes(index)) key = (parseInt(key, 10) + 1).toString();
         if (!Object.keys(data).includes(key)) data[key] = [];
         if (!raw_group.includes(json.group)) raw_group.push(json.group);
@@ -418,6 +425,7 @@ export default defineComponent({
         else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] += 1;
         const updateJson = json;
         indexingRuns[updateJson.results_id] = updateJson;
+        updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         updateJson.assay = [...updateJson.assay.split(',')];
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
           const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
@@ -426,7 +434,7 @@ export default defineComponent({
         }
         arrayOfAllRuns.value.push(updateJson);
         data[key].push(updateJson);
-      });
+      }
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
@@ -460,16 +468,18 @@ export default defineComponent({
     }
     async function getSecureData() {
       loading.value = true;
-      const publicAndSlims = await client?.value!.getPublicRuns();
-      numOfIt.value = (Math.ceil(publicAndSlims.length / 8) - 1);
-      const split = makearray(0, publicAndSlims.length, (Math.ceil(publicAndSlims.length / 8) + 1));
+      const allRuns = await client?.value!.getPublicRuns();
+      numOfIt.value = (Math.ceil(allRuns.length / 8) - 1);
+      const split = makearray(0, allRuns.length, (Math.ceil(allRuns.length / 8) + 1));
       const data: any = {};
       const labs: any[] = [];
       const type: any[] = [];
       const precount: any = {};
       const raw_group: any = [];
+      const indexingRuns: any = {};
       let key = '1';
-      publicAndSlims.forEach((json: any, index: any) => {
+      for (let index = 0; index < allRuns.length; index += 1) {
+        const json = allRuns[index];
         if (split.includes(index)) key = (parseInt(key, 10) + 1).toString();
         if (!Object.keys(data).includes(key)) data[key] = [];
         if (Object.keys(json).includes('group')) {
@@ -482,6 +492,8 @@ export default defineComponent({
           else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] += 1;
           const updateJson = json;
           updateJson.assay = [...updateJson.assay.split(',')];
+          indexingRuns[updateJson.results_id] = updateJson;
+          updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
           if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
             const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
             const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
@@ -502,13 +514,15 @@ export default defineComponent({
           if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] = 1;
           else if (Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] += 1;
           const updateJson = json;
+          indexingRuns[updateJson.results_id] = updateJson;
+          updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
           updateJson.group = json.tissue_source;
           delete updateJson.tissue_source;
           updateJson.assay = [...updateJson.assay.split(',')];
           arrayOfAllRuns.value.push(updateJson);
           data[key].push(updateJson);
         }
-      });
+      }
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
@@ -535,13 +549,12 @@ export default defineComponent({
         const correct = (i === 0) ? 0 : (i + 1) * 3;
         labColors.value[v] = colors_raw[correct];
       });
-      console.log(data);
+      indexOfRuns.value = indexingRuns;
       numOfPubs.value = data;
       numOfPubsHold.value = data;
       loading.value = false;
     }
     onMounted(async () => {
-      console.log('in visual');
       if (client.value!.user === null) {
         if (client.value.authorizationToken.length === 0) {
           const go = await client.value!.logIntoPublic();
@@ -588,6 +601,7 @@ export default defineComponent({
       user,
       showMoreFlag,
       indexOfRuns,
+      grabImages,
     };
   },
 });
