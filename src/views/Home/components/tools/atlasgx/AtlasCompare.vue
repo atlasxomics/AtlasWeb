@@ -95,11 +95,11 @@
             sort-by="id">
             <template v-slot:item="row">
               <tr :style="{ 'background-color': colorForGroups[row.item.group] }">
-              <td><v-checkbox :value="clearGroups[0]" :disabled="selectedGroups.length > 0 && selectedGroups[0].group !== row.item.group" color="black" :label="row.item.runID" @click="organizeGroup(row.item)"></v-checkbox></td>
+              <td><v-checkbox color="black" :label="row.item.runID" @click="organizeGroup(row.item.runID)"></v-checkbox></td>
               </tr>
             </template>
             </v-data-table>
-            <v-card-actions><v-btn color="red" text small @click="clearGroups = [false]">Clear</v-btn><v-spacer></v-spacer><v-btn text small color="green">Begin</v-btn></v-card-actions>
+            <v-card-actions><v-btn color="red" text small >Clear</v-btn><v-spacer></v-spacer><v-btn @click="startMultiSample" :disabled="selectedGroups.length < 1" text small color="green">Begin</v-btn></v-card-actions>
           </v-card>
         </v-dialog>
         <v-dialog
@@ -584,10 +584,10 @@
             </v-col>
           </v-row>
           <v-row no-gutters>
-              <v-col cols="12" sm="11">
+              <v-col cols="12" sm="12">
                 <v-row>
-                  <template v-for="runs in allRunIds">
-                    <v-col cols="12" sm="4" :key="runs">
+                  <template v-for="runs in allRunIds.slice(1)">
+                    <v-col cols="12" sm="4" :key="runs"><p style="color:red">{{runs}}</p>
                       <multi-singleview
                         @loading_value="updateLoading"
                         @highlightedId='updateSelectors'
@@ -878,7 +878,7 @@ export default defineComponent({
     }
     function organizeGroup(ev: any) {
       if (selectedGroups.value.length === 0) selectedGroups.value.push(ev);
-      else if (!selectedGroups.value.includes(ev) && ev.group === selectedGroups.value[0].group) {
+      else if (!selectedGroups.value.includes(ev)) {
         selectedGroups.value.push(ev);
       } else {
         const index = selectedGroups.value.indexOf(ev);
@@ -1154,7 +1154,7 @@ export default defineComponent({
       search.value = '';
       loading.value = true;
       // const qc_data = await client.value.getNGSIds();
-      const data = { jo: 1, jonah: 1, moll: 2, abig: 2 };
+      const data = { NG00547: 1, NG00877: 1 };
       const mult = (Object.keys(data).length < 9) ? 9 : Object.keys(data).length;
       const colors_raw = colormap({ colormap: 'phase', nshades: mult * 3, format: 'hex', alpha: 1 });
       const colorHolder: any = {};
@@ -1188,6 +1188,10 @@ export default defineComponent({
       } catch (error) {
         console.log(error);
       }
+    }
+    async function startMultiSample() {
+      allRunIds.value = selectedGroups.value.map((v: any) => v);
+      console.log(allRunIds.value);
     }
     async function runSpatial(rid = runId.value) {
       if (!client.value) return;
@@ -1789,6 +1793,7 @@ export default defineComponent({
       colorForGroups,
       organizeGroup,
       clearGroups,
+      startMultiSample,
     };
   },
 });
