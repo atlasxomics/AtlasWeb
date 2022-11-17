@@ -385,7 +385,7 @@ export default defineComponent({
         const motifCsv = `data/${xploreId}/h5/obj/motifs.csv`;
         const { encoded: filenameToken } = await client!.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: xploreId, species: runObject.species, tissue: runObject.organ, assay: runObject.assay } });
         store.commit.setXploreData(runObject);
-        router.push(`public?component=PublicGeneViewer&run_id=${filenameToken.trim()}&public=true&token=JWT%20${jwtToken.value.trim()}`);
+        router.push(`public?component=PublicGeneViewer&run_id=${filenameToken.trim()}&public=true&token=${jwtToken.value.trim()}`);
         // pushByQuery({ component: 'PublicGeneViewer', run_id: filenameToken, public: 'true', token: `JWT ${jwtToken.value}` });
       } else {
         store.commit.setXploreData(runObject);
@@ -566,8 +566,8 @@ export default defineComponent({
         if (client.value.authorizationToken.length === 0) {
           const go = await client.value!.logIntoPublic();
           store.commit.setClient(await Client.CreatePublic(PROD_SERVER_URL, `JWT ${go.token}`));
-          jwtToken.value = go.token;
-        }
+          jwtToken.value = `JWT%20${go.token}`;
+        } else jwtToken.value = client.value.authorizationToken;
         store.commit.setXploreData(null);
         getData();
       } else getSecureData();
