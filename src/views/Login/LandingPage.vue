@@ -51,8 +51,9 @@
               :loading="loading"
               v-model="textSearch"
               @click:prepend="searchRuns(textSearch)"
+              @keyup.enter="searchRuns(textSearch)"
               @click:clear="searchRuns('')"
-              placeholder="Search eg. PMID, Author, Disease Type"
+              placeholder="Search eg. PMID, Author"
               clearable
               prepend-icon="mdi-magnify"/>
           </v-col>
@@ -79,12 +80,12 @@
                     <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
                     <v-card-subtitle>{{data.date}}</v-card-subtitle>
                     <v-card-text>{{data.result_description}}</v-card-text>
-                    <v-card-text v-if="data.epitope !== null">{{`Regulation: ${data.regulation}`}}</v-card-text>
+                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `Epitope: ${data.epitope}/ Regulation: ${data.regulation}` : ''}`}}</v-card-text>
                     <v-card-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
-                      <img style="position: absolute;right: 0;padding-top: 13px;" :src="data.imageLink"/>
+                      <img style="position: absolute;right: 0;height: 95%;width: 20vw; max-width: 300px;" :src="data.imageLink"/>
                     </div>
                   </v-col>
                 </v-row>
@@ -101,7 +102,7 @@
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
-                      <v-img style="position: absolute;right: 0;padding-top: 13px;" :src="data.imageLink"/>
+                      <v-img style="position: absolute;right: 0;height: 95%;width: 20vw; max-width: 300px" :src="data.imageLink"/>
                     </div>
                   </v-col>
                 </v-row>
@@ -424,6 +425,8 @@ export default defineComponent({
         if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] = 1;
         else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] += 1;
         const updateJson = json;
+        const convertedTime = new Date(json.date);
+        updateJson.date = convertedTime.toDateString();
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         updateJson.assay = [...updateJson.assay.split(',')];
@@ -491,6 +494,8 @@ export default defineComponent({
           if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] = 1;
           else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] += 1;
           const updateJson = json;
+          const convertedTime = new Date(json.date);
+          updateJson.date = convertedTime.toDateString();
           updateJson.assay = [...updateJson.assay.split(',')];
           indexingRuns[updateJson.results_id] = updateJson;
           updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
@@ -514,6 +519,8 @@ export default defineComponent({
           if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] = 1;
           else if (Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] += 1;
           const updateJson = json;
+          const convertedTime = new Date(json.date);
+          updateJson.date = convertedTime.toDateString();
           indexingRuns[updateJson.results_id] = updateJson;
           updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
           updateJson.group = json.tissue_source;
