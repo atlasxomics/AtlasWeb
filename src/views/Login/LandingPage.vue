@@ -9,11 +9,11 @@
     </v-app-bar>
     <v-row no-gutters style="margin-top:10px">
       <v-col cols="12" sm="3" style="padding-left:10px">
-        <v-card :loading="loading" flat>
+        <v-card :loading="loading" flat dense>
           <v-card-title>Filters</v-card-title>
           <v-divider style="width:91%"/>
           <template v-for="item in groupsAndData">
-            <v-card-actions v-bind:key="item.title">
+            <v-card-actions style="padding:0; max-height: 50px;" v-bind:key="item.title">
               <v-card-title>{{item.title}}</v-card-title>
               <v-spacer></v-spacer>
               <v-btn
@@ -25,7 +25,7 @@
             <template v-if="item.active">
               <template v-if="!item.limit">
                 <template v-for="child in item.items">
-                  <v-card-actions v-bind:key="child">
+                  <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="child">
                     <template v-if="item.title === 'Data Type'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${decodeDTTwo[decodeDT.indexOf(child)]} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
@@ -35,7 +35,7 @@
               </template>
               <template v-else>
                 <template v-for="(place,child) in 3">
-                  <v-card-actions v-bind:key="item.items[child]">
+                  <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="item.items[child]">
                     <template v-if="item.title === 'Data Type'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${decodeDTTwo[decodeDT.indexOf(item.items[child])]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Species'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Organ'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>

@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-container v-if="atlasXplore_displayed" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
+    <v-container v-if="resolveAuthGroup(['admin', 'user'])" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
           <div style="cursor: pointer;">
@@ -531,6 +531,7 @@
                 :indFlag="averageInd"
                 :antiKey="tableKey"
                 :geneOmotif="geneMotif"
+                :plot="'umap'"
                 :idOfRun="runId"/>
             </v-col>
             <v-col cols="12" sm="5">
@@ -559,6 +560,7 @@
                 :indFlag="averageInd"
                 :antiKey="tableKey"
                 :geneOmotif="geneMotif"
+                :plot="'spatial'"
                 :idOfRun="allRunIds[0]"/>
             </v-col>
             <v-col cols="12" sm="2">
@@ -587,7 +589,7 @@
               <v-col cols="12" sm="12">
                 <v-row>
                   <template v-for="runs in allRunIds.slice(1)">
-                    <v-col cols="12" sm="4" :key="runs"><p style="color:red">{{runs}}</p>
+                    <v-col cols="12" sm="4" :key="runs">
                       <multi-singleview
                         @loading_value="updateLoading"
                         @highlightedId='updateSelectors'
@@ -613,6 +615,7 @@
                         :indFlag="averageInd"
                         :antiKey="tableKey"
                         :geneOmotif="geneMotif"
+                        :plot="'spatial'"
                         :idOfRun="runs"/>
                     </v-col>
                   </template>
@@ -1117,8 +1120,8 @@ export default defineComponent({
       }
     }
     async function updateTen() {
-      const fileName = { params: { filename: `data/${runId.value}/h5/topTen_genes.json` } };
-      const fileNameMotif = { params: { filename: `data/${runId.value}/h5/topTen_motifs.json` } };
+      const fileName = { params: { filename: 'study/S1/h5/topTen_genes.json' } };
+      const fileNameMotif = { params: { filename: 'study/S1/h5/topTen_motifs.json' } };
       const topTen_gene_json = await client.value?.getJsonFile(fileName);
       const topTen_motif_json = await client.value?.getJsonFile(fileNameMotif);
       topTenIds.value.gene = topTen_gene_json;
@@ -1191,7 +1194,8 @@ export default defineComponent({
     }
     async function startMultiSample() {
       allRunIds.value = selectedGroups.value.map((v: any) => v);
-      console.log(allRunIds.value);
+      // runId.value = 'study/S1';
+      updateTen();
     }
     async function runSpatial(rid = runId.value) {
       if (!client.value) return;
@@ -1626,10 +1630,10 @@ export default defineComponent({
 
     onMounted(async () => {
       await clientReady;
-      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
-        atlasXplore_displayed.value = true;
-        prep_atlasxplore(props.query.run_id, false);
-      }
+      // if (resolveAuthGroup(['admin', 'user'])) {
+      //   atlasXplore_displayed.value = true;
+      prep_atlasxplore(props.query.run_id, false);
+      // }
     });
     onUnmounted(() => {
       if (acInstance.value.$el) {
