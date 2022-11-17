@@ -26,14 +26,20 @@
               <template v-if="!item.limit">
                 <template v-for="child in item.items">
                   <v-card-actions v-bind:key="child">
-                    <v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox>
+                    <template v-if="item.title === 'Data Type'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${decodeDTTwo[decodeDT.indexOf(child)]} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
+                    <template v-else-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
+                    <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
+                    <template v-else><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
                   </v-card-actions>
                 </template>
               </template>
               <template v-else>
-                <template v-for="child in 3">
+                <template v-for="(place,child) in 3">
                   <v-card-actions v-bind:key="item.items[child]">
-                    <v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox>
+                    <template v-if="item.title === 'Data Type'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${decodeDTTwo[decodeDT.indexOf(item.items[child])]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-else-if="item.title === 'Species'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-else-if="item.title === 'Organ'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-else><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                   </v-card-actions>
                 </template>
               </template>
@@ -264,7 +270,15 @@ export default defineComponent({
               else bool.push(false);
             }
             if (elements.title === 'Data Type') {
-              if (value.assay.includes(decodeDT.value[decodeDTTwo.value.indexOf(elements.key.trim())])) bool.push(true);
+              if (value.assay.includes(elements.key.trim())) bool.push(true);
+              else bool.push(false);
+            }
+            if (elements.title === 'Organ') {
+              if (elements.key.trim() === value.organ.trim()) bool.push(true);
+              else bool.push(false);
+            }
+            if (elements.title === 'Species') {
+              if (elements.key.trim() === value.species.trim()) bool.push(true);
               else bool.push(false);
             }
           });
@@ -284,8 +298,10 @@ export default defineComponent({
         labs.forEach((value: any, i: any) => {
           countHold.value[value.group] += 1;
           value.assay.forEach((v: any, k: any) => {
-            if (decodeDT.value.includes(v)) countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(v.trim())]] += 1;
+            countHold.value[v.trim()] += 1;
           });
+          countHold.value[value.species] += 1;
+          countHold.value[value.organ] += 1;
         });
         numOfIt.value = split;
         numOfPubsHold.value = hold;
@@ -338,8 +354,10 @@ export default defineComponent({
             hold[key].push(correctRun);
             countHold.value[correctRun.group] += 1;
             correctRun.assay.forEach((v: any, k: any) => {
-              if (decodeDT.value.includes(v)) countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(v.trim())]] += 1;
+              countHold.value[v.trim()] += 1;
             });
+            countHold.value[correctRun.species] += 1;
+            countHold.value[correctRun.organ] += 1;
           });
           numOfIt.value = split;
           numOfPubsHold.value = hold;
@@ -359,8 +377,10 @@ export default defineComponent({
               hold[key].push(correctRun);
               countHold.value[correctRun.group] += 1;
               correctRun.assay.forEach((v: any, k: any) => {
-                if (decodeDT.value.includes(v)) countHold.value[decodeDTTwo.value[decodeDT.value.indexOf(v.trim())]] += 1;
+                countHold.value[v.trim()] += 1;
               });
+              countHold.value[correctRun.species] += 1;
+              countHold.value[correctRun.organ] += 1;
             }
           });
           numOfIt.value = split;
@@ -409,6 +429,8 @@ export default defineComponent({
       const data: any = {};
       const labs: any[] = [];
       const type: any[] = [];
+      const species: any[] = [];
+      const organ: any[] = [];
       const precount: any = {};
       const raw_group: any = [];
       const indexingRuns: any = {};
@@ -419,11 +441,17 @@ export default defineComponent({
         if (!Object.keys(data).includes(key)) data[key] = [];
         if (!raw_group.includes(json.group)) raw_group.push(json.group);
         if (!labs.includes(json.group)) labs.push(json.group);
-        if (!type.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) type.push(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]);
+        if (!organ.includes(json.organ)) organ.push(json.organ);
+        if (!species.includes(json.species)) species.push(json.species);
+        if (!type.includes(json.assay)) type.push(json.assay);
         if (!Object.keys(precount).includes(json.group)) precount[json.group] = 1;
         else precount[json.group] += 1;
-        if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] = 1;
-        else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] += 1;
+        if (!Object.keys(precount).includes(json.assay)) precount[json.assay] = 1;
+        else precount[json.assay] += 1;
+        if (!Object.keys(precount).includes(json.organ)) precount[json.organ] = 1;
+        else precount[json.organ] += 1;
+        if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
+        else precount[json.species] += 1;
         const updateJson = json;
         const convertedTime = new Date(json.date);
         updateJson.date = convertedTime.toDateString();
@@ -438,6 +466,10 @@ export default defineComponent({
         arrayOfAllRuns.value.push(updateJson);
         data[key].push(updateJson);
       }
+      labs.sort();
+      type.sort();
+      organ.sort();
+      species.sort();
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
@@ -454,6 +486,23 @@ export default defineComponent({
         items: [...type],
         title: 'Data Type',
       });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        active: true,
+        limit: species.length > 3,
+        length: species.length,
+        items: [...species],
+        title: 'Species',
+      });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        active: true,
+        limit: organ.length > 3,
+        length: organ.length,
+        items: [...organ],
+        title: 'Organ',
+      });
+      console.log(groupsAndData.value);
       lodash.each(precount, (v: any, i: any) => {
         countHold.value[i] = v;
         count.value[i] = v;
@@ -477,6 +526,8 @@ export default defineComponent({
       const data: any = {};
       const labs: any[] = [];
       const type: any[] = [];
+      const organ: any[] = [];
+      const species: any[] = [];
       const precount: any = {};
       const raw_group: any = [];
       const indexingRuns: any = {};
@@ -488,11 +539,17 @@ export default defineComponent({
         if (Object.keys(json).includes('group')) {
           if (!raw_group.includes(json.group)) raw_group.push(json.group);
           if (!labs.includes(json.group)) labs.push(json.group);
-          if (!type.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) type.push(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]);
+          if (!organ.includes(json.organ)) organ.push(json.organ);
+          if (!species.includes(json.species)) species.push(json.species);
+          if (!type.includes(json.assay)) type.push(json.assay);
           if (!Object.keys(precount).includes(json.group)) precount[json.group] = 1;
           else precount[json.group] += 1;
-          if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] = 1;
-          else precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] += 1;
+          if (!Object.keys(precount).includes(json.assay)) precount[json.assay] = 1;
+          else precount[json.assay] += 1;
+          if (!Object.keys(precount).includes(json.organ)) precount[json.organ] = 1;
+          else precount[json.organ] += 1;
+          if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
+          else precount[json.species] += 1;
           const updateJson = json;
           const convertedTime = new Date(json.date);
           updateJson.date = convertedTime.toDateString();
@@ -506,30 +563,12 @@ export default defineComponent({
           }
           arrayOfAllRuns.value.push(updateJson);
           data[key].push(updateJson);
-        } else {
-          if (!raw_group.includes(json.tissue_source)) raw_group.push(json.tissue_source);
-          if (!labs.includes(json.tissue_source)) {
-            labs.push(json.tissue_source);
-            decodeDT.value.push(json.tissue_source);
-            decodeDTTwo.value.push(json.tissue_source);
-          }
-          if (decodeDT.value.includes(json.assay) && !type.includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) type.push(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]);
-          if (!Object.keys(precount).includes(json.tissue_source)) precount[json.tissue_source] = 1;
-          else precount[json.tissue_source] += 1;
-          if (!Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] = 1;
-          else if (Object.keys(precount).includes(decodeDTTwo.value[decodeDT.value.indexOf(json.assay)])) precount[decodeDTTwo.value[decodeDT.value.indexOf(json.assay)]] += 1;
-          const updateJson = json;
-          const convertedTime = new Date(json.date);
-          updateJson.date = convertedTime.toDateString();
-          indexingRuns[updateJson.results_id] = updateJson;
-          updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
-          updateJson.group = json.tissue_source;
-          delete updateJson.tissue_source;
-          updateJson.assay = [...updateJson.assay.split(',')];
-          arrayOfAllRuns.value.push(updateJson);
-          data[key].push(updateJson);
         }
       }
+      labs.sort();
+      type.sort();
+      organ.sort();
+      species.sort();
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
@@ -545,6 +584,22 @@ export default defineComponent({
         length: type.length,
         items: [...type],
         title: 'Data Type',
+      });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        active: true,
+        limit: species.length > 3,
+        length: species.length,
+        items: [...species],
+        title: 'Species',
+      });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        active: true,
+        limit: organ.length > 3,
+        length: organ.length,
+        items: [...organ],
+        title: 'Organ',
       });
       lodash.each(precount, (v: any, i: any) => {
         countHold.value[i] = v;
