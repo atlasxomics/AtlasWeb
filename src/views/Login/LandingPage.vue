@@ -86,7 +86,7 @@
                     <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
                     <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
                     <v-card-text>{{data.result_description}}</v-card-text>
-                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
+                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
                     <v-card-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
                   </v-col>
                   <v-col cols="12" sm="4">
@@ -103,7 +103,7 @@
                   <v-col cols="12" sm="8">
                     <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{`Spatial ${data.assay.join('/')} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-card-title>
                     <v-card-subtitle>{{data.date}}</v-card-subtitle>
-                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `Epitope: ${data.epitope}/ Regulation: ${data.regulation}` : ''}`}}</v-card-text>
+                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
                     <v-card-subtitle v-for="keys in data.assay" v-bind:key="data.results_id+keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
                   </v-col>
                   <v-col cols="12" sm="4">
@@ -141,7 +141,7 @@
                       <v-list-item-subtitle
                         v-text="data.date"
                       ></v-list-item-subtitle>
-                      <v-list-item-subtitle class="text--primary" v-text="`Experimental Condition: ${data.experimental_condition}`"></v-list-item-subtitle>
+                      <v-list-item-subtitle class="text--primary">{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-list-item-subtitle>
                       <v-list-item-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-list-item-subtitle>
                     </v-list-item-content>
                 </v-list-item>
