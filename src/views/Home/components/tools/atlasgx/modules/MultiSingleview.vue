@@ -149,7 +149,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'MultiSingleview.vue',
-  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey'],
+  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'plot'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -157,6 +157,7 @@ export default defineComponent({
     const filenameGene = ref<string>('');
     const filenameFromParent = computed(() => props.filename);
     const colorFromParent = computed(() => props.manualColor);
+    const typeOfPlot = computed(() => props.plot);
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
     const currentTask = computed(() => props.task);
@@ -823,7 +824,6 @@ export default defineComponent({
       }
     });
     watch(runId, async (v: any) => {
-      console.log(v);
       if (v !== null && !props.query.public) {
         spatialData.value = null;
         totalInClust.value = {};
@@ -936,6 +936,7 @@ export default defineComponent({
       geneMotif,
       tableKeyFromParent,
       geneSummation,
+      typeOfPlot,
     };
   },
 });

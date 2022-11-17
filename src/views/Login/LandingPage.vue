@@ -9,11 +9,11 @@
     </v-app-bar>
     <v-row no-gutters style="margin-top:10px">
       <v-col cols="12" sm="3" style="padding-left:10px">
-        <v-card :loading="loading" flat>
+        <v-card :loading="loading" flat dense>
           <v-card-title>Filters</v-card-title>
           <v-divider style="width:91%"/>
           <template v-for="item in groupsAndData">
-            <v-card-actions v-bind:key="item.title">
+            <v-card-actions style="padding:0; max-height: 50px;" v-bind:key="item.title">
               <v-card-title>{{item.title}}</v-card-title>
               <v-spacer></v-spacer>
               <v-btn
@@ -25,7 +25,7 @@
             <template v-if="item.active">
               <template v-if="!item.limit">
                 <template v-for="child in item.items">
-                  <v-card-actions v-bind:key="child">
+                  <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="child">
                     <template v-if="item.title === 'Data Type'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${decodeDTTwo[decodeDT.indexOf(child)]} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
@@ -35,7 +35,7 @@
               </template>
               <template v-else>
                 <template v-for="(place,child) in 3">
-                  <v-card-actions v-bind:key="item.items[child]">
+                  <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="item.items[child]">
                     <template v-if="item.title === 'Data Type'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${decodeDTTwo[decodeDT.indexOf(item.items[child])]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Species'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Organ'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
@@ -86,7 +86,7 @@
                     <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
                     <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
                     <v-card-text>{{data.result_description}}</v-card-text>
-                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `Epitope: ${data.epitope}/ Regulation: ${data.regulation}` : ''}`}}</v-card-text>
+                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
                     <v-card-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
                   </v-col>
                   <v-col cols="12" sm="4">
