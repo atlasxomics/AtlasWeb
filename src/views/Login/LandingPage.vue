@@ -91,7 +91,7 @@
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
-                      <img style="position: absolute;right: 0;height: 200px;width: 200px; max-width: 200px;max-height:200px;margin-top:5px" :src="data.imageLink"/>
+                      <img style="position: absolute;right: 0;height: 180px;width: 180px; max-width: 180px;max-height:180px;margin-top:5px" :src="data.imageLink"/>
                     </div>
                   </v-col>
                 </v-row>
@@ -108,7 +108,7 @@
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
-                      <v-img style="position: absolute;right: 0;height: 200px;width: 200px; max-width: 200px;max-height:200px;margin-top: 5px;" :src="data.imageLink"/>
+                      <v-img style="position: absolute;right: 0;height: 180px;width: 180px; max-width: 180px;max-height:180px;margin-top: 5px;" :src="data.imageLink"/>
                     </div>
                   </v-col>
                 </v-row>
