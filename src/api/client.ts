@@ -679,4 +679,8 @@ export default class Client {
     console.log(resp.data);
     return resp.data;
   }
+  async get_available_fields() {
+    const resp = await this.axios.get('/api/v1/run_db/get_field_options');
+    return resp.data;
+  }
 }

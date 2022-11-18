@@ -11,31 +11,37 @@
             >
                 Metadata
             </v-card-title>
-                <v-select
-                label="Assay"
-                v-model="assay"
-                >
-                </v-select>
-                <v-select
-                label="Species"
-                v-model="species"
-                >
-                </v-select>
-                <v-select
+            <selector
+            :variable="assay"
+            :display_label="'Assay'"
+            :display_options="assay_list"
+            @custom-field="create_new_option"
+            @changed="assay = $event"
+            >
+            </selector>
+            <!-- <selector
+              var_name='species'
+              :display_label="'Species'"
+              :display_options="species_list"
+              @custom-field="create_new_option">
+            </selector> -->
+                <!-- <v-select
                 label="Organ"
                 v-model="organ"
+                :items="organ_list"
                 >
                 </v-select>
                 <v-select
+                label="ROI Channel Width (µm)"
+                v-model="channel_width"
+                :items="channel_width_list"
+                >
+                </v-select>
+                <v-text-field
                 label="Tissue Condition"
                 v-model="tissue_condition"
                 >
-                </v-select>
-                <v-select
-                label="ROI Channel Width"
-                v-model="channel_width"
-                >
-                </v-select>
+                </v-text-field> -->
             </v-col>
             <v-col
             cols="12"
@@ -70,27 +76,79 @@
                 </v-text-field>
             </v-col>
         </v-row>
+        <v-row>
+            <v-col
+            style="position: relative; left: 45%;"
+            >
+                <v-btn
+                style="position: relative; bottom: 5%;"
+                >
+                   Upload
+                </v-btn>
+            </v-col>
+        </v-row>
     </v-container>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from '@vue/composition-api';
+import { Client } from '@/api';
+import store from '@/store';
+import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
+import Selector from './Selector.vue';
 
 export default defineComponent({
+  components: { Selector },
   name: 'WebUploader',
   setup(props, ctx) {
+    const client = computed(() => store.state.client);
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
     const organ = ref<string>('');
     const species = ref<string>('');
     const tissue_condition = ref<string>('');
     const channel_width = ref<string>('');
+    const assay_list = ref<Array<string>>([]);
+    const organ_list = ref<Array<string>>([]);
+    const species_list = ref<Array<string>>([]);
+    const channel_width_list = ref<Array<string>>([]);
+    function add_custom_option() {
+      assay_list.value.push('Add Option');
+      species_list.value.push('Add Option');
+      organ_list.value.push('Add Option');
+    }
+    function assign_possible_fields(fields_from_db: any) {
+      assay_list.value = fields_from_db.assay_list;
+      species_list.value = fields_from_db.species_list;
+      organ_list.value = fields_from_db.organ_list;
+      channel_width_list.value = fields_from_db.channel_width_list;
+      add_custom_option();
+      assay_list.value.push('Add Option');
+    }
+    function create_new_option(var_name: string, var_value: string) {
+      console.log(var_name);
+      console.log(var_value);
+    }
+    onMounted(() => {
+      const res = client.value?.get_available_fields();
+      res!.then((result: any) => {
+        console.log(result);
+        assign_possible_fields(result);
+      });
+      console.log(res);
+    });
     return {
       assay,
       web_obj_path,
       organ,
       species,
       tissue_condition,
+      channel_width,
+      assay_list,
+      organ_list,
+      species_list,
+      channel_width_list,
+      create_new_option,
+      assign_possible_fields,
     };
   },
 });
