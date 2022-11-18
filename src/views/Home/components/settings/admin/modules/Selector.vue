@@ -8,9 +8,9 @@
         >
         </v-select>
         <v-row
-        v-if="variable === 'Add Option'">
+        v-if="local_variable === 'Add Option'">
         <v-text-field
-        :label="local_label"
+        :label="display_label"
         v-model="custom_option"
         append-icon="mdi-check"
         @click:append="new_option"
@@ -33,12 +33,11 @@ export default defineComponent({
   setup(props, ctx) {
     const local_variable = ref<string>('');
     const custom_option = ref<string>('');
-    const selected_option = ref<string>('');
     function new_option() {
       // local_options.value.splice(local_options.value.length - 2, 0, custom_option.value);
-      selected_option.value = custom_option.value;
-      custom_option.value = '';
       this.$emit('custom-field', custom_option.value);
+      local_variable.value = custom_option.value;
+      custom_option.value = '';
     }
     function value_changed() {
       console.log(local_variable);
@@ -48,7 +47,6 @@ export default defineComponent({
       local_variable,
       // local_options,
       // local_label,
-      selected_option,
       custom_option,
       value_changed,
       new_option,

@@ -15,7 +15,7 @@
             :variable="assay"
             :display_label="'Assay'"
             :display_options="assay_list"
-            @custom-field="create_new_option"
+            @custom-field="assay_list.splice(assay_list.length - 2, 0, $event);"
             @changed="assay = $event"
             >
             </selector>
@@ -125,8 +125,7 @@ export default defineComponent({
       assay_list.value.push('Add Option');
     }
     function create_new_option(var_name: string, var_value: string) {
-      console.log(var_name);
-      console.log(var_value);
+      console.log('dog');
     }
     onMounted(() => {
       const res = client.value?.get_available_fields();
