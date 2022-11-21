@@ -15,33 +15,38 @@
             :variable="assay"
             :display_label="'Assay'"
             :display_options="assay_list"
-            @custom-field="assay_list.splice(assay_list.length - 2, 0, $event);"
+            @option-added="assay_list.push($event);"
             @changed="assay = $event"
             >
             </selector>
-            <!-- <selector
-              var_name='species'
-              :display_label="'Species'"
+            <v-select
+            v-if="assay === 'CUT&Tag'"
+            :items="['activation', 'repression']"
+            label="Regulation"
+            v-model="regulation"
+            >
+            </v-select>
+            <selector
+              :variable='species'
+              display_label="Species"
               :display_options="species_list"
-              @custom-field="create_new_option">
-            </selector> -->
-                <!-- <v-select
-                label="Organ"
-                v-model="organ"
-                :items="organ_list"
-                >
-                </v-select>
-                <v-select
-                label="ROI Channel Width (µm)"
-                v-model="channel_width"
-                :items="channel_width_list"
-                >
-                </v-select>
-                <v-text-field
-                label="Tissue Condition"
-                v-model="tissue_condition"
-                >
-                </v-text-field> -->
+              @option-added="species_list.push($event)"
+              @changed="species = $event"
+            >
+            </selector>
+            <selector
+            :variable="organ"
+            :display_options="organ_list"
+            display_label="Organ"
+            @option-added="organ_list.push($event)"
+            @changed="organ = $event"
+            >
+            </selector>
+            <v-text-field
+              label="Tissue Condition"
+              v-model="tissue_condition"
+            >
+            </v-text-field>
             </v-col>
             <v-col
             cols="12"
@@ -50,15 +55,28 @@
                     Run Information
                 </v-card-title>
                 <v-text-field
+                v-model="run_id"
                 label="Run ID"
                 >
+                <v-text-field
+                v-model="ngs_id"
+                label="NGS Library ID"
+                >
+                </v-text-field>
                 </v-text-field>
                 <v-text-field
+                v-model="run_title"
                 label="Run Title"
                 >
                 </v-text-field>
                 <v-text-field
+                v-model="run_description"
                 label="Run Description"
+                >
+                </v-text-field>
+                <v-text-field
+                v-model="sample_id"
+                label = "Sample ID"
                 >
                 </v-text-field>
             </v-col>
@@ -71,6 +89,7 @@
                     Web Object Path
                 </v-card-title>
                 <v-text-field
+                v-model="web_obj_path"
                 label="Path"
                 >
                 </v-text-field>
@@ -82,6 +101,7 @@
             >
                 <v-btn
                 style="position: relative; bottom: 5%;"
+                @click="upload_data"
                 >
                    Upload
                 </v-btn>
@@ -105,20 +125,37 @@ export default defineComponent({
     const web_obj_path = ref<string>('');
     const organ = ref<string>('');
     const species = ref<string>('');
+    const sample_id = ref<string>('');
     const tissue_condition = ref<string>('');
     const channel_width = ref<string>('');
     const assay_list = ref<Array<string>>([]);
     const organ_list = ref<Array<string>>([]);
     const species_list = ref<Array<string>>([]);
     const channel_width_list = ref<Array<string>>([]);
+    const run_id = ref<string>('');
+    const ngs_id = ref<string>('');
+    const run_description = ref<string>('');
+    const run_title = ref<string>('');
+    const regulation = ref<string>('');
     function assign_possible_fields(fields_from_db: any) {
       assay_list.value = fields_from_db.assay_list;
       species_list.value = fields_from_db.species_list;
       organ_list.value = fields_from_db.organ_list;
       channel_width_list.value = fields_from_db.channel_width_list;
     }
-    function create_new_option(var_name: string, var_value: string) {
-      console.log('dog');
+    async function upload_data() {
+      console.log('uploading data');
+      const data_obj = {
+        assay: assay.value,
+        species: species.value,
+        organ: organ.value,
+        run_id: run_id.value,
+        run_description: run_description.value,
+        run_title: run_title.value,
+        web_obj_path: web_obj_path.value,
+      };
+      const resp = client.value?.upload_metadata_from_page(data_obj);
+      console.log(resp);
     }
     onMounted(() => {
       const res = client.value?.get_available_fields();
@@ -139,8 +176,14 @@ export default defineComponent({
       organ_list,
       species_list,
       channel_width_list,
-      create_new_option,
+      run_id,
+      run_description,
+      run_title,
+      sample_id,
+      ngs_id,
+      regulation,
       assign_possible_fields,
+      upload_data,
     };
   },
 });

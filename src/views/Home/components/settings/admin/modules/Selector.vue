@@ -59,8 +59,7 @@ export default defineComponent({
       ctx.emit('changed', local_variable.value);
     }
     function new_option() {
-      // local_options.value.splice(local_options.value.length - 2, 0, custom_option.value);
-      this.$emit('custom-field', custom_option.value);
+      ctx.emit('option-added', custom_option.value);
       local_variable.value = custom_option.value;
       custom_option.value = '';
       add_option.value = false;

@@ -683,4 +683,8 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/get_field_options');
     return resp.data;
   }
+  async upload_metadata_from_page(data_obj: any) {
+    const resp = await this.axios.post('/api/v1/run_db/upload_metadata_page', data_obj);
+    return resp.data;
+  }
 }
