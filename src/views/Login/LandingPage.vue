@@ -220,8 +220,8 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const count = ref<any>({});
     const countHold = ref<any>({});
-    const decodeDT = ref<any>(['atac-seq', 'cut_n_tag', 'wt_dbit-seq']);
-    const decodeDTTwo = ref<any[]>(['Spatial ATAC', 'Spatial Cut & Tag', 'Spatial Transcriptome']);
+    const decodeDT = ref<any>(['ATAC-seq', 'CUT&Tag', 'Transcriptome']);
+    const decodeDTTwo = ref<any[]>(['Spatial ATAC', 'Spatial CUT&Tag', 'Spatial Transcriptome']);
     const labColors = ref<any>({});
     const menuListFlag = ref<boolean>(false);
     const pageIteration = ref<number>(1);

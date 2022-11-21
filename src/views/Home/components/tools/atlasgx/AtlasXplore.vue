@@ -600,7 +600,7 @@
             </div>
             </v-col>
             <v-col cols="12" sm="2">
-              <table style="margin-bottom: 0; height: 37vh;overflow-y: scroll;display: block;">
+              <table style="margin-bottom: 0; height: 50vh;overflow-y: scroll;display: block;">
                   <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'vertical-align': 'middle' }">
                     <template>
                       <td>
@@ -608,12 +608,12 @@
                       </td>
                     </template>
                     <template v-if="value.length > 0">
-                      <td style="padding-bottom: 8px;">
+                      <td style="padding-bottom: 12px;">
                         <span :style="{ 'color': (backgroundColor == 'white') ? 'black' : 'white', 'font-weight': 'bold'}">{{value[0]}}&ensp;<span style="font-size:10px"> ({{totalInClust[cluster]}})</span></span>
                       </td>
                     </template>
                     <template v-else>
-                      <td style="padding-bottom: 8px;">
+                      <td style="padding-bottom: 12px;">
                         <span :style="{ 'color': (backgroundColor == 'white') ? 'black' : 'white', 'font-weight': 'bold'}">{{cluster}}&ensp;<span style="font-size:10px"> ({{totalInClust[cluster]}})</span></span>
                       </td>
                     </template>
@@ -1767,5 +1767,8 @@ export default defineComponent({
   }
   .hidden {
     visibility: hidden;
+  }
+  .v-input--selection-controls {
+    padding-top: 0px;
   }
 </style>
