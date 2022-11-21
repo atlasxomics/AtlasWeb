@@ -111,18 +111,11 @@ export default defineComponent({
     const organ_list = ref<Array<string>>([]);
     const species_list = ref<Array<string>>([]);
     const channel_width_list = ref<Array<string>>([]);
-    function add_custom_option() {
-      assay_list.value.push('Add Option');
-      species_list.value.push('Add Option');
-      organ_list.value.push('Add Option');
-    }
     function assign_possible_fields(fields_from_db: any) {
       assay_list.value = fields_from_db.assay_list;
       species_list.value = fields_from_db.species_list;
       organ_list.value = fields_from_db.organ_list;
       channel_width_list.value = fields_from_db.channel_width_list;
-      add_custom_option();
-      assay_list.value.push('Add Option');
     }
     function create_new_option(var_name: string, var_value: string) {
       console.log('dog');

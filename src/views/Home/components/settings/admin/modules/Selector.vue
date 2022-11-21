@@ -23,9 +23,18 @@
         <v-text-field
         label="Add Option"
         v-model="custom_option"
-        append-icon="mdi-check"
-        @click:append="new_option"
         >
+        <template
+        v-slot:append
+        >
+        <v-icon
+        :disabled="custom_option.length == 0"
+        color="green"
+        @click="new_option"
+        >
+        mdi-check
+        </v-icon>
+        </template>
         </v-text-field>
         </v-row>
     </div>
@@ -33,7 +42,6 @@
 
 <script lang="ts">
 import { computed, defineComponent, ref, watch } from '@vue/composition-api';
-import Template from '../../../_empty/template.vue';
 
 export default defineComponent({
   name: 'custom-selector',
@@ -46,15 +54,17 @@ export default defineComponent({
     const local_variable = ref<string>('');
     const custom_option = ref<string>('');
     const add_option = ref<boolean>(false);
+    function value_changed() {
+      console.log(local_variable);
+      ctx.emit('changed', local_variable.value);
+    }
     function new_option() {
       // local_options.value.splice(local_options.value.length - 2, 0, custom_option.value);
       this.$emit('custom-field', custom_option.value);
       local_variable.value = custom_option.value;
       custom_option.value = '';
-    }
-    function value_changed() {
-      console.log(local_variable);
-      ctx.emit('changed', local_variable.value);
+      add_option.value = false;
+      value_changed();
     }
     return {
       local_variable,
