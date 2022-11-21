@@ -6,11 +6,22 @@
         @input="value_changed"
         v-model="local_variable"
         >
+        <template
+        v-slot:append-outer
+        >
+          <v-icon
+          :color="add_option ? 'red' : 'green'"
+          @click="add_option = !add_option"
+          >
+            {{ add_option ? 'mdi-close' : 'mdi-table-plus' }}
+          </v-icon>
+        </template>
         </v-select>
         <v-row
-        v-if="local_variable === 'Add Option'">
+        v-if="add_option"
+        >
         <v-text-field
-        :label="display_label"
+        label="Add Option"
         v-model="custom_option"
         append-icon="mdi-check"
         @click:append="new_option"
@@ -22,6 +33,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, ref, watch } from '@vue/composition-api';
+import Template from '../../../_empty/template.vue';
 
 export default defineComponent({
   name: 'custom-selector',
@@ -33,6 +45,7 @@ export default defineComponent({
   setup(props, ctx) {
     const local_variable = ref<string>('');
     const custom_option = ref<string>('');
+    const add_option = ref<boolean>(false);
     function new_option() {
       // local_options.value.splice(local_options.value.length - 2, 0, custom_option.value);
       this.$emit('custom-field', custom_option.value);
@@ -48,6 +61,7 @@ export default defineComponent({
       // local_options,
       // local_label,
       custom_option,
+      add_option,
       value_changed,
       new_option,
     };
