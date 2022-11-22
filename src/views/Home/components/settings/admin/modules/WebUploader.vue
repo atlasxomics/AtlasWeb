@@ -2,7 +2,48 @@
     <v-container>
         <v-row>
             <v-col
-            style="position: relative; right: 15%;"
+            cols="12"
+            sm="4"            >
+                <v-card-title>
+                    Run Information
+                </v-card-title>
+                <v-text-field
+                v-model="run_id"
+                label="Run ID"
+                >
+                <template
+                v-slot:append-outer
+                style="width: 50px;"
+                >
+                  <v-btn
+                  :disabled="!run_id"
+                  >
+                    Auto Populate
+                  </v-btn>
+                </template>
+                </v-text-field>
+                <v-text-field
+                v-model="ngs_id"
+                label="NGS Library ID"
+                >
+                </v-text-field>
+                <v-text-field
+                v-model="run_title"
+                label="Run Title"
+                >
+                </v-text-field>
+                <v-text-field
+                v-model="run_description"
+                label="Run Description"
+                >
+                </v-text-field>
+                <v-text-field
+                v-model="sample_id"
+                label = "Sample ID"
+                >
+                </v-text-field>
+            </v-col>
+            <v-col
             cols="12"
             sm="4"
             >
@@ -11,12 +52,19 @@
             >
                 Metadata
             </v-card-title>
+            <v-select
+            v-model="assay"
+            label="Assay"
+            :items="assay_list"
+            >
+            </v-select>
             <selector
-            :variable="assay"
-            :display_label="'Assay'"
-            :display_options="assay_list"
-            @option-added="assay_list.push($event);"
-            @changed="assay = $event"
+            v-if="assay === 'CUT&Tag'"
+            :variable="antibody"
+            display_label="Epitope Name"
+            :display_options="epitope_list"
+            @option-added="epitope_list.push($event)"
+            @changed="antibody = $event"
             >
             </selector>
             <v-select
@@ -50,44 +98,22 @@
             </v-col>
             <v-col
             cols="12"
-            sm="4"            >
-                <v-card-title>
-                    Run Information
-                </v-card-title>
-                <v-text-field
-                v-model="run_id"
-                label="Run ID"
-                >
-                <v-text-field
-                v-model="ngs_id"
-                label="NGS Library ID"
-                >
-                </v-text-field>
-                </v-text-field>
-                <v-text-field
-                v-model="run_title"
-                label="Run Title"
-                >
-                </v-text-field>
-                <v-text-field
-                v-model="run_description"
-                label="Run Description"
-                >
-                </v-text-field>
-                <v-text-field
-                v-model="sample_id"
-                label = "Sample ID"
-                >
-                </v-text-field>
-            </v-col>
-            <v-col
-            cols="12"
             sm="4"
-            style="position: relative; left: 80px"
             >
                 <v-card-title>
-                    Web Object Path
+                    Web Object
                 </v-card-title>
+                <v-select
+                :items = public_run_items
+                label="Make Public"
+                >
+                </v-select>
+                <v-select
+                :items="group_list"
+                label="Group"
+                v-model="selected_group"
+                >
+                </v-select>
                 <v-text-field
                 v-model="web_obj_path"
                 label="Path"
@@ -97,13 +123,13 @@
         </v-row>
         <v-row>
             <v-col
-            style="position: relative; left: 45%;"
             >
                 <v-btn
-                style="position: relative; bottom: 5%;"
+                :disabled="!run_id"
+                style="position: relative; left: 50%; bottom: 5%;"
                 @click="upload_data"
                 >
-                   Upload
+                  Submit
                 </v-btn>
             </v-col>
         </v-row>
@@ -114,11 +140,12 @@
 import { Client } from '@/api';
 import store from '@/store';
 import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
+import { List } from 'lodash';
 import Selector from './Selector.vue';
 
 export default defineComponent({
-  components: { Selector },
   name: 'WebUploader',
+  components: { Selector },
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const assay = ref<string>('');
@@ -126,22 +153,40 @@ export default defineComponent({
     const organ = ref<string>('');
     const species = ref<string>('');
     const sample_id = ref<string>('');
+    const antibody = ref<string>('');
     const tissue_condition = ref<string>('');
     const channel_width = ref<string>('');
     const assay_list = ref<Array<string>>([]);
     const organ_list = ref<Array<string>>([]);
     const species_list = ref<Array<string>>([]);
+    const epitope_list = ref<Array<string>>([]);
+    const group_list = ref<Array<string>>([]);
     const channel_width_list = ref<Array<string>>([]);
     const run_id = ref<string>('');
     const ngs_id = ref<string>('');
     const run_description = ref<string>('');
     const run_title = ref<string>('');
     const regulation = ref<string>('');
+    const public_run = ref<boolean>(false);
+    const selected_group = ref<string>('');
+    const public_run_items: List<any> = [
+      {
+        text: 'True',
+        value: true,
+      },
+      {
+        text: 'False',
+        value: false,
+      },
+    ];
     function assign_possible_fields(fields_from_db: any) {
+      console.log(fields_from_db);
       assay_list.value = fields_from_db.assay_list;
       species_list.value = fields_from_db.species_list;
       organ_list.value = fields_from_db.organ_list;
       channel_width_list.value = fields_from_db.channel_width_list;
+      epitope_list.value = fields_from_db.antibody_list;
+      group_list.value = fields_from_db.group_list;
     }
     async function upload_data() {
       console.log('uploading data');
@@ -153,6 +198,8 @@ export default defineComponent({
         run_description: run_description.value,
         run_title: run_title.value,
         web_obj_path: web_obj_path.value,
+        epitope: antibody.value,
+        regulation: regulation.value,
       };
       const resp = client.value?.upload_metadata_from_page(data_obj);
       console.log(resp);
@@ -182,6 +229,12 @@ export default defineComponent({
       sample_id,
       ngs_id,
       regulation,
+      antibody,
+      epitope_list,
+      public_run,
+      public_run_items,
+      selected_group,
+      group_list,
       assign_possible_fields,
       upload_data,
     };
