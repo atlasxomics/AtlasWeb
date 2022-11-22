@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-container v-if="atlasXplore_displayed" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
+    <v-container v-if="resolveAuthGroup(['admin', 'user'])" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <template v-if="query.public">
         <v-app-bar  style="margin-top:-7px">
           <div style="cursor: pointer;">
@@ -95,11 +95,11 @@
             sort-by="id">
             <template v-slot:item="row">
               <tr :style="{ 'background-color': colorForGroups[row.item.group] }">
-              <td><v-checkbox :value="clearGroups[0]" :disabled="selectedGroups.length > 0 && selectedGroups[0].group !== row.item.group" color="black" :label="row.item.runID" @click="organizeGroup(row.item)"></v-checkbox></td>
+              <td><v-checkbox color="black" :label="row.item.runID" @click="organizeGroup(row.item.runID)"></v-checkbox></td>
               </tr>
             </template>
             </v-data-table>
-            <v-card-actions><v-btn color="red" text small @click="clearGroups = [false]">Clear</v-btn><v-spacer></v-spacer><v-btn text small color="green">Begin</v-btn></v-card-actions>
+            <v-card-actions><v-btn color="red" text small >Clear</v-btn><v-spacer></v-spacer><v-btn @click="startMultiSample" :disabled="selectedGroups.length < 1" text small color="green">Begin</v-btn></v-card-actions>
           </v-card>
         </v-dialog>
         <v-dialog
@@ -531,6 +531,7 @@
                 :indFlag="averageInd"
                 :antiKey="tableKey"
                 :geneOmotif="geneMotif"
+                :plot="'umap'"
                 :idOfRun="runId"/>
             </v-col>
             <v-col cols="12" sm="5">
@@ -559,6 +560,7 @@
                 :indFlag="averageInd"
                 :antiKey="tableKey"
                 :geneOmotif="geneMotif"
+                :plot="'spatial'"
                 :idOfRun="allRunIds[0]"/>
             </v-col>
             <v-col cols="12" sm="2">
@@ -584,9 +586,9 @@
             </v-col>
           </v-row>
           <v-row no-gutters>
-              <v-col cols="12" sm="11">
+              <v-col cols="12" sm="12">
                 <v-row>
-                  <template v-for="runs in allRunIds">
+                  <template v-for="runs in allRunIds.slice(1)">
                     <v-col cols="12" sm="4" :key="runs">
                       <multi-singleview
                         @loading_value="updateLoading"
@@ -613,6 +615,7 @@
                         :indFlag="averageInd"
                         :antiKey="tableKey"
                         :geneOmotif="geneMotif"
+                        :plot="'spatial'"
                         :idOfRun="runs"/>
                     </v-col>
                   </template>
@@ -878,7 +881,7 @@ export default defineComponent({
     }
     function organizeGroup(ev: any) {
       if (selectedGroups.value.length === 0) selectedGroups.value.push(ev);
-      else if (!selectedGroups.value.includes(ev) && ev.group === selectedGroups.value[0].group) {
+      else if (!selectedGroups.value.includes(ev)) {
         selectedGroups.value.push(ev);
       } else {
         const index = selectedGroups.value.indexOf(ev);
@@ -1117,8 +1120,8 @@ export default defineComponent({
       }
     }
     async function updateTen() {
-      const fileName = { params: { filename: `data/${runId.value}/h5/topTen_genes.json` } };
-      const fileNameMotif = { params: { filename: `data/${runId.value}/h5/topTen_motifs.json` } };
+      const fileName = { params: { filename: 'study/S1/h5/topTen_genes.json' } };
+      const fileNameMotif = { params: { filename: 'study/S1/h5/topTen_motifs.json' } };
       const topTen_gene_json = await client.value?.getJsonFile(fileName);
       const topTen_motif_json = await client.value?.getJsonFile(fileNameMotif);
       topTenIds.value.gene = topTen_gene_json;
@@ -1154,7 +1157,7 @@ export default defineComponent({
       search.value = '';
       loading.value = true;
       // const qc_data = await client.value.getNGSIds();
-      const data = { jo: 1, jonah: 1, moll: 2, abig: 2 };
+      const data = { NG00547: 1, NG00877: 1 };
       const mult = (Object.keys(data).length < 9) ? 9 : Object.keys(data).length;
       const colors_raw = colormap({ colormap: 'phase', nshades: mult * 3, format: 'hex', alpha: 1 });
       const colorHolder: any = {};
@@ -1188,6 +1191,11 @@ export default defineComponent({
       } catch (error) {
         console.log(error);
       }
+    }
+    async function startMultiSample() {
+      allRunIds.value = selectedGroups.value.map((v: any) => v);
+      // runId.value = 'study/S1';
+      updateTen();
     }
     async function runSpatial(rid = runId.value) {
       if (!client.value) return;
@@ -1622,10 +1630,10 @@ export default defineComponent({
 
     onMounted(async () => {
       await clientReady;
-      if (resolveAuthGroup(['admin', 'user']) || props.query.public) {
-        atlasXplore_displayed.value = true;
-        prep_atlasxplore(props.query.run_id, false);
-      }
+      // if (resolveAuthGroup(['admin', 'user'])) {
+      //   atlasXplore_displayed.value = true;
+      prep_atlasxplore(props.query.run_id, false);
+      // }
     });
     onUnmounted(() => {
       if (acInstance.value.$el) {
@@ -1789,6 +1797,7 @@ export default defineComponent({
       colorForGroups,
       organizeGroup,
       clearGroups,
+      startMultiSample,
     };
   },
 });

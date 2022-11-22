@@ -41,7 +41,7 @@
         </v-card-text>
       </v-card>
     </v-col>
-    <v-col cols="12" sm="5">
+    <v-col cols="12" sm="11">
       <v-card id="stageParentDualAtac"
         :loading="loading"
         class="rounded-0"
@@ -149,7 +149,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'MultiSingleview.vue',
-  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey'],
+  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'plot'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -157,6 +157,7 @@ export default defineComponent({
     const filenameGene = ref<string>('');
     const filenameFromParent = computed(() => props.filename);
     const colorFromParent = computed(() => props.manualColor);
+    const typeOfPlot = computed(() => props.plot);
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
     const currentTask = computed(() => props.task);
@@ -279,9 +280,11 @@ export default defineComponent({
       highlightIds.value = [];
       const funcInsideRegions = (pt: number[]) => {
         let res = false;
-        regions.value.forEach((poly: any, idx: number) => {
-          if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
-        });
+        if (regions.value !== undefined) {
+          regions.value.forEach((poly: any, idx: number) => {
+            if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+          });
+        }
         return res;
       };
       const filteredIndex = circlesSpatial.value.map((v: any) => funcInsideRegions([v.x, v.y]));
@@ -863,6 +866,7 @@ export default defineComponent({
     });
     onMounted(async () => {
       await clientReady;
+      if (runId.value !== null) retrieveData();
       tooltip.add(tooltipTag);
       tooltip.add(tooltipText);
       (ctx.refs.annotationLayerDualAtac as any).getNode().add(tooltip);
@@ -932,6 +936,7 @@ export default defineComponent({
       geneMotif,
       tableKeyFromParent,
       geneSummation,
+      typeOfPlot,
     };
   },
 });
