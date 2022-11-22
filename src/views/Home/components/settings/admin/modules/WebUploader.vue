@@ -17,6 +17,7 @@
                 >
                   <v-btn
                   :disabled="!run_id"
+                  @click="auto_populate"
                   >
                     Auto Populate
                   </v-btn>
@@ -58,7 +59,7 @@
             :items="assay_list"
             >
             </v-select>
-            <selector
+            <!-- <selector
             v-if="assay === 'CUT&Tag'"
             :variable="antibody"
             display_label="Epitope Name"
@@ -73,7 +74,7 @@
             label="Regulation"
             v-model="regulation"
             >
-            </v-select>
+            </v-select> -->
             <selector
               :variable='species'
               display_label="Species"
@@ -105,7 +106,8 @@
                 </v-card-title>
                 <v-select
                 :items = public_run_items
-                label="Make Public"
+                label="Public"
+                v-model="public_run"
                 >
                 </v-select>
                 <v-select
@@ -138,8 +140,10 @@
 
 <script lang="ts">
 import { Client } from '@/api';
+import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
+import { group } from 'console';
 import { List } from 'lodash';
 import Selector from './Selector.vue';
 
@@ -179,7 +183,7 @@ export default defineComponent({
         value: false,
       },
     ];
-    function assign_possible_fields(fields_from_db: any) {
+    function assign_possible_fields_list(fields_from_db: any) {
       console.log(fields_from_db);
       assay_list.value = fields_from_db.assay_list;
       species_list.value = fields_from_db.species_list;
@@ -187,6 +191,38 @@ export default defineComponent({
       channel_width_list.value = fields_from_db.channel_width_list;
       epitope_list.value = fields_from_db.antibody_list;
       group_list.value = fields_from_db.group_list;
+    }
+    function assign_fields(db_obj: any) {
+      if (db_obj.assay) {
+        assay.value = db_obj.assay;
+      }
+      species.value = db_obj.species;
+      organ.value = db_obj.organ;
+      public_run.value = db_obj.public;
+      tissue_condition.value = db_obj.experimental_condition;
+      selected_group.value = db_obj.group;
+      run_title.value = db_obj.result_title;
+      run_description.value = db_obj.result_description;
+      web_obj_path.value = db_obj.results_folder_path;
+      sample_id.value = db_obj.sample_id;
+      ngs_id.value = db_obj.ngs_id;
+      if (db_obj.public === 1) {
+        public_run.value = true;
+      } else {
+        public_run.value = false;
+      }
+    }
+    async function auto_populate() {
+      try {
+        const resp = await client.value?.get_info_from_run_id(run_id.value);
+        if (resp === 'Not-Found') {
+          snackbar.dispatch({ text: 'Run ID Not Present in Database.', options: { color: 'red' } });
+        } else {
+          assign_fields(resp);
+        }
+      } catch (e) {
+        snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
+      }
     }
     async function upload_data() {
       console.log('uploading data');
@@ -202,13 +238,12 @@ export default defineComponent({
         regulation: regulation.value,
       };
       const resp = client.value?.upload_metadata_from_page(data_obj);
-      console.log(resp);
     }
     onMounted(() => {
       const res = client.value?.get_available_fields();
       res!.then((result: any) => {
         console.log(result);
-        assign_possible_fields(result);
+        assign_possible_fields_list(result);
       });
       console.log(res);
     });
@@ -235,7 +270,9 @@ export default defineComponent({
       public_run_items,
       selected_group,
       group_list,
-      assign_possible_fields,
+      assign_fields,
+      auto_populate,
+      assign_possible_fields_list,
       upload_data,
     };
   },

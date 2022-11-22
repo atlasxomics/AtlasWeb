@@ -687,4 +687,10 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/run_db/upload_metadata_page', data_obj);
     return resp.data;
   }
+  async get_info_from_run_id(run_id: string) {
+    const pl = { run_id };
+    const resp = await this.axios.post('/api/v1/run_db/get_info_from_run_id', pl);
+    console.log(resp);
+    return resp.data;
+  }
 }
