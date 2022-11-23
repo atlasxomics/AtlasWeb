@@ -133,11 +133,12 @@
                 label="Path"
                 >
                 </v-text-field>
-                <v-text-field
+                <v-select
                 label="PMID"
+                :items="pmid_list"
                 v-model="pmid"
                 >
-                </v-text-field>
+                </v-select>
             </v-col>
         </v-row>
         <v-row>
@@ -175,9 +176,6 @@ export default defineComponent({
       const year_int = Number.parseInt(year, 10);
       const month_int = Number.parseInt(month, 10) - 1;
       const day_int = Number.parseInt(day, 10);
-      console.log(day_int);
-      console.log(month_int);
-      console.log(year_int);
       const epoch = Date.UTC(year_int, month_int, day_int);
       return epoch;
     }
@@ -191,6 +189,7 @@ export default defineComponent({
     const antibody = ref<string>('');
     const tissue_condition = ref<string>('');
     const pmid = ref<string>('');
+    const pmid_list = ref<List<string>>([]);
     const tissue_source = ref<string>('');
     const channel_width = ref<string>('');
     const assay_list = ref<Array<string>>([]);
@@ -227,6 +226,7 @@ export default defineComponent({
       epitope_list.value = fields_from_db.antibody_list;
       group_list.value = fields_from_db.group_list;
       tissue_source_list.value = fields_from_db.tissue_source_list;
+      pmid_list.value = fields_from_db.publication_list;
     }
     function assign_fields(db_obj: any) {
       if (db_obj.assay) {
@@ -345,6 +345,7 @@ export default defineComponent({
       date_epoch,
       tissue_source,
       tissue_source_list,
+      pmid_list,
       date_human_to_epoch,
       assign_fields,
       auto_populate,
