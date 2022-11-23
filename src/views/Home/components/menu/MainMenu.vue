@@ -33,12 +33,12 @@ import store from '@/store';
 import { resolveAuthGroup } from '@/utils/auth';
 
 const menu = [
-  {
-    groupname: 'Home',
-    items: [
-      { name: 'Home', icon: 'mdi-home', access_control: ['any'], color: 'primary', query: { component: null } },
-    ],
-  },
+  // {
+  //   groupname: 'Home',
+  //   // items: [
+  //   //   { name: 'Home', icon: 'mdi-home', access_control: ['any'], color: 'primary', query: { component: null } },
+  //   // ],
+  // },
   {
     groupname: 'Analysis',
     items: [
