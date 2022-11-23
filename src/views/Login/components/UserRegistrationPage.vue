@@ -1,15 +1,9 @@
 <template>
     <v-col>
         <v-text-field
-        label="Name"
+        label="Full Name"
         v-model="name_user"
         prepend-icon="mdi-account"
-        >
-        </v-text-field>
-        <v-text-field
-        label="Username"
-        v-model="username"
-        prepend-icon="mdi-account-circle"
         >
         </v-text-field>
         <v-text-field
@@ -29,6 +23,12 @@
         label="Organization"
         v-model="organization"
         prepend-icon="mdi-account-group"
+        >
+        </v-text-field>
+        <v-text-field
+        label="Username"
+        v-model="username"
+        prepend-icon="mdi-account-circle"
         >
         </v-text-field>
         <v-text-field
