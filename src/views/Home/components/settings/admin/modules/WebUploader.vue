@@ -43,6 +43,11 @@
                 label = "Sample ID"
                 >
                 </v-text-field>
+                <v-text-field
+                label="Date: YYYY/MM/DD"
+                v-model="date_human_readable"
+                >
+                </v-text-field>
             </v-col>
             <v-col
             cols="12"
@@ -91,6 +96,13 @@
             @changed="organ = $event"
             >
             </selector>
+            <selector
+            :variable="tissue_source"
+            :display_options="tissue_source_list"
+            display_label="Tissue Source"
+            @option-added="tissue_source_list.push($event)"
+            @changed="tissue_source = $event">
+            </selector>
             <v-text-field
               label="Tissue Condition"
               v-model="tissue_condition"
@@ -119,6 +131,11 @@
                 <v-text-field
                 v-model="web_obj_path"
                 label="Path"
+                >
+                </v-text-field>
+                <v-text-field
+                label="PMID"
+                v-model="pmid"
                 >
                 </v-text-field>
             </v-col>
@@ -151,6 +168,20 @@ export default defineComponent({
   name: 'WebUploader',
   components: { Selector },
   setup(props, ctx) {
+    const date_human_readable = ref<string>('');
+    function date_human_to_epoch(date_human: string) {
+      const lis = date_human.split('/');
+      const [year, month, day] = lis;
+      const year_int = Number.parseInt(year, 10);
+      const month_int = Number.parseInt(month, 10) - 1;
+      const day_int = Number.parseInt(day, 10);
+      console.log(day_int);
+      console.log(month_int);
+      console.log(year_int);
+      const epoch = Date.UTC(year_int, month_int, day_int);
+      return epoch;
+    }
+    const date_epoch = computed(() => date_human_to_epoch(date_human_readable.value));
     const client = computed(() => store.state.client);
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
@@ -159,12 +190,15 @@ export default defineComponent({
     const sample_id = ref<string>('');
     const antibody = ref<string>('');
     const tissue_condition = ref<string>('');
+    const pmid = ref<string>('');
+    const tissue_source = ref<string>('');
     const channel_width = ref<string>('');
     const assay_list = ref<Array<string>>([]);
     const organ_list = ref<Array<string>>([]);
     const species_list = ref<Array<string>>([]);
     const epitope_list = ref<Array<string>>([]);
     const group_list = ref<Array<string>>([]);
+    const tissue_source_list = ref<Array<string>>([]);
     const channel_width_list = ref<Array<string>>([]);
     const run_id = ref<string>('');
     const ngs_id = ref<string>('');
@@ -183,6 +217,7 @@ export default defineComponent({
         value: false,
       },
     ];
+
     function assign_possible_fields_list(fields_from_db: any) {
       console.log(fields_from_db);
       assay_list.value = fields_from_db.assay_list;
@@ -191,6 +226,7 @@ export default defineComponent({
       channel_width_list.value = fields_from_db.channel_width_list;
       epitope_list.value = fields_from_db.antibody_list;
       group_list.value = fields_from_db.group_list;
+      tissue_source_list.value = fields_from_db.tissue_source_list;
     }
     function assign_fields(db_obj: any) {
       if (db_obj.assay) {
@@ -236,6 +272,13 @@ export default defineComponent({
         web_obj_path: web_obj_path.value,
         epitope: antibody.value,
         regulation: regulation.value,
+        tissue_source: tissue_source.value,
+        sample_id: sample_id.value,
+        experimental_condition: tissue_condition.value,
+        pmid: pmid.value,
+        group: selected_group.value,
+        public: public_run.value,
+        date: date_epoch.value,
       };
       const resp = client.value?.upload_metadata_from_page(data_obj);
     }
@@ -261,6 +304,7 @@ export default defineComponent({
       run_id,
       run_description,
       run_title,
+      pmid,
       sample_id,
       ngs_id,
       regulation,
@@ -270,6 +314,11 @@ export default defineComponent({
       public_run_items,
       selected_group,
       group_list,
+      date_human_readable,
+      date_epoch,
+      tissue_source,
+      tissue_source_list,
+      date_human_to_epoch,
       assign_fields,
       auto_populate,
       assign_possible_fields_list,

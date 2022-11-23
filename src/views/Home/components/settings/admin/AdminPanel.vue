@@ -53,7 +53,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Worker Status', 'User Management', 'WebUploader', 'Database Administration'];
+const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Add A Run', 'Database Administration'];
 
 export default defineComponent({
   name: 'AdminPanel',
