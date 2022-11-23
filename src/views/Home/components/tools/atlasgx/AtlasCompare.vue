@@ -1605,19 +1605,9 @@ export default defineComponent({
       }
       store.commit.setSubmenu(submenu.value);
       if (!props.query.public) {
-        if (resolveAuthGroup(['admin', 'user'])) {
-          await fetchFileList();
-        }
-        // code block used to handle incoming ngs id values from either the landing page
-        // where use specified is true, or from the tool bar where it is false and comes from props.query.runid
-        if (use_specified || props.query.run_id) {
-          let run_num = run_id;
-          if (props.query.run_id && !use_specified) {
-            run_num = props.query.run_id;
-          }
-          await selectAction({ id: run_num });
-          currentTask.value = { task: 'gene.compute_qc', queues: ['joshua_gene'] };
-        }
+        await new Promise((f: any) => setTimeout(f, 1000));
+        fetchFileList();
+        // await selectAction({ id: run_id });
       }
       if (props.query && props.query.run_id && props.query.public) {
         const value = await client.value?.decodeMetadata(props.query.run_id);

@@ -516,6 +516,7 @@ export default defineComponent({
       if (spatialData.value === null) {
         spatialData.value = {};
         if (!props.query.public) {
+          console.log(runId.value);
           const tixelFileName = `data/${runId.value}/h5/data.csv`;
           const spatial = await client.value!.getCsvFile({ params: { filename: tixelFileName } });
           spatialData.value.spatial = spatial;
@@ -527,6 +528,7 @@ export default defineComponent({
           const motif = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 2);
           spatialData.value.motif = motif;
         }
+        console.log(spatialData.value);
         const spatialX: number[] = [];
         const spatialY: number[] = [];
         const totalHold: any = {};

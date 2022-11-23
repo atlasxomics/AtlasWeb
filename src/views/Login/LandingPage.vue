@@ -56,9 +56,10 @@
             <v-text-field
               :loading="loading"
               v-model="textSearch"
-              @click:prepend="searchRuns(textSearch)"
-              @keyup.enter="searchRuns(textSearch)"
-              @click:clear="searchRuns('')"
+              @input="searchRuns(textSearch, $event.key);"
+              @click:prepend="searchRuns(textSearch, '')"
+              @keyup.enter="searchRuns(textSearch, '')"
+              @click:clear="searchRuns('', '')"
               placeholder="Search eg. PMID, Author"
               clearable
               prepend-icon="mdi-magnify"/>
@@ -314,19 +315,11 @@ export default defineComponent({
       }
       loading.value = false;
     }
-    async function searchRuns(event: string) {
+    async function searchRuns(event: string, from: any) {
       /* eslint-disable no-lonely-if */
-      if (event === null) return;
-      pageIteration.value = 1;
-      const ev = event.toLowerCase();
-      loading.value = true;
-      let key = '1';
-      let split = 0;
-      const countKeys = Object.keys(countHold.value);
-      countKeys.forEach((v: any, k: any) => {
-        countHold.value[v] = 0;
-      });
-      if (ev.length === 0) {
+      console.log(from);
+      if (event === null || event.length === 0 || from === undefined) {
+        console.log('e,mpty');
         numOfIt.value = Object.keys(numOfPubs.value).length - 1;
         lodash.each(numOfPubs.value, (value: any, index: any) => {
           numOfPubsHold.value[index] = value;
@@ -335,6 +328,15 @@ export default defineComponent({
           countHold.value[i] = count.value[i];
         });
       } else {
+        pageIteration.value = 1;
+        const ev = event.toLowerCase();
+        loading.value = true;
+        let key = '1';
+        let split = 0;
+        const countKeys = Object.keys(countHold.value);
+        countKeys.forEach((v: any, k: any) => {
+          countHold.value[v] = 0;
+        });
         const digpat = /\d/;
         const digit = digpat.test(ev);
         const hold: any = {};
