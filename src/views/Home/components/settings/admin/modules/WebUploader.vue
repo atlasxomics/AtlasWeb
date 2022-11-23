@@ -254,6 +254,7 @@ export default defineComponent({
         if (resp === 'Not-Found') {
           snackbar.dispatch({ text: 'Run ID Not Present in Database.', options: { color: 'red' } });
         } else {
+          snackbar.dispatch({ text: 'Run Information Successfully Loaded.', options: { color: 'green' } });
           assign_fields(resp);
         }
       } catch (e) {
