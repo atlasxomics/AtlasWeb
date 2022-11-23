@@ -1051,6 +1051,7 @@ export default defineComponent({
       const cellmapCopy: any = {};
       const cmapCopy: any = {};
       const colors: any[] = [];
+      const clustKeys = Object.keys(totalInClust.value);
       const numClusters = Object.keys(totalInClust.value).length;
       if (!manualClusterFlag.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
@@ -1058,7 +1059,7 @@ export default defineComponent({
           if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
         });
         for (let i = 0; i < colors.length; i += 1) {
-          const cidx = `C${i + 1}`;
+          const cidx = clustKeys[i];
           cmap[cidx] = colors[i];
           cmapCopy[cidx] = colors[i];
           cellmap[cidx] = '';
@@ -1288,7 +1289,7 @@ export default defineComponent({
       metadata.value.runid = globalXploreData.value.run_id;
       // metadata.value.ngsid = rid;
       // collabName.value = (Object.keys(data).includes('tissue_source')) ? data.tissue_source : data.group_name;
-      // if (metadata.value.assay === 'wt_dbit-seq') assayFlag.value = true;
+      if (metadata.value.assay === 'Transcriptome') assayFlag.value = true;
     }
     async function selectAction(ev: any) {
       const root = 'data';
@@ -1306,7 +1307,7 @@ export default defineComponent({
     async function getPublicId(ev: any) {
       runId.value = ev.run_id;
       metadata.value.organ = ev.tissue;
-      if (ev.assay === 'wt_dbit-seq') assayFlag.value = true;
+      if (ev.assay === 'Transcriptome') assayFlag.value = true;
       metadata.value.species = ev.species;
       updateTen();
       if (props.query && runId.value === null) {
@@ -1536,7 +1537,7 @@ export default defineComponent({
 
     onMounted(async () => {
       await clientReady;
-      if (globalXploreData.value !== null) {
+      if (globalXploreData.value !== null || props.query.public) {
         runId.value = null;
         atlasXplore_displayed.value = true;
         prep_atlasxplore(props.query.run_id);

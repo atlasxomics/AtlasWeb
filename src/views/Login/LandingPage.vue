@@ -26,7 +26,7 @@
               <template v-if="!item.limit">
                 <template v-for="child in item.items">
                   <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="child">
-                    <template v-if="item.title === 'Data Type'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${decodeDTTwo[decodeDT.indexOf(child)]} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
+                    <template v-if="item.title === 'Data Type'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
                     <template v-else><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
@@ -36,7 +36,7 @@
               <template v-else>
                 <template v-for="(place,child) in 3">
                   <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="item.items[child]">
-                    <template v-if="item.title === 'Data Type'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${decodeDTTwo[decodeDT.indexOf(item.items[child])]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-if="item.title === 'Data Type'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${child} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Species'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Organ'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                     <template v-else><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
@@ -56,9 +56,10 @@
             <v-text-field
               :loading="loading"
               v-model="textSearch"
-              @click:prepend="searchRuns(textSearch)"
-              @keyup.enter="searchRuns(textSearch)"
-              @click:clear="searchRuns('')"
+              @input="searchRuns(textSearch, $event.key);"
+              @click:prepend="searchRuns(textSearch, '')"
+              @keyup.enter="searchRuns(textSearch, '')"
+              @click:clear="searchRuns('', '')"
               placeholder="Search eg. PMID, Author"
               clearable
               prepend-icon="mdi-magnify"/>
@@ -87,6 +88,7 @@
                     <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
                     <v-card-text>{{data.result_description}}</v-card-text>
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
+                    <v-card-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{keys}}</v-chip></v-card-subtitle>
                     <v-card-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
                   </v-col>
                   <v-col cols="12" sm="4">
@@ -103,6 +105,8 @@
                   <v-col cols="12" sm="8">
                     <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{`Spatial ${data.assay.join('/')} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-card-title>
                     <v-card-subtitle>{{data.date}}</v-card-subtitle>
+                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `Epitope: ${data.epitope}/ Regulation: ${data.regulation}` : ''}`}}</v-card-text>
+                    <v-card-subtitle v-for="keys in data.assay" v-bind:key="data.results_id+keys"><v-chip small dark :color="labColors[data.group]">{{keys}}</v-chip></v-card-subtitle>
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
                     <v-card-subtitle v-for="keys in data.assay" v-bind:key="data.results_id+keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-card-subtitle>
                   </v-col>
@@ -130,7 +134,7 @@
                         v-text="data.date"
                       ></v-list-item-subtitle>
                       <v-list-item-subtitle class="text--primary" v-text="data.result_description"></v-list-item-subtitle>
-                      <v-list-item-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-list-item-subtitle>
+                      <v-list-item-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{keys}}</v-chip></v-list-item-subtitle>
                     </v-list-item-content>
                 </v-list-item>
               </template>
@@ -141,6 +145,8 @@
                       <v-list-item-subtitle
                         v-text="data.date"
                       ></v-list-item-subtitle>
+                      <v-list-item-subtitle class="text--primary" v-text="`Experimental Condition: ${data.experimental_condition}`"></v-list-item-subtitle>
+                      <v-list-item-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{keys}}</v-chip></v-list-item-subtitle>
                       <v-list-item-subtitle class="text--primary">{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-list-item-subtitle>
                       <v-list-item-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{decodeDTTwo[decodeDT.indexOf(keys)]}}</v-chip></v-list-item-subtitle>
                     </v-list-item-content>
@@ -220,8 +226,6 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const count = ref<any>({});
     const countHold = ref<any>({});
-    const decodeDT = ref<any>(['ATAC-seq', 'CUT&Tag', 'Transcriptome']);
-    const decodeDTTwo = ref<any[]>(['Spatial ATAC', 'Spatial CUT&Tag', 'Spatial Transcriptome']);
     const labColors = ref<any>({});
     const menuListFlag = ref<boolean>(false);
     const pageIteration = ref<number>(1);
@@ -316,19 +320,11 @@ export default defineComponent({
       }
       loading.value = false;
     }
-    async function searchRuns(event: string) {
+    async function searchRuns(event: string, from: any) {
       /* eslint-disable no-lonely-if */
-      if (event === null) return;
-      pageIteration.value = 1;
-      const ev = event.toLowerCase();
-      loading.value = true;
-      let key = '1';
-      let split = 0;
-      const countKeys = Object.keys(countHold.value);
-      countKeys.forEach((v: any, k: any) => {
-        countHold.value[v] = 0;
-      });
-      if (ev.length === 0) {
+      console.log(from);
+      if (event === null || event.length === 0 || from === undefined) {
+        console.log('e,mpty');
         numOfIt.value = Object.keys(numOfPubs.value).length - 1;
         lodash.each(numOfPubs.value, (value: any, index: any) => {
           numOfPubsHold.value[index] = value;
@@ -337,6 +333,15 @@ export default defineComponent({
           countHold.value[i] = count.value[i];
         });
       } else {
+        pageIteration.value = 1;
+        const ev = event.toLowerCase();
+        loading.value = true;
+        let key = '1';
+        let split = 0;
+        const countKeys = Object.keys(countHold.value);
+        countKeys.forEach((v: any, k: any) => {
+          countHold.value[v] = 0;
+        });
         const digpat = /\d/;
         const digit = digpat.test(ev);
         const hold: any = {};
@@ -649,8 +654,6 @@ export default defineComponent({
       loading,
       count,
       countHold,
-      decodeDT,
-      decodeDTTwo,
       menuListFlag,
       pageIteration,
       nextPageIteration,

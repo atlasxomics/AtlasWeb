@@ -508,7 +508,6 @@ export default defineComponent({
       stepArray.value = [];
       const colors: any[] = [];
       let colors_intensity: any[] = [];
-      const totalHold: any = {};
       const numClusters = lodash.uniq(spatialData.value.spatial.map((v: any) => v[0])).length;
       if (!colorFromParent.value) {
         const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
@@ -761,9 +760,19 @@ export default defineComponent({
             else totalHold[list[0]] += 1;
           }
         });
-        Object.keys(totalHold).forEach((v: any, index: any) => {
-          const key = `C${index + 1}`;
-          totalInClust.value[key] = totalHold[key];
+        const sorter = Object.keys(totalHold);
+        sorter.sort((a: any, b: any) => {
+          if (a.match(/C\d+/) === null || b.match(/C\d+/) === null) return 0;
+          const xCsplit = a.match(/C\d+/)[0];
+          const yCsplit = b.match(/C\d+/)[0];
+          const x = parseFloat(xCsplit.split('C')[1]);
+          const y = parseFloat(yCsplit.split('C')[1]);
+          if (x < y) return -1;
+          if (x > y) return 1;
+          return 0;
+        });
+        sorter.forEach((v: any, index: any) => {
+          totalInClust.value[v] = totalHold[v];
         });
         minX.value = Math.min(...spatialX);
         minY.value = Math.min(...spatialY);
