@@ -260,27 +260,54 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
       }
     }
+    function clear_fields() {
+      assay.value = '';
+      species.value = '';
+      organ.value = '';
+      date_human_readable.value = '';
+      run_id.value = '';
+      run_description.value = '';
+      run_title.value = '';
+      web_obj_path.value = '';
+      antibody.value = '';
+      regulation.value = '';
+      tissue_source.value = '';
+      sample_id.value = '';
+      tissue_condition.value = '';
+      pmid.value = '';
+      selected_group.value = '';
+      public_run.value = false;
+    }
     async function upload_data() {
       console.log('uploading data');
-      const data_obj = {
-        assay: assay.value,
-        species: species.value,
-        organ: organ.value,
-        run_id: run_id.value,
-        run_description: run_description.value,
-        run_title: run_title.value,
-        web_obj_path: web_obj_path.value,
-        epitope: antibody.value,
-        regulation: regulation.value,
-        tissue_source: tissue_source.value,
-        sample_id: sample_id.value,
-        experimental_condition: tissue_condition.value,
-        pmid: pmid.value,
-        group: selected_group.value,
-        public: public_run.value,
-        date: date_epoch.value,
-      };
-      const resp = client.value?.upload_metadata_from_page(data_obj);
+      try {
+        const data_obj = {
+          assay: assay.value,
+          species: species.value,
+          organ: organ.value,
+          run_id: run_id.value,
+          run_description: run_description.value,
+          run_title: run_title.value,
+          web_obj_path: web_obj_path.value,
+          epitope: antibody.value,
+          regulation: regulation.value,
+          tissue_source: tissue_source.value,
+          sample_id: sample_id.value,
+          experimental_condition: tissue_condition.value,
+          pmid: pmid.value,
+          group: selected_group.value,
+          public: public_run.value,
+          date: date_epoch.value,
+        };
+        const resp = await client.value?.upload_metadata_from_page(data_obj);
+        if (resp === 'Success') {
+          snackbar.dispatch({ text: 'Successful Upload!', options: { color: 'green' } });
+          clear_fields();
+        }
+      } catch (e) {
+        snackbar.dispatch({ text: 'Error! Unsuccessful Upload.', options: { color: 'red' } });
+        console.log(e);
+      }
     }
     onMounted(() => {
       const res = client.value?.get_available_fields();
