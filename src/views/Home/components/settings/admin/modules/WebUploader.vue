@@ -229,9 +229,7 @@ export default defineComponent({
       pmid_list.value = fields_from_db.publication_list;
     }
     function assign_fields(db_obj: any) {
-      if (db_obj.assay) {
-        assay.value = db_obj.assay;
-      }
+      assay.value = db_obj.assay;
       species.value = db_obj.species;
       organ.value = db_obj.organ;
       public_run.value = db_obj.public;
