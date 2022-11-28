@@ -65,17 +65,24 @@
               prepend-icon="mdi-magnify"/>
           </v-col>
           <v-col cols="12" sm="3" class="d-flex justify-center align-center mt-4">
-            <v-btn
-              :disabled="(privateRuns.length === 0) ? true : false"
-              :color="(pubPrivFlag) ? 'green' : ''"
-              icon
-              x-large
-              depressed
-              plain
-              retain-focus-on-click
-              @click="publicPrivateView">
-              <v-icon>{{ pubPrivFlag ? 'mdi-toggle-switch-off' : 'mdi-toggle-switch' }}</v-icon>
-            </v-btn>
+            <v-tooltip bottom :disabled="metaFlag">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn
+                  v-bind="attrs"
+                  v-on="on"
+                  :disabled="(client.user === null) ? true : false"
+                  :color="(pubPrivFlag) ? 'green' : ''"
+                  icon
+                  x-large
+                  depressed
+                  plain
+                  retain-focus-on-click
+                  @click="publicPrivateView">
+                  <v-icon>{{ pubPrivFlag ? 'mdi-toggle-switch-off' : 'mdi-toggle-switch' }}</v-icon>
+                </v-btn>
+              </template>
+              <span>Show Public</span>
+            </v-tooltip>
           </v-col>
           <v-col cols="12" sm="2" class="mt-4">
             <v-row>
