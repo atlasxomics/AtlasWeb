@@ -65,7 +65,7 @@
               prepend-icon="mdi-magnify"/>
           </v-col>
           <v-col cols="12" sm="3" class="d-flex justify-center align-center mt-4">
-            <v-tooltip bottom :disabled="metaFlag">
+            <v-tooltip bottom>
               <template v-slot:activator="{ on, attrs }">
                 <v-btn
                   v-bind="attrs"
@@ -121,8 +121,9 @@
                   <v-col cols="12" sm="8">
                     <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{`Spatial ${data.assay} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-card-title>
                     <v-card-subtitle>{{data.date}}</v-card-subtitle>
-                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `Epitope: ${data.epitope}/ Regulation: ${data.regulation}` : ''}`}}</v-card-text>
+                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antbody: ${data.epitope}` : ''}`}}</v-card-text>
                     <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
+                    <v-card-text style="color:white">Placeholder</v-card-text>
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
