@@ -65,7 +65,17 @@
               prepend-icon="mdi-magnify"/>
           </v-col>
           <v-col cols="12" sm="3" class="d-flex justify-center align-center mt-4">
-            <p>Sort By:</p>
+            <v-btn
+              :disabled="(privateRuns.length === 0) ? true : false"
+              :color="(pubPrivFlag) ? 'green' : ''"
+              icon
+              x-large
+              depressed
+              plain
+              retain-focus-on-click
+              @click="publicPrivateView">
+              <v-icon>{{ pubPrivFlag ? 'mdi-toggle-switch-off' : 'mdi-toggle-switch' }}</v-icon>
+            </v-btn>
           </v-col>
           <v-col cols="12" sm="2" class="mt-4">
             <v-row>
@@ -88,7 +98,7 @@
                     <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
                     <v-card-text>{{data.result_description}}</v-card-text>
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
-                    <v-card-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{keys}}</v-chip></v-card-subtitle>
+                    <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
@@ -102,10 +112,10 @@
               <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path+data.run_id">
                 <v-row>
                   <v-col cols="12" sm="8">
-                    <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{`Spatial ${data.assay.join('/')} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-card-title>
+                    <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{`Spatial ${data.assay} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-card-title>
                     <v-card-subtitle>{{data.date}}</v-card-subtitle>
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `Epitope: ${data.epitope}/ Regulation: ${data.regulation}` : ''}`}}</v-card-text>
-                    <v-card-subtitle v-for="keys in data.assay" v-bind:key="data.results_id+keys"><v-chip small dark :color="labColors[data.group]">{{keys}}</v-chip></v-card-subtitle>
+                    <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
@@ -131,7 +141,7 @@
                         v-text="data.date"
                       ></v-list-item-subtitle>
                       <v-list-item-subtitle class="text--primary" v-text="data.result_description"></v-list-item-subtitle>
-                      <v-list-item-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{keys}}</v-chip></v-list-item-subtitle>
+                      <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
                     </v-list-item-content>
                 </v-list-item>
               </template>
@@ -143,7 +153,7 @@
                         v-text="data.date"
                       ></v-list-item-subtitle>
                       <v-list-item-subtitle class="text--primary" v-text="`Experimental Condition: ${data.experimental_condition}`"></v-list-item-subtitle>
-                      <v-list-item-subtitle v-for="keys in data.assay" v-bind:key="keys"><v-chip small dark :color="labColors[data.group]">{{keys}}</v-chip></v-list-item-subtitle>
+                      <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
                     </v-list-item-content>
                 </v-list-item>
               </template>
@@ -224,10 +234,12 @@ export default defineComponent({
     const menuListFlag = ref<boolean>(false);
     const pageIteration = ref<number>(1);
     const numOfIt = ref<number>(0);
-    const arrayOfAllRuns = ref<any[]>([]);
     const jwtToken = ref<string>('');
     const showMoreFlag = ref<number>(-1);
     const indexOfRuns = ref<any>({});
+    const pubPrivFlag = ref<boolean>(false);
+    const allTheRuns = ref<any[]>([]);
+    const privateRuns = ref<any[]>([]);
     function redirectToLogin() {
       router.push('/login');
     }
@@ -268,7 +280,7 @@ export default defineComponent({
               else bool.push(false);
             }
             if (elements.title === 'Data Type') {
-              if (value.assay.includes(elements.key.trim())) bool.push(true);
+              if (elements.key.trim() === value.assay.trim()) bool.push(true);
               else bool.push(false);
             }
             if (elements.title === 'Organ') {
@@ -295,9 +307,7 @@ export default defineComponent({
         labs = allData.concat.apply([], pubsValues);
         labs.forEach((value: any, i: any) => {
           countHold.value[value.group] += 1;
-          value.assay.forEach((v: any, k: any) => {
-            countHold.value[v.trim()] += 1;
-          });
+          countHold.value[value.assay] += 1;
           countHold.value[value.species] += 1;
           countHold.value[value.organ] += 1;
         });
@@ -318,7 +328,6 @@ export default defineComponent({
       /* eslint-disable no-lonely-if */
       console.log(from);
       if (event === null || event.length === 0 || from === undefined) {
-        console.log('e,mpty');
         numOfIt.value = Object.keys(numOfPubs.value).length - 1;
         lodash.each(numOfPubs.value, (value: any, index: any) => {
           numOfPubsHold.value[index] = value;
@@ -352,9 +361,7 @@ export default defineComponent({
             if (!Object.keys(hold).includes(key)) hold[key] = [];
             hold[key].push(correctRun);
             countHold.value[correctRun.group] += 1;
-            correctRun.assay.forEach((v: any, k: any) => {
-              countHold.value[v.trim()] += 1;
-            });
+            countHold.value[correctRun.assay] += 1;
             countHold.value[correctRun.species] += 1;
             countHold.value[correctRun.organ] += 1;
           });
@@ -375,9 +382,7 @@ export default defineComponent({
               if (!Object.keys(hold).includes(key)) hold[key] = [];
               hold[key].push(correctRun);
               countHold.value[correctRun.group] += 1;
-              correctRun.assay.forEach((v: any, k: any) => {
-                countHold.value[v.trim()] += 1;
-              });
+              countHold.value[correctRun.assay] += 1;
               countHold.value[correctRun.species] += 1;
               countHold.value[correctRun.organ] += 1;
             }
@@ -422,7 +427,7 @@ export default defineComponent({
     async function getData() {
       loading.value = true;
       /* eslint-disable no-await-in-loop */
-      const allRuns = await client?.value!.getPublicRuns();
+      const allRuns = allTheRuns.value;
       numOfIt.value = (Math.ceil(allRuns.length / 8) - 1);
       const split = makearray(0, allRuns.length, (Math.ceil(allRuns.length / 8) + 1));
       const data: any = {};
@@ -456,13 +461,11 @@ export default defineComponent({
         updateJson.date = convertedTime.toDateString();
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
-        updateJson.assay = [...updateJson.assay.split(',')];
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
           const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
           const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
           updateJson.result_description = newText;
         }
-        arrayOfAllRuns.value.push(updateJson);
         data[key].push(updateJson);
       }
       labs.sort();
@@ -516,11 +519,20 @@ export default defineComponent({
       numOfPubsHold.value = data;
       loading.value = false;
     }
-    async function getSecureData() {
+    async function getSecureData(pubPriv: boolean) {
       loading.value = true;
-      const allRuns = await client?.value!.getPublicRuns();
-      numOfIt.value = (Math.ceil(allRuns.length / 8) - 1);
-      const split = makearray(0, allRuns.length, (Math.ceil(allRuns.length / 8) + 1));
+      let allRuns = [];
+      let split = [];
+      groupsAndData.value = [];
+      if (pubPriv) {
+        allRuns = privateRuns.value;
+        numOfIt.value = (Math.ceil(allRuns.length / 8) - 1);
+        split = makearray(0, allRuns.length, (Math.ceil(allRuns.length / 8) + 1));
+      } else {
+        allRuns = allTheRuns.value;
+        numOfIt.value = (Math.ceil(allRuns.length / 8) - 1);
+        split = makearray(0, allRuns.length, (Math.ceil(allRuns.length / 8) + 1));
+      }
       const data: any = {};
       const labs: any[] = [];
       const type: any[] = [];
@@ -534,34 +546,30 @@ export default defineComponent({
         const json = allRuns[index];
         if (split.includes(index)) key = (parseInt(key, 10) + 1).toString();
         if (!Object.keys(data).includes(key)) data[key] = [];
-        if (Object.keys(json).includes('group')) {
-          if (!raw_group.includes(json.group)) raw_group.push(json.group);
-          if (!labs.includes(json.group)) labs.push(json.group);
-          if (!organ.includes(json.organ)) organ.push(json.organ);
-          if (!species.includes(json.species)) species.push(json.species);
-          if (!type.includes(json.assay)) type.push(json.assay);
-          if (!Object.keys(precount).includes(json.group)) precount[json.group] = 1;
-          else precount[json.group] += 1;
-          if (!Object.keys(precount).includes(json.assay)) precount[json.assay] = 1;
-          else precount[json.assay] += 1;
-          if (!Object.keys(precount).includes(json.organ)) precount[json.organ] = 1;
-          else precount[json.organ] += 1;
-          if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
-          else precount[json.species] += 1;
-          const updateJson = json;
-          const convertedTime = new Date(json.date);
-          updateJson.date = convertedTime.toDateString();
-          updateJson.assay = [...updateJson.assay.split(',')];
-          indexingRuns[updateJson.results_id] = updateJson;
-          updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
-          if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
-            const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
-            const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
-            updateJson.result_description = newText;
-          }
-          arrayOfAllRuns.value.push(updateJson);
-          data[key].push(updateJson);
+        if (!raw_group.includes(json.group)) raw_group.push(json.group);
+        if (!labs.includes(json.group)) labs.push(json.group);
+        if (!organ.includes(json.organ)) organ.push(json.organ);
+        if (!species.includes(json.species)) species.push(json.species);
+        if (!type.includes(json.assay)) type.push(json.assay);
+        if (!Object.keys(precount).includes(json.group)) precount[json.group] = 1;
+        else precount[json.group] += 1;
+        if (!Object.keys(precount).includes(json.assay)) precount[json.assay] = 1;
+        else precount[json.assay] += 1;
+        if (!Object.keys(precount).includes(json.organ)) precount[json.organ] = 1;
+        else precount[json.organ] += 1;
+        if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
+        else precount[json.species] += 1;
+        const updateJson = json;
+        const convertedTime = new Date(json.date);
+        updateJson.date = convertedTime.toDateString();
+        indexingRuns[updateJson.results_id] = updateJson;
+        updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
+        if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
+          const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
+          const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
+          updateJson.result_description = newText;
         }
+        data[key].push(updateJson);
       }
       labs.sort();
       type.sort();
@@ -614,6 +622,11 @@ export default defineComponent({
       numOfPubsHold.value = data;
       loading.value = false;
     }
+    function publicPrivateView() {
+      pubPrivFlag.value = !pubPrivFlag.value;
+      if (!pubPrivFlag.value) getSecureData(true);
+      if (pubPrivFlag.value) getSecureData(false);
+    }
     onMounted(async () => {
       if (client.value!.user === null) {
         if (client.value.authorizationToken.length === 0) {
@@ -622,8 +635,14 @@ export default defineComponent({
           jwtToken.value = `JWT%20${go.token}`;
         } else jwtToken.value = client.value.authorizationToken;
         store.commit.setXploreData(null);
+        allTheRuns.value = await client?.value!.getPublicRuns();
+        privateRuns.value = allTheRuns.value.filter((v: any) => v.public !== 1);
         getData();
-      } else getSecureData();
+      } else {
+        allTheRuns.value = await client?.value!.getPublicRuns();
+        privateRuns.value = allTheRuns.value.filter((v: any) => v.public !== 1);
+        getSecureData(true);
+      }
     });
     return {
       SERVER_URL,
@@ -651,7 +670,6 @@ export default defineComponent({
       pageIteration,
       nextPageIteration,
       numOfIt,
-      arrayOfAllRuns,
       labColors,
       redirectToLogin,
       jwtToken,
@@ -659,6 +677,10 @@ export default defineComponent({
       showMoreFlag,
       indexOfRuns,
       grabImages,
+      pubPrivFlag,
+      allTheRuns,
+      privateRuns,
+      publicPrivateView,
     };
   },
 });
