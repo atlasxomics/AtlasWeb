@@ -3,11 +3,29 @@
         <v-row>
             <v-col
             cols="12"
-            sm="4"            >
+            sm="4">
                 <v-card-title>
                     Run Information
                 </v-card-title>
-                <v-text-field
+                  <v-text-field
+                  prepend-icon="mdi-magnify"
+                  label="Run ID"
+                  :value="search_input"
+                  @input="search_input = $event; search_runs(search_input)"
+                  @click="run_id_search_clicked = true;"
+                  v-click-outside="outside_search"
+                  >
+                  </v-text-field>
+                  <v-data-table
+                  v-if="run_id_search_clicked"
+                  single-select
+                  hide-default-footer
+                  :items-per-page="10"
+                  :headers="headers"
+                  :items="available_run_ids"
+                  >
+                  </v-data-table>
+                <!-- <v-text-field
                 v-model="run_id"
                 label="Run ID"
                 >
@@ -22,7 +40,7 @@
                     Auto Populate
                   </v-btn>
                 </template>
-                </v-text-field>
+                </v-text-field> -->
                 <v-text-field
                 v-model="run_title"
                 label="Run Title"
@@ -191,6 +209,7 @@ export default defineComponent({
       const epoch = Date.UTC(year_int, month_int, day_int);
       return epoch;
     }
+    const headers = [{ text: 'Run ID', value: 'run_id', sortable: false }];
     const date_epoch = computed(() => date_human_to_epoch(date_human_readable.value));
     const client = computed(() => store.state.client);
     const assay = ref<string>('');
@@ -205,20 +224,24 @@ export default defineComponent({
     const tissue_source = ref<string>('');
     const channel_width = ref<string>('');
     const number_channels = ref<string>('');
+    const search_input = ref<string>('');
     const assay_list = ref<Array<string>>([]);
     const organ_list = ref<Array<string>>([]);
     const species_list = ref<Array<string>>([]);
     const epitope_list = ref<Array<string>>([]);
     const group_list = ref<Array<string>>([]);
+    const available_run_ids = ref<Array<Record<string, any>>>([]);
     const tissue_source_list = ref<Array<string>>([]);
     const channel_width_list = ref<Array<string>>([]);
     const run_id = ref<string>('');
     const ngs_id = ref<string>('');
+    const run_id_search_clicked = ref<boolean>(false);
     const run_description = ref<string>('');
     const run_title = ref<string>('');
     const regulation = ref<string>('');
     const public_run = ref<boolean>(false);
     const selected_group = ref<string>('');
+    const run_ids = ref<Record<string, any>[]>([]);
     const public_run_items: List<any> = [
       {
         text: 'True',
@@ -229,9 +252,20 @@ export default defineComponent({
         value: false,
       },
     ];
-
+    function search_runs() {
+      const regexString = search_input.value;
+      console.log(regexString);
+      const matches: Array<Record<string, any>> = [];
+      const regex = new RegExp(`${regexString}.*`);
+      run_ids.value.forEach((element: any) => {
+        console.log(element.run_id);
+        if (regex.test(element.run_id)) {
+          matches.push({ run_id: element.run_id });
+        }
+      });
+      available_run_ids.value = matches;
+    }
     function assign_possible_fields_list(fields_from_db: any) {
-      console.log(fields_from_db);
       assay_list.value = fields_from_db.assay_list;
       species_list.value = fields_from_db.species_list;
       organ_list.value = fields_from_db.organ_list;
@@ -266,7 +300,6 @@ export default defineComponent({
         const human_date = new Date(0);
         human_date.setMilliseconds(db_obj.date);
         date_human_readable.value = human_date.toLocaleDateString();
-        console.log(human_date.toLocaleDateString());
       }
     }
     async function auto_populate() {
@@ -281,6 +314,9 @@ export default defineComponent({
       } catch (e) {
         snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
       }
+    }
+    function outside_search() {
+      run_id_search_clicked.value = false;
     }
     function clear_fields() {
       channel_width.value = '';
@@ -304,7 +340,6 @@ export default defineComponent({
       ngs_id.value = '';
     }
     async function upload_data() {
-      console.log('uploading data');
       try {
         const data_obj = {
           assay: assay.value,
@@ -338,12 +373,15 @@ export default defineComponent({
       }
     }
     onMounted(() => {
-      const res = client.value?.get_available_fields();
-      res!.then((result: any) => {
-        console.log(result);
-        assign_possible_fields_list(result);
+      const id_promise = client.value?.get_run_ids();
+      id_promise!.then((result: Array<Record<string, any>>) => {
+        run_ids.value = result;
+        available_run_ids.value = result;
+        const res = client.value?.get_available_fields();
+        res!.then((r: any) => {
+          assign_possible_fields_list(r);
+        });
       });
-      console.log(res);
     });
     return {
       assay,
@@ -375,6 +413,13 @@ export default defineComponent({
       tissue_source_list,
       pmid_list,
       number_channels,
+      run_ids,
+      run_id_search_clicked,
+      available_run_ids,
+      search_input,
+      headers,
+      search_runs,
+      outside_search,
       date_human_to_epoch,
       assign_fields,
       auto_populate,

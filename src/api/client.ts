@@ -693,4 +693,8 @@ export default class Client {
     console.log(resp);
     return resp.data;
   }
+  async get_run_ids() {
+    const resp = await this.axios.get('/api/v1/run_db/get_run_ids');
+    return resp.data;
+  }
 }
