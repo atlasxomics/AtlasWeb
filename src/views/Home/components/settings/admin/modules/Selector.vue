@@ -1,6 +1,7 @@
 <template>
     <div>
         <v-select
+        :disabled="disabled"
         :items="display_options"
         :label="display_label"
         @input="value_changed"
@@ -49,6 +50,7 @@ export default defineComponent({
     display_options: { type: Array, required: true },
     display_label: { type: String, required: true },
     variable: { required: true },
+    disabled: { type: Boolean, required: true },
   },
   watch: {
     variable(new_val) {

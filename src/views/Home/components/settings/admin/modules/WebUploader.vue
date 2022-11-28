@@ -9,11 +9,18 @@
                 </v-card-title>
                   <v-text-field
                   label="Run ID"
-                  v-model="run_id"
-                  @input="search_runs(run_id)"
+                  v-model="search_input"
+                  @input="search_runs"
                   @click="run_id_search_clicked = true;"
                   v-click-outside="outside_search"
                   >
+                    <template
+                    v-if="unique_run_id && search_input"
+                    v-slot:append-outer>
+                    <v-btn>
+                      New Run ID
+                    </v-btn>
+                    </template>
                   </v-text-field>
                   <v-data-table
                   v-if="run_id_search_clicked"
@@ -26,40 +33,28 @@
                   @click:row="run_selected"
                   >
                   </v-data-table>
-                <!-- <v-text-field
-                v-model="run_id"
-                label="Run ID"
-                >
-                <template
-                v-slot:append-outer
-                style="width: 50px;"
-                >
-                  <v-btn
-                  :disabled="!run_id"
-                  @click="auto_populate"
-                  >
-                    Auto Populate
-                  </v-btn>
-                </template>
-                </v-text-field> -->
                 <v-text-field
                 v-model="run_title"
                 label="Run Title"
+                :disabled="invalid_run_id"
                 >
                 </v-text-field>
                 <v-text-field
                 v-model="run_description"
                 label="Run Description"
+                :disabled="invalid_run_id"
                 >
                 </v-text-field>
                 <v-text-field
                 v-model="sample_id"
                 label = "Sample ID"
+                :disabled="invalid_run_id"
                 >
                 </v-text-field>
                 <v-text-field
                 label="Date: DD/MM/YYYY"
                 v-model="date_human_readable"
+                :disabled="invalid_run_id"
                 >
                 </v-text-field>
             </v-col>
@@ -76,6 +71,7 @@
             v-model="assay"
             label="Assay"
             :items="assay_list"
+            :disabled="invalid_run_id"
             >
             </v-select>
             <!-- <selector
@@ -95,6 +91,7 @@
             >
             </v-select> -->
             <selector
+              :disabled="invalid_run_id"
               :variable='species'
               display_label="Species"
               :display_options="species_list"
@@ -103,6 +100,7 @@
             >
             </selector>
             <selector
+            :disabled="invalid_run_id"
             :variable="organ"
             :display_options="organ_list"
             display_label="Organ"
@@ -111,6 +109,7 @@
             >
             </selector>
             <selector
+            :disabled="invalid_run_id"
             :variable="tissue_source"
             :display_options="tissue_source_list"
             display_label="Tissue Source"
@@ -118,17 +117,20 @@
             @changed="tissue_source = $event">
             </selector>
             <v-text-field
+              :disabled="invalid_run_id"
               label="Tissue Condition"
               v-model="tissue_condition"
             >
             </v-text-field>
             <v-select
+            :disabled="invalid_run_id"
             label="Channel Width µm"
             v-model="channel_width"
             :items="[10, 20, 25, 50]"
             >
             </v-select>
             <v-select
+            :disabled="invalid_run_id"
             label="Number of Channels"
             v-model="number_channels"
             :items="[50, 100]"
@@ -148,23 +150,27 @@
                 >
                 </v-text-field>
                 <v-select
+                :disabled="invalid_run_id"
                 :items = public_run_items
                 label="Public"
                 v-model="public_run"
                 >
                 </v-select>
                 <v-select
+                :disabled="invalid_run_id"
                 :items="group_list"
                 label="Group"
                 v-model="selected_group"
                 >
                 </v-select>
                 <v-text-field
+                :disabled="invalid_run_id"
                 v-model="web_obj_path"
                 label="Path"
                 >
                 </v-text-field>
                 <v-select
+                :disabled="invalid_run_id"
                 label="PMID"
                 :items="pmid_list"
                 v-model="pmid"
@@ -176,7 +182,7 @@
             <v-col
             >
                 <v-btn
-                :disabled="!run_id"
+                :disabled="invalid_run_id"
                 style="position: relative; left: 50%; bottom: 5%;"
                 @click="upload_data"
                 >
@@ -192,8 +198,6 @@ import { Client } from '@/api';
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
-import { group } from 'console';
-import { List } from 'lodash';
 import Selector from './Selector.vue';
 
 export default defineComponent({
@@ -213,6 +217,7 @@ export default defineComponent({
     const headers = [{ text: 'Run ID', value: 'run_id', sortable: false }];
     const date_epoch = computed(() => date_human_to_epoch(date_human_readable.value));
     const client = computed(() => store.state.client);
+
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
     const organ = ref<string>('');
@@ -221,11 +226,12 @@ export default defineComponent({
     const antibody = ref<string>('');
     const tissue_condition = ref<string>('');
     const pmid = ref<string>('');
-    const pmid_list = ref<List<string>>([]);
+    const pmid_list = ref<string[]>([]);
     const tissue_source = ref<string>('');
     const channel_width = ref<string>('');
     const number_channels = ref<string>('');
     const search_input = ref<string>('');
+    const invalid_run_id = ref<boolean>(true);
     const assay_list = ref<Array<string>>([]);
     const organ_list = ref<Array<string>>([]);
     const species_list = ref<Array<string>>([]);
@@ -243,7 +249,19 @@ export default defineComponent({
     const public_run = ref<boolean>(false);
     const selected_group = ref<string>('');
     const run_ids = ref<Record<string, any>[]>([]);
-    const public_run_items: List<any> = [
+    const unique_run_id = computed(() => {
+      let res = true;
+      available_run_ids.value.forEach((element: any) => {
+        if (element.run_id === search_input.value) {
+          console.log(element.run_id);
+          console.log(search_input.value);
+          res = false;
+        }
+      });
+      console.log(res);
+      return res;
+    });
+    const public_run_items: any[] = [
       {
         text: 'True',
         value: true,
@@ -254,7 +272,7 @@ export default defineComponent({
       },
     ];
     function search_runs() {
-      const regexString = run_id.value;
+      const regexString = search_input.value;
       const matches: Array<Record<string, any>> = [];
       const regex = new RegExp(`.*${regexString}.*`);
       run_ids.value.forEach((element: any) => {
@@ -339,6 +357,7 @@ export default defineComponent({
       ngs_id.value = '';
     }
     function run_selected(ele: any) {
+      invalid_run_id.value = false;
       run_id.value = ele.run_id;
       auto_populate();
     }
@@ -421,6 +440,8 @@ export default defineComponent({
       available_run_ids,
       search_input,
       headers,
+      invalid_run_id,
+      unique_run_id,
       search_runs,
       outside_search,
       date_human_to_epoch,
