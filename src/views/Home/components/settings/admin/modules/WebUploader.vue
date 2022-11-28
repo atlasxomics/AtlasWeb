@@ -8,21 +8,22 @@
                     Run Information
                 </v-card-title>
                   <v-text-field
-                  prepend-icon="mdi-magnify"
                   label="Run ID"
-                  :value="search_input"
-                  @input="search_input = $event; search_runs(search_input)"
+                  v-model="run_id"
+                  @input="search_runs(run_id)"
                   @click="run_id_search_clicked = true;"
                   v-click-outside="outside_search"
                   >
                   </v-text-field>
                   <v-data-table
                   v-if="run_id_search_clicked"
+                  dense
                   single-select
                   hide-default-footer
-                  :items-per-page="10"
+                  :items-per-page="4"
                   :headers="headers"
                   :items="available_run_ids"
+                  @click:row="run_selected"
                   >
                   </v-data-table>
                 <!-- <v-text-field
@@ -253,12 +254,10 @@ export default defineComponent({
       },
     ];
     function search_runs() {
-      const regexString = search_input.value;
-      console.log(regexString);
+      const regexString = run_id.value;
       const matches: Array<Record<string, any>> = [];
-      const regex = new RegExp(`${regexString}.*`);
+      const regex = new RegExp(`.*${regexString}.*`);
       run_ids.value.forEach((element: any) => {
-        console.log(element.run_id);
         if (regex.test(element.run_id)) {
           matches.push({ run_id: element.run_id });
         }
@@ -338,6 +337,10 @@ export default defineComponent({
       selected_group.value = '';
       public_run.value = false;
       ngs_id.value = '';
+    }
+    function run_selected(ele: any) {
+      run_id.value = ele.run_id;
+      auto_populate();
     }
     async function upload_data() {
       try {
@@ -425,6 +428,7 @@ export default defineComponent({
       auto_populate,
       assign_possible_fields_list,
       upload_data,
+      run_selected,
     };
   },
 });

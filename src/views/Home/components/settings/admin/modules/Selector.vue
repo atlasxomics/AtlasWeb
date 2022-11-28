@@ -60,8 +60,6 @@ export default defineComponent({
     const custom_option = ref<string>('');
     const add_option = ref<boolean>(false);
     function value_changed() {
-      console.log('here');
-      console.log(local_variable);
       ctx.emit('changed', local_variable.value);
     }
     function new_option() {
