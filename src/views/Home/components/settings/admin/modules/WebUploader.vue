@@ -24,11 +24,6 @@
                 </template>
                 </v-text-field>
                 <v-text-field
-                v-model="ngs_id"
-                label="NGS Library ID"
-                >
-                </v-text-field>
-                <v-text-field
                 v-model="run_title"
                 label="Run Title"
                 >
@@ -44,7 +39,7 @@
                 >
                 </v-text-field>
                 <v-text-field
-                label="Date: YYYY/MM/DD"
+                label="Date: DD/MM/YYYY"
                 v-model="date_human_readable"
                 >
                 </v-text-field>
@@ -108,6 +103,18 @@
               v-model="tissue_condition"
             >
             </v-text-field>
+            <v-select
+            label="Channel Width µm"
+            v-model="channel_width"
+            :items="[10, 20, 25, 50]"
+            >
+            </v-select>
+            <v-select
+            label="Number of Channels"
+            v-model="number_channels"
+            :items="[50, 100]"
+            >
+            </v-select>
             </v-col>
             <v-col
             cols="12"
@@ -116,6 +123,11 @@
                 <v-card-title>
                     Web Object
                 </v-card-title>
+                <v-text-field
+                label="NGS ID"
+                v-model="ngs_id"
+                >
+                </v-text-field>
                 <v-select
                 :items = public_run_items
                 label="Public"
@@ -172,7 +184,7 @@ export default defineComponent({
     const date_human_readable = ref<string>('');
     function date_human_to_epoch(date_human: string) {
       const lis = date_human.split('/');
-      const [year, month, day] = lis;
+      const [day, month, year] = lis;
       const year_int = Number.parseInt(year, 10);
       const month_int = Number.parseInt(month, 10) - 1;
       const day_int = Number.parseInt(day, 10);
@@ -192,6 +204,7 @@ export default defineComponent({
     const pmid_list = ref<List<string>>([]);
     const tissue_source = ref<string>('');
     const channel_width = ref<string>('');
+    const number_channels = ref<string>('');
     const assay_list = ref<Array<string>>([]);
     const organ_list = ref<Array<string>>([]);
     const species_list = ref<Array<string>>([]);
@@ -240,10 +253,20 @@ export default defineComponent({
       web_obj_path.value = db_obj.results_folder_path;
       sample_id.value = db_obj.sample_id;
       ngs_id.value = db_obj.ngs_id;
+      channel_width.value = db_obj.channel_width;
+      number_channels.value = db_obj.number_channels;
+      tissue_source.value = db_obj.tissue_source;
+      pmid.value = db_obj.pmid;
       if (db_obj.public === 1) {
         public_run.value = true;
       } else {
         public_run.value = false;
+      }
+      if (db_obj.date) {
+        const human_date = new Date(0);
+        human_date.setMilliseconds(db_obj.date);
+        date_human_readable.value = human_date.toLocaleDateString();
+        console.log(human_date.toLocaleDateString());
       }
     }
     async function auto_populate() {
@@ -260,6 +283,8 @@ export default defineComponent({
       }
     }
     function clear_fields() {
+      channel_width.value = '';
+      number_channels.value = '';
       assay.value = '';
       species.value = '';
       organ.value = '';
@@ -276,6 +301,7 @@ export default defineComponent({
       pmid.value = '';
       selected_group.value = '';
       public_run.value = false;
+      ngs_id.value = '';
     }
     async function upload_data() {
       console.log('uploading data');
@@ -297,6 +323,9 @@ export default defineComponent({
           group: selected_group.value,
           public: public_run.value,
           date: date_epoch.value,
+          channel_width: channel_width.value,
+          number_channels: number_channels.value,
+          ngs_id: ngs_id.value,
         };
         const resp = await client.value?.upload_metadata_from_page(data_obj);
         if (resp === 'Success') {
@@ -345,6 +374,7 @@ export default defineComponent({
       tissue_source,
       tissue_source_list,
       pmid_list,
+      number_channels,
       date_human_to_epoch,
       assign_fields,
       auto_populate,

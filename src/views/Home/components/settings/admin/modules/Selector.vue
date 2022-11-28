@@ -48,7 +48,7 @@ export default defineComponent({
   props: {
     display_options: { type: Array, required: true },
     display_label: { type: String, required: true },
-    variable: { type: String, required: true },
+    variable: { required: true },
   },
   watch: {
     variable(new_val) {
