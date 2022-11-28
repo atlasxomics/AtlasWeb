@@ -1485,7 +1485,7 @@ export default defineComponent({
       ref: 'geneMotifButton',
       enabled: true,
       click: () => {
-        (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
+        if (!assayFlag.value) (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
       },
     };
     const bg_color_button = {

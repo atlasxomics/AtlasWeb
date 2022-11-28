@@ -679,4 +679,18 @@ export default class Client {
     console.log(resp.data);
     return resp.data;
   }
+  async get_available_fields() {
+    const resp = await this.axios.get('/api/v1/run_db/get_field_options');
+    return resp.data;
+  }
+  async upload_metadata_from_page(data_obj: any) {
+    const resp = await this.axios.post('/api/v1/run_db/upload_metadata_page', data_obj);
+    return resp.data;
+  }
+  async get_info_from_run_id(run_id: string) {
+    const pl = { run_id };
+    const resp = await this.axios.post('/api/v1/run_db/get_info_from_run_id', pl);
+    console.log(resp);
+    return resp.data;
+  }
 }

@@ -11,23 +11,17 @@
       <v-tab-item key="ResetPassword">
         <reset-password/>
       </v-tab-item>
-      <v-tab-item key="AddRemoveUser">
-        <add-remove-user/>
-      </v-tab-item>
-      <v-tab-item key="AddRemoveGroup">
-        <add-remove-group/>
-      </v-tab-item>
       <v-tab-item key="WorkerStatus">
         <worker-status/>
       </v-tab-item>
       <v-tab-item key="UserManagement">
         <user-management/>
       </v-tab-item>
+      <v-tab-item key="Uploader">
+        <web-uploader/>
+      </v-tab-item>
       <v-tab-item key="DatabaseAdmin">
         <database-admin/>
-      </v-tab-item>
-      <v-tab-item key="PublicDatabaseAdmin">
-        <public-database-admin/>
       </v-tab-item>
     </v-tabs-items>
   </v-container>
@@ -48,6 +42,7 @@ import AddRemoveUser from './modules/AddRemoveUser.vue';
 import UserManagement from './modules/UserManagement.vue';
 import DatabaseAdmin from './modules/DatabaseAdmin.vue';
 import PublicDatabaseAdmin from './modules/PublicDatabaseAdmin.vue';
+import WebUploader from './modules/WebUploader.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -58,7 +53,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Add/Remove User', 'Add/Remove Group', 'Worker Status', 'User Management', 'Database Administration', 'Public DB Administration'];
+const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Add A Run', 'Database Administration'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -70,6 +65,7 @@ export default defineComponent({
     UserManagement,
     DatabaseAdmin,
     PublicDatabaseAdmin,
+    WebUploader,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;
