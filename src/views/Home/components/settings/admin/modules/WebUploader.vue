@@ -290,10 +290,6 @@ export default defineComponent({
         value: false,
       },
     ];
-    function edit_run_id() {
-      run_id_selected.value = false;
-      editing_run_id_selection.value = true;
-    }
     function search_runs() {
       const regexString = search_input.value;
       const matches: Array<Record<string, any>> = [];
@@ -304,6 +300,11 @@ export default defineComponent({
         }
       });
       available_run_ids.value = matches;
+    }
+    function edit_run_id() {
+      run_id_selected.value = false;
+      editing_run_id_selection.value = true;
+      search_runs();
     }
     function assign_possible_fields_list(fields_from_db: any) {
       assay_list.value = fields_from_db.assay_list;
