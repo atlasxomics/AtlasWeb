@@ -7,23 +7,40 @@
                 <v-card-title>
                     Run Information
                 </v-card-title>
+                <v-row>
                   <v-text-field
-                  label="Run ID"
+                  :disabled="run_id_selected"
+                  label="Select Run ID"
                   v-model="search_input"
                   @input="search_runs"
                   @click="run_id_search_clicked = true;"
                   v-click-outside="outside_search"
                   >
-                    <template
-                    v-if="unique_run_id && search_input"
-                    v-slot:append-outer>
-                    <v-btn>
-                      New Run ID
-                    </v-btn>
-                    </template>
                   </v-text-field>
+                    <v-icon
+                    v-if="unique_run_id && search_input && !run_id_selected"
+                    color="green"
+                    @click="user_entered_run_id"
+                    >
+                    mdi-plus
+                    </v-icon>
+                    <!-- <v-btn
+                    v-if="unique_run_id && search_input && !run_id_selected"
+                    color="blue"
+                    style="width: 10%"
+                    >
+                      Use New Run ID
+                    </v-btn> -->
+                    <v-icon
+                    v-if="run_id_selected"
+                    @click="edit_run_id"
+                    color="red"
+                    >
+                      mdi-pencil
+                    </v-icon>
+                </v-row>
                   <v-data-table
-                  v-if="run_id_search_clicked"
+                  v-if="!run_id_selected"
                   dense
                   single-select
                   hide-default-footer
@@ -36,25 +53,25 @@
                 <v-text-field
                 v-model="run_title"
                 label="Run Title"
-                :disabled="invalid_run_id"
+                :disabled="!run_id_selected"
                 >
                 </v-text-field>
                 <v-text-field
                 v-model="run_description"
                 label="Run Description"
-                :disabled="invalid_run_id"
+                :disabled="!run_id_selected"
                 >
                 </v-text-field>
                 <v-text-field
                 v-model="sample_id"
                 label = "Sample ID"
-                :disabled="invalid_run_id"
+                :disabled="!run_id_selected"
                 >
                 </v-text-field>
                 <v-text-field
                 label="Date: DD/MM/YYYY"
                 v-model="date_human_readable"
-                :disabled="invalid_run_id"
+                :disabled="!run_id_selected"
                 >
                 </v-text-field>
             </v-col>
@@ -71,7 +88,7 @@
             v-model="assay"
             label="Assay"
             :items="assay_list"
-            :disabled="invalid_run_id"
+            :disabled="!run_id_selected"
             >
             </v-select>
             <!-- <selector
@@ -91,7 +108,7 @@
             >
             </v-select> -->
             <selector
-              :disabled="invalid_run_id"
+              :disabled="!run_id_selected"
               :variable='species'
               display_label="Species"
               :display_options="species_list"
@@ -100,7 +117,7 @@
             >
             </selector>
             <selector
-            :disabled="invalid_run_id"
+            :disabled="!run_id_selected"
             :variable="organ"
             :display_options="organ_list"
             display_label="Organ"
@@ -109,7 +126,7 @@
             >
             </selector>
             <selector
-            :disabled="invalid_run_id"
+            :disabled="!run_id_selected"
             :variable="tissue_source"
             :display_options="tissue_source_list"
             display_label="Tissue Source"
@@ -117,20 +134,20 @@
             @changed="tissue_source = $event">
             </selector>
             <v-text-field
-              :disabled="invalid_run_id"
+              :disabled="!run_id_selected"
               label="Tissue Condition"
               v-model="tissue_condition"
             >
             </v-text-field>
             <v-select
-            :disabled="invalid_run_id"
+            :disabled="!run_id_selected"
             label="Channel Width µm"
             v-model="channel_width"
             :items="[10, 20, 25, 50]"
             >
             </v-select>
             <v-select
-            :disabled="invalid_run_id"
+            :disabled="!run_id_selected"
             label="Number of Channels"
             v-model="number_channels"
             :items="[50, 100]"
@@ -150,27 +167,27 @@
                 >
                 </v-text-field>
                 <v-select
-                :disabled="invalid_run_id"
+                :disabled="!run_id_selected"
                 :items = public_run_items
                 label="Public"
                 v-model="public_run"
                 >
                 </v-select>
                 <v-select
-                :disabled="invalid_run_id"
+                :disabled="!run_id_selected"
                 :items="group_list"
                 label="Group"
                 v-model="selected_group"
                 >
                 </v-select>
                 <v-text-field
-                :disabled="invalid_run_id"
+                :disabled="!run_id_selected"
                 v-model="web_obj_path"
                 label="Path"
                 >
                 </v-text-field>
                 <v-select
-                :disabled="invalid_run_id"
+                :disabled="!run_id_selected"
                 label="PMID"
                 :items="pmid_list"
                 v-model="pmid"
@@ -182,7 +199,7 @@
             <v-col
             >
                 <v-btn
-                :disabled="invalid_run_id"
+                :disabled="!run_id_selected"
                 style="position: relative; left: 50%; bottom: 5%;"
                 @click="upload_data"
                 >
@@ -196,13 +213,14 @@
 <script lang="ts">
 import { Client } from '@/api';
 import { snackbar } from '@/components/GlobalSnackbar';
+import Views from '@/filemenu/view/components/Views.vue';
 import store from '@/store';
 import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
 import Selector from './Selector.vue';
 
 export default defineComponent({
   name: 'WebUploader',
-  components: { Selector },
+  components: { Selector, Views },
   setup(props, ctx) {
     const date_human_readable = ref<string>('');
     function date_human_to_epoch(date_human: string) {
@@ -231,7 +249,6 @@ export default defineComponent({
     const channel_width = ref<string>('');
     const number_channels = ref<string>('');
     const search_input = ref<string>('');
-    const invalid_run_id = ref<boolean>(true);
     const assay_list = ref<Array<string>>([]);
     const organ_list = ref<Array<string>>([]);
     const species_list = ref<Array<string>>([]);
@@ -243,6 +260,7 @@ export default defineComponent({
     const run_id = ref<string>('');
     const ngs_id = ref<string>('');
     const run_id_search_clicked = ref<boolean>(false);
+    const run_id_selected = ref<boolean>(false);
     const run_description = ref<string>('');
     const run_title = ref<string>('');
     const regulation = ref<string>('');
@@ -271,6 +289,9 @@ export default defineComponent({
         value: false,
       },
     ];
+    function edit_run_id() {
+      run_id_selected.value = false;
+    }
     function search_runs() {
       const regexString = search_input.value;
       const matches: Array<Record<string, any>> = [];
@@ -335,6 +356,13 @@ export default defineComponent({
     function outside_search() {
       run_id_search_clicked.value = false;
     }
+    function user_entered_run_id() {
+      const temp_ele = { run_id: search_input.value };
+      run_ids.value.push(temp_ele);
+      available_run_ids.value.push(temp_ele);
+      run_id.value = search_input.value;
+      run_id_selected.value = true;
+    }
     function clear_fields() {
       channel_width.value = '';
       number_channels.value = '';
@@ -357,7 +385,8 @@ export default defineComponent({
       ngs_id.value = '';
     }
     function run_selected(ele: any) {
-      invalid_run_id.value = false;
+      search_input.value = ele.run_id;
+      run_id_selected.value = true;
       run_id.value = ele.run_id;
       auto_populate();
     }
@@ -440,8 +469,10 @@ export default defineComponent({
       available_run_ids,
       search_input,
       headers,
-      invalid_run_id,
       unique_run_id,
+      run_id_selected,
+      edit_run_id,
+      user_entered_run_id,
       search_runs,
       outside_search,
       date_human_to_epoch,
