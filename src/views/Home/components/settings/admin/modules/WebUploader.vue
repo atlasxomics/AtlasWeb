@@ -24,19 +24,19 @@
                     >
                     mdi-plus
                     </v-icon>
-                    <!-- <v-btn
-                    v-if="unique_run_id && search_input && !run_id_selected"
-                    color="blue"
-                    style="width: 10%"
-                    >
-                      Use New Run ID
-                    </v-btn> -->
                     <v-icon
                     v-if="run_id_selected"
                     @click="edit_run_id"
                     color="red"
                     >
                       mdi-pencil
+                    </v-icon>
+                    <v-icon
+                    v-if="editing_run_id_selection"
+                    color="red"
+                    @click="close_edit_run_id"
+                    >
+                    mdi-close
                     </v-icon>
                 </v-row>
                   <v-data-table
@@ -266,6 +266,7 @@ export default defineComponent({
     const regulation = ref<string>('');
     const public_run = ref<boolean>(false);
     const selected_group = ref<string>('');
+    const editing_run_id_selection = ref<boolean>(false);
     const run_ids = ref<Record<string, any>[]>([]);
     const unique_run_id = computed(() => {
       let res = true;
@@ -291,6 +292,7 @@ export default defineComponent({
     ];
     function edit_run_id() {
       run_id_selected.value = false;
+      editing_run_id_selection.value = true;
     }
     function search_runs() {
       const regexString = search_input.value;
@@ -340,29 +342,6 @@ export default defineComponent({
         date_human_readable.value = human_date.toLocaleDateString();
       }
     }
-    async function auto_populate() {
-      try {
-        const resp = await client.value?.get_info_from_run_id(run_id.value);
-        if (resp === 'Not-Found') {
-          snackbar.dispatch({ text: 'Run ID Not Present in Database.', options: { color: 'red' } });
-        } else {
-          snackbar.dispatch({ text: 'Run Information Successfully Loaded.', options: { color: 'green' } });
-          assign_fields(resp);
-        }
-      } catch (e) {
-        snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
-      }
-    }
-    function outside_search() {
-      run_id_search_clicked.value = false;
-    }
-    function user_entered_run_id() {
-      const temp_ele = { run_id: search_input.value };
-      run_ids.value.push(temp_ele);
-      available_run_ids.value.push(temp_ele);
-      run_id.value = search_input.value;
-      run_id_selected.value = true;
-    }
     function clear_fields() {
       channel_width.value = '';
       number_channels.value = '';
@@ -384,11 +363,43 @@ export default defineComponent({
       public_run.value = false;
       ngs_id.value = '';
     }
+    async function auto_populate() {
+      try {
+        const resp = await client.value?.get_info_from_run_id(run_id.value);
+        if (resp === 'Not-Found') {
+          snackbar.dispatch({ text: 'Run ID Not Present in Database.', options: { color: 'red' } });
+          clear_fields();
+        } else {
+          snackbar.dispatch({ text: 'Run Information Successfully Loaded.', options: { color: 'green' } });
+          assign_fields(resp);
+        }
+      } catch (e) {
+        snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
+      }
+    }
+    function outside_search() {
+      run_id_search_clicked.value = false;
+    }
+    function user_entered_run_id() {
+      const temp_ele = { run_id: search_input.value };
+      editing_run_id_selection.value = false;
+      run_ids.value.push(temp_ele);
+      available_run_ids.value.push(temp_ele);
+      run_id.value = search_input.value;
+      run_id_selected.value = true;
+      clear_fields();
+    }
     function run_selected(ele: any) {
       search_input.value = ele.run_id;
       run_id_selected.value = true;
       run_id.value = ele.run_id;
+      editing_run_id_selection.value = false;
       auto_populate();
+    }
+    function close_edit_run_id() {
+      editing_run_id_selection.value = false;
+      run_id_selected.value = true;
+      search_input.value = run_id.value;
     }
     async function upload_data() {
       try {
@@ -471,6 +482,8 @@ export default defineComponent({
       headers,
       unique_run_id,
       run_id_selected,
+      editing_run_id_selection,
+      close_edit_run_id,
       edit_run_id,
       user_entered_run_id,
       search_runs,
