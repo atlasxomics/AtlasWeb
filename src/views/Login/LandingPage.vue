@@ -119,6 +119,10 @@
               <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path+data.run_id">
                 <v-row>
                   <v-col cols="12" sm="8">
+                    <v-btn
+                    v-if="resolveAuthGroup(['admin'])"
+                    @click="edit_result(data.results_id)"
+                    > Edit </v-btn>
                     <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{`Spatial ${data.assay} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-card-title>
                     <v-card-subtitle>{{data.date}}</v-card-subtitle>
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antbody: ${data.epitope}` : ''}`}}</v-card-text>
@@ -199,7 +203,7 @@
 import { defineComponent, ref, watchEffect, onMounted, computed } from '@vue/composition-api';
 import { login, isClient, Client } from '@/api';
 import lodash, { lte, update } from 'lodash';
-import { loggedIn, saveCookie, readCookie, logout } from '@/utils/auth';
+import { loggedIn, saveCookie, readCookie, logout, resolveAuthGroup } from '@/utils/auth';
 import { generateRouteByQuery } from '@/utils';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
@@ -255,6 +259,13 @@ export default defineComponent({
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
+    }
+    function edit_result(results_id: string) {
+      console.log(results_id);
+      const query = { component: 'AdminPanel', params: { action: 'edit', results_id } };
+      const newRoute = generateRouteByQuery(currentRoute.value, query);
+      console.log(newRoute);
+      router.push(newRoute);
     }
     function checkBoxSort(ev: string, title: any) {
       pageIteration.value = 1;
@@ -689,6 +700,8 @@ export default defineComponent({
       allTheRuns,
       privateRuns,
       publicPrivateView,
+      resolveAuthGroup,
+      edit_result,
     };
   },
 });

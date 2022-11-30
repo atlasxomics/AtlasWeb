@@ -113,6 +113,7 @@
             </v-select>
             <selector
             v-if="assay === 'CUT&Tag'"
+            :disabled="!run_id_selected"
             :variable="antibody"
             display_label="Epitope Name"
             :display_options="epitope_list"
@@ -236,13 +237,18 @@
 import { Client } from '@/api';
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
-import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
+import { defineComponent, onMounted, ref, computed, watch } from '@vue/composition-api';
 import Selector from './Selector.vue';
 
 export default defineComponent({
   name: 'WebUploader',
-  props: { results_id: { required: true } },
   components: { Selector },
+  props: { },
+  watch: {
+    child_results_id(value) {
+      console.log(value);
+    },
+  },
   setup(props, ctx) {
     const date_human_readable = ref<string>('');
     function date_human_to_epoch(date_human: string) {
@@ -282,7 +288,7 @@ export default defineComponent({
     const results_selection_list = ref<any[]>([]);
     const run_id = ref<string>('');
     const ngs_id = ref<string>('');
-    const results_id = ref<string|null>(null);
+    const results_id = ref<number|null>(null);
     const run_id_search_clicked = ref<boolean>(false);
     const multiple_run_information = ref<Record<string, any>>({});
     const run_id_selected = ref<boolean>(false);
@@ -389,7 +395,18 @@ export default defineComponent({
       ngs_id.value = '';
       results_id.value = null;
     }
-    async function auto_populate() {
+    async function auto_populate_from_results_id(id: number) {
+      try {
+        console.log('autopopulating from results_id');
+        console.log(id);
+        const resp = await client.value?.get_info_from_results_id(id);
+        assign_fields(resp);
+        console.log(resp);
+      } catch (e) {
+        console.log(e);
+      }
+    }
+    async function auto_populate_from_run_id() {
       try {
         const resp: any[] = await client.value?.get_info_from_run_id(run_id.value);
         if (resp[0] === 'Not-Found') {
@@ -438,7 +455,7 @@ export default defineComponent({
       run_id_selected.value = true;
       run_id.value = ele.run_id;
       editing_run_id_selection.value = false;
-      auto_populate();
+      auto_populate_from_run_id();
     }
     function close_edit_run_id() {
       editing_run_id_selection.value = false;
@@ -490,9 +507,6 @@ export default defineComponent({
           assign_possible_fields_list(r);
         });
       });
-      if (props.results_id) {
-        console.log(props.results_id);
-      }
     });
     return {
       assay,
@@ -536,6 +550,7 @@ export default defineComponent({
       results_selection_list,
       results_selection_headers,
       multiple_run_information,
+      auto_populate_from_results_id,
       results_id_selected,
       close_edit_run_id,
       edit_run_id,
@@ -544,7 +559,7 @@ export default defineComponent({
       outside_search,
       date_human_to_epoch,
       assign_fields,
-      auto_populate,
+      auto_populate_from_run_id,
       assign_possible_fields_list,
       upload_data,
       run_selected,

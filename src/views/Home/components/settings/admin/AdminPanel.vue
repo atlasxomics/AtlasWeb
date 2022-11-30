@@ -1,5 +1,9 @@
 <template>
-  <v-container v-if="resolveAuthGroup(['admin'])" fluid>
+  <!-- <v-container v-if="resolveAuthGroup(['admin'])" fluid> -->
+   <v-container fluid>
+    <div
+    ref="testRef">
+    </div>
     <v-tabs
       v-model="tab"
       >
@@ -17,9 +21,10 @@
       <v-tab-item key="UserManagement">
         <user-management/>
       </v-tab-item>
-      <v-tab-item key="Uploader">
+      <v-tab-item key="Uploader" eager>
         <web-uploader
-        :results_id="results_id"
+        :results_id="parent_results_id"
+        ref="run_editor"
         >
         </web-uploader>
       </v-tab-item>
@@ -32,7 +37,7 @@
 
 <script lang='ts'>
 
-import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
+import { ref, watch, defineComponent, computed, onMounted, watchEffect, getCurrentInstance } from '@vue/composition-api';
 import lodash from 'lodash';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
@@ -76,15 +81,18 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const tab = ref<any>(1);
-    const results_id = computed(() => props.query.results_id);
+    const parent_results_id = ref<any>(-1);
+    const example_ref = ref(null);
     onMounted(async () => {
       await clientReady;
-      console.log('at admin panel');
-      console.log(props.query);
-      if (props.query.action) {
+      // console.log(ctx.refs);
+      // console.log(ctx.refs.testRef);
+      if (props.query.params) {
         tab.value = 3;
-        if (props.query.action === 'edit') {
-          console.log(props.query.results_id);
+        if (props.query.params.action === 'edit') {
+          console.log(props.query.params.results_id);
+          (ctx as any).refs.run_editor.auto_populate_from_results_id(props.query.params.results_id);
+          // parent_results_id.value = props.query.params.results_id;
         }
       }
       store.commit.setSubmenu(null);
@@ -93,7 +101,7 @@ export default defineComponent({
       tabs,
       tab,
       client,
-      results_id,
+      parent_results_id,
       resolveAuthGroup,
     };
   },

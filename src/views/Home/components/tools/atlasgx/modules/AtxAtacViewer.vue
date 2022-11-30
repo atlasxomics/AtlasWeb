@@ -1199,6 +1199,8 @@ export default defineComponent({
       tooltip.add(tooltipText);
       tooltipRight.add(tooltipTagRight);
       tooltipRight.add(tooltipTextRight);
+      console.log(ctx.refs);
+      console.log(ctx.refs.annotationLayerDualAtac);
       (ctx.refs.annotationLayerDualAtac as any).getNode().add(tooltip);
       (ctx.refs.annotationLayerDualAtacRight as any).getNode().add(tooltipRight);
     });
