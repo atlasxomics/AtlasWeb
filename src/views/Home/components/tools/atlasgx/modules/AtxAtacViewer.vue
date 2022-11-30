@@ -253,7 +253,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey'],
+  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -365,6 +365,8 @@ export default defineComponent({
     const maxY_UMAP = ref<number>(0);
     const geneSummation = ref<any[]>([]);
     const geneMotif = computed(() => (props.geneOmotif));
+    const maxMinBoundaryFromParents = computed(() => (props.userBoundary));
+    const maxMinBoundary = ref<any[]>([]);
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
@@ -500,6 +502,13 @@ export default defineComponent({
       }
       return arr;
     }
+    function checkBoundary(value: number) {
+      if (maxMinBoundary.value[0] === '' && maxMinBoundary.value[0] === '') return value;
+      if (value > parseFloat(maxMinBoundary.value[0])) return parseFloat(maxMinBoundary.value[0]);
+      if (value < parseFloat(maxMinBoundary.value[0]) && value > parseFloat(maxMinBoundary.value[1])) return value;
+      if (value < parseFloat(maxMinBoundary.value[1])) return parseFloat(maxMinBoundary.value[1]);
+      return value;
+    }
     async function updateCircles() {
       if (spatialData.value === null || spatialData.value.spatial === undefined) return;
       isHighlighted.value = false;
@@ -616,6 +625,8 @@ export default defineComponent({
         } else ctx.emit('spatialCircleData', circles);
       } else {
         const geneSum: number[] = [];
+        highestCount.value = -10000;
+        lowestCount.value = 10000;
         spatialData.value.spatial.forEach((v: string[], i: number) => {
           if (v[0].includes('C')) {
             let value1 = v[1];
@@ -673,15 +684,14 @@ export default defineComponent({
             });
             c.total = lodash.sum(Object.values(c.genes));
             ci.total = lodash.sum(Object.values(ci.genes));
-            geneSum.push(c.total);
+            geneSum.push(checkBoundary(c.total));
+            const avg = c.total / selectedGenes.value.length;
+            if (avg > highestCount.value) highestCount.value = avg;
+            if (avg < lowestCount.value) lowestCount.value = avg;
             circles.push(c);
             circlesUMAP.push(ci);
           }
         });
-        highestCount.value = -10000;
-        lowestCount.value = 10000;
-        let highAvg = -10000;
-        let lowAvg = 10000000;
         const geneColors = colormapBounded(colors_intensity, geneSum, selectedGenes.value.length);
         circles.forEach((v: any, i: any) => {
           const clr = (geneSum[i] + (12 * selectedGenes.value.length) > 0) ? geneColors[i] : inactiveColor.value;
@@ -693,16 +703,10 @@ export default defineComponent({
           circlesUMAP[i].originalColor = clr;
           circlesUMAP[i].fill = clr;
           circlesUMAP[i].stroke = clr;
-          const avg = v.total / selectedGenes.value.length;
-          if (avg > highAvg) {
-            highAvg = avg;
-          }
-          if (avg < lowAvg) {
-            lowAvg = avg;
-          }
         });
-        stepArray.value = makearray(highAvg, lowAvg);
+        stepArray.value = makearray(checkBoundary(highestCount.value), checkBoundary(lowestCount.value));
         ctx.emit('spatialCircleData', circles);
+        ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
       }
       if (averageInd.value) {
         ctx.emit('singleCircleData', { coords: circles, intense: colors_intensity });
@@ -870,10 +874,6 @@ export default defineComponent({
       }
       tooltipText.text(text);
       tooltip.show();
-      if (isClusterView.value && !highlightedCluster.value.includes(item.cluster) && (!isDrawing.value && !isDrawingRect.value)) {
-        const { cluster } = item;
-        highlightCluster([cluster]);
-      }
     }
     async function mouseOutOnSpatial(ev: any) {
       const mousePos = { x: ev.evt.layerX, y: ev.evt.layerY };
@@ -932,10 +932,6 @@ export default defineComponent({
       }
       tooltipTextRight.text(text);
       tooltipRight.show();
-      if (isClusterView.value && !highlightedCluster.value.includes(item.cluster) && (!isDrawing.value && !isDrawingRect.value)) {
-        const { cluster } = item;
-        highlightCluster([cluster]);
-      }
     }
     async function mouseOutOnSpatialRight(ev: any) {
       isHighlighted.value = false;
@@ -1172,6 +1168,7 @@ export default defineComponent({
       reScaleUMAP();
     });
     watch(selectedGenes, async (v: any[]) => {
+      maxMinBoundary.value = ['', ''];
       if (v && selectedGenes.value.length === 0) {
         isClusterView.value = true;
         stepArray.value = [];
@@ -1189,6 +1186,10 @@ export default defineComponent({
       if (typeof v === 'undefined') gene = [];
       if (typeof v === 'string') gene = [gene];
       selectedGenes.value = gene;
+    });
+    watch(maxMinBoundaryFromParents, (v: any) => {
+      maxMinBoundary.value = v;
+      updateCircles();
     });
     watch(loading, (v: any) => {
       ctx.emit('loading_value', v);
@@ -1284,6 +1285,9 @@ export default defineComponent({
       geneMotif,
       tableKeyFromParent,
       geneSummation,
+      maxMinBoundary,
+      maxMinBoundaryFromParents,
+      checkBoundary,
     };
   },
 });

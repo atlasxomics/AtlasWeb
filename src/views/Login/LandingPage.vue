@@ -334,7 +334,6 @@ export default defineComponent({
     }
     async function searchRuns(event: string, from: any) {
       /* eslint-disable no-lonely-if */
-      console.log(from);
       if (event === null || event.length === 0 || from === undefined) {
         numOfIt.value = Object.keys(numOfPubs.value).length - 1;
         lodash.each(numOfPubs.value, (value: any, index: any) => {
