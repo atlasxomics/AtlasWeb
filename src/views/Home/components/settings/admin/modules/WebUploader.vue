@@ -112,7 +112,7 @@
             >
             </v-select>
             <selector
-            v-if="assay === 'CUT&Tag'"
+            v-show="assay == 'CUT&Tag'"
             :disabled="!run_id_selected"
             :variable="antibody"
             display_label="Epitope Name"
@@ -121,13 +121,6 @@
             @changed="antibody = $event"
             >
             </selector>
-            <v-select
-            v-if="assay === 'CUT&Tag'"
-            :items="['activation', 'repression']"
-            label="Regulation"
-            v-model="regulation"
-            >
-            </v-select>
             <selector
               :disabled="!run_id_selected"
               :variable='species'
@@ -243,12 +236,7 @@ import Selector from './Selector.vue';
 export default defineComponent({
   name: 'WebUploader',
   components: { Selector },
-  props: { },
-  watch: {
-    child_results_id(value) {
-      console.log(value);
-    },
-  },
+  props: ['results_id'],
   setup(props, ctx) {
     const date_human_readable = ref<string>('');
     function date_human_to_epoch(date_human: string) {
@@ -346,6 +334,9 @@ export default defineComponent({
       pmid_list.value = fields_from_db.publication_list;
     }
     function assign_fields(db_obj: any) {
+      console.log(db_obj);
+      run_id.value = db_obj.run_id;
+      search_input.value = run_id.value;
       assay.value = db_obj.assay;
       species.value = db_obj.species;
       organ.value = db_obj.organ;
@@ -361,6 +352,7 @@ export default defineComponent({
       number_channels.value = db_obj.number_channels;
       tissue_source.value = db_obj.tissue_source;
       results_id.value = db_obj.results_id;
+      antibody.value = db_obj.epitope;
       pmid.value = db_obj.pmid;
       if (db_obj.public === 1) {
         public_run.value = true;
@@ -397,11 +389,9 @@ export default defineComponent({
     }
     async function auto_populate_from_results_id(id: number) {
       try {
-        console.log('autopopulating from results_id');
-        console.log(id);
         const resp = await client.value?.get_info_from_results_id(id);
         assign_fields(resp);
-        console.log(resp);
+        run_id_selected.value = true;
       } catch (e) {
         console.log(e);
       }
@@ -448,7 +438,6 @@ export default defineComponent({
       const data = results_selection_list.value[index];
       assign_fields(data);
       show_result_selection.value = false;
-      // console.log(data);
     }
     function run_selected(ele: any) {
       search_input.value = ele.run_id;
@@ -497,16 +486,20 @@ export default defineComponent({
         console.log(e);
       }
     }
-    onMounted(() => {
-      const id_promise = client.value?.get_run_ids();
-      id_promise!.then((result: Array<Record<string, any>>) => {
-        run_ids.value = result;
-        available_run_ids.value = result;
-        const res = client.value?.get_available_fields();
-        res!.then((r: any) => {
-          assign_possible_fields_list(r);
-        });
-      });
+    onMounted(async () => {
+      run_ids.value = await client.value?.get_run_ids();
+      available_run_ids.value = run_ids.value;
+      const fields = await client.value?.get_available_fields();
+      assign_possible_fields_list(fields);
+      // auto_populate_from_results_id(props.results_id);
+      // id_promise!.then((result: Array<Record<string, any>>) => {
+      //   run_ids.value = result;
+      //   available_run_ids.value = result;
+      //   const res = client.value?.get_available_fields();
+      //   res!.then((r: any) => {
+      //     assign_possible_fields_list(r);
+      //   });
+      // });
     });
     return {
       assay,
