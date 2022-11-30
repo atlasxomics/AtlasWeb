@@ -697,4 +697,8 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/get_run_ids');
     return resp.data;
   }
+  async get_info_from_results_id(results_id: string) {
+    const pl = { results_id };
+    const resp = await this.axios.post('/api/v1/run_db/get_info_from_results_id', pl);
+  }
 }

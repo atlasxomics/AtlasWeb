@@ -1,10 +1,30 @@
 <template>
     <v-container>
+          <v-dialog
+          :value="show_result_selection"
+          width="600px"
+          >
+            <v-card
+            >
+              <v-card-title> Multiple results found for same Run ID.</v-card-title>
+              <v-data-table
+              hide-default-footer
+              single-select
+              dense
+              :items="results_selection_list"
+              :headers="results_selection_headers"
+              @click:row="results_id_selected"
+              >
+              </v-data-table>
+            </v-card>
+          </v-dialog>
+        <div
+        >
         <v-row>
             <v-col
             cols="12"
             sm="4">
-                <v-card-title>
+              <v-card-title>
                     Run Information
                 </v-card-title>
                 <v-row>
@@ -91,7 +111,7 @@
             :disabled="!run_id_selected"
             >
             </v-select>
-            <!-- <selector
+            <selector
             v-if="assay === 'CUT&Tag'"
             :variable="antibody"
             display_label="Epitope Name"
@@ -106,7 +126,7 @@
             label="Regulation"
             v-model="regulation"
             >
-            </v-select> -->
+            </v-select>
             <selector
               :disabled="!run_id_selected"
               :variable='species'
@@ -162,6 +182,7 @@
                     Web Object
                 </v-card-title>
                 <v-text-field
+                :disabled="!run_id_selected"
                 label="NGS ID"
                 v-model="ngs_id"
                 >
@@ -207,20 +228,20 @@
                 </v-btn>
             </v-col>
         </v-row>
+        </div>
     </v-container>
 </template>
 
 <script lang="ts">
 import { Client } from '@/api';
 import { snackbar } from '@/components/GlobalSnackbar';
-import Views from '@/filemenu/view/components/Views.vue';
 import store from '@/store';
 import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
 import Selector from './Selector.vue';
 
 export default defineComponent({
   name: 'WebUploader',
-  components: { Selector, Views },
+  components: { Selector },
   setup(props, ctx) {
     const date_human_readable = ref<string>('');
     function date_human_to_epoch(date_human: string) {
@@ -233,9 +254,9 @@ export default defineComponent({
       return epoch;
     }
     const headers = [{ text: 'Run ID', value: 'run_id', sortable: false }];
+    const results_selection_headers: any[] = [{ text: 'NGS ID', value: 'ngs_id' }, { text: 'Results ID', value: 'results_id' }];
     const date_epoch = computed(() => date_human_to_epoch(date_human_readable.value));
     const client = computed(() => store.state.client);
-
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
     const organ = ref<string>('');
@@ -257,14 +278,18 @@ export default defineComponent({
     const available_run_ids = ref<Array<Record<string, any>>>([]);
     const tissue_source_list = ref<Array<string>>([]);
     const channel_width_list = ref<Array<string>>([]);
+    const results_selection_list = ref<any[]>([]);
     const run_id = ref<string>('');
     const ngs_id = ref<string>('');
+    const results_id = ref<string|null>(null);
     const run_id_search_clicked = ref<boolean>(false);
+    const multiple_run_information = ref<Record<string, any>>({});
     const run_id_selected = ref<boolean>(false);
     const run_description = ref<string>('');
     const run_title = ref<string>('');
     const regulation = ref<string>('');
     const public_run = ref<boolean>(false);
+    const show_result_selection = ref<boolean>(false);
     const selected_group = ref<string>('');
     const editing_run_id_selection = ref<boolean>(false);
     const run_ids = ref<Record<string, any>[]>([]);
@@ -272,12 +297,9 @@ export default defineComponent({
       let res = true;
       available_run_ids.value.forEach((element: any) => {
         if (element.run_id === search_input.value) {
-          console.log(element.run_id);
-          console.log(search_input.value);
           res = false;
         }
       });
-      console.log(res);
       return res;
     });
     const public_run_items: any[] = [
@@ -331,6 +353,7 @@ export default defineComponent({
       channel_width.value = db_obj.channel_width;
       number_channels.value = db_obj.number_channels;
       tissue_source.value = db_obj.tissue_source;
+      results_id.value = db_obj.results_id;
       pmid.value = db_obj.pmid;
       if (db_obj.public === 1) {
         public_run.value = true;
@@ -363,16 +386,28 @@ export default defineComponent({
       selected_group.value = '';
       public_run.value = false;
       ngs_id.value = '';
+      results_id.value = null;
     }
     async function auto_populate() {
       try {
-        const resp = await client.value?.get_info_from_run_id(run_id.value);
-        if (resp === 'Not-Found') {
+        const resp: any[] = await client.value?.get_info_from_run_id(run_id.value);
+        if (resp[0] === 'Not-Found') {
           snackbar.dispatch({ text: 'Run ID Not Present in Database.', options: { color: 'red' } });
           clear_fields();
         } else {
           snackbar.dispatch({ text: 'Run Information Successfully Loaded.', options: { color: 'green' } });
-          assign_fields(resp);
+          if (resp.length > 1) {
+          // handle multiple runs
+            results_selection_list.value = [];
+            resp.forEach((element: any, index: number) => {
+              const cop = { ...element };
+              cop.inx = index;
+              results_selection_list.value.push(cop);
+            });
+            show_result_selection.value = true;
+          } else {
+            assign_fields(resp[0]);
+          }
         }
       } catch (e) {
         snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
@@ -382,13 +417,20 @@ export default defineComponent({
       run_id_search_clicked.value = false;
     }
     function user_entered_run_id() {
+      clear_fields();
       const temp_ele = { run_id: search_input.value };
       editing_run_id_selection.value = false;
       run_ids.value.push(temp_ele);
       available_run_ids.value.push(temp_ele);
       run_id.value = search_input.value;
       run_id_selected.value = true;
-      clear_fields();
+    }
+    function results_id_selected(ele: any) {
+      const { inx: index } = ele;
+      const data = results_selection_list.value[index];
+      assign_fields(data);
+      show_result_selection.value = false;
+      // console.log(data);
     }
     function run_selected(ele: any) {
       search_input.value = ele.run_id;
@@ -424,11 +466,13 @@ export default defineComponent({
           channel_width: channel_width.value,
           number_channels: number_channels.value,
           ngs_id: ngs_id.value,
+          results_id: results_id.value,
         };
         const resp = await client.value?.upload_metadata_from_page(data_obj);
         if (resp === 'Success') {
           snackbar.dispatch({ text: 'Successful Upload!', options: { color: 'green' } });
           clear_fields();
+          run_id_selected.value = false;
         }
       } catch (e) {
         snackbar.dispatch({ text: 'Error! Unsuccessful Upload.', options: { color: 'red' } });
@@ -484,6 +528,11 @@ export default defineComponent({
       unique_run_id,
       run_id_selected,
       editing_run_id_selection,
+      show_result_selection,
+      results_selection_list,
+      results_selection_headers,
+      multiple_run_information,
+      results_id_selected,
       close_edit_run_id,
       edit_run_id,
       user_entered_run_id,

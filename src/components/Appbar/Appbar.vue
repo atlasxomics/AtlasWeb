@@ -56,6 +56,11 @@
           </template>
           <v-list>
             <v-list-item>
+              <v-btn>
+                Add a Run
+              </v-btn>
+            </v-list-item>
+            <v-list-item>
               <v-dialog
                 v-model="changePasswordMenu"
                 width="40vw"
