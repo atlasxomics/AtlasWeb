@@ -56,7 +56,11 @@
           </template>
           <v-list>
             <v-list-item>
-              <v-btn>
+              <v-btn
+              text
+              block
+              @click="redirectToRunAdding"
+              >
                 Add a Run
               </v-btn>
             </v-list-item>
@@ -101,6 +105,7 @@ import colors from 'vuetify/lib/util/colors';
 import store from '@/store';
 import { loggedIn, logout } from '@/utils/auth';
 import { filemenu, components } from '@/filemenu';
+import { generateRouteByQuery } from '@/utils';
 import ChangePasswordMenu from './ChangePasswordMenu.vue';
 
 const filemenuStyleLight = {
@@ -123,6 +128,11 @@ export default defineComponent({
     const userMenu = ref(false);
     const changePasswordMenu = ref(false);
     const subMenu = computed(() => store.state.subMenu);
+    function redirectToRunAdding() {
+      const query = { component: 'AdminPanel', action: 'new_run' };
+      const newRoute = generateRouteByQuery(currentRoute.value, query);
+      router.push(newRoute);
+    }
     function redirectToVisual() {
       if (currentRoute.value.fullPath !== '/') router.push('/');
     }
@@ -130,6 +140,7 @@ export default defineComponent({
       filemenu,
       filemenuStyle,
       components,
+      redirectToRunAdding,
       loggedIn,
       logout,
       user,

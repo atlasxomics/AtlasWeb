@@ -241,6 +241,7 @@ import Selector from './Selector.vue';
 
 export default defineComponent({
   name: 'WebUploader',
+  props: { results_id: { required: true } },
   components: { Selector },
   setup(props, ctx) {
     const date_human_readable = ref<string>('');
@@ -489,6 +490,9 @@ export default defineComponent({
           assign_possible_fields_list(r);
         });
       });
+      if (props.results_id) {
+        console.log(props.results_id);
+      }
     });
     return {
       assay,
