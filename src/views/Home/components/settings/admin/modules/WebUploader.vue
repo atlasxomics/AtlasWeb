@@ -63,7 +63,6 @@
                   v-if="!run_id_selected"
                   dense
                   single-select
-                  hide-default-footer
                   :items-per-page="4"
                   :headers="headers"
                   :items="available_run_ids"
@@ -236,7 +235,6 @@ import Selector from './Selector.vue';
 export default defineComponent({
   name: 'WebUploader',
   components: { Selector },
-  props: ['results_id'],
   setup(props, ctx) {
     const date_human_readable = ref<string>('');
     function date_human_to_epoch(date_human: string) {
@@ -366,6 +364,7 @@ export default defineComponent({
       }
     }
     function clear_fields() {
+      run_id.value = '';
       channel_width.value = '';
       number_channels.value = '';
       assay.value = '';
@@ -479,27 +478,25 @@ export default defineComponent({
         if (resp === 'Success') {
           snackbar.dispatch({ text: 'Successful Upload!', options: { color: 'green' } });
           clear_fields();
+          search_input.value = '';
           run_id_selected.value = false;
+          available_run_ids.value = run_ids.value;
         }
       } catch (e) {
         snackbar.dispatch({ text: 'Error! Unsuccessful Upload.', options: { color: 'red' } });
         console.log(e);
       }
     }
-    onMounted(async () => {
-      run_ids.value = await client.value?.get_run_ids();
-      available_run_ids.value = run_ids.value;
-      const fields = await client.value?.get_available_fields();
-      assign_possible_fields_list(fields);
-      // auto_populate_from_results_id(props.results_id);
-      // id_promise!.then((result: Array<Record<string, any>>) => {
-      //   run_ids.value = result;
-      //   available_run_ids.value = result;
-      //   const res = client.value?.get_available_fields();
-      //   res!.then((r: any) => {
-      //     assign_possible_fields_list(r);
-      //   });
-      // });
+    onMounted(() => {
+      const run_ids_promise = client.value?.get_run_ids();
+      const available_fields_promise = client.value?.get_available_fields();
+      run_ids_promise!.then((value: any[]) => {
+        run_ids.value = value;
+        available_run_ids.value = value;
+      });
+      available_fields_promise!.then((val: any) => {
+        assign_possible_fields_list(val);
+      });
     });
     return {
       assay,

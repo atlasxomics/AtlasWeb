@@ -23,7 +23,6 @@
       </v-tab-item>
       <v-tab-item key="Uploader" eager>
         <web-uploader
-        :results_id="parent_results_id"
         ref="run_editor"
         >
         </web-uploader>
@@ -81,18 +80,14 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const tab = ref<any>(1);
-    const parent_results_id = ref<any>(-1);
+    const parent_results_id = ref<any>(null);
     const example_ref = ref(null);
     onMounted(async () => {
       await clientReady;
-      // console.log(ctx.refs);
-      // console.log(ctx.refs.testRef);
       if (props.query.params) {
         tab.value = 3;
         if (props.query.params.action === 'edit') {
-          console.log(props.query.params.results_id);
           (ctx as any).refs.run_editor.auto_populate_from_results_id(props.query.params.results_id);
-          // parent_results_id.value = props.query.params.results_id;
         }
       }
       store.commit.setSubmenu(null);
