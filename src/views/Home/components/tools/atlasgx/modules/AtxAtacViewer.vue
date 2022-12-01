@@ -563,8 +563,10 @@ export default defineComponent({
             let value2 = v[2];
             if (v[1].includes('\'')) value1 = v[1].replace(/'/g, '');
             if (v[1].includes('"')) value1 = v[1].replace(/"/g, '');
+            if (v[1].includes('`')) value1 = v[1].replace(/`/g, '');
             if (v[2].includes('\'')) value2 = v[2].replace(/'/g, '');
             if (v[2].includes('"')) value2 = v[2].replace(/"/g, '');
+            if (v[2].includes('`')) value1 = v[1].replace(/`/g, '');
             const [tempX, tempY] = value1.split(',');
             const [tempUX, tempUY] = value2.split(',');
             const ax = parseFloat(tempX.slice(1));
@@ -633,8 +635,10 @@ export default defineComponent({
             let value2 = v[2];
             if (v[1].includes('\'')) value1 = v[1].replace(/'/g, '');
             if (v[1].includes('"')) value1 = v[1].replace(/"/g, '');
+            if (v[1].includes('`')) value1 = v[1].replace(/`/g, '');
             if (v[2].includes('\'')) value2 = v[2].replace(/'/g, '');
             if (v[2].includes('"')) value2 = v[2].replace(/"/g, '');
+            if (v[2].includes('`')) value1 = v[1].replace(/`/g, '');
             const [tempX, tempY] = value1.split(',');
             const [tempUX, tempUY] = value2.split(',');
             const ax = parseFloat(tempX.slice(1));
@@ -695,8 +699,6 @@ export default defineComponent({
         const geneColors = colormapBounded(colors_intensity, geneSum, selectedGenes.value.length);
         circles.forEach((v: any, i: any) => {
           const clr = (geneSum[i] + (12 * selectedGenes.value.length) > 0) ? geneColors[i] : inactiveColor.value;
-          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
-          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           circles[i].originalColor = clr;
           circles[i].fill = clr;
           circles[i].stroke = clr;
@@ -726,8 +728,8 @@ export default defineComponent({
       if (spatialData.value === null) {
         spatialData.value = {};
         if (!props.query.public) {
-          const tixelFileName = `data/${runId.value}/h5/data.csv`;
-          const spatial = await client.value!.getCsvFile({ params: { filename: tixelFileName } });
+          const tixelFileName = `data/${runId.value}/h5/data.csv.gz`;
+          const spatial = await client.value!.getSpatialData(tixelFileName);
           spatialData.value.spatial = spatial;
         } else {
           const spatial = await client.value!.getSpatialDataByToken(filenameGene.value, 0);
@@ -787,13 +789,13 @@ export default defineComponent({
         maxX_UMAP.value = Math.max(...umapX);
         maxY_UMAP.value = Math.max(...umapY);
         ctx.emit('totalClust', totalInClust.value);
+        updateCircles();
       }
-      updateCircles();
       if (!props.query.public && (spatialData.value.gene === null || spatialData.value.gene === undefined)) {
-        const geneFileName = `data/${runId.value}/h5/geneNames.txt`;
+        const geneFileName = `data/${runId.value}/h5/geneNames.txt.gz`;
         const gene = await client.value!.getGeneMotifNames(geneFileName);
         spatialData.value.gene = gene;
-        const motifFileName = `data/${runId.value}/h5/motifNames.txt`;
+        const motifFileName = `data/${runId.value}/h5/motifNames.txt.gz`;
         const motif = await client.value!.getGeneMotifNames(motifFileName);
         spatialData.value.motif = motif;
       }
@@ -847,7 +849,7 @@ export default defineComponent({
       spatialRun.value = false;
     }
     async function obtainSummations() {
-      const tixelDataFilename = (geneMotif.value === 'gene') ? `data/${runId.value}/h5/geneSummation.txt` : `data/${runId.value}/h5/motifSummation.txt`;
+      const tixelDataFilename = (geneMotif.value === 'gene') ? `data/${runId.value}/h5/geneSummation.txt.gz` : `data/${runId.value}/h5/motifSummation.txt.gz`;
       const array = (geneMotif.value === 'gene') ? spatialData.value.gene : spatialData.value.motif;
       const rows = selectedGenes.value.map((v: any) => array.indexOf(v));
       const preSplit = await client.value?.getSummation(tixelDataFilename, rows);

@@ -425,9 +425,9 @@ export default defineComponent({
       const matchPath = runObject.results_folder_path.match(/(data\/)(.+)(\/)/);
       const xploreId = matchPath[2];
       if (client.value!.user === null) {
-        const geneFileName = `data/${xploreId}/h5/geneNames.txt`;
-        const motifFileName = `data/${xploreId}/h5/motifNames.txt`;
-        const tixelFileName = `data/${xploreId}/h5/data.csv`;
+        const geneFileName = `data/${xploreId}/h5/geneNames.txt.gz`;
+        const motifFileName = `data/${xploreId}/h5/motifNames.txt.gz`;
+        const tixelFileName = `data/${xploreId}/h5/data.csv.gsv`;
         const motifH5ad = `data/${xploreId}/h5/obj/motifs.h5ad`;
         const geneH5ad = `data/${xploreId}/h5/obj/genes.h5ad`;
         const motifCsv = `data/${xploreId}/h5/obj/motifs.csv`;
