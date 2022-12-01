@@ -673,10 +673,7 @@ export default class Client {
   }
   async confirm_user_email_admin(username: string) {
     const pl = { username };
-    console.log(pl);
     const resp = await this.axios.post('/api/v1/auth/confirm_user_email_admin', pl);
-    console.log(resp);
-    console.log(resp.data);
     return resp.data;
   }
   async get_available_fields() {
@@ -690,7 +687,6 @@ export default class Client {
   async get_info_from_run_id(run_id: string) {
     const pl = { run_id };
     const resp = await this.axios.post('/api/v1/run_db/get_info_from_run_id', pl);
-    console.log(resp);
     return resp.data;
   }
   async get_run_ids() {

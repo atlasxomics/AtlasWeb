@@ -106,6 +106,12 @@
                     <v-card-text>{{data.result_description}}</v-card-text>
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
                     <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
+                    <v-icon
+                    v-if="resolveAuthGroup(['admin'])"
+                    @click="edit_result(data.results_id)"
+                    style="position: relative; left: 40px; bottom: 10px;"
+                    size="30"
+                    > mdi-pencil </v-icon>
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
@@ -119,15 +125,17 @@
               <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path+data.run_id">
                 <v-row>
                   <v-col cols="12" sm="8">
-                    <v-btn
-                    v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.results_id)"
-                    > Edit </v-btn>
                     <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{`Spatial ${data.assay} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-card-title>
                     <v-card-subtitle>{{data.date}}</v-card-subtitle>
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antbody: ${data.epitope}` : ''}`}}</v-card-text>
                     <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
                     <v-card-text style="color:white">Placeholder</v-card-text>
+                    <v-icon
+                    v-if="resolveAuthGroup(['admin'])"
+                    @click="edit_result(data.results_id)"
+                    style="position: relative; left: 40px; bottom: 45px;"
+                    size="30"
+                    > mdi-pencil </v-icon>
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
@@ -261,10 +269,8 @@ export default defineComponent({
       if (shouldPush) router.push(newRoute);
     }
     function edit_result(results_id: string) {
-      console.log(results_id);
       const query = { component: 'AdminPanel', params: { action: 'edit', results_id } };
       const newRoute = generateRouteByQuery(currentRoute.value, query);
-      console.log(newRoute);
       router.push(newRoute);
     }
     function checkBoxSort(ev: string, title: any) {
