@@ -1,6 +1,7 @@
 <template>
     <div>
         <v-select
+        :disabled="disabled"
         :items="display_options"
         :label="display_label"
         @input="value_changed"
@@ -48,7 +49,8 @@ export default defineComponent({
   props: {
     display_options: { type: Array, required: true },
     display_label: { type: String, required: true },
-    variable: { type: String, required: true },
+    variable: { required: true },
+    disabled: { type: Boolean, required: true },
   },
   watch: {
     variable(new_val) {
@@ -60,8 +62,6 @@ export default defineComponent({
     const custom_option = ref<string>('');
     const add_option = ref<boolean>(false);
     function value_changed() {
-      console.log('here');
-      console.log(local_variable);
       ctx.emit('changed', local_variable.value);
     }
     function new_option() {
