@@ -1009,9 +1009,15 @@ export default defineComponent({
       userMaxMinValue.value = [userMaxValue.value, userMinValue.value];
     }
     function updateMaxMin(ev: any) {
-      const [max, min] = ev;
-      userMaxValue.value = max;
-      userMinValue.value = min;
+      if (userMaxMinValue.value[0].match(/\d+/) && userMaxMinValue.value[1].match(/\d+/)) {
+        const [max, min] = userMaxMinValue.value;
+        userMaxValue.value = max;
+        userMinValue.value = min;
+      } else {
+        const [max, min] = ev;
+        userMaxValue.value = max;
+        userMinValue.value = min;
+      }
     }
     function saveTxt() {
       listId.value = false;
