@@ -680,13 +680,11 @@
             </div>
             <div id="capturePeak" :style="{ visibility: visible }">
               <v-card v-if="!assayFlag" class="mt-3" v-resize="onResize" ref="peakContainer" :disabled="loading" :loading="loading" flat>
-                <template v-if="geneMotif == 'gene'">
-                    <track-browser ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
-                </template>
                 <template v-if="geneMotif == 'motif'">
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                 </template>
+                <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
               </v-card>
             </div>
           </v-col>
@@ -751,7 +749,10 @@ const heatmapOptions = [
   { heat: 'custom' },
 ];
 const onlyNumRule = [
-  (v: any) => (v.match(/\d+/)) || 'Value must be digit',
+  (v: any) => {
+    if (v.match(/\d+/)) return true;
+    return 'Value must be digit';
+  },
 ];
 interface Metadata {
   type: string | null;
