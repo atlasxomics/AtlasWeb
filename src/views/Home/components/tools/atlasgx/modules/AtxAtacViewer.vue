@@ -544,12 +544,13 @@ export default defineComponent({
         }
       }
       clusterColors.value = colors;
+      const radiusSize = (spatialData.value.spatial.length < 4000) ? 30 : 60;
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;
       const viewScale = Math.min(stageWidth / (maxX.value - minX.value), stageHeight / (maxY.value - minY.value));
       const viewScaleUMAP = Math.min(stageWidthR / (maxX_UMAP.value - minX_UMAP.value), stageHeightR / (maxY_UMAP.value - minY_UMAP.value));
-      const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
-      const radiusUMAP = (Math.min(stageWidthR, stageHeightR) / (30 * 5)) * scaleUMAP.value;
+      const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
+      const radiusUMAP = (Math.min(stageWidthR, stageHeightR) / (radiusSize * 5)) * scaleUMAP.value;
       const [paddingX, paddingY] = [60, 30];
       if (isClusterView.value || averageInd.value) {
         const coordinatesSib: any = [];
