@@ -15,7 +15,6 @@ import vuetify from './plugins/vuetify';
 
 Vue.use(VueKonva);
 Vue.config.productionTip = false;
-
 new Vue({
   router,
   store: store.original,

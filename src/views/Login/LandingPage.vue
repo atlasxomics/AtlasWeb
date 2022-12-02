@@ -106,6 +106,12 @@
                     <v-card-text>{{data.result_description}}</v-card-text>
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
                     <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
+                    <v-icon
+                    v-if="resolveAuthGroup(['admin'])"
+                    @click="edit_result(data.results_id)"
+                    style="position: relative; left: 40px; bottom: 10px;"
+                    size="30"
+                    > mdi-pencil </v-icon>
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
@@ -124,6 +130,12 @@
                     <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antbody: ${data.epitope}` : ''}`}}</v-card-text>
                     <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
                     <v-card-text style="color:white">Placeholder</v-card-text>
+                    <v-icon
+                    v-if="resolveAuthGroup(['admin'])"
+                    @click="edit_result(data.results_id)"
+                    style="position: relative; left: 40px; bottom: 45px;"
+                    size="30"
+                    > mdi-pencil </v-icon>
                   </v-col>
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
@@ -199,7 +211,7 @@
 import { defineComponent, ref, watchEffect, onMounted, computed } from '@vue/composition-api';
 import { login, isClient, Client } from '@/api';
 import lodash, { lte, update } from 'lodash';
-import { loggedIn, saveCookie, readCookie, logout } from '@/utils/auth';
+import { loggedIn, saveCookie, readCookie, logout, resolveAuthGroup } from '@/utils/auth';
 import { generateRouteByQuery } from '@/utils';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
@@ -255,6 +267,11 @@ export default defineComponent({
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
+    }
+    function edit_result(results_id: string) {
+      const query = { component: 'AdminPanel', params: { action: 'edit', results_id } };
+      const newRoute = generateRouteByQuery(currentRoute.value, query);
+      router.push(newRoute);
     }
     function checkBoxSort(ev: string, title: any) {
       pageIteration.value = 1;
@@ -706,6 +723,8 @@ export default defineComponent({
       allTheRuns,
       privateRuns,
       publicPrivateView,
+      resolveAuthGroup,
+      edit_result,
     };
   },
 });
