@@ -106,7 +106,7 @@
             <v-select
             v-model="assay"
             label="Assay"
-            :items="assay_list"
+            :items="db_connection.assay_list"
             :disabled="!run_id_selected"
             >
             </v-select>
@@ -115,8 +115,8 @@
             :disabled="!run_id_selected"
             :variable="antibody"
             display_label="Epitope Name"
-            :display_options="epitope_list"
-            @option-added="epitope_list.push($event)"
+            :display_options="db_connection.epitope_list"
+            @option-added="db_connection.epitope_list.push($event)"
             @changed="antibody = $event"
             >
             </selector>
@@ -124,35 +124,35 @@
               :disabled="!run_id_selected"
               :variable='species'
               display_label="Species"
-              :display_options="species_list"
-              @option-added="species_list.push($event)"
+              :display_options="db_connection.species_list"
+              @option-added="db_connection.species_list.push($event)"
               @changed="species = $event"
             >
             </selector>
             <selector
             :disabled="!run_id_selected"
             :variable="organ"
-            :display_options="organ_list"
+            :display_options="db_connection.organ_list"
             display_label="Organ"
-            @option-added="organ_list.push($event)"
+            @option-added="db_connection.organ_list.push($event)"
             @changed="organ = $event"
             >
             </selector>
             <selector
             :disabled="!run_id_selected"
             :variable="tissue_type"
-            :display_options="tissue_type_list"
+            :display_options="db_connection.tissue_type_list"
             display_label="Tissue Type"
-            @option-added="tissue_type_list.push($event)"
+            @option-added="db_connection.tissue_type_list.push($event)"
             @changed="tissue_type = $event"
             >
             </selector>
             <selector
             :disabled="!run_id_selected"
             :variable="tissue_source"
-            :display_options="tissue_source_list"
+            :display_options="db_connection.tissue_source_list"
             display_label="Tissue Source"
-            @option-added="tissue_source_list.push($event)"
+            @option-added="db_connection.tissue_source_list.push($event)"
             @changed="tissue_source = $event">
             </selector>
             <v-text-field
@@ -198,7 +198,7 @@
                 </v-select>
                 <v-select
                 :disabled="!run_id_selected"
-                :items="group_list"
+                :items="db_connection.group_list"
                 label="Group"
                 v-model="selected_group"
                 >
@@ -212,7 +212,7 @@
                 <v-select
                 :disabled="!run_id_selected"
                 label="PMID"
-                :items="pmid_list"
+                :items="db_connection.pmid_list"
                 v-model="pmid"
                 >
                 </v-select>
@@ -240,6 +240,7 @@ import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { defineComponent, onMounted, ref, computed, watch } from '@vue/composition-api';
 import Selector from './Selector.vue';
+import { DBConnection } from './DropDownFieldManager';
 
 export default defineComponent({
   name: 'WebUploader',
@@ -273,29 +274,31 @@ export default defineComponent({
       Dec: '12',
     };
     const client = computed(() => store.state.client);
+    const db_connection = new DBConnection();
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
     const organ = ref<string>('');
     const species = ref<string>('');
     const sample_id = ref<string>('');
     const tissue_type = ref<string>('');
-    const tissue_type_list = ref<string[]>([]);
+    // const tissue_type_list = ref<string[]>([]);
     const antibody = ref<string>('');
     const tissue_condition = ref<string>('');
     const pmid = ref<string>('');
-    const pmid_list = ref<string[]>([]);
+    // const pmid_list = ref<string[]>([]);
     const tissue_source = ref<string>('');
     const channel_width = ref<string>('');
     const number_channels = ref<string>('');
     const search_input = ref<string>('');
-    const assay_list = ref<Array<string>>([]);
-    const organ_list = ref<Array<string>>([]);
-    const species_list = ref<Array<string>>([]);
-    const epitope_list = ref<Array<string>>([]);
-    const group_list = ref<Array<string>>([]);
+    // const assay_list = ref<Array<string>>([]);
+    // const assay_list = computed(() => db_connection.field_options.assay_list);
+    // const organ_list = ref<Array<string>>([]);
+    // const species_list = ref<Array<string>>([]);
+    // const epitope_list = ref<Array<string>>([]);
+    // const group_list = ref<Array<string>>([]);
     const available_run_ids = ref<Array<Record<string, any>>>([]);
-    const tissue_source_list = ref<Array<string>>([]);
-    const channel_width_list = ref<Array<string>>([]);
+    // const tissue_source_list = ref<Array<string>>([]);
+    // const channel_width_list = ref<Array<string>>([]);
     const results_selection_list = ref<any[]>([]);
     const run_id = ref<string>('');
     const ngs_id = ref<string>('');
@@ -345,18 +348,6 @@ export default defineComponent({
       run_id_selected.value = false;
       editing_run_id_selection.value = true;
       search_runs();
-    }
-    function assign_possible_fields_list(fields_from_db: any) {
-      assay_list.value = fields_from_db.assay_list;
-      species_list.value = fields_from_db.species_list;
-      organ_list.value = fields_from_db.organ_list;
-      channel_width_list.value = fields_from_db.channel_width_list;
-      epitope_list.value = fields_from_db.antibody_list;
-      group_list.value = fields_from_db.group_list;
-      tissue_source_list.value = fields_from_db.tissue_source_list;
-      pmid_list.value = fields_from_db.publication_list;
-      console.log(fields_from_db);
-      tissue_type_list.value = fields_from_db.tissue_type_list;
     }
     function assign_fields(db_obj: any) {
       console.log(db_obj);
@@ -526,14 +517,11 @@ export default defineComponent({
       }
     }
     onMounted(() => {
+      console.log(db_connection.group_list);
       const run_ids_promise = client.value?.get_run_ids();
-      const available_fields_promise = client.value?.get_available_fields();
       run_ids_promise!.then((value: any[]) => {
         run_ids.value = value;
         available_run_ids.value = value;
-      });
-      available_fields_promise!.then((val: any) => {
-        assign_possible_fields_list(val);
       });
     });
     return {
@@ -543,10 +531,6 @@ export default defineComponent({
       species,
       tissue_condition,
       channel_width,
-      assay_list,
-      organ_list,
-      species_list,
-      channel_width_list,
       run_id,
       run_description,
       run_title,
@@ -555,16 +539,12 @@ export default defineComponent({
       ngs_id,
       regulation,
       antibody,
-      epitope_list,
       public_run,
       public_run_items,
       selected_group,
-      group_list,
       date_human_readable,
       date_epoch,
       tissue_source,
-      tissue_source_list,
-      pmid_list,
       number_channels,
       run_ids,
       run_id_search_clicked,
@@ -575,11 +555,11 @@ export default defineComponent({
       run_id_selected,
       editing_run_id_selection,
       show_result_selection,
-      results_selection_list,
       results_selection_headers,
       multiple_run_information,
       tissue_type,
-      tissue_type_list,
+      db_connection,
+      results_selection_list,
       auto_populate_from_results_id,
       results_id_selected,
       close_edit_run_id,
@@ -590,7 +570,6 @@ export default defineComponent({
       date_human_to_epoch,
       assign_fields,
       auto_populate_from_run_id,
-      assign_possible_fields_list,
       upload_data,
       run_selected,
     };

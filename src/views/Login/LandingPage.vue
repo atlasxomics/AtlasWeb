@@ -449,7 +449,6 @@ export default defineComponent({
       return imageLink;
     }
     function get_display_date(date: any) {
-      console.log(date);
       if ((typeof date) === 'string') {
         return date;
       }
