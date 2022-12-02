@@ -240,7 +240,7 @@ import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { defineComponent, onMounted, ref, computed, watch } from '@vue/composition-api';
 import Selector from './Selector.vue';
-import { DBConnection } from './DropDownFieldManager';
+import { DropDownFieldManager } from './DropDownFieldManager';
 
 export default defineComponent({
   name: 'WebUploader',
@@ -274,7 +274,7 @@ export default defineComponent({
       Dec: '12',
     };
     const client = computed(() => store.state.client);
-    const db_connection = new DBConnection();
+    const db_connection = new DropDownFieldManager();
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
     const organ = ref<string>('');

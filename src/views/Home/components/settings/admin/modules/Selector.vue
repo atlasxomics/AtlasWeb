@@ -50,7 +50,7 @@ export default defineComponent({
     display_options: { type: Array, required: true },
     display_label: { type: String, required: true },
     variable: { required: true },
-    disabled: { type: Boolean, required: true },
+    disabled: { type: Boolean },
   },
   watch: {
     variable(new_val) {

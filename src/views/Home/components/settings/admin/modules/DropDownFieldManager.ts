@@ -1,7 +1,7 @@
 import { Client } from '@/api';
 import store from '@/store';
 
-export class DBConnection {
+export class DropDownFieldManager {
   client: any;
 
   assay_list: string[];

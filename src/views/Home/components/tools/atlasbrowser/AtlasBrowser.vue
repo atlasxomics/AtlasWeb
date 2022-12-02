@@ -50,74 +50,52 @@
               Run ID: {{run_id}}
             </v-card-title>
             <v-card-text>
-              <v-text-field
-                v-model="metadata.species"
-                outlined
-                dense
-                label="Species"
-                readonly
+              <selector
+                :variable="metadata.species"
+                display_label="Species"
+                :display_options="drop_down_manager.species_list"
+                @option-added="drop_down_manager.species_list.push($event)"
                 >
-              </v-text-field>
-              <v-text-field
-                v-model="metadata.organ"
-                outlined
-                dense
-                label="Organ"
-                readonly>
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.collaborator"
-              label="Collaborator"
-              readonly
-              dense
-              outlined
+              </selector>
+              <selector
+              :variable="metadata.organ"
+              display_label="Organ"
+              :display_options="drop_down_manager.organ_list"
+              @option-added="drop_down_manager.organ_list.push($event)"
               >
-              </v-text-field>
-              <v-text-field
-                v-model="metadata.type"
-                outlined
-                dense
-                label="Type"
-                readonly
-                >
-              </v-text-field>
-              <v-text-field
-                v-model="metadata.assay"
-                outlined
-                dense
-                label="Assay"
-                readonly>
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.diseaseState"
-              outlined
-              dense
-              label="Disease State"
-              @change="changeDiseaseState"
-              readonly
+              </selector>
+              <selector
+              :variable="metadata.tissue_source"
+              display_label="Tissue Source"
+              :display_options="drop_down_manager.tissue_source_list"
+              @option-added="drop_down_manager.tissue_source_list.push($event)"
               >
-              </v-text-field>
-              <v-text-field
-              outlined
-              dense
-              label="Disease Name"
-              v-model="metadata.diseaseName"
-              v-if="metadata.diseaseState === 'Disease'"
-              readonly
+              </selector>
+              <selector
+                :variable="metadata.type"
+                display_label="Tissue Type"
+                :display_options="drop_down_manager.tissue_type_list"
+                @option-added="drop_down_manager.tissue_type_list.push($event)">
+              </selector>
+              <v-select
+              :items="drop_down_manager.assay_list"
+              v-model="metadata.assay"
+              label="Assay"
               >
-              </v-text-field>
-              <v-text-field
-              outlined
-              dense
-              label="Internal Experimental Condition"
-              v-model="metadata.tissueSlideExperiment"
-              readonly
+              </v-select>
+              <selector
+                v-show="metadata.assay === 'CUT n Tag'"
+                :variable="antibody"
+                display_label="Epitope Name"
+                :display_options="drop_down_manager.epitope_list"
+                @option-added="drop_down_manager.epitope_list.push($event)"
+                @changed="antibody = $event"
               >
-              </v-text-field>
+              </selector>
               <v-text-field
               outlined
               dense
-              label="Tissue Block Experimental Condition"
+              label="Tissue Experimental Condition"
               v-model="metadata.tissueBlockExperiment"
               >
               </v-text-field>
@@ -133,21 +111,21 @@
                 outlined
                 dense
                 label="Barcode"
-                readonly>
+                readonly
+              >
               </v-text-field>
               <v-text-field
               v-model="metadata.chip_resolution"
               outlined
               dense
               label="Chip Resolution"
-              readonly>
+              >
               </v-text-field>
               <v-text-field
               v-model="metadata.comments_flowB"
               outlined
               dense
               label="Comments Flow B"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -155,7 +133,6 @@
               outlined
               dense
               label="B Flow Crosses"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -163,7 +140,6 @@
               outlined
               dense
               label="B Flow Leaks"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -171,7 +147,6 @@
               outlined
               dense
               label="Flow A Comments"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -179,7 +154,6 @@
               outlined
               dense
               label="A Flow Crosses"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -187,7 +161,6 @@
               outlined
               dense
               label="A Flow Blocks"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -195,7 +168,6 @@
               outlined
               dense
               label="A Flow Leak"
-              readonly
               >
               </v-text-field>
             </v-card-text>
@@ -624,6 +596,8 @@ import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
 import { resolveAuthGroup } from '@/utils/auth';
+import Selector from '@/views/Home/components/settings/admin/modules/Selector.vue';
+import { DropDownFieldManager } from '@/views/Home/components/settings/admin/modules/DropDownFieldManager';
 import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
@@ -651,7 +625,7 @@ interface Metadata {
   blockSize: number | null;
   cValue: number | null;
   threshold: number | null;
-  type: string | null;
+  tissue_type: string | null;
   species: string | null;
   assay: string | null;
   numChannels: string | null;
@@ -659,9 +633,7 @@ interface Metadata {
   crop_area: any | null;
   barcodes: number | string | null;
   organ: string | null;
-  diseaseState: string | null;
-  diseaseName: string | null;
-  collaborator: string | null;
+  tissue_source: string | null;
   chip_resolution: number | null;
   tissueSlideExperiment: string | null;
   tissueBlockExperiment: string | null;
@@ -680,7 +652,7 @@ interface Metadata {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  components: { SpatialFolderViewer },
+  components: { SpatialFolderViewer, Selector },
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
@@ -688,6 +660,7 @@ export default defineComponent({
     // root directory of that s3 bucket
     const root = 'Images';
     const welcome_screen = ref<boolean>(true);
+    const drop_down_manager = new DropDownFieldManager();
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const allFiles = ref<any[]>([]);
@@ -711,9 +684,9 @@ export default defineComponent({
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
     const roi = ref<ROI>(new ROI([0, 0], 0.15));
+    const antibody = ref<string>('');
     const roi_active = ref<boolean>(false);
     const active_roi_available = ref<boolean>(false);
-    const lines = ref<Konva.Line[]>();
     const isMouseDown = ref(false);
     const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
@@ -785,7 +758,7 @@ export default defineComponent({
       blockSize: null,
       cValue: null,
       threshold: null,
-      type: null,
+      tissue_type: null,
       species: null,
       assay: null,
       numChannels: '50',
@@ -794,11 +767,9 @@ export default defineComponent({
       crop_area: null,
       barcodes: null,
       chip_resolution: null,
-      diseaseState: '',
-      diseaseName: '',
       tissueSlideExperiment: '',
       tissueBlockExperiment: '',
-      collaborator: '',
+      tissue_source: '',
       comments_flowB: '',
       crosses_flowB: [],
       blocks_flowB: [],
@@ -842,11 +813,6 @@ export default defineComponent({
       // console.log(ev.evt.layerX / scaleFactor.value);
       // console.log(ev);
     }
-    function changeDiseaseState() {
-      if (metadata.value.diseaseState === 'Normal') {
-        metadata.value.diseaseName = '';
-      }
-    }
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -872,15 +838,11 @@ export default defineComponent({
         metadata.value.organ = slimsData.cntn_cf_fk_organ;
         metadata.value.species = slimsData.cntn_cf_fk_species;
         metadata.value.chip_resolution = slimsData.Resolution;
-        metadata.value.collaborator = slimsData.cntn_cf_source;
+        metadata.value.tissue_source = slimsData.cntn_cf_source;
         metadata.value.assay = slimsData.cntn_cf_fk_workflow;
-        metadata.value.diseaseName = slimsData.cntn_cf_disease;
         metadata.value.tissueSlideExperiment = slimsData.cntn_cf_tissueSlideExperimentalCondition;
         metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
         metadata.value.sampleID = slimsData.cntn_cf_sampleId;
-        if (metadata.value.diseaseName == null) {
-          metadata.value.diseaseState = 'Healthy';
-        }
         metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
         if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1' || metadata.value.barcodes === 1) {
           metadata.value.barcodes = '1';
@@ -899,7 +861,7 @@ export default defineComponent({
         metadata.value.crosses_flowA = slimsData.crosses_flowA;
         metadata.value.blocks_flowA = slimsData.blocks_flowA;
         metadata.value.leak_flowA = slimsData.leak_flowA;
-        metadata.value.type = slimsData.cntn_cf_fk_tissueType;
+        metadata.value.tissue_type = slimsData.cntn_cf_fk_tissueType;
       } catch (error) {
         console.log(error);
       }
@@ -1340,8 +1302,6 @@ export default defineComponent({
               alternative_src: null,
             };
             onChangeScale(sv);
-            // current_image.value.image.src = newsrc;
-            // current_image.value.scale = { x: sv, y: sv };
           };
           thresh_same.value = true;
           loading.value = false;
@@ -1359,11 +1319,6 @@ export default defineComponent({
         postB_image.value = src;
         threshold_image(postB_image.value);
       });
-      // setting the filled grid back to default state
-      // if (tixels_filled.value) {
-      //   clear_filled_tixels();
-      // }
-      // tixels_filled.value = false;
     }
     const updateProgress = async (value: number) => {
       if (!client.value) return;
@@ -1469,8 +1424,6 @@ export default defineComponent({
           orientation: orientation.value,
           crop_area: cropCoords,
           barcodes: Number(metadata.value.barcodes),
-          diseaseState: metadata.value.diseaseState,
-          diseaseName: metadata.value.diseaseName,
           tissueSlideExperiment: metadata.value.tissueSlideExperiment,
           tissueBlockExperiment: metadata.value.tissueBlockExperiment,
           comments_flowB: metadata.value.comments_flowB,
@@ -1723,6 +1676,7 @@ export default defineComponent({
       cropLoading,
       threshLoading,
       orientation,
+      drop_down_manager,
       onLatticeButton,
       onCropButton,
       one,
@@ -1756,21 +1710,18 @@ export default defineComponent({
       roi_active,
       finding_roi,
       thresh_image_created,
-      // display_bsa,
+      antibody,
       bw_image,
-      // display_bw,
       thresh_same,
       tixels_filled,
       bsa_image_displayed,
       change_image,
-      // display_postB,
       handle_spatial_call,
       rotate_image,
       saved_grid_state,
       hide_grid,
       load_tixel_state,
       clear_filled_tixels,
-      changeDiseaseState,
       degreeRotation,
       assignMetadata,
       imageDataToBlob,
