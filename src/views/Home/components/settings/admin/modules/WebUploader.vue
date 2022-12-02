@@ -140,6 +140,15 @@
             </selector>
             <selector
             :disabled="!run_id_selected"
+            :variable="tissue_type"
+            :display_options="tissue_type_list"
+            display_label="Tissue Type"
+            @option-added="tissue_type_list.push($event)"
+            @changed="tissue_type = $event"
+            >
+            </selector>
+            <selector
+            :disabled="!run_id_selected"
             :variable="tissue_source"
             :display_options="tissue_source_list"
             display_label="Tissue Source"
@@ -269,6 +278,8 @@ export default defineComponent({
     const organ = ref<string>('');
     const species = ref<string>('');
     const sample_id = ref<string>('');
+    const tissue_type = ref<string>('');
+    const tissue_type_list = ref<string[]>([]);
     const antibody = ref<string>('');
     const tissue_condition = ref<string>('');
     const pmid = ref<string>('');
@@ -344,6 +355,8 @@ export default defineComponent({
       group_list.value = fields_from_db.group_list;
       tissue_source_list.value = fields_from_db.tissue_source_list;
       pmid_list.value = fields_from_db.publication_list;
+      console.log(fields_from_db);
+      tissue_type_list.value = fields_from_db.tissue_type_list;
     }
     function assign_fields(db_obj: any) {
       console.log(db_obj);
@@ -365,6 +378,7 @@ export default defineComponent({
       tissue_source.value = db_obj.tissue_source;
       results_id.value = db_obj.results_id;
       antibody.value = db_obj.epitope;
+      tissue_type.value = db_obj.tissue_type;
       pmid.value = db_obj.pmid;
       if (db_obj.public === 1) {
         public_run.value = true;
@@ -404,6 +418,7 @@ export default defineComponent({
       tissue_condition.value = '';
       pmid.value = '';
       selected_group.value = '';
+      tissue_type.value = '';
       public_run.value = false;
       ngs_id.value = '';
       results_id.value = null;
@@ -495,6 +510,7 @@ export default defineComponent({
           number_channels: number_channels.value,
           ngs_id: ngs_id.value,
           results_id: results_id.value,
+          tissue_type: tissue_type.value,
         };
         const resp = await client.value?.upload_metadata_from_page(data_obj);
         if (resp === 'Success') {
@@ -562,6 +578,8 @@ export default defineComponent({
       results_selection_list,
       results_selection_headers,
       multiple_run_information,
+      tissue_type,
+      tissue_type_list,
       auto_populate_from_results_id,
       results_id_selected,
       close_edit_run_id,
