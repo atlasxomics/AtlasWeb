@@ -351,7 +351,6 @@ export default defineComponent({
     }
     async function searchRuns(event: string, from: any) {
       /* eslint-disable no-lonely-if */
-      console.log(from);
       if (event === null || event.length === 0 || from === undefined) {
         numOfIt.value = Object.keys(numOfPubs.value).length - 1;
         lodash.each(numOfPubs.value, (value: any, index: any) => {
@@ -426,9 +425,9 @@ export default defineComponent({
       const matchPath = runObject.results_folder_path.match(/(data\/)(.+)(\/)/);
       const xploreId = matchPath[2];
       if (client.value!.user === null) {
-        const geneFileName = `data/${xploreId}/h5/geneNames.txt`;
-        const motifFileName = `data/${xploreId}/h5/motifNames.txt`;
-        const tixelFileName = `data/${xploreId}/h5/data.csv`;
+        const geneFileName = `data/${xploreId}/h5/geneNames.txt.gz`;
+        const motifFileName = `data/${xploreId}/h5/motifNames.txt.gz`;
+        const tixelFileName = `data/${xploreId}/h5/data.csv.gsv`;
         const motifH5ad = `data/${xploreId}/h5/obj/motifs.h5ad`;
         const geneH5ad = `data/${xploreId}/h5/obj/genes.h5ad`;
         const motifCsv = `data/${xploreId}/h5/obj/motifs.csv`;
@@ -449,6 +448,18 @@ export default defineComponent({
       else imageLink = `frontPage_${xploreId}.png`;
       return imageLink;
     }
+    function get_display_date(date: any) {
+      console.log(date);
+      if ((typeof date) === 'string') {
+        return date;
+      }
+      const convertedTime = new Date(0);
+      convertedTime.setUTCMilliseconds(date);
+      const date_readable = convertedTime.toUTCString();
+      const [week_day, day_of_month, month, year, time, zone] = date_readable.split(' ');
+      const final_string = week_day.concat(' '.concat(month.concat(' '.concat(day_of_month).concat(' '.concat(year)))));
+      return final_string;
+    }
     async function getData() {
       loading.value = true;
       /* eslint-disable no-await-in-loop */
@@ -463,6 +474,15 @@ export default defineComponent({
       const precount: any = {};
       const raw_group: any = [];
       const indexingRuns: any = {};
+      allRuns.sort((a: any, b: any) => {
+        const matchPath = a.results_folder_path.match(/(data\/)(.+)(\/)/);
+        const matchPath2 = b.results_folder_path.match(/(data\/)(.+)(\/)/);
+        const xploreId = matchPath[2];
+        const xploreId2 = matchPath2[2];
+        if (xploreId < xploreId2) return -1;
+        if (xploreId > xploreId2) return 1;
+        return 0;
+      });
       let key = '1';
       for (let index = 0; index < allRuns.length; index += 1) {
         const json = allRuns[index];
@@ -482,8 +502,8 @@ export default defineComponent({
         if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
         else precount[json.species] += 1;
         const updateJson = json;
-        const convertedTime = new Date(json.date);
-        updateJson.date = convertedTime.toDateString();
+        updateJson.date = get_display_date(updateJson.date);
+        // updateJson.date = convertedTime.toDateString();
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
@@ -567,6 +587,15 @@ export default defineComponent({
       const raw_group: any = [];
       const indexingRuns: any = {};
       let key = '1';
+      allRuns.sort((a: any, b: any) => {
+        const matchPath = a.results_folder_path.match(/(data\/)(.+)(\/)/);
+        const matchPath2 = b.results_folder_path.match(/(data\/)(.+)(\/)/);
+        const xploreId = matchPath[2];
+        const xploreId2 = matchPath2[2];
+        if (xploreId < xploreId2) return -1;
+        if (xploreId > xploreId2) return 1;
+        return 0;
+      });
       for (let index = 0; index < allRuns.length; index += 1) {
         const json = allRuns[index];
         if (split.includes(index)) key = (parseInt(key, 10) + 1).toString();
@@ -585,8 +614,7 @@ export default defineComponent({
         if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
         else precount[json.species] += 1;
         const updateJson = json;
-        const convertedTime = new Date(json.date);
-        updateJson.date = convertedTime.toDateString();
+        updateJson.date = get_display_date(updateJson.date);
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
