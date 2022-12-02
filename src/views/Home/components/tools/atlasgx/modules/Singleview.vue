@@ -187,6 +187,13 @@ export default defineComponent({
       if (value < parseFloat(maxMinBoundary.value[1])) return parseFloat(maxMinBoundary.value[1]);
       return value;
     }
+    function checkBoundaryColor(value: number) {
+      if (maxMinBoundary.value[0] === '' && maxMinBoundary.value[0] === '') return true;
+      if (value > parseFloat(maxMinBoundary.value[0])) return false;
+      if (value < parseFloat(maxMinBoundary.value[0]) && value > parseFloat(maxMinBoundary.value[1])) return true;
+      if (value < parseFloat(maxMinBoundary.value[1])) return false;
+      return value;
+    }
     async function updateCircles() {
       if (coordinates.value === undefined) return;
       const circles: any[] = [];
@@ -222,14 +229,15 @@ export default defineComponent({
       lowestCount.value = 10000;
       const geneColors = colormapBounded(colors_intensity.value, geneSum, 1);
       circles.forEach((v: any, i: any) => {
-        const clr = (geneSum[i] + (12 * 1) > 0) ? geneColors[i] : 'grey';
+        const col = checkBoundaryColor(circles[i].total);
+        const clr = (col) ? geneColors[i] : 'grey';
         highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
         lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
         circles[i].originalColor = clr;
         circles[i].fill = clr;
         circles[i].stroke = clr;
       });
-      stepArray.value = makearray(checkBoundary(highestCount.value), checkBoundary(lowestCount.value));
+      stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
     }
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {
@@ -289,7 +297,8 @@ export default defineComponent({
       reScale();
     });
     watch(maxMinBoundaryFromParents, (v: any) => {
-      maxMinBoundary.value = v;
+      if (v[0] === '' && v[0] === '') maxMinBoundary.value = [];
+      else maxMinBoundary.value = v;
       updateCircles();
     });
     onMounted(async () => {
@@ -327,6 +336,8 @@ export default defineComponent({
       backgroundColor,
       maxMinBoundary,
       maxMinBoundaryFromParents,
+      checkBoundary,
+      checkBoundaryColor,
     };
   },
 });

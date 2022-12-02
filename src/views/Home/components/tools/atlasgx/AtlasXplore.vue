@@ -570,10 +570,11 @@
               <v-btn
                 v-bind="attrs"
                 v-on="on"
+                :loading="peakViewLoad"
                 color="black"
                 icon
                 class="ml-4 mt-5"
-                :disabled="!spatialData || assayFlag"
+                :disabled="(!spatialData || assayFlag || peakViewLoad)"
                 @click="peakViewerFlag = true; featureTableFlag = false; histoFlag = false"
                 small>
                 <v-icon>mdi-chart-line</v-icon>
@@ -679,7 +680,7 @@
               </v-card>
             </div>
             <div id="capturePeak" :style="{ visibility: visible }">
-              <v-card v-if="!assayFlag" class="mt-3" v-resize="onResize" ref="peakContainer" :disabled="loading" :loading="loading" flat>
+              <v-card v-if="!assayFlag" class="mt-3" v-resize="onResize" ref="peakContainer" flat>
                 <template v-if="geneMotif == 'motif'">
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
@@ -877,6 +878,7 @@ export default defineComponent({
     const userMaxValue = ref<string>('');
     const userMinValue = ref<string>('');
     const userMaxMinValue = ref<any[]>(['', '']);
+    const peakViewLoad = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -907,7 +909,7 @@ export default defineComponent({
       konvaConfigRight.value.draggable = flag;
     }
     function updateLoading(ev: any) {
-      loading.value = ev;
+      peakViewLoad.value = ev;
     }
     function updateSelectors(ev: any) {
       highlightIds.value = ev.ids;
@@ -983,9 +985,9 @@ export default defineComponent({
         heatMap.value = heatcmap;
         colorMap.value = cmap;
         if (geneMotif.value === 'gene' && isClusterView.value && !assayFlag.value) {
-          loading.value = true;
+          peakViewLoad.value = true;
           (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
-          loading.value = false;
+          peakViewLoad.value = false;
         }
       }
     }
@@ -1763,6 +1765,7 @@ export default defineComponent({
       onlyNumRule,
       userMaxMinValue,
       updateMaxMin,
+      peakViewLoad,
     };
   },
 });
