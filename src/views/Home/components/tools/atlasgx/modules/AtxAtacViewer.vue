@@ -253,7 +253,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey'],
+  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -365,6 +365,8 @@ export default defineComponent({
     const maxY_UMAP = ref<number>(0);
     const geneSummation = ref<any[]>([]);
     const geneMotif = computed(() => (props.geneOmotif));
+    const maxMinBoundaryFromParents = computed(() => (props.userBoundary));
+    const maxMinBoundary = ref<any[]>([]);
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
@@ -500,6 +502,20 @@ export default defineComponent({
       }
       return arr;
     }
+    function checkBoundary(value: number) {
+      if (maxMinBoundary.value.length === 0) return value;
+      if (value > parseFloat(maxMinBoundary.value[0])) return parseFloat(maxMinBoundary.value[0]);
+      if (value < parseFloat(maxMinBoundary.value[0]) && value > parseFloat(maxMinBoundary.value[1])) return value;
+      if (value < parseFloat(maxMinBoundary.value[1])) return parseFloat(maxMinBoundary.value[1]);
+      return value;
+    }
+    function checkBoundaryColor(value: number) {
+      if (maxMinBoundary.value.length === 0) return true;
+      if (value > parseFloat(maxMinBoundary.value[0])) return false;
+      if (value < parseFloat(maxMinBoundary.value[0]) && value > parseFloat(maxMinBoundary.value[1])) return true;
+      if (value < parseFloat(maxMinBoundary.value[1])) return false;
+      return value;
+    }
     async function updateCircles() {
       if (spatialData.value === null || spatialData.value.spatial === undefined) return;
       isHighlighted.value = false;
@@ -535,95 +551,85 @@ export default defineComponent({
         }
       }
       clusterColors.value = colors;
+      const radiusSize = (spatialData.value.spatial.length < 4000) ? 30 : 60;
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;
       const viewScale = Math.min(stageWidth / (maxX.value - minX.value), stageHeight / (maxY.value - minY.value));
       const viewScaleUMAP = Math.min(stageWidthR / (maxX_UMAP.value - minX_UMAP.value), stageHeightR / (maxY_UMAP.value - minY_UMAP.value));
-      const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
-      const radiusUMAP = (Math.min(stageWidthR, stageHeightR) / (30 * 5)) * scaleUMAP.value;
+      const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
+      const radiusUMAP = (Math.min(stageWidthR, stageHeightR) / (radiusSize * 5)) * scaleUMAP.value;
       const [paddingX, paddingY] = [60, 30];
       if (isClusterView.value || averageInd.value) {
         const coordinatesSib: any = [];
         const TSS: any = [];
         const nFrags: any = [];
         spatialData.value.spatial.forEach((v: string[], i: number) => {
-          if (v[0].includes('C')) {
-            TSS.push(parseFloat(v[3]));
-            nFrags.push(parseFloat(v[4]));
-            let value1 = v[1];
-            let value2 = v[2];
-            if (v[1].includes('\'')) value1 = v[1].replace(/'/g, '');
-            if (v[1].includes('"')) value1 = v[1].replace(/"/g, '');
-            if (v[2].includes('\'')) value2 = v[2].replace(/'/g, '');
-            if (v[2].includes('"')) value2 = v[2].replace(/"/g, '');
-            const [tempX, tempY] = value1.split(',');
-            const [tempUX, tempUY] = value2.split(',');
-            const ax = parseFloat(tempX.slice(1));
-            const ay = parseFloat(tempY.slice(0, -1));
-            const auX = parseFloat(tempUX.slice(1));
-            const auY = parseFloat(tempUY.slice(0, -1));
-            const uX = auX - minX_UMAP.value;
-            const uY = auY - minY_UMAP.value;
-            const x = ax - minX.value;
-            const y = ay - minY.value;
-            const regex = /\d+/g;
-            const string = v[0];
-            const match = Number(string.match(regex)![0]) - 1;
-            coordinatesSib.push([x, y, v]);
-            const c = {
-              id: get_uuid(),
-              x: x * scale.value * viewScale + paddingX,
-              y: y * scale.value * viewScale + paddingY,
-              ogx: x,
-              ogy: y,
-              radius,
-              originalColor: colors[match],
-              fill: colors[match],
-              stroke: colors[match],
-              strokeWidth: 1.0,
-              cluster: v[0],
-              total: 0,
-              inactive: false,
-              hitStrokeWidth: radius * 4,
-              genes: { },
-            };
-            const ci = {
-              id: get_uuid(),
-              x: uX * scaleUMAP.value * viewScaleUMAP + paddingX,
-              y: uY * scaleUMAP.value * viewScaleUMAP + paddingY,
-              radius: radiusUMAP,
-              originalColor: colors[match],
-              fill: colors[match],
-              stroke: colors[match],
-              strokeWidth: 1.0,
-              cluster: v[0],
-              total: 0,
-              inactive: false,
-              genes: { },
-            };
-            selectedGenes.value.forEach((id: any, index: any) => {
-              (c.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
-              (ci.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
-            });
-            c.total = lodash.sum(Object.values(c.genes));
-            ci.total = lodash.sum(Object.values(ci.genes));
-            circles.push(c);
-            circlesUMAP.push(ci);
-          }
+          TSS.push(parseFloat(v[3]));
+          nFrags.push(parseFloat(v[4]));
+          const value1 = v[1];
+          const value2 = v[2];
+          const [tempX, tempY] = value1.split(',');
+          const [tempUX, tempUY] = value2.split(',');
+          const ax = parseFloat(tempX.slice(1));
+          const ay = parseFloat(tempY.slice(0, -1));
+          const auX = parseFloat(tempUX.slice(1));
+          const auY = parseFloat(tempUY.slice(0, -1));
+          const uX = auX - minX_UMAP.value;
+          const uY = auY - minY_UMAP.value;
+          const x = ax - minX.value;
+          const y = ay - minY.value;
+          const regex = /\d+/g;
+          const string = v[0];
+          const match = Number(string.match(regex)![0]) - 1;
+          coordinatesSib.push([x, y, v]);
+          const c = {
+            id: get_uuid(),
+            x: x * scale.value * viewScale + paddingX,
+            y: y * scale.value * viewScale + paddingY,
+            ogx: x,
+            ogy: y,
+            radius,
+            originalColor: colors[match],
+            fill: colors[match],
+            stroke: colors[match],
+            strokeWidth: 1.0,
+            cluster: v[0],
+            total: 0,
+            genes: { },
+          };
+          const ci = {
+            id: get_uuid(),
+            x: uX * scaleUMAP.value * viewScaleUMAP + paddingX,
+            y: uY * scaleUMAP.value * viewScaleUMAP + paddingY,
+            radius: radiusUMAP,
+            originalColor: colors[match],
+            fill: colors[match],
+            stroke: colors[match],
+            strokeWidth: 1.0,
+            cluster: v[0],
+            total: 0,
+            genes: { },
+          };
+          selectedGenes.value.forEach((id: any, index: any) => {
+            (c.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
+            (ci.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
+          });
+          c.total = lodash.sum(Object.values(c.genes));
+          ci.total = lodash.sum(Object.values(ci.genes));
+          circles.push(c);
+          circlesUMAP.push(ci);
         });
         if (isClusterView.value) {
           ctx.emit('spatialCircleData', [TSS, nFrags]);
         } else ctx.emit('spatialCircleData', circles);
       } else {
         const geneSum: number[] = [];
+        highestCount.value = -10000;
+        lowestCount.value = 10000;
         spatialData.value.spatial.forEach((v: string[], i: number) => {
           if (v[0].includes('C')) {
-            let value1 = v[1];
-            let value2 = v[2];
-            if (v[1].includes('\'')) value1 = v[1].replace(/'/g, '');
-            if (v[1].includes('"')) value1 = v[1].replace(/"/g, '');
-            if (v[2].includes('\'')) value2 = v[2].replace(/'/g, '');
-            if (v[2].includes('"')) value2 = v[2].replace(/"/g, '');
+            const value1 = v[1];
+            const value2 = v[2];
             const [tempX, tempY] = value1.split(',');
             const [tempUX, tempUY] = value2.split(',');
             const ax = parseFloat(tempX.slice(1));
@@ -650,7 +656,6 @@ export default defineComponent({
               strokeWidth: 1.0,
               cluster: v[0],
               total: 0,
-              inactive: false,
               genes: { },
             };
             const ci = {
@@ -664,7 +669,6 @@ export default defineComponent({
               strokeWidth: 1.0,
               cluster: v[0],
               total: 0,
-              inactive: false,
               genes: { },
             };
             selectedGenes.value.forEach((id: any, index: any) => {
@@ -673,41 +677,33 @@ export default defineComponent({
             });
             c.total = lodash.sum(Object.values(c.genes));
             ci.total = lodash.sum(Object.values(ci.genes));
-            geneSum.push(c.total);
+            geneSum.push(checkBoundary(c.total));
+            const avg = c.total / selectedGenes.value.length;
+            if (avg > highestCount.value) highestCount.value = avg;
+            if (avg < lowestCount.value) lowestCount.value = avg;
             circles.push(c);
             circlesUMAP.push(ci);
           }
         });
-        highestCount.value = -10000;
-        lowestCount.value = 10000;
-        let highAvg = -10000;
-        let lowAvg = 10000000;
         const geneColors = colormapBounded(colors_intensity, geneSum, selectedGenes.value.length);
         circles.forEach((v: any, i: any) => {
-          const clr = (geneSum[i] + (12 * selectedGenes.value.length) > 0) ? geneColors[i] : inactiveColor.value;
-          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
-          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
+          const col = checkBoundaryColor(circles[i].total);
+          const clr = (col) ? geneColors[i] : inactiveColor.value;
           circles[i].originalColor = clr;
           circles[i].fill = clr;
           circles[i].stroke = clr;
           circlesUMAP[i].originalColor = clr;
           circlesUMAP[i].fill = clr;
           circlesUMAP[i].stroke = clr;
-          const avg = v.total / selectedGenes.value.length;
-          if (avg > highAvg) {
-            highAvg = avg;
-          }
-          if (avg < lowAvg) {
-            lowAvg = avg;
-          }
         });
-        stepArray.value = makearray(highAvg, lowAvg);
+        stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
         ctx.emit('spatialCircleData', circles);
       }
       if (averageInd.value) {
         ctx.emit('singleCircleData', { coords: circles, intense: colors_intensity });
         ctx.emit('sendColorBar', { color: colorBarmap.value, maxMin: [minX.value, minY.value, maxX.value, maxY.value], tixelColor: colors_intensity });
       }
+      ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
       circlesSpatial.value = circles;
       circlesSpatialUMAP.value = circlesUMAP;
       highlightRegion();
@@ -722,8 +718,8 @@ export default defineComponent({
       if (spatialData.value === null) {
         spatialData.value = {};
         if (!props.query.public) {
-          const tixelFileName = `data/${runId.value}/h5/data.csv`;
-          const spatial = await client.value!.getCsvFile({ params: { filename: tixelFileName } });
+          const tixelFileName = `data/${runId.value}/h5/data.csv.gz`;
+          const spatial = await client.value!.getSpatialData(tixelFileName);
           spatialData.value.spatial = spatial;
         } else {
           const spatial = await client.value!.getSpatialDataByToken(filenameGene.value, 0);
@@ -740,12 +736,8 @@ export default defineComponent({
         const totalHold: any = {};
         spatialData.value.spatial.forEach((list: string[], index: any) => {
           if (list[0].includes('C')) {
-            let value1 = list[1];
-            let value2 = list[2];
-            if (list[1].includes('\'')) value1 = list[1].replace(/'/g, '');
-            if (list[1].includes('"')) value1 = list[1].replace(/"/g, '');
-            if (list[2].includes('\'')) value2 = list[2].replace(/'/g, '');
-            if (list[2].includes('"')) value2 = list[2].replace(/"/g, '');
+            const value1 = list[1];
+            const value2 = list[2];
             const [tempX, tempY] = value1.split(',');
             const [tempUX, tempUY] = value2.split(',');
             const x = parseFloat(tempX.slice(1));
@@ -783,13 +775,13 @@ export default defineComponent({
         maxX_UMAP.value = Math.max(...umapX);
         maxY_UMAP.value = Math.max(...umapY);
         ctx.emit('totalClust', totalInClust.value);
+        updateCircles();
       }
-      updateCircles();
       if (!props.query.public && (spatialData.value.gene === null || spatialData.value.gene === undefined)) {
-        const geneFileName = `data/${runId.value}/h5/geneNames.txt`;
+        const geneFileName = `data/${runId.value}/h5/geneNames.txt.gz`;
         const gene = await client.value!.getGeneMotifNames(geneFileName);
         spatialData.value.gene = gene;
-        const motifFileName = `data/${runId.value}/h5/motifNames.txt`;
+        const motifFileName = `data/${runId.value}/h5/motifNames.txt.gz`;
         const motif = await client.value!.getGeneMotifNames(motifFileName);
         spatialData.value.motif = motif;
       }
@@ -805,6 +797,7 @@ export default defineComponent({
       // if (!selectedFiles.value) return;
       try {
         if (highlightIds.value.length > 0) {
+          loading.value = true;
           progressMessage.value = null;
           spatialRun.value = true;
           const task = currentTask.value;
@@ -832,6 +825,7 @@ export default defineComponent({
           progressMessage.value = taskStatus.value.status;
           const resp = taskStatus.value.result;
           ctx.emit('highlightedId', { ids: highlightIds.value, genes: resp.top_selected });
+          loading.value = false;
         } else {
           await fitStageToParent();
         }
@@ -843,7 +837,7 @@ export default defineComponent({
       spatialRun.value = false;
     }
     async function obtainSummations() {
-      const tixelDataFilename = (geneMotif.value === 'gene') ? `data/${runId.value}/h5/geneSummation.txt` : `data/${runId.value}/h5/motifSummation.txt`;
+      const tixelDataFilename = (geneMotif.value === 'gene') ? `data/${runId.value}/h5/geneSummation.txt.gz` : `data/${runId.value}/h5/motifSummation.txt.gz`;
       const array = (geneMotif.value === 'gene') ? spatialData.value.gene : spatialData.value.motif;
       const rows = selectedGenes.value.map((v: any) => array.indexOf(v));
       const preSplit = await client.value?.getSummation(tixelDataFilename, rows);
@@ -870,10 +864,6 @@ export default defineComponent({
       }
       tooltipText.text(text);
       tooltip.show();
-      if (isClusterView.value && !highlightedCluster.value.includes(item.cluster) && (!isDrawing.value && !isDrawingRect.value)) {
-        const { cluster } = item;
-        highlightCluster([cluster]);
-      }
     }
     async function mouseOutOnSpatial(ev: any) {
       const mousePos = { x: ev.evt.layerX, y: ev.evt.layerY };
@@ -932,10 +922,6 @@ export default defineComponent({
       }
       tooltipTextRight.text(text);
       tooltipRight.show();
-      if (isClusterView.value && !highlightedCluster.value.includes(item.cluster) && (!isDrawing.value && !isDrawingRect.value)) {
-        const { cluster } = item;
-        highlightCluster([cluster]);
-      }
     }
     async function mouseOutOnSpatialRight(ev: any) {
       isHighlighted.value = false;
@@ -1172,16 +1158,19 @@ export default defineComponent({
       reScaleUMAP();
     });
     watch(selectedGenes, async (v: any[]) => {
+      maxMinBoundary.value = [];
       if (v && selectedGenes.value.length === 0) {
         isClusterView.value = true;
         stepArray.value = [];
         geneSummation.value = [];
         updateCircles();
       } else {
+        loading.value = true;
         isClusterView.value = false;
         await obtainSummations();
         removeRegions();
         updateCircles();
+        loading.value = false;
       }
     });
     watch(selectedGenesFromParent, (v: any) => {
@@ -1190,8 +1179,13 @@ export default defineComponent({
       if (typeof v === 'string') gene = [gene];
       selectedGenes.value = gene;
     });
+    watch(maxMinBoundaryFromParents, (v: any) => {
+      if (v[0] === '' && v[0] === '') maxMinBoundary.value = [];
+      else maxMinBoundary.value = v;
+      updateCircles();
+    });
     watch(loading, (v: any) => {
-      ctx.emit('loading_value', v);
+      // ctx.emit('loading_value', v);
     });
     onMounted(async () => {
       await clientReady;
@@ -1284,6 +1278,10 @@ export default defineComponent({
       geneMotif,
       tableKeyFromParent,
       geneSummation,
+      maxMinBoundary,
+      maxMinBoundaryFromParents,
+      checkBoundary,
+      checkBoundaryColor,
     };
   },
 });

@@ -112,7 +112,7 @@ function colormapBounded(cmap: string[], values: any, amount: number) {
 
 export default defineComponent({
   name: 'Singleview',
-  props: ['query', 'gene', 'heatmap', 'background', 'circleData', 'colorBar', 'loadingProp'],
+  props: ['query', 'gene', 'heatmap', 'background', 'circleData', 'colorBar', 'loadingProp', 'userBoundary'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const loading = computed(() => props.loadingProp);
@@ -157,6 +157,8 @@ export default defineComponent({
     const maxMin = ref<any[]>([]);
     const colors_intensity = ref<any>();
     const coordinates = ref<any>();
+    const maxMinBoundaryFromParents = computed(() => (props.userBoundary));
+    const maxMinBoundary = ref<any[]>([]);
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
     }
@@ -178,6 +180,20 @@ export default defineComponent({
       }
       return arr;
     }
+    function checkBoundary(value: number) {
+      if (maxMinBoundary.value[0] === '' && maxMinBoundary.value[0] === '') return value;
+      if (value > parseFloat(maxMinBoundary.value[0])) return parseFloat(maxMinBoundary.value[0]);
+      if (value < parseFloat(maxMinBoundary.value[0]) && value > parseFloat(maxMinBoundary.value[1])) return value;
+      if (value < parseFloat(maxMinBoundary.value[1])) return parseFloat(maxMinBoundary.value[1]);
+      return value;
+    }
+    function checkBoundaryColor(value: number) {
+      if (maxMinBoundary.value[0] === '' && maxMinBoundary.value[0] === '') return true;
+      if (value > parseFloat(maxMinBoundary.value[0])) return false;
+      if (value < parseFloat(maxMinBoundary.value[0]) && value > parseFloat(maxMinBoundary.value[1])) return true;
+      if (value < parseFloat(maxMinBoundary.value[1])) return false;
+      return value;
+    }
     async function updateCircles() {
       if (coordinates.value === undefined) return;
       const circles: any[] = [];
@@ -190,8 +206,6 @@ export default defineComponent({
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
       const [paddingX, paddingY] = [60, 30];
       const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
-      highestCount.value = 0;
-      lowestCount.value = 10000;
       coordinates.value.forEach((v: any, i: any) => {
         const c = {
           id: get_uuid(),
@@ -208,21 +222,22 @@ export default defineComponent({
           genes: { [selectedGenesFromParent.value]: v.genes[selectedGenesFromParent.value] },
         };
         circles.push(c);
-        geneSum.push(c.total);
+        geneSum.push(checkBoundary(c.total));
       });
       circlesSpatialSingle.value = circles;
-      highestCount.value = 0;
+      highestCount.value = -10000;
       lowestCount.value = 10000;
       const geneColors = colormapBounded(colors_intensity.value, geneSum, 1);
       circles.forEach((v: any, i: any) => {
-        const clr = (geneSum[i] + (12 * 1) > 0) ? geneColors[i] : 'grey';
+        const col = checkBoundaryColor(circles[i].total);
+        const clr = (col) ? geneColors[i] : 'grey';
         highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
         lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
         circles[i].originalColor = clr;
         circles[i].fill = clr;
         circles[i].stroke = clr;
       });
-      stepArray.value = makearray(highestCount.value, lowestCount.value);
+      stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
     }
     // Drawing
     async function mouseMoveOnSpatial(ev: any) {
@@ -281,6 +296,11 @@ export default defineComponent({
     watch(scale, () => {
       reScale();
     });
+    watch(maxMinBoundaryFromParents, (v: any) => {
+      if (v[0] === '' && v[0] === '') maxMinBoundary.value = [];
+      else maxMinBoundary.value = v;
+      updateCircles();
+    });
     onMounted(async () => {
       await clientReady;
       tooltip.add(tooltipTag);
@@ -314,6 +334,10 @@ export default defineComponent({
       colors_intensity,
       coordinates,
       backgroundColor,
+      maxMinBoundary,
+      maxMinBoundaryFromParents,
+      checkBoundary,
+      checkBoundaryColor,
     };
   },
 });

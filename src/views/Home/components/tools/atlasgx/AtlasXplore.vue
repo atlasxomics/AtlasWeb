@@ -211,7 +211,7 @@
           </v-card>
         </v-dialog>
         <v-col cols="2" sm="1">
-          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'300px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
+          <v-card :style="{ 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'342px', 'padding-top': '15px', 'margin-top': '5px', 'background-color': 'silver' }" flat>
             <v-tooltip right :disabled="isDrawing">
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -464,6 +464,23 @@
                 </v-data-table>
               </v-card>
             </v-dialog>
+            <v-dialog
+            :scrollable="true"
+            v-if="scaleFlag"
+            :value="scaleFlag"
+            @click:outside="scaleFlag = !scaleFlag"
+            hide-overlay>
+              <v-card style="width:600px; position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%);z-index: 999">
+                <v-card-title>Min/Max Range</v-card-title>
+                <v-row style="padding: 8px">
+                <v-col cols="12" sm="6"><v-text-field type="text" :rules="onlyNumRule" v-model="userMinValue" label="Min"></v-text-field></v-col>
+                <v-col cols="12" sm="6"><v-text-field type="text" :rules="onlyNumRule" v-model="userMaxValue" label="Max"></v-text-field></v-col>
+                </v-row>
+                <v-row>
+                  <v-col cols="12" sm="12" align="right"><v-btn outlined color="red" @click="resetBoundary">Reset</v-btn><v-btn outlined color="green" @click="applyBoundary">Apply</v-btn></v-col>
+                </v-row>
+              </v-card>
+            </v-dialog>
             <v-tooltip right :disabled="cellTypeFlag">
             <template v-slot:activator="{ on, attrs }">
             <v-btn
@@ -480,6 +497,22 @@
             </v-btn>
             </template>
             <span>Cell Type</span>
+            </v-tooltip>
+            <v-tooltip right :disabled="scaleFlag">
+            <template v-slot:activator="{ on, attrs }">
+            <v-btn
+              v-bind="attrs"
+              v-on="on"
+              class="ml-4 mt-5"
+              icon
+              color="black"
+              :disabled="(childGenes.length === 0) ? true : false"
+              @click="scaleFlag = !scaleFlag"
+              small>
+            <v-icon>mdi-scale</v-icon>
+            </v-btn>
+            </template>
+            <span>Min/Max Range</span>
             </v-tooltip>
             <v-tooltip right :disabled="displayFlag">
             <template v-slot:activator="{ on, attrs }">
@@ -537,10 +570,11 @@
               <v-btn
                 v-bind="attrs"
                 v-on="on"
+                :loading="peakViewLoad"
                 color="black"
                 icon
                 class="ml-4 mt-5"
-                :disabled="!spatialData || assayFlag"
+                :disabled="(!spatialData || assayFlag || peakViewLoad)"
                 @click="peakViewerFlag = true; featureTableFlag = false; histoFlag = false"
                 small>
                 <v-icon>mdi-chart-line</v-icon>
@@ -578,6 +612,7 @@
                 @singleCircleData="dataToSingle"
                 @sendColorBar="colorBarToSingle"
                 @totalGM="loadExpressions"
+                @maxMinCount="updateMaxMin"
                 :query="{ public: query.public}"
                 :filename="filename"
                 :standalone="false"
@@ -596,6 +631,7 @@
                 :antiKey="tableKey"
                 :geneOmotif="geneMotif"
                 :idOfRun="runId"
+                :userBoundary="userMaxMinValue"
                 ref="mainAtxViewer"/>
             </div>
             </v-col>
@@ -627,7 +663,7 @@
                 <v-row>
                   <template v-for="genes in childGenes" >
                     <v-col cols="12" sm="4" :key="genes">
-                      <singleview :gene="genes" :circleData="singleData" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
+                      <singleview :gene="genes" :circleData="singleData" :userBoundary="userMaxMinValue" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
                     </v-col>
                   </template>
                 </v-row>
@@ -644,14 +680,12 @@
               </v-card>
             </div>
             <div id="capturePeak" :style="{ visibility: visible }">
-              <v-card v-if="!assayFlag" class="mt-3" v-resize="onResize" ref="peakContainer" :disabled="loading" :loading="loading" flat>
-                <template v-if="geneMotif == 'gene'">
-                    <track-browser ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
-                </template>
+              <v-card v-if="!assayFlag" class="mt-3" v-resize="onResize" ref="peakContainer" flat>
                 <template v-if="geneMotif == 'motif'">
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                 </template>
+                <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
               </v-card>
             </div>
           </v-col>
@@ -715,10 +749,11 @@ const heatmapOptions = [
   { heat: 'bone' },
   { heat: 'custom' },
 ];
-const colorRules = [
-  // (v: any) => !!v || 'Name is required',
-  // (v: any) => (v.length > 0 && v.length === 7) || 'Hex Code must have a length of 7',
-  (v: any) => (v.startsWith('#')) || 'Must be of Hex Code',
+const onlyNumRule = [
+  (v: any) => {
+    if (v.match(/\d+/)) return true;
+    return 'Value must be digit';
+  },
 ];
 interface Metadata {
   type: string | null;
@@ -839,6 +874,11 @@ export default defineComponent({
     const topTenIds = ref<any>({});
     const tableKey = ref<number>(1);
     const assayFlag = ref<boolean>(false);
+    const scaleFlag = ref<boolean>(false);
+    const userMaxValue = ref<string>('');
+    const userMinValue = ref<string>('');
+    const userMaxMinValue = ref<any[]>(['', '']);
+    const peakViewLoad = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -869,7 +909,7 @@ export default defineComponent({
       konvaConfigRight.value.draggable = flag;
     }
     function updateLoading(ev: any) {
-      loading.value = ev;
+      peakViewLoad.value = ev;
     }
     function updateSelectors(ev: any) {
       highlightIds.value = ev.ids;
@@ -945,9 +985,9 @@ export default defineComponent({
         heatMap.value = heatcmap;
         colorMap.value = cmap;
         if (geneMotif.value === 'gene' && isClusterView.value && !assayFlag.value) {
-          loading.value = true;
+          peakViewLoad.value = true;
           (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
-          loading.value = false;
+          peakViewLoad.value = false;
         }
       }
     }
@@ -958,6 +998,28 @@ export default defineComponent({
         defaultCmap[key] = value;
       });
       colorMapCopy.value = defaultCmap;
+    }
+    function applyBoundary() {
+      if (userMaxValue.value.match(/\d+/) && userMinValue.value.match(/\d+/)) {
+        userMaxMinValue.value = [userMaxValue.value, userMinValue.value];
+        scaleFlag.value = !scaleFlag.value;
+      }
+    }
+    function resetBoundary() {
+      userMaxValue.value = '';
+      userMinValue.value = '';
+      userMaxMinValue.value = [userMaxValue.value, userMinValue.value];
+    }
+    function updateMaxMin(ev: any) {
+      if (userMaxMinValue.value[0].match(/\d+/) && userMaxMinValue.value[1].match(/\d+/)) {
+        const [max, min] = userMaxMinValue.value;
+        userMaxValue.value = max;
+        userMinValue.value = min;
+      } else {
+        const [max, min] = ev;
+        userMaxValue.value = max;
+        userMinValue.value = min;
+      }
     }
     function saveTxt() {
       listId.value = false;
@@ -1284,12 +1346,11 @@ export default defineComponent({
       if (!globalXploreData.value) return;
       metadata.value.organ = globalXploreData.value.organ;
       metadata.value.species = globalXploreData.value.species;
-      [metadata.value.assay] = globalXploreData.value.assay;
-      metadata.value.type = globalXploreData.value.tissue_type;
+      metadata.value.type = globalXploreData.value.assay;
       metadata.value.runid = globalXploreData.value.run_id;
       // metadata.value.ngsid = rid;
       // collabName.value = (Object.keys(data).includes('tissue_source')) ? data.tissue_source : data.group_name;
-      if (metadata.value.assay === 'Transcriptome') assayFlag.value = true;
+      if (globalXploreData.value.assay === 'Transcriptome') assayFlag.value = true;
     }
     async function selectAction(ev: any) {
       const root = 'data';
@@ -1309,6 +1370,7 @@ export default defineComponent({
       metadata.value.organ = ev.tissue;
       if (ev.assay === 'Transcriptome') assayFlag.value = true;
       metadata.value.species = ev.species;
+      metadata.value.type = ev.assay;
       updateTen();
       if (props.query && runId.value === null) {
         if (props.query.run_id) {
@@ -1647,7 +1709,6 @@ export default defineComponent({
       updateClusterLabel,
       clickedCluster,
       userSelectedColor,
-      colorRules,
       changeClusterColor,
       manualClusterFlag,
       clearClusterColor,
@@ -1696,6 +1757,15 @@ export default defineComponent({
       assayFlag,
       updateTable,
       logout,
+      scaleFlag,
+      userMaxValue,
+      userMinValue,
+      applyBoundary,
+      resetBoundary,
+      onlyNumRule,
+      userMaxMinValue,
+      updateMaxMin,
+      peakViewLoad,
     };
   },
 });
