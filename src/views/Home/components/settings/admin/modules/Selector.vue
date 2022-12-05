@@ -42,7 +42,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref, watch } from '@vue/composition-api';
+import { computed, defineComponent, ref, watch, onMounted } from '@vue/composition-api';
 
 export default defineComponent({
   name: 'custom-selector',
@@ -71,6 +71,11 @@ export default defineComponent({
       add_option.value = false;
       value_changed();
     }
+    onMounted(() => {
+      if (props.variable) {
+        local_variable.value = String(props.variable);
+      }
+    });
     return {
       local_variable,
       // local_options,
