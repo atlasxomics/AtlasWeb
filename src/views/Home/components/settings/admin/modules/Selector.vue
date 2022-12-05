@@ -77,13 +77,14 @@ export default defineComponent({
     }
     onMounted(() => {
       if (props.variable) {
+        if (!props.display_options.includes(props.variable)) {
+          ctx.emit('option-added', props.variable);
+        }
         local_variable.value = String(props.variable);
       }
     });
     return {
       local_variable,
-      // local_options,
-      // local_label,
       custom_option,
       add_option,
       value_changed,
