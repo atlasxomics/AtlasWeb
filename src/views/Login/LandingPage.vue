@@ -87,10 +87,10 @@
           <v-col cols="12" sm="2" class="mt-4">
             <v-row>
               <v-col cols="6" sm="3">
-                <v-btn :ripple="false" plain depressed large :color="(!menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-menu</v-icon></v-btn>
+                <v-btn :ripple="false" plain depressed large :color="(menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-menu</v-icon></v-btn>
               </v-col>
               <v-col cols="6" sm="3">
-                <v-btn :ripple="false" plain depressed large :color="(menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-format-list-bulleted</v-icon></v-btn>
+                <v-btn :ripple="false" plain depressed large :color="(!menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-picture-in-picture-top-right-outline</v-icon></v-btn>
               </v-col>
             </v-row>
           </v-col>
@@ -635,38 +635,6 @@ export default defineComponent({
       type.sort();
       organ.sort();
       species.sort();
-      groupsAndData.value.push({
-        action: 'mdi-ticket',
-        active: true,
-        limit: labs.length > 3,
-        length: labs.length,
-        items: [...labs],
-        title: 'Groups',
-      });
-      groupsAndData.value.push({
-        action: 'mdi-ticket',
-        active: true,
-        limit: type.length > 3,
-        length: type.length,
-        items: [...type],
-        title: 'Data Type',
-      });
-      groupsAndData.value.push({
-        action: 'mdi-ticket',
-        active: true,
-        limit: species.length > 3,
-        length: species.length,
-        items: [...species],
-        title: 'Species',
-      });
-      groupsAndData.value.push({
-        action: 'mdi-ticket',
-        active: true,
-        limit: organ.length > 3,
-        length: organ.length,
-        items: [...organ],
-        title: 'Organ',
-      });
       lodash.each(precount, (v: any, i: any) => {
         countHold.value[i] = v;
         count.value[i] = v;
@@ -680,6 +648,47 @@ export default defineComponent({
       indexOfRuns.value = indexingRuns;
       numOfPubs.value = data;
       numOfPubsHold.value = data;
+      const checkBoxArrCopy = checkBoxArr.value.map((v: any) => v);
+      const groupsAndDataTitle = checkBoxArr.value.map((v: any) => v.title);
+      checkBoxArr.value = [];
+      if (checkBoxArrCopy.length > 0) {
+        checkBoxArrCopy.forEach((arr: any, index: any) => {
+          console.log(arr);
+          checkBoxSort(arr.key, arr.title);
+        });
+      }
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        active: true,
+        limit: (labs.length > 3 && !groupsAndDataTitle.includes('Groups')),
+        length: labs.length,
+        items: [...labs],
+        title: 'Groups',
+      });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        active: true,
+        limit: (type.length > 3 && !groupsAndDataTitle.includes('Data Type')),
+        length: type.length,
+        items: [...type],
+        title: 'Data Type',
+      });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        active: true,
+        limit: (species.length > 3 && !groupsAndDataTitle.includes('Species')),
+        length: species.length,
+        items: [...species],
+        title: 'Species',
+      });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        active: true,
+        limit: (organ.length > 3 && !groupsAndDataTitle.includes('Organ')),
+        length: organ.length,
+        items: [...organ],
+        title: 'Organ',
+      });
       loading.value = false;
     }
     function publicPrivateView() {

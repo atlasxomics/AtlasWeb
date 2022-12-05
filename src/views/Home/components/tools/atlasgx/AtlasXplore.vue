@@ -275,7 +275,7 @@
                   {{highlightIds}}
                 </v-card-text>
                 <v-card-title>
-                  <span class="text-h5">Top 10 Genes</span>
+                  <span class="text-h5">Top 10 {{(geneMotif === 'gene') ? 'Genes':'Motifs'}}</span>
                 </v-card-title>
                 <v-card-text>
                   {{topSelected}}
@@ -672,7 +672,7 @@
           </div>
           <v-col cols="12" sm="11">
             <v-card class="mt-3" v-show="featureTableFlag" flat>
-              <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
+              <table-component :loading="geneMotifLoad" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
             </v-card>
             <div id="captureHisto">
               <v-card class="mt-3" v-show="spatialCircleData.length > 0 && histoFlag" flat>
@@ -879,6 +879,8 @@ export default defineComponent({
     const userMinValue = ref<string>('');
     const userMaxMinValue = ref<any[]>(['', '']);
     const peakViewLoad = ref<boolean>(false);
+    const geneMotifLoad = ref<boolean>(false);
+    const lassoLoad = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -1415,6 +1417,7 @@ export default defineComponent({
       }
     });
     watch(geneMotif, (v: any) => {
+      geneMotifLoad.value = true;
       if (!assayFlag.value) {
         if (!props.query.public) {
           const btn = document.getElementById('geneMotifButton')!;
@@ -1439,6 +1442,7 @@ export default defineComponent({
         updateFilename();
         updateTable();
       }
+      geneMotifLoad.value = false;
     });
     watch(tableKey, (v: any) => {
       featureTableFlag.value = true;
@@ -1766,6 +1770,7 @@ export default defineComponent({
       userMaxMinValue,
       updateMaxMin,
       peakViewLoad,
+      geneMotifLoad,
     };
   },
 });
