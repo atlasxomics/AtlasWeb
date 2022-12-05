@@ -12,42 +12,36 @@
         <v-card :loading="loading" flat dense>
           <v-card-title>Filters</v-card-title>
           <v-divider style="width:91%"/>
-          <template v-for="item in groupsAndData">
-            <v-card-actions style="padding:0; max-height: 50px;" v-bind:key="item.title">
-              <v-card-title>{{item.title}}</v-card-title>
-              <v-spacer></v-spacer>
-              <v-btn
-                icon
-                @click="item.active = !item.active">
-                <v-icon>{{ item.active ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-              </v-btn>
-            </v-card-actions>
-            <template v-if="item.active">
-              <template v-if="!item.limit">
-                <template v-for="child in item.items">
-                  <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="child">
-                    <template v-if="item.title === 'Data Type'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
-                    <template v-else-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
-                    <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
-                    <template v-else><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
-                  </v-card-actions>
-                </template>
+          <v-list>
+            <v-list-group
+              style="padding:0"
+              v-for="item in groupsAndData"
+              :key="item.title"
+              v-model="item.active"
+              sub-group>
+              <template v-slot:activator>
+                <v-list-item-content style="padding:0; max-height: 50px;">
+                  <v-list-item-title v-text="item.title"></v-list-item-title>
+                </v-list-item-content>
               </template>
-              <template v-else>
-                <template v-for="(place,child) in 3">
-                  <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="item.items[child]">
-                    <template v-if="item.title === 'Data Type'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${child} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                    <template v-else-if="item.title === 'Species'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                    <template v-else-if="item.title === 'Organ'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                    <template v-else><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                  </v-card-actions>
+              <div>
+                <template v-for="(place,child) in 3" >
+                  <template v-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                  <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                  <template v-else><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                 </template>
-              </template>
-              <v-card-actions v-bind:key="item.title+item.active">
-                <v-btn :disabled="(item.length <= 3) ? true : false" small text color="blue" @click="item.limit = !item.limit">{{(!item.limit) ? 'Show Less' : 'Show More'}}</v-btn>
-              </v-card-actions>
-            </template>
-          </template>
+                <span v-show="!item.limit"></span>
+                <span v-show="item.limit">
+                  <template v-for="child in Array.from({length:item.length - 3},(v,k)=>k+3)" >
+                    <template v-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-else><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                  </template>
+                </span>
+              </div>
+              <v-list-item><v-btn :disabled="(item.length <= 3) ? true : false" small text color="blue" @click="item.limit = !item.limit">{{(!item.limit) ? 'Show More' : 'Show Less'}}</v-btn></v-list-item>
+            </v-list-group>
+          </v-list>
         </v-card>
       </v-col>
       <v-col cols="12" sm="8" style="padding-right:10px">
@@ -660,7 +654,7 @@ export default defineComponent({
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
-        limit: (labs.length > 3 && !groupsAndDataTitle.includes('Groups')),
+        limit: (groupsAndDataTitle.includes('Groups') && checkBoxArrCopy.length > 0),
         length: labs.length,
         items: [...labs],
         title: 'Groups',
@@ -668,7 +662,7 @@ export default defineComponent({
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
-        limit: (type.length > 3 && !groupsAndDataTitle.includes('Data Type')),
+        limit: (groupsAndDataTitle.includes('Data Type') && checkBoxArrCopy.length > 0),
         length: type.length,
         items: [...type],
         title: 'Data Type',
@@ -676,7 +670,7 @@ export default defineComponent({
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
-        limit: (species.length > 3 && !groupsAndDataTitle.includes('Species')),
+        limit: (groupsAndDataTitle.includes('Species') && checkBoxArrCopy.length > 0),
         length: species.length,
         items: [...species],
         title: 'Species',
@@ -684,7 +678,7 @@ export default defineComponent({
       groupsAndData.value.push({
         action: 'mdi-ticket',
         active: true,
-        limit: (organ.length > 3 && !groupsAndDataTitle.includes('Organ')),
+        limit: (groupsAndDataTitle.includes('Organ') && checkBoxArrCopy.length > 0),
         length: organ.length,
         items: [...organ],
         title: 'Organ',

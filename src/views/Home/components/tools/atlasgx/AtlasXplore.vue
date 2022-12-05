@@ -1240,9 +1240,9 @@ export default defineComponent({
         if (!props.query.public) {
           const existingCookie = readCookie();
           const split = existingCookie?.token.split('JWT ')[1];
-          const geneFileName = `data/${rid}/h5/geneNames.txt`;
-          const motifFileName = `data/${rid}/h5/motifNames.txt`;
-          const tixelFileName = `data/${rid}/h5/data.csv`;
+          const geneFileName = `data/${rid}/h5/geneNames.txt.gz`;
+          const motifFileName = `data/${rid}/h5/motifNames.txt.gz`;
+          const tixelFileName = `data/${rid}/h5/data.csv.gz`;
           const motifHold = filename.value;
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, motifHold!.replace(/motifs/i, 'genes'), motifHold!.replace(/genes/i, 'motifs'), `data/${runId.value}/h5/obj/motifs.csv`], meta: { run_id: rid, species: metadata.value.species, tissue: metadata.value.organ, assay: metadata.value.assay } });
           const { host } = window.location;
