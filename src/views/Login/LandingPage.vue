@@ -492,6 +492,15 @@ export default defineComponent({
       const precount: any = {};
       const raw_group: any = [];
       const indexingRuns: any = {};
+      allRuns.sort((a: any, b: any) => {
+        const matchPath = a.results_folder_path.match(/(data\/)(.+)(\/)/);
+        const matchPath2 = b.results_folder_path.match(/(data\/)(.+)(\/)/);
+        const xploreId = matchPath[2];
+        const xploreId2 = matchPath2[2];
+        if (xploreId < xploreId2) return -1;
+        if (xploreId > xploreId2) return 1;
+        return 0;
+      });
       let key = '1';
       for (let index = 0; index < allRuns.length; index += 1) {
         const json = allRuns[index];
