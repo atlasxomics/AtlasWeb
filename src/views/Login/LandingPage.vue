@@ -153,7 +153,7 @@
           <v-list-item-group
             multiple>
             <template v-for="data in numOfPubsHold[pageIteration]">
-              <template v-if="data.run_id === null">
+              <template v-if="data.result_description !== null">
                 <v-list-item  @click="runSpatial(data)" v-bind:key="data.results_folder_path+data.run_id">
                     <v-list-item-content>
                       <v-list-item-title>{{data.result_title}}</v-list-item-title>
@@ -163,18 +163,30 @@
                       <v-list-item-subtitle class="text--primary" v-text="data.result_description"></v-list-item-subtitle>
                       <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
                     </v-list-item-content>
+                    <v-icon
+                    v-if="resolveAuthGroup(['admin'])"
+                    @click="edit_result(data.results_id)"
+                    style="position: relative; left: 40px; bottom: 45px;"
+                    size="30"
+                    > mdi-pencil </v-icon>
                 </v-list-item>
               </template>
               <template v-else>
                 <v-list-item  @click="runSpatial(data)" v-bind:key="data.results_folder_path">
                     <v-list-item-content>
-                      <v-list-item-title>{{`NGSID: ${data.ngs_id} / DbitID: ${data.run_id}`}}</v-list-item-title>
+                      <v-list-item-title>{{`Spatial ${data.assay} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-list-item-title>
                       <v-list-item-subtitle
                         v-text="data.date"
                       ></v-list-item-subtitle>
-                      <v-list-item-subtitle class="text--primary" v-text="`Experimental Condition: ${data.experimental_condition}`"></v-list-item-subtitle>
+                      <v-list-item-subtitle class="text--primary" v-text="`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antbody: ${data.epitope}` : ''}`"></v-list-item-subtitle>
                       <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
                     </v-list-item-content>
+                    <v-icon
+                    v-if="resolveAuthGroup(['admin'])"
+                    @click="edit_result(data.results_id)"
+                    style="position: relative; left: 40px; bottom: 45px;"
+                    size="30"
+                    > mdi-pencil </v-icon>
                 </v-list-item>
               </template>
             </template>
@@ -375,29 +387,10 @@ export default defineComponent({
         let modCount = -1;
         if (digit) {
           const lab = await client.value.searchPMID(ev);
+          const availableIndex = Object.keys(indexOfRuns.value);
           lab.forEach((value: any, i: any) => {
-            const correctRun = indexOfRuns.value[value.results_id];
-            modCount += 1;
-            if (modCount % 8 === 0 && Object.keys(hold).length > 0) {
-              key = (parseInt(key, 10) + 1).toString();
-              split += 1;
-            }
-            if (!Object.keys(hold).includes(key)) hold[key] = [];
-            hold[key].push(correctRun);
-            countHold.value[correctRun.group] += 1;
-            countHold.value[correctRun.assay] += 1;
-            countHold.value[correctRun.species] += 1;
-            countHold.value[correctRun.organ] += 1;
-          });
-          numOfIt.value = split;
-          numOfPubsHold.value = hold;
-        } else {
-          const lab = await client.value.searchAuthors(ev);
-          const foundIds: any[] = [];
-          lab.forEach((value: any, i: any) => {
-            const correctRun = indexOfRuns.value[value.results_id];
-            if (!foundIds.includes(correctRun.results_id)) {
-              foundIds.push(correctRun.results_id);
+            if (availableIndex.includes(value.results_id.toString())) {
+              const correctRun = indexOfRuns.value[value.results_id];
               modCount += 1;
               if (modCount % 8 === 0 && Object.keys(hold).length > 0) {
                 key = (parseInt(key, 10) + 1).toString();
@@ -409,6 +402,31 @@ export default defineComponent({
               countHold.value[correctRun.assay] += 1;
               countHold.value[correctRun.species] += 1;
               countHold.value[correctRun.organ] += 1;
+            }
+          });
+          numOfIt.value = split;
+          numOfPubsHold.value = hold;
+        } else {
+          const lab = await client.value.searchAuthors(ev);
+          const foundIds: any[] = [];
+          const availableIndex = Object.keys(indexOfRuns.value);
+          lab.forEach((value: any, i: any) => {
+            if (availableIndex.includes(value.results_id.toString())) {
+              const correctRun = indexOfRuns.value[value.results_id];
+              if (!foundIds.includes(correctRun.results_id)) {
+                foundIds.push(correctRun.results_id);
+                modCount += 1;
+                if (modCount % 8 === 0 && Object.keys(hold).length > 0) {
+                  key = (parseInt(key, 10) + 1).toString();
+                  split += 1;
+                }
+                if (!Object.keys(hold).includes(key)) hold[key] = [];
+                hold[key].push(correctRun);
+                countHold.value[correctRun.group] += 1;
+                countHold.value[correctRun.assay] += 1;
+                countHold.value[correctRun.species] += 1;
+                countHold.value[correctRun.organ] += 1;
+              }
             }
           });
           numOfIt.value = split;
@@ -427,7 +445,7 @@ export default defineComponent({
       if (client.value!.user === null) {
         const geneFileName = `data/${xploreId}/h5/geneNames.txt.gz`;
         const motifFileName = `data/${xploreId}/h5/motifNames.txt.gz`;
-        const tixelFileName = `data/${xploreId}/h5/data.csv.gsv`;
+        const tixelFileName = `data/${xploreId}/h5/data.csv.gz`;
         const motifH5ad = `data/${xploreId}/h5/obj/motifs.h5ad`;
         const geneH5ad = `data/${xploreId}/h5/obj/genes.h5ad`;
         const motifCsv = `data/${xploreId}/h5/obj/motifs.csv`;
@@ -474,15 +492,6 @@ export default defineComponent({
       const precount: any = {};
       const raw_group: any = [];
       const indexingRuns: any = {};
-      allRuns.sort((a: any, b: any) => {
-        const matchPath = a.results_folder_path.match(/(data\/)(.+)(\/)/);
-        const matchPath2 = b.results_folder_path.match(/(data\/)(.+)(\/)/);
-        const xploreId = matchPath[2];
-        const xploreId2 = matchPath2[2];
-        if (xploreId < xploreId2) return -1;
-        if (xploreId > xploreId2) return 1;
-        return 0;
-      });
       let key = '1';
       for (let index = 0; index < allRuns.length; index += 1) {
         const json = allRuns[index];
