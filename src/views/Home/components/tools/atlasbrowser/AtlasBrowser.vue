@@ -86,8 +86,8 @@
               >
               </v-select>
               <selector
-                v-show="metadata.assay === 'CUT n Tag'"
-                v-model="antibody"
+                v-show="metadata.assay === 'CUT&Tag'"
+                v-model="metadata.antibody"
                 display_label="Epitope Name"
                 :display_options="drop_down_manager.epitope_list"
                 @option-added="drop_down_manager.epitope_list.push($event)"
@@ -107,14 +107,14 @@
               v-model="metadata.sampleID"
               >
               </v-text-field>
-              <v-text-field
-                v-model="metadata.barcodes"
-                outlined
-                dense
-                label="Barcode"
-                readonly
+              <v-select
+              v-model="metadata.barcodes"
+              outlined
+              dense
+              label="Barcode File"
+              :items="['1', '2', '3', '4']"
               >
-              </v-text-field>
+              </v-select>
               <v-text-field
               v-model="metadata.chip_resolution"
               outlined
@@ -620,6 +620,11 @@ const metaHeaders = [
   { text: 'Field', value: 'key' },
   { text: 'Value', value: 'value' },
 ];
+const assay_dict: Record<string, any> = {
+  cut_n_tag: 'CUT&Tag',
+  'wt_dbit-seq': 'Transcriptome',
+  'ATAC-seq': 'ATAC-seq',
+};
 interface Metadata {
   points: number[] | any;
   run: string | null;
@@ -629,6 +634,7 @@ interface Metadata {
   tissue_type: string | null;
   species: string | null;
   assay: string | null;
+  antibody: string | null;
   numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
@@ -636,7 +642,6 @@ interface Metadata {
   organ: string | null;
   tissue_source: string | null;
   chip_resolution: number | null;
-  tissueSlideExperiment: string | null;
   tissueBlockExperiment: string | null;
   comments_flowB: string | null;
   crosses_flowB: Array<number> | null;
@@ -685,7 +690,6 @@ export default defineComponent({
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
     const roi = ref<ROI>(new ROI([0, 0], 0.15));
-    const antibody = ref<string>('');
     const roi_active = ref<boolean>(false);
     const active_roi_available = ref<boolean>(false);
     const isMouseDown = ref(false);
@@ -768,7 +772,6 @@ export default defineComponent({
       crop_area: null,
       barcodes: null,
       chip_resolution: null,
-      tissueSlideExperiment: '',
       tissueBlockExperiment: '',
       tissue_source: '',
       comments_flowB: '',
@@ -781,6 +784,7 @@ export default defineComponent({
       leak_flowA: '',
       sampleID: '',
       onTissueTixels: null,
+      antibody: '',
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -840,11 +844,13 @@ export default defineComponent({
         metadata.value.species = slimsData.cntn_cf_fk_species;
         metadata.value.chip_resolution = slimsData.Resolution;
         metadata.value.tissue_source = slimsData.cntn_cf_source;
-        metadata.value.assay = slimsData.cntn_cf_fk_workflow;
-        metadata.value.tissueSlideExperiment = slimsData.cntn_cf_tissueSlideExperimentalCondition;
         metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
         metadata.value.sampleID = slimsData.cntn_cf_sampleId;
         metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
+        metadata.value.antibody = slimsData.cntn_cf_fk_epitope;
+        if (slimsData.cntn_cf_fk_workflow) {
+          metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
+        }
         if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1' || metadata.value.barcodes === 1) {
           metadata.value.barcodes = '1';
         } else if (metadata.value.barcodes === '2 (reverseB)' || metadata.value.barcodes === '2' || metadata.value.barcodes === 2) {
@@ -1426,7 +1432,6 @@ export default defineComponent({
           orientation: orientation.value,
           crop_area: cropCoords,
           barcodes: Number(metadata.value.barcodes),
-          tissueSlideExperiment: metadata.value.tissueSlideExperiment,
           tissueBlockExperiment: metadata.value.tissueBlockExperiment,
           comments_flowB: metadata.value.comments_flowB,
           crosses_flowB: metadata.value.crosses_flowB,
@@ -1712,7 +1717,6 @@ export default defineComponent({
       roi_active,
       finding_roi,
       thresh_image_created,
-      antibody,
       bw_image,
       thresh_same,
       tixels_filled,
