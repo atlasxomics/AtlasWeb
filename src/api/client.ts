@@ -427,7 +427,7 @@ export default class Client {
   }
   // SLIMS
   async getMetadataFromRunId(rid: string): Promise<any> {
-    const uri = '/api/v1/dataset/get_metadata_from_slims_run_id';
+    const uri = '/api/v1/dataset/slimstest_runid';
     const run_id = `D${padzeros(Number(rid.split('D')[1]), 5)}`;
     const payload = { params: { run_id } };
     const resp = await this.axios.get(uri, payload);
