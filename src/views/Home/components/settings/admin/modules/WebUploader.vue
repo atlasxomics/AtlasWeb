@@ -113,47 +113,43 @@
             <selector
             v-show="assay == 'CUT&Tag'"
             :disabled="!run_id_selected"
-            :variable="antibody"
+            v-model="antibody"
             display_label="Epitope Name"
             :display_options="db_connection.epitope_list"
             @option-added="db_connection.epitope_list.push($event)"
-            @changed="antibody = $event"
             >
             </selector>
             <selector
               :disabled="!run_id_selected"
-              :variable='species'
+              v-model="species"
               display_label="Species"
               :display_options="db_connection.species_list"
               @option-added="db_connection.species_list.push($event)"
-              @changed="species = $event"
             >
             </selector>
             <selector
             :disabled="!run_id_selected"
-            :variable="organ"
+            v-model="organ"
             :display_options="db_connection.organ_list"
             display_label="Organ"
             @option-added="db_connection.organ_list.push($event)"
-            @changed="organ = $event"
             >
             </selector>
             <selector
             :disabled="!run_id_selected"
-            :variable="tissue_type"
+            v-model="tissue_type"
             :display_options="db_connection.tissue_type_list"
             display_label="Tissue Type"
             @option-added="db_connection.tissue_type_list.push($event)"
-            @changed="tissue_type = $event"
             >
             </selector>
             <selector
             :disabled="!run_id_selected"
-            :variable="tissue_source"
+            v-model="tissue_source"
             :display_options="db_connection.tissue_source_list"
             display_label="Tissue Source"
             @option-added="db_connection.tissue_source_list.push($event)"
-            @changed="tissue_source = $event">
+            >
             </selector>
             <v-text-field
               :disabled="!run_id_selected"

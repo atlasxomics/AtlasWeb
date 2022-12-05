@@ -52,6 +52,10 @@ export default defineComponent({
     variable: { required: true },
     disabled: { type: Boolean },
   },
+  model: {
+    prop: 'variable',
+    event: 'changed',
+  },
   watch: {
     variable(new_val) {
       this.local_variable = new_val;

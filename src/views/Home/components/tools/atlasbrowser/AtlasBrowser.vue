@@ -40,6 +40,8 @@
         <!-- metdata panel -->
         <!-- to display must select icon and have either be csvHolder be empty and a runID selected or optionFlag be true. -->
         <v-dialog
+          width="600"
+          height="800"
           v-if="metaFlag && ((!csvHolder && run_id) || optionFlag)"
           :value="metaFlag"
           @click:outside="metaFlag = !metaFlag">
@@ -51,28 +53,28 @@
             </v-card-title>
             <v-card-text>
               <selector
-                :variable="metadata.species"
+                v-model="metadata.species"
                 display_label="Species"
                 :display_options="drop_down_manager.species_list"
                 @option-added="drop_down_manager.species_list.push($event)"
                 >
               </selector>
               <selector
-              :variable="metadata.organ"
+              v-model="metadata.organ"
               display_label="Organ"
               :display_options="drop_down_manager.organ_list"
               @option-added="drop_down_manager.organ_list.push($event)"
               >
               </selector>
               <selector
-              :variable="metadata.tissue_source"
+              v-model="metadata.tissue_source"
               display_label="Tissue Source"
               :display_options="drop_down_manager.tissue_source_list"
               @option-added="drop_down_manager.tissue_source_list.push($event)"
               >
               </selector>
               <selector
-                :variable="metadata.type"
+                v-model="metadata.tissue_type"
                 display_label="Tissue Type"
                 :display_options="drop_down_manager.tissue_type_list"
                 @option-added="drop_down_manager.tissue_type_list.push($event)">
@@ -85,11 +87,10 @@
               </v-select>
               <selector
                 v-show="metadata.assay === 'CUT n Tag'"
-                :variable="antibody"
+                v-model="antibody"
                 display_label="Epitope Name"
                 :display_options="drop_down_manager.epitope_list"
                 @option-added="drop_down_manager.epitope_list.push($event)"
-                @changed="antibody = $event"
               >
               </selector>
               <v-text-field
@@ -897,9 +898,10 @@ export default defineComponent({
       csvHolder.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
-        metadata.value = resp;
-        optionFlag.value = false;
-        snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
+        getMeta();
+        // metadata.value = resp;
+        // optionFlag.value = false;
+        // snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
       } else {
         await getMeta();
