@@ -32,17 +32,16 @@
               :items="itemsHolder"
               :headers="headers"
               hide-default-footer
-              sort-by="id"
               @click:row="selectAction"
             />
           </v-card>
         </v-dialog>
         <!-- metdata panel -->
-        <!-- to display must select icon and have either be csvHolder be empty and a runID selected or optionFlag be true. -->
+        <!-- to display must select icon and have either be tissue_position_list_obj be empty and a runID selected or image_processing_begun be true. -->
         <v-dialog
           width="600"
           height="800"
-          v-if="metaFlag && ((!csvHolder && run_id) || optionFlag)"
+          v-if="((tissue_position_list_obj && run_id) || image_processing_begun)"
           :value="metaFlag"
           @click:outside="metaFlag = !metaFlag">
           <v-card  :disabled="loading"
@@ -176,7 +175,7 @@
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
           <!-- workflow menu -->
-          <template v-if="run_id && optionFlag">
+          <template v-if="run_id && image_processing_begun">
             <v-card>
               <!-- zoom slider -->
               <v-slider
@@ -392,14 +391,14 @@
               </v-list>
             </v-card>
           </template>
-          <v-card v-if="run_id && !loading && !optionFlag && csvHolder">
+          <v-card v-if="run_id && !loading && !image_processing_begun && tissue_position_list_obj">
             <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
             <v-card-actions>
               <v-btn
                 outlined
                 dense
                 color="primary"
-                @click="optionFlag=true;optionCreate=true;"
+                @click="image_processing_begun=true;optionCreate=true;"
                 x-small>
                 Reprocess
               </v-btn>
@@ -407,7 +406,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="optionFlag=true;optionUpdate=true;tixels_filled=true; loadImage(); uploadingTixels()"
+                @click="image_processing_begun=true;optionUpdate=true;tixels_filled=true; loadImage(); uploadingTixels()"
                 x-small>
                 Update
               </v-btn>
@@ -724,10 +723,10 @@ export default defineComponent({
     const threshLoading = ref<boolean>(false);
     const thresh = ref<boolean>(false);
     const spatial = ref<boolean>(false);
-    const csvHolder = ref<any>();
+    const tissue_position_list_obj = ref<any>();
     const optionCreate = ref<boolean>(false);
     const optionUpdate = ref<boolean>(false);
-    const optionFlag = ref<boolean>(false);
+    const image_processing_begun = ref<boolean>(false);
     const generating = ref<boolean>(false);
     const runIdFlag = ref<boolean>(false);
     const runIDSelected = ref<boolean>(false);
@@ -900,16 +899,16 @@ export default defineComponent({
       const scale_payload = { params: { filename: scale_filename, bucket_name } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       scaleFactor_json.value = scale_pos;
-      csvHolder.value = resp_pos;
+      tissue_position_list_obj.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
-        optionFlag.value = false;
+        image_processing_begun.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
       } else {
         await getMeta();
-        optionFlag.value = true;
+        image_processing_begun.value = true;
         snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
       }
     }
@@ -1028,7 +1027,7 @@ export default defineComponent({
       const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
-      roi.value.loadTixels(csvHolder.value);
+      roi.value.loadTixels(tissue_position_list_obj.value);
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
@@ -1651,11 +1650,11 @@ export default defineComponent({
       grid,
       thresh,
       cropFlag,
-      csvHolder,
+      tissue_position_list_obj,
       uploadingTixels,
       optionCreate,
       optionUpdate,
-      optionFlag,
+      image_processing_begun,
       generating,
       runIdFlag,
       metaFlag,
