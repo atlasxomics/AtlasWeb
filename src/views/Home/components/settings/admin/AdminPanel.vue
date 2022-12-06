@@ -28,7 +28,7 @@
         </web-uploader>
       </v-tab-item>
       <v-tab-item key="CreateWebObject">
-        <database-admin/>
+        <create-web-object/>
       </v-tab-item>
     </v-tabs-items>
   </v-container>
@@ -59,7 +59,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Add A Run', 'Create Web Object'];
+const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Add A Run', 'Create Web Files'];
 
 export default defineComponent({
   name: 'AdminPanel',
