@@ -275,7 +275,7 @@
                   {{highlightIds}}
                 </v-card-text>
                 <v-card-title>
-                  <span class="text-h5">Top 10 Genes</span>
+                  <span class="text-h5">Top 10 {{(geneMotif === 'gene') ? 'Genes':'Motifs'}}</span>
                 </v-card-title>
                 <v-card-text>
                   {{topSelected}}
@@ -548,7 +548,7 @@
             <span>Copy Public Link</span>
             </v-tooltip>
           </v-card>
-          <v-card :style="{ 'position': 'sticky', 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'149px', 'padding-top': '15px', 'background-color': 'silver', 'top': '55vh' }" flat>
+          <v-card :style="{ 'position': 'sticky', 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'149px', 'padding-top': '15px', 'background-color': 'silver', 'top': '62vh' }" flat>
             <v-tooltip top>
             <template v-slot:activator="{ on, attrs }">
               <v-btn
@@ -672,7 +672,7 @@
           </div>
           <v-col cols="12" sm="11">
             <v-card class="mt-3" v-show="featureTableFlag" flat>
-              <table-component :loading="loading" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
+              <table-component :loading="geneMotifLoad" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
             </v-card>
             <div id="captureHisto">
               <v-card class="mt-3" v-show="spatialCircleData.length > 0 && histoFlag" flat>
@@ -879,6 +879,8 @@ export default defineComponent({
     const userMinValue = ref<string>('');
     const userMaxMinValue = ref<any[]>(['', '']);
     const peakViewLoad = ref<boolean>(false);
+    const geneMotifLoad = ref<boolean>(false);
+    const lassoLoad = ref<boolean>(false);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -1238,9 +1240,9 @@ export default defineComponent({
         if (!props.query.public) {
           const existingCookie = readCookie();
           const split = existingCookie?.token.split('JWT ')[1];
-          const geneFileName = `data/${rid}/h5/geneNames.txt`;
-          const motifFileName = `data/${rid}/h5/motifNames.txt`;
-          const tixelFileName = `data/${rid}/h5/data.csv`;
+          const geneFileName = `data/${rid}/h5/geneNames.txt.gz`;
+          const motifFileName = `data/${rid}/h5/motifNames.txt.gz`;
+          const tixelFileName = `data/${rid}/h5/data.csv.gz`;
           const motifHold = filename.value;
           const { encoded: filenameToken } = await client.value.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, motifHold!.replace(/motifs/i, 'genes'), motifHold!.replace(/genes/i, 'motifs'), `data/${runId.value}/h5/obj/motifs.csv`], meta: { run_id: rid, species: metadata.value.species, tissue: metadata.value.organ, assay: metadata.value.assay } });
           const { host } = window.location;
@@ -1415,6 +1417,7 @@ export default defineComponent({
       }
     });
     watch(geneMotif, (v: any) => {
+      geneMotifLoad.value = true;
       if (!assayFlag.value) {
         if (!props.query.public) {
           const btn = document.getElementById('geneMotifButton')!;
@@ -1439,6 +1442,7 @@ export default defineComponent({
         updateFilename();
         updateTable();
       }
+      geneMotifLoad.value = false;
     });
     watch(tableKey, (v: any) => {
       featureTableFlag.value = true;
@@ -1766,6 +1770,7 @@ export default defineComponent({
       userMaxMinValue,
       updateMaxMin,
       peakViewLoad,
+      geneMotifLoad,
     };
   },
 });

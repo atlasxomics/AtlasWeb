@@ -21,7 +21,7 @@
       item-value="name"
       @input="acInputChanged"
       :search-input.sync="searchInput"
-      :menu-props="{closeOnClick: false}"
+      :menu-props="{closeOnContentClick: true}"
       @change="onGenelistChanged"
       width="100%"
       small-chips>
