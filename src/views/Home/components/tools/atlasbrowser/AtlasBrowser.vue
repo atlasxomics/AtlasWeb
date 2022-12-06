@@ -112,7 +112,7 @@
               outlined
               dense
               label="Barcode File"
-              :items="['1', '2', '3', '4']"
+              :items="[1, 2, 3, 4]"
               >
               </v-select>
               <v-text-field
@@ -638,7 +638,7 @@ interface Metadata {
   numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
-  barcodes: number | string | null;
+  barcodes: number | null;
   organ: string | null;
   tissue_source: string | null;
   chip_resolution: number | null;
@@ -846,19 +846,18 @@ export default defineComponent({
         metadata.value.tissue_source = slimsData.cntn_cf_source;
         metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
         metadata.value.sampleID = slimsData.cntn_cf_sampleId;
-        metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
         metadata.value.antibody = slimsData.cntn_cf_fk_epitope;
         if (slimsData.cntn_cf_fk_workflow) {
           metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
         }
-        if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1' || metadata.value.barcodes === 1) {
-          metadata.value.barcodes = '1';
-        } else if (metadata.value.barcodes === '2 (reverseB)' || metadata.value.barcodes === '2' || metadata.value.barcodes === 2) {
-          metadata.value.barcodes = '2';
-        } else if (metadata.value.barcodes === '3 (reverseAB)' || metadata.value.barcodes === '3' || metadata.value.barcodes === 3) {
-          metadata.value.barcodes = '3';
-        } else if (metadata.value.barcodes === '4 (reverseA)' || metadata.value.barcodes === '4' || metadata.value.barcodes === 4) {
-          metadata.value.barcodes = '4';
+        if (slimsData.cntn_cf_fk_barcodeOrientation === '1 (normal)') {
+          metadata.value.barcodes = 1;
+        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '2 (reverseB)') {
+          metadata.value.barcodes = 2;
+        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '3 (reverseAB)') {
+          metadata.value.barcodes = 4;
+        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '4 (reverseA)') {
+          metadata.value.barcodes = 3;
         }
         metadata.value.comments_flowB = slimsData.comments_flowB;
         metadata.value.crosses_flowB = slimsData.crosses_flowB;
@@ -904,10 +903,9 @@ export default defineComponent({
       csvHolder.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
-        getMeta();
-        // metadata.value = resp;
-        // optionFlag.value = false;
-        // snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
+        metadata.value = resp;
+        optionFlag.value = false;
+        snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
       } else {
         await getMeta();
@@ -924,6 +922,7 @@ export default defineComponent({
         if (optionUpdate.value) {
           c = metadata.value.crop_area;
         }
+        console.log(c);
         const x1 = c[0];
         const y1 = c[1];
         const x2 = c[2];
@@ -1353,51 +1352,6 @@ export default defineComponent({
         four.value = 100;
       }
     };
-    async function generateh5ad() {
-      if (!client.value) return;
-      if (!spatial.value) return;
-      try {
-        const task = 'atlasbrowser.generate_h5ad';
-        const queue = 'atxcloud_atlasbrowser';
-        const params = {
-          run_id: run_id.value,
-          root_dir: root,
-        };
-        const args: any[] = [params];
-        const kwargs: any = {};
-        const taskObject = await client.value.postTask(task, args, kwargs, queue);
-        generating.value = true;
-        await checkTaskStatus(taskObject._id);
-        /* eslint-disable no-await-in-loop */
-        while (taskStatush5.value.status !== 'SUCCESS' && taskStatush5.value.status !== 'FAILURE') {
-          if (taskStatush5.value.status === 'PROGRESS') {
-            await updateH5ad(taskStatus.value.progress);
-            progressMessage.value = `${taskStatush5.value.progress}% - ${taskStatush5.value.position}`;
-          }
-          await new Promise((r) => {
-            taskTimeout.value = window.setTimeout(r, 1000);
-          });
-          taskTimeout.value = null;
-          await checkTaskStatus(taskObject._id);
-        }
-        /* eslint-disable no-await-in-loop */
-        if (taskStatush5.value.status !== 'SUCCESS') {
-          generating.value = false;
-          four.value = 0;
-          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
-          loading.value = false;
-          return;
-        }
-        await updateH5ad(taskStatus.value.progress);
-        four.value = 0;
-        generating.value = false;
-      } catch (error) {
-        console.log(error);
-        generating.value = false;
-        four.value = 0;
-        snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
-      }
-    }
     async function showSpatialFolder() {
       checkSpatial.value = true;
     }
@@ -1431,7 +1385,7 @@ export default defineComponent({
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
-          barcodes: Number(metadata.value.barcodes),
+          barcodes: metadata.value.barcodes,
           tissueBlockExperiment: metadata.value.tissueBlockExperiment,
           comments_flowB: metadata.value.comments_flowB,
           crosses_flowB: metadata.value.crosses_flowB,
@@ -1443,6 +1397,7 @@ export default defineComponent({
           leak_flowA: metadata.value.leak_flowA,
           onTissueTixels: roi.value.getOnTissue(),
         });
+        console.log(metadata);
         const params = {
           run_id: run_id.value,
           files: allFiles.value,
@@ -1451,7 +1406,7 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
-          barcodes: Number(metadata.value.barcodes),
+          barcodes: metadata.value.barcodes,
           root_dir: root,
           bucket: bucket_name,
         };
@@ -1666,7 +1621,6 @@ export default defineComponent({
       stageWidth,
       initialize,
       generateSpatial,
-      generateh5ad,
       isCropMode,
       isBrushMode,
       setBrushMode,
