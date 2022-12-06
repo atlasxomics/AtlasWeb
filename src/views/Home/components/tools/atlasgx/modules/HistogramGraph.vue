@@ -87,7 +87,7 @@ export default defineComponent({
             histnorm: 'count',
             type: 'histogram',
           };
-          const titleArray = [(!assayFromParent.value) ? 'TSSEnrichment' : 'Gene Count', (!assayFromParent.value) ? 'Fragments' : 'UMI Count'];
+          const titleArray = [(!assayFromParent.value) ? 'TSS Enrichment' : 'Gene Count', (!assayFromParent.value) ? 'Log10 Unique Fragments' : 'UMI Count'];
           multGenes[i] = { id: i, data: [trace], layout: { title: titleArray[i], traceorder: 'normal' } };
         }
         data.value = multGenes;
