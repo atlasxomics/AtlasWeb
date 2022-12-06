@@ -1156,7 +1156,6 @@ export default defineComponent({
       }
       search.value = '';
       loading.value = true;
-      // const qc_data = await client.value.getNGSIds();
       const data = { NG00547: 1, NG00877: 1 };
       const mult = (Object.keys(data).length < 9) ? 9 : Object.keys(data).length;
       const colors_raw = colormap({ colormap: 'phase', nshades: mult * 3, format: 'hex', alpha: 1 });
@@ -1322,7 +1321,10 @@ export default defineComponent({
         // collabName.value = (Object.keys(data).includes('tissue_source')) ? data.tissue_source : data.group_name;
         // if (metadata.value.assay === 'wt_dbit-seq') assayFlag.value = true;
       } else {
-        const data = await client.value?.getDBColumns_row('ngs_id', ['species', 'organ_name', 'tissue_source', 'tissue_type', 'assay', 'created_on', 'experimental_condition', 'sample_id'], [runId.value]);
+        // const data = await client.value?.getDBColumns_row('ngs_id', ['species', 'organ_name', 'tissue_source', 'tissue_type', 'assay', 'created_on', 'experimental_condition', 'sample_id'], [runId.value]);
+        const d = await client.value?.get_info_from_run_id(runId.value);
+        const data = d[0];
+        console.log(data);
         metadata.value.organ = data.organ_name;
         metadata.value.species = data.species;
         [metadata.value.date] = data.created_on.split(' ');

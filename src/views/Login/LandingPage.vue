@@ -466,6 +466,18 @@ export default defineComponent({
       else imageLink = `frontPage_${xploreId}.png`;
       return imageLink;
     }
+    function get_display_date(date: any) {
+      console.log(date);
+      if ((typeof date) === 'string') {
+        return date;
+      }
+      const convertedTime = new Date(0);
+      convertedTime.setUTCMilliseconds(date);
+      const date_readable = convertedTime.toUTCString();
+      const [week_day, day_of_month, month, year, time, zone] = date_readable.split(' ');
+      const final_string = week_day.concat(' '.concat(month.concat(' '.concat(day_of_month).concat(' '.concat(year)))));
+      return final_string;
+    }
     async function getData() {
       loading.value = true;
       /* eslint-disable no-await-in-loop */
@@ -508,8 +520,8 @@ export default defineComponent({
         if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
         else precount[json.species] += 1;
         const updateJson = json;
-        const convertedTime = new Date(json.date);
-        updateJson.date = convertedTime.toDateString();
+        updateJson.date = get_display_date(updateJson.date);
+        // updateJson.date = convertedTime.toDateString();
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
@@ -620,8 +632,7 @@ export default defineComponent({
         if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
         else precount[json.species] += 1;
         const updateJson = json;
-        const convertedTime = new Date(json.date);
-        updateJson.date = convertedTime.toDateString();
+        updateJson.date = get_display_date(updateJson.date);
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {

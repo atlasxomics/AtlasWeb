@@ -88,7 +88,7 @@
                 >
                 </v-text-field>
                 <v-text-field
-                label="Date: DD/MM/YYYY"
+                label="Date: MM/DD/YYYY"
                 v-model="date_human_readable"
                 :disabled="!run_id_selected"
                 >
@@ -239,7 +239,7 @@ export default defineComponent({
     const date_human_readable = ref<string>('');
     function date_human_to_epoch(date_human: string) {
       const lis = date_human.split('/');
-      const [day, month, year] = lis;
+      const [month, day, year] = lis;
       const year_int = Number.parseInt(year, 10);
       const month_int = Number.parseInt(month, 10) - 1;
       const day_int = Number.parseInt(day, 10);
@@ -249,6 +249,20 @@ export default defineComponent({
     const headers = [{ text: 'Run ID', value: 'run_id', sortable: false }];
     const results_selection_headers: any[] = [{ text: 'NGS ID', value: 'ngs_id' }, { text: 'Results ID', value: 'results_id' }];
     const date_epoch = computed(() => date_human_to_epoch(date_human_readable.value));
+    const month_dict: Record<string, any> = {
+      Jan: '1',
+      Feb: '2',
+      Mar: '3',
+      Apr: '4',
+      May: '5',
+      Jun: '6',
+      Jul: '7',
+      Aug: '8',
+      Sep: '9',
+      Oct: '10',
+      Nov: '11',
+      Dec: '12',
+    };
     const client = computed(() => store.state.client);
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
@@ -359,8 +373,16 @@ export default defineComponent({
       }
       if (db_obj.date) {
         const human_date = new Date(0);
-        human_date.setMilliseconds(db_obj.date);
-        date_human_readable.value = human_date.toLocaleDateString();
+        human_date.setUTCMilliseconds(db_obj.date);
+        const utc_string = human_date.toUTCString();
+        const utc_lis = utc_string.split(' ');
+        const day = utc_lis[1];
+        const human_month: string = utc_lis[2];
+        const year = utc_lis[3];
+        console.log(human_month);
+        const number_month = month_dict[human_month];
+        console.log(number_month);
+        date_human_readable.value = number_month.concat('/'.concat(day.concat('/'.concat(year))));
       }
     }
     function clear_fields() {
