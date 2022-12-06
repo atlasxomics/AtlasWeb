@@ -27,7 +27,7 @@
         >
         </web-uploader>
       </v-tab-item>
-      <v-tab-item key="DatabaseAdmin">
+      <v-tab-item key="CreateWebObject">
         <database-admin/>
       </v-tab-item>
     </v-tabs-items>
@@ -48,6 +48,7 @@ import AddRemoveGroup from './modules/AddRemoveGroup.vue';
 import AddRemoveUser from './modules/AddRemoveUser.vue';
 import UserManagement from './modules/UserManagement.vue';
 import WebUploader from './modules/WebUploader.vue';
+import CreateWebObject from './modules/CreateWebObject.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -58,7 +59,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Add A Run', 'Database Administration'];
+const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Add A Run', 'Create Web Object'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -70,6 +71,7 @@ export default defineComponent({
     AddRemoveUser,
     UserManagement,
     WebUploader,
+    CreateWebObject,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;

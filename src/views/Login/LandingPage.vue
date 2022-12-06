@@ -75,7 +75,7 @@
                   <v-icon>{{ pubPrivFlag ? 'mdi-toggle-switch-off' : 'mdi-toggle-switch' }}</v-icon>
                 </v-btn>
               </template>
-              <span>Show Public</span>
+              <span>{{`${(!pubPrivFlag) ? 'Show Public' : 'Show Private'}`}}</span>
             </v-tooltip>
           </v-col>
           <v-col cols="12" sm="2" class="mt-4">
