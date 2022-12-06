@@ -19,7 +19,6 @@
       color="blue-grey lighten-2"
       item-text="name"
       item-value="name"
-      @input="acInputChanged"
       :search-input.sync="searchInput"
       :menu-props="{closeOnContentClick: true}"
       @change="onGenelistChanged"
@@ -27,6 +26,9 @@
       @blur="cleanInput"
       width="100%"
       small-chips>
+      <template v-slot:item="{ item }">
+        {{item.name}}
+      </template>
       <template v-slot:selection="data">
         <v-chip
           :ref="data.item.name"
@@ -152,21 +154,12 @@ export default defineComponent({
       if (shouldPush) router.push(newRoute);
     }
     async function cleanAuto(ev: any) {
-      console.log(searchInput.value);
-      if (searchInput.value === null || searchInput.value.length === 0) {
-        filteredGenes.value = genes.value;
+      if (selectedGenes.value.length > 0) {
+        filteredGenes.value = genes.value.filter((g: any) => selectedGenes.value.includes(g.name));
       }
     }
     async function cleanInput(ev: any) {
       searchInput.value = null;
-    }
-    async function acInputChanged() { // autocomplete input event handler;
-      if (searchInput.value !== null && searchInput.value.length > 0) {
-        filteredGenes.value = genes.value.filter((g: any) => g.name.toLowerCase().startsWith(searchInput.value!.toLowerCase()) || selectedGenes.value.includes(g.name));
-      } else {
-        filteredGenes.value = genes.value;
-        searchInput.value = null;
-      }
     }
     async function querySelections(v: string) {
       if (!v) return;
@@ -255,7 +248,7 @@ export default defineComponent({
     watch(searchInput, (v: any) => {
       if (v) {
         querySelections(v);
-      } else if (!v || v.length === 0) filteredGenes.value = genes.value;
+      }
     });
     watch(de_select, (v: any) => {
       if (v) {
@@ -339,7 +332,6 @@ export default defineComponent({
       fileContent,
       avgInd,
       genes,
-      acInputChanged,
       querySelections,
       onGenelistChanged,
       remove,
