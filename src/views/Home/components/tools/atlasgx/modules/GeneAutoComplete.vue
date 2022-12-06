@@ -149,9 +149,13 @@ export default defineComponent({
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
-    async function acInputChanged() { // autocomplete input event handler;
-      filteredGenes.value = genes.value;
-      searchInput.value = null;
+    async function acInputChanged(ev: any) { // autocomplete input event handler;
+      if (searchInput.value !== null && searchInput.value.length > 0) {
+        filteredGenes.value = genes.value.filter((g: any) => g.name.toLowerCase().startsWith(searchInput.value!.toLowerCase()) || selectedGenes.value.includes(g.name));
+      } else {
+        filteredGenes.value = genes.value;
+        searchInput.value = null;
+      }
     }
     async function querySelections(v: string) {
       if (!v) return;
@@ -240,7 +244,7 @@ export default defineComponent({
     watch(searchInput, (v: any) => {
       if (v) {
         querySelections(v);
-      }
+      } else if (v.length === 0) filteredGenes.value = genes.value;
     });
     watch(de_select, (v: any) => {
       if (v) {
