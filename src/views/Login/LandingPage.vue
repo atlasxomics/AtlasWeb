@@ -25,7 +25,7 @@
                 </v-list-item-content>
               </template>
               <div>
-                <template v-for="(place,child) in 3" >
+                <template v-for="(place,child) in item.palceHolder" >
                   <template v-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                   <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                   <template v-else><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
@@ -39,7 +39,7 @@
                   </template>
                 </span>
               </div>
-              <v-list-item><v-btn :disabled="(item.length <= 3) ? true : false" small text color="blue" @click="item.limit = !item.limit">{{(!item.limit) ? 'Show More' : 'Show Less'}}</v-btn></v-list-item>
+              <v-list-item v-if="(item.length > 3)"><v-btn :disabled="(item.length <= 3) ? true : false" small text color="blue" @click="item.limit = !item.limit">{{(!item.limit) ? 'Show More' : 'Show Less'}}</v-btn></v-list-item>
             </v-list-group>
           </v-list>
         </v-card>
@@ -519,32 +519,36 @@ export default defineComponent({
       species.sort();
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (labs.length > 3) ? 3 : labs.length,
         active: true,
-        limit: labs.length > 3,
+        limit: false,
         length: labs.length,
         items: [...labs],
         title: 'Groups',
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (type.length > 3) ? 3 : type.length,
         active: true,
-        limit: type.length > 3,
+        limit: false,
         length: type.length,
         items: [...type],
         title: 'Data Type',
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (species.length > 3) ? 3 : species.length,
         active: true,
-        limit: species.length > 3,
+        limit: false,
         length: species.length,
         items: [...species],
         title: 'Species',
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (organ.length > 3) ? 3 : organ.length,
         active: true,
-        limit: organ.length > 3,
+        limit: false,
         length: organ.length,
         items: [...organ],
         title: 'Organ',
@@ -647,12 +651,12 @@ export default defineComponent({
       checkBoxArr.value = [];
       if (checkBoxArrCopy.length > 0) {
         checkBoxArrCopy.forEach((arr: any, index: any) => {
-          console.log(arr);
           checkBoxSort(arr.key, arr.title);
         });
       }
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (labs.length > 3) ? 3 : labs.length,
         active: true,
         limit: (groupsAndDataTitle.includes('Groups') && checkBoxArrCopy.length > 0),
         length: labs.length,
@@ -661,6 +665,7 @@ export default defineComponent({
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (type.length > 3) ? 3 : type.length,
         active: true,
         limit: (groupsAndDataTitle.includes('Data Type') && checkBoxArrCopy.length > 0),
         length: type.length,
@@ -669,6 +674,7 @@ export default defineComponent({
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (species.length > 3) ? 3 : species.length,
         active: true,
         limit: (groupsAndDataTitle.includes('Species') && checkBoxArrCopy.length > 0),
         length: species.length,
@@ -677,6 +683,7 @@ export default defineComponent({
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (organ.length > 3) ? 3 : organ.length,
         active: true,
         limit: (groupsAndDataTitle.includes('Organ') && checkBoxArrCopy.length > 0),
         length: organ.length,
