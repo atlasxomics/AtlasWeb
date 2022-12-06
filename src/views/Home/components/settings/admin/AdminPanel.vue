@@ -47,8 +47,6 @@ import WorkerStatus from './modules/WorkerStatus.vue';
 import AddRemoveGroup from './modules/AddRemoveGroup.vue';
 import AddRemoveUser from './modules/AddRemoveUser.vue';
 import UserManagement from './modules/UserManagement.vue';
-import DatabaseAdmin from './modules/DatabaseAdmin.vue';
-import PublicDatabaseAdmin from './modules/PublicDatabaseAdmin.vue';
 import WebUploader from './modules/WebUploader.vue';
 
 const clientReady = new Promise((resolve) => {
@@ -71,8 +69,6 @@ export default defineComponent({
     WorkerStatus,
     AddRemoveUser,
     UserManagement,
-    DatabaseAdmin,
-    PublicDatabaseAdmin,
     WebUploader,
   },
   setup(props, ctx) {
