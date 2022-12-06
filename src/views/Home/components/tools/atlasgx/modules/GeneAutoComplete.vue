@@ -23,6 +23,8 @@
       :search-input.sync="searchInput"
       :menu-props="{closeOnContentClick: true}"
       @change="onGenelistChanged"
+      @focus="cleanAuto"
+      @blur="cleanInput"
       width="100%"
       small-chips>
       <template v-slot:selection="data">
@@ -149,7 +151,16 @@ export default defineComponent({
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
-    async function acInputChanged(ev: any) { // autocomplete input event handler;
+    async function cleanAuto(ev: any) {
+      console.log(searchInput.value);
+      if (searchInput.value === null || searchInput.value.length === 0) {
+        filteredGenes.value = genes.value;
+      }
+    }
+    async function cleanInput(ev: any) {
+      searchInput.value = null;
+    }
+    async function acInputChanged() { // autocomplete input event handler;
       if (searchInput.value !== null && searchInput.value.length > 0) {
         filteredGenes.value = genes.value.filter((g: any) => g.name.toLowerCase().startsWith(searchInput.value!.toLowerCase()) || selectedGenes.value.includes(g.name));
       } else {
@@ -244,7 +255,7 @@ export default defineComponent({
     watch(searchInput, (v: any) => {
       if (v) {
         querySelections(v);
-      } else if (v.length === 0) filteredGenes.value = genes.value;
+      } else if (!v || v.length === 0) filteredGenes.value = genes.value;
     });
     watch(de_select, (v: any) => {
       if (v) {
@@ -283,7 +294,7 @@ export default defineComponent({
     });
     watch(selectedGenes, (v: any[]) => {
       if (selectedGenes.value.length === 0) {
-        filteredGenes.value = [];
+        filteredGenes.value = genes.value;
         autoGenes.value = [];
         showFlag.value = false;
         labelValue.value = 'Enter ID';
@@ -338,6 +349,8 @@ export default defineComponent({
       readFile,
       resetFile,
       handlePaste,
+      cleanAuto,
+      cleanInput,
     };
   },
 });
