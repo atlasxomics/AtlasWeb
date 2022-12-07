@@ -421,6 +421,15 @@ export default class Client {
       return Promise.reject(e);
     }
   }
+  async rotate_file_object(relative_path: string, rotation: number): Promise<File> {
+    try {
+      const params = { relative_path, rotation };
+      const resp = await this.axios.get('/api/v1/storage/rotate_image_obj', { params, responseType: 'blob' });
+      return new File([resp.data], 'D152_File', { type: 'image/jpeg' });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
   async generateQcEntry(payload: QcEntryGenerationRequest): Promise<any> {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
     return resp.data;

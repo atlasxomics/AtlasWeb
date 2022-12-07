@@ -733,7 +733,7 @@ export default defineComponent({
     const metaFlag = ref<boolean>(false);
     const flowMetadata = ref<Record<string, any>>({});
     // value used to store the loaded image to be used for cropping
-    const imageh = ref<any>();
+    const bsa_blob = ref<any>();
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
     const bsa_image_displayed = ref<boolean>(true);
@@ -806,7 +806,7 @@ export default defineComponent({
       onOff.value = false;
       runIdFlag.value = false;
       loading.value = false;
-      imageh.value = null;
+      bsa_blob.value = null;
       optionUpdate.value = false;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       // metaFlag.value = false;
@@ -915,7 +915,7 @@ export default defineComponent({
     function loadGray() {
       if (!client.value) return;
       // path to image
-      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
+      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.jpg`;
       try {
         let c = crop.value.getCoordinatesOnImage();
         if (optionUpdate.value) {
@@ -951,14 +951,18 @@ export default defineComponent({
       try {
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation } };
         const img = await client.value.getImageAsJPG(pl);
-        imageh.value = img;
+        console.log(img);
+        bsa_blob.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
         const imgObj = new window.Image();
         imgObj.src = URL.createObjectURL(img);
         const temp = imgObj.src;
         const scalefactor = 0.1;
         if (imgObj) {
+          console.log(imgObj);
           imgObj.onload = (ev: any) => {
+            console.log('img obj from load');
+            console.log(imgObj);
             current_image.value = {
               x: 0,
               y: 0,
@@ -984,22 +988,36 @@ export default defineComponent({
       }
       // console.log(current_image.value.original_src);
     }
-    async function loadAll() {
-      await loadMetadata();
-      await loadImage();
-      loading.value = false;
-    }
 
-    function rotate_image(choice: number) {
+    async function rotate_image(choice: number) {
       if (choice === 0) {
         const rotationAmount = parseInt(degreeRotation.value, 10);
         orientation.value.rotation += rotationAmount;
       } else {
         orientation.value.rotation += 270;
       }
-      loadImage();
+      const filename = `Images/${run_id.value}/${run_id.value}_postB_BSA.jpg`;
+      const img = await client.value?.rotate_file_object(filename, orientation.value.rotation);
+      bsa_blob.value = img;
+      const imgObj = new window.Image();
+      imgObj.src = URL.createObjectURL(img);
+      if (imgObj) {
+        imgObj.onload = (ev: any) => {
+          current_image.value = {
+            x: 0,
+            y: 0,
+            draggable: false,
+            scale: { x: scaleFactor.value, y: scaleFactor.value },
+            image: imgObj,
+          };
+        };
+      }
     }
-
+    async function loadAll() {
+      await loadMetadata();
+      await loadImage();
+      loading.value = false;
+    }
     function searchRuns(ev: any) {
       const stringforRegex = ev;
       const updated = [];
@@ -1099,6 +1117,9 @@ export default defineComponent({
     }
     function handleDragCenterMove(ev: any) {
       roi.value.moveToNewCenter(ev.target._lastPos);
+    }
+    function onload_window(ev: any) {
+      console.log(ev);
     }
     function handleMouseDown(ev: any) {
       const { id } = ev.target.attrs;
@@ -1224,7 +1245,7 @@ export default defineComponent({
         active_roi_available.value = true;
         const imgObj = new window.Image();
         const newImage = new window.Image();
-        imgObj.src = URL.createObjectURL(imageh.value);
+        imgObj.src = URL.createObjectURL(bsa_blob.value);
         const canvas = document.createElement('canvas');
         const ctxe = canvas.getContext('2d');
         imgObj.onload = (v: any) => {
@@ -1364,7 +1385,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         if (optionUpdate.value) {
@@ -1658,7 +1679,7 @@ export default defineComponent({
       generating,
       runIdFlag,
       metaFlag,
-      imageh,
+      bsa_blob,
       getMeta,
       resolveAuthGroup,
       welcome_screen,
