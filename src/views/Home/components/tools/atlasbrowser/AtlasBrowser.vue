@@ -196,7 +196,7 @@
                 <v-btn
                 color="blue"
                 class="leftRotate"
-                :disabled="!current_image || isCropMode || grid || optionUpdate"
+                :disabled="!current_image || isCropMode || grid || updating_existing"
                 @click="rotate_image(0)"
                 small
                 >
@@ -207,7 +207,7 @@
                 <v-btn
                 color="blue"
                 class="spaced_btn"
-                :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || optionUpdate"
+                :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || updating_existing"
                 @click="rotate_image(1)"
                 small
                 >
@@ -221,8 +221,8 @@
                 :disabled="!current_image || isCropMode || grid"
                 >
                 </v-switch> -->
-                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || optionUpdate">90</label>
-                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || optionUpdate">45</label>
+                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || updating_existing">90</label>
+                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || updating_existing">45</label>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -233,7 +233,7 @@
                   dense
                   x-small
                   @click="isCropMode=true"
-                  :disabled="!current_image || isCropMode || grid || optionUpdate">
+                  :disabled="!current_image || isCropMode || grid || updating_existing">
                   Activate
                 </v-btn>
                 <v-btn
@@ -268,7 +268,7 @@
                 color = "primary"
                 x-small
                 @click="generateLattices"
-                :disabled="(!roi_active && !optionUpdate)|| roi.polygons.length > 0">
+                :disabled="(!roi_active && !updating_existing)|| roi.polygons.length > 0">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -290,12 +290,12 @@
                   step="1"
                   min="0"
                   max="25"
-                  :disabled="!current_image || (!roi_active && !optionUpdate) || spatial"
+                  :disabled="!current_image || (!roi_active && !updating_existing) || spatial"
                   >
                   </v-slider>
                    Neighborhood: {{ neighbor_size }}
                   <v-slider
-                  :disabled="!current_image || (!roi_active && !optionUpdate) || spatial"
+                  :disabled="!current_image || (!roi_active && !updating_existing) || spatial"
                   v-model="neighbor_size"
                   class="slider"
                   step="1"
@@ -310,7 +310,7 @@
                   color="primary"
                   @click="thresh_clicked"
                   small
-                  :disabled="!current_image || (!roi_active && !optionUpdate) || spatial || thresh_same"
+                  :disabled="!current_image || (!roi_active && !updating_existing) || spatial || thresh_same"
                   >
                   Threshold
                   </v-btn>
@@ -323,7 +323,7 @@
                 x-small
                 color="primary"
                 @click="change_image('postB')"
-                :disabled="(!thresh_image_created && !optionUpdate) || postB_image_displayed || spatial"
+                :disabled="(!thresh_image_created && !updating_existing) || postB_image_displayed || spatial"
                 >
                 PostB
                 </v-btn>
@@ -333,7 +333,7 @@
                 x-small
                 color="primary"
                 @click="change_image('BSA')"
-                :disabled="(!thresh_image_created && !optionUpdate) || bsa_image_displayed || spatial"
+                :disabled="(!thresh_image_created && !updating_existing) || bsa_image_displayed || spatial"
                 > BSA </v-btn>
                 <v-btn
                 id="bw_button"
@@ -370,7 +370,7 @@
                 />
                 <template>
                   <v-btn
-                  :disabled="(!tixels_filled && !optionUpdate)"
+                  :disabled="(!tixels_filled && !updating_existing)"
                   outlined
                   x-small
                   dense
@@ -406,7 +406,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="image_processing_begun=true;optionUpdate=true;tixels_filled=true; loadImage(); uploadingTixels()"
+                @click="image_processing_begun=true;updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
                 x-small>
                 Update
               </v-btn>
@@ -488,7 +488,7 @@
                     id="roiLayer"
                     @mouseup="handleMouseUp">
                     <template v-if="current_image && !loading">
-                      <template v-if="!optionUpdate && !isBrushMode && !isEraseMode">
+                      <template v-if="!updating_existing && !isBrushMode && !isEraseMode">
                         <v-line
                           :config="roi.generateBoundary()"/>
                       </template>
@@ -499,7 +499,7 @@
                         @mousedown="handleMouseDown"
                         @mouseover="handleMouseOver"/>
                         <v-transformer ref="transformer" />
-                        <template v-if="!isBrushMode && !isEraseMode && !optionUpdate && !tixels_filled">
+                        <template v-if="!isBrushMode && !isEraseMode && !updating_existing && !tixels_filled">
                           <v-circle
                             v-for="c in roi.getAnchors()"
                             v-bind:key="c.id"
@@ -508,7 +508,7 @@
                             @dragmove="handleDragMove"
                             :config="c"/>
                         </template>
-                        <v-circle v-if="!isBrushMode && !isEraseMode && !optionUpdate && !tixels_filled"
+                        <v-circle v-if="!isBrushMode && !isEraseMode && !updating_existing && !tixels_filled"
                           v-bind:key="roi.getCenterAnchor().id"
                           @dragstart="handleDragCenterStart"
                           @dragend="handleDragCenterEnd"
@@ -725,7 +725,7 @@ export default defineComponent({
     const spatial = ref<boolean>(false);
     const tissue_position_list_obj = ref<any>();
     const optionCreate = ref<boolean>(false);
-    const optionUpdate = ref<boolean>(false);
+    const updating_existing = ref<boolean>(false);
     const image_processing_begun = ref<boolean>(false);
     const generating = ref<boolean>(false);
     const runIdFlag = ref<boolean>(false);
@@ -807,7 +807,7 @@ export default defineComponent({
       runIdFlag.value = false;
       loading.value = false;
       bsa_blob.value = null;
-      optionUpdate.value = false;
+      updating_existing.value = false;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       // metaFlag.value = false;
     }
@@ -915,10 +915,10 @@ export default defineComponent({
     function loadGray() {
       if (!client.value) return;
       // path to image
-      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.jpg`;
+      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       try {
         let c = crop.value.getCoordinatesOnImage();
-        if (optionUpdate.value) {
+        if (updating_existing.value) {
           c = metadata.value.crop_area;
         }
         console.log(c);
@@ -933,52 +933,53 @@ export default defineComponent({
         loading.value = false;
       }
     }
+    function set_current_image(blob: any) {
+      const imgObj = new window.Image();
+      imgObj.src = URL.createObjectURL(blob);
+      const scalefactor = 0.1;
+      if (imgObj) {
+        imgObj.onload = (ev: any) => {
+          current_image.value = {
+            x: 0,
+            y: 0,
+            draggable: false,
+            scale: { x: scalefactor, y: scalefactor },
+            image: imgObj,
+            src: null,
+            original_src: null,
+          };
+          onChangeScale('');
+        };
+      }
+      return imgObj;
+    }
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
       loadingMessage.value = false;
       let filename: any;
+      let use_cache = false;
       // path to images
-      if (optionUpdate.value) {
+      if (updating_existing.value) {
         filename = `${root}/${run_id.value}/spatial/figure/postB_BSA.tif`;
         bsa_image_displayed.value = true;
         postB_image_displayed.value = false;
         bw_image_displayed.value = false;
+        use_cache = true;
       } else {
         filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       }
       const filenameList = { params: { path: root, filter: `${run_id.value}`, bucket_name } };
       try {
-        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation } };
+        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
         const img = await client.value.getImageAsJPG(pl);
-        console.log(img);
         bsa_blob.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
-        const imgObj = new window.Image();
-        imgObj.src = URL.createObjectURL(img);
-        const temp = imgObj.src;
-        const scalefactor = 0.1;
-        if (imgObj) {
-          console.log(imgObj);
-          imgObj.onload = (ev: any) => {
-            console.log('img obj from load');
-            console.log(imgObj);
-            current_image.value = {
-              x: 0,
-              y: 0,
-              draggable: false,
-              scale: { x: scalefactor, y: scalefactor },
-              image: imgObj,
-              src: null,
-              original_src: null,
-            };
-            bsa_image.value = temp;
-            // imgObj.onload = null;
-          };
-        }
+        const img_obj = set_current_image(img);
+        bsa_image.value = img_obj.src;
         loading.value = false;
         runIdFlag.value = false;
-        if (optionUpdate.value) {
+        if (updating_existing.value) {
           loadGray();
         }
       } catch (error) {
@@ -996,22 +997,10 @@ export default defineComponent({
       } else {
         orientation.value.rotation += 270;
       }
-      const filename = `Images/${run_id.value}/${run_id.value}_postB_BSA.jpg`;
+      const filename = `Images/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       const img = await client.value?.rotate_file_object(filename, orientation.value.rotation);
       bsa_blob.value = img;
-      const imgObj = new window.Image();
-      imgObj.src = URL.createObjectURL(img);
-      if (imgObj) {
-        imgObj.onload = (ev: any) => {
-          current_image.value = {
-            x: 0,
-            y: 0,
-            draggable: false,
-            scale: { x: scaleFactor.value, y: scaleFactor.value },
-            image: imgObj,
-          };
-        };
-      }
+      set_current_image(img);
     }
     async function loadAll() {
       await loadMetadata();
@@ -1215,7 +1204,7 @@ export default defineComponent({
       bw_image_displayed.value = false;
       let new_img = null;
       if (img === 'postB') {
-        if (optionUpdate.value && postB_image_promise.value != null) {
+        if (updating_existing.value && postB_image_promise.value != null) {
           await postB_image_promise.value.then((gray: any) => {
             postB_image.value = URL.createObjectURL(gray);
           });
@@ -1256,23 +1245,9 @@ export default defineComponent({
           imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
           // extractChannels();
           canvas.toBlob((blob: any) => {
-            newImage.src = URL.createObjectURL(blob);
-            const temp = newImage.src;
-            newImage.onload = (e: any) => {
-              current_image.value = {
-                x: 0,
-                y: 0,
-                draggable: false,
-                scale: { x: scaleFactor.value, y: scaleFactor.value },
-                image: newImage,
-                src: null,
-                original_src: null,
-                alternative_src: null,
-              };
-              bsa_image.value = temp;
-              onChangeScale('');
-              cropLoading.value = false;
-            };
+            const img_obj = set_current_image(blob);
+            bsa_image.value = img_obj.src;
+            cropLoading.value = false;
           });
         };
         roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
@@ -1388,7 +1363,7 @@ export default defineComponent({
         const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
-        if (optionUpdate.value) {
+        if (updating_existing.value) {
           cropCoords = metadata.value.crop_area;
         }
         const points: number[] = [];
@@ -1674,7 +1649,7 @@ export default defineComponent({
       tissue_position_list_obj,
       uploadingTixels,
       optionCreate,
-      optionUpdate,
+      updating_existing,
       image_processing_begun,
       generating,
       runIdFlag,
