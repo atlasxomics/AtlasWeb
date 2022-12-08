@@ -12,42 +12,36 @@
         <v-card :loading="loading" flat dense>
           <v-card-title>Filters</v-card-title>
           <v-divider style="width:91%"/>
-          <template v-for="item in groupsAndData">
-            <v-card-actions style="padding:0; max-height: 50px;" v-bind:key="item.title">
-              <v-card-title>{{item.title}}</v-card-title>
-              <v-spacer></v-spacer>
-              <v-btn
-                icon
-                @click="item.active = !item.active">
-                <v-icon>{{ item.active ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-              </v-btn>
-            </v-card-actions>
-            <template v-if="item.active">
-              <template v-if="!item.limit">
-                <template v-for="child in item.items">
-                  <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="child">
-                    <template v-if="item.title === 'Data Type'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
-                    <template v-else-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
-                    <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child.replace('_', ' ')} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
-                    <template v-else><v-checkbox color="black" :disabled="(countHold[child] == 0 ? true : false)" :key="child" :label="`${child} (${countHold[child]})`" @click="checkBoxSort(child, item.title)"></v-checkbox></template>
-                  </v-card-actions>
-                </template>
+          <v-list>
+            <v-list-group
+              style="padding:0"
+              v-for="item in groupsAndData"
+              :key="item.title"
+              v-model="item.active"
+              sub-group>
+              <template v-slot:activator>
+                <v-list-item-content style="padding:0; max-height: 50px;">
+                  <v-list-item-title v-text="item.title"></v-list-item-title>
+                </v-list-item-content>
               </template>
-              <template v-else>
-                <template v-for="(place,child) in 3">
-                  <v-card-actions style="padding:0;max-height: 50px;" v-bind:key="item.items[child]">
-                    <template v-if="item.title === 'Data Type'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${child} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                    <template v-else-if="item.title === 'Species'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                    <template v-else-if="item.title === 'Organ'"><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                    <template v-else><v-checkbox  color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                  </v-card-actions>
+              <div>
+                <template v-for="(place,child) in item.palceHolder" >
+                  <template v-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                  <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                  <template v-else><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                 </template>
-              </template>
-              <v-card-actions v-bind:key="item.title+item.active">
-                <v-btn :disabled="(item.length <= 3) ? true : false" small text color="blue" @click="item.limit = !item.limit">{{(!item.limit) ? 'Show Less' : 'Show More'}}</v-btn>
-              </v-card-actions>
-            </template>
-          </template>
+                <span v-show="!item.limit"></span>
+                <span v-show="item.limit">
+                  <template v-for="child in Array.from({length:item.length - 3},(v,k)=>k+3)" >
+                    <template v-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-else><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                  </template>
+                </span>
+              </div>
+              <v-list-item v-if="(item.length > 3)"><v-btn :disabled="(item.length <= 3) ? true : false" small text color="blue" @click="item.limit = !item.limit">{{(!item.limit) ? 'Show More' : 'Show Less'}}</v-btn></v-list-item>
+            </v-list-group>
+          </v-list>
         </v-card>
       </v-col>
       <v-col cols="12" sm="8" style="padding-right:10px">
@@ -81,16 +75,16 @@
                   <v-icon>{{ pubPrivFlag ? 'mdi-toggle-switch-off' : 'mdi-toggle-switch' }}</v-icon>
                 </v-btn>
               </template>
-              <span>Show Public</span>
+              <span>{{`${(!pubPrivFlag) ? 'Show Public' : 'Show Private'}`}}</span>
             </v-tooltip>
           </v-col>
           <v-col cols="12" sm="2" class="mt-4">
             <v-row>
               <v-col cols="6" sm="3">
-                <v-btn :ripple="false" plain depressed large :color="(!menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-menu</v-icon></v-btn>
+                <v-btn :ripple="false" plain depressed large :color="(menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-menu</v-icon></v-btn>
               </v-col>
               <v-col cols="6" sm="3">
-                <v-btn :ripple="false" plain depressed large :color="(menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-format-list-bulleted</v-icon></v-btn>
+                <v-btn :ripple="false" plain depressed large :color="(!menuListFlag) ? 'blue' : 'black'" icon @click="menuListFlag = !menuListFlag"><v-icon>mdi-picture-in-picture-top-right-outline</v-icon></v-btn>
               </v-col>
             </v-row>
           </v-col>
@@ -536,32 +530,36 @@ export default defineComponent({
       species.sort();
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (labs.length > 3) ? 3 : labs.length,
         active: true,
-        limit: labs.length > 3,
+        limit: false,
         length: labs.length,
         items: [...labs],
         title: 'Groups',
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (type.length > 3) ? 3 : type.length,
         active: true,
-        limit: type.length > 3,
+        limit: false,
         length: type.length,
         items: [...type],
         title: 'Data Type',
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (species.length > 3) ? 3 : species.length,
         active: true,
-        limit: species.length > 3,
+        limit: false,
         length: species.length,
         items: [...species],
         title: 'Species',
       });
       groupsAndData.value.push({
         action: 'mdi-ticket',
+        palceHolder: (organ.length > 3) ? 3 : organ.length,
         active: true,
-        limit: organ.length > 3,
+        limit: false,
         length: organ.length,
         items: [...organ],
         title: 'Organ',
@@ -645,38 +643,6 @@ export default defineComponent({
       type.sort();
       organ.sort();
       species.sort();
-      groupsAndData.value.push({
-        action: 'mdi-ticket',
-        active: true,
-        limit: labs.length > 3,
-        length: labs.length,
-        items: [...labs],
-        title: 'Groups',
-      });
-      groupsAndData.value.push({
-        action: 'mdi-ticket',
-        active: true,
-        limit: type.length > 3,
-        length: type.length,
-        items: [...type],
-        title: 'Data Type',
-      });
-      groupsAndData.value.push({
-        action: 'mdi-ticket',
-        active: true,
-        limit: species.length > 3,
-        length: species.length,
-        items: [...species],
-        title: 'Species',
-      });
-      groupsAndData.value.push({
-        action: 'mdi-ticket',
-        active: true,
-        limit: organ.length > 3,
-        length: organ.length,
-        items: [...organ],
-        title: 'Organ',
-      });
       lodash.each(precount, (v: any, i: any) => {
         countHold.value[i] = v;
         count.value[i] = v;
@@ -690,6 +656,50 @@ export default defineComponent({
       indexOfRuns.value = indexingRuns;
       numOfPubs.value = data;
       numOfPubsHold.value = data;
+      const checkBoxArrCopy = checkBoxArr.value.map((v: any) => v);
+      const groupsAndDataTitle = checkBoxArr.value.map((v: any) => v.title);
+      checkBoxArr.value = [];
+      if (checkBoxArrCopy.length > 0) {
+        checkBoxArrCopy.forEach((arr: any, index: any) => {
+          checkBoxSort(arr.key, arr.title);
+        });
+      }
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        palceHolder: (labs.length > 3) ? 3 : labs.length,
+        active: true,
+        limit: (groupsAndDataTitle.includes('Groups') && checkBoxArrCopy.length > 0),
+        length: labs.length,
+        items: [...labs],
+        title: 'Groups',
+      });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        palceHolder: (type.length > 3) ? 3 : type.length,
+        active: true,
+        limit: (groupsAndDataTitle.includes('Data Type') && checkBoxArrCopy.length > 0),
+        length: type.length,
+        items: [...type],
+        title: 'Data Type',
+      });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        palceHolder: (species.length > 3) ? 3 : species.length,
+        active: true,
+        limit: (groupsAndDataTitle.includes('Species') && checkBoxArrCopy.length > 0),
+        length: species.length,
+        items: [...species],
+        title: 'Species',
+      });
+      groupsAndData.value.push({
+        action: 'mdi-ticket',
+        palceHolder: (organ.length > 3) ? 3 : organ.length,
+        active: true,
+        limit: (groupsAndDataTitle.includes('Organ') && checkBoxArrCopy.length > 0),
+        length: organ.length,
+        items: [...organ],
+        title: 'Organ',
+      });
       loading.value = false;
     }
     function publicPrivateView() {

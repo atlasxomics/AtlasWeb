@@ -19,12 +19,16 @@
       color="blue-grey lighten-2"
       item-text="name"
       item-value="name"
-      @input="acInputChanged"
       :search-input.sync="searchInput"
-      :menu-props="{closeOnClick: false}"
+      :menu-props="{closeOnContentClick: true}"
       @change="onGenelistChanged"
+      @focus="cleanAuto"
+      @blur="cleanInput"
       width="100%"
       small-chips>
+      <template v-slot:item="{ item }">
+        {{item.name}}
+      </template>
       <template v-slot:selection="data">
         <v-chip
           :ref="data.item.name"
@@ -149,8 +153,12 @@ export default defineComponent({
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
-    async function acInputChanged() { // autocomplete input event handler;
-      filteredGenes.value = genes.value;
+    async function cleanAuto(ev: any) {
+      if (selectedGenes.value.length > 0) {
+        filteredGenes.value = genes.value.filter((g: any) => selectedGenes.value.includes(g.name));
+      }
+    }
+    async function cleanInput(ev: any) {
       searchInput.value = null;
     }
     async function querySelections(v: string) {
@@ -279,7 +287,7 @@ export default defineComponent({
     });
     watch(selectedGenes, (v: any[]) => {
       if (selectedGenes.value.length === 0) {
-        filteredGenes.value = [];
+        filteredGenes.value = genes.value;
         autoGenes.value = [];
         showFlag.value = false;
         labelValue.value = 'Enter ID';
@@ -324,7 +332,6 @@ export default defineComponent({
       fileContent,
       avgInd,
       genes,
-      acInputChanged,
       querySelections,
       onGenelistChanged,
       remove,
@@ -334,6 +341,8 @@ export default defineComponent({
       readFile,
       resetFile,
       handlePaste,
+      cleanAuto,
+      cleanInput,
     };
   },
 });

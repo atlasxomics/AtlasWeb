@@ -1148,7 +1148,6 @@ export default defineComponent({
         loading.value = true;
         retrieveData();
         selectedGenes.value = [];
-        loading.value = false;
       }
     });
     watch(scale, () => {
