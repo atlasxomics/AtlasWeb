@@ -42,8 +42,8 @@ const menu = [
   {
     groupname: 'Analysis',
     items: [
-      { name: 'Wafer Tree', icon: 'mdi-chart-pie', color: 'warning', access_control: ['admin', 'user'], query: { component: 'WaferTrace' } },
-      { name: 'Image Viewer from Wafer', icon: 'mdi-image-filter', access_control: ['admin', 'user'], color: 'warning', query: { component: 'ImageViewer' } },
+      { name: 'Wafer Tree', icon: 'mdi-chart-pie', color: 'warning', access_control: ['admin'], query: { component: 'WaferTrace' } },
+      { name: 'Image Viewer from Wafer', icon: 'mdi-image-filter', access_control: ['admin'], color: 'warning', query: { component: 'ImageViewer' } },
     ],
   },
   {
@@ -62,15 +62,15 @@ const menu = [
   {
     groupname: 'Metadata',
     items: [
-      { name: 'Wafer Information', icon: 'mdi-texture', access_control: ['admin', 'user'], color: 'secondary', query: { component: 'WaferInformationViewer' } },
-      { name: 'Chip Information', icon: 'mdi-checkbox-multiple-blank', access_control: ['admin', 'user'], color: 'secondary', query: { component: 'ChipInformationViewer' } },
-      { name: 'DBiT Information', icon: 'mdi-grid', access_control: ['admin', 'user'], color: 'secondary', query: { component: 'DbitInformationViewer' } },
+      { name: 'Wafer Information', icon: 'mdi-texture', access_control: ['admin'], color: 'secondary', query: { component: 'WaferInformationViewer' } },
+      { name: 'Chip Information', icon: 'mdi-checkbox-multiple-blank', access_control: ['admin'], color: 'secondary', query: { component: 'ChipInformationViewer' } },
+      { name: 'DBiT Information', icon: 'mdi-grid', access_control: ['admin'], color: 'secondary', query: { component: 'DbitInformationViewer' } },
     ],
   },
   {
     groupname: 'Settings',
     items: [
-      { name: 'User settings', icon: 'mdi-settings', access_control: ['admin', 'user'], color: 'green', query: { component: 'UserSettings' } },
+      { name: 'User settings', icon: 'mdi-settings', access_control: ['admin'], color: 'green', query: { component: 'UserSettings' } },
       { name: 'Admin Panel', icon: 'mdi-checkbox-multiple-blank', access_control: ['admin'], color: 'green', query: { component: 'AdminPanel' } },
     ],
   },

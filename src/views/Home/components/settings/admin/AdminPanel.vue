@@ -1,9 +1,6 @@
 <template>
   <!-- <v-container v-if="resolveAuthGroup(['admin'])" fluid> -->
    <v-container fluid>
-    <div
-    ref="testRef">
-    </div>
     <v-tabs
       v-model="tab"
       >

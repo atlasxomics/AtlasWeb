@@ -32,15 +32,16 @@
               :items="itemsHolder"
               :headers="headers"
               hide-default-footer
-              sort-by="id"
               @click:row="selectAction"
             />
           </v-card>
         </v-dialog>
         <!-- metdata panel -->
-        <!-- to display must select icon and have either be csvHolder be empty and a runID selected or optionFlag be true. -->
+        <!-- to display must select icon and have either be tissue_position_list_obj be empty and a runID selected or image_processing_begun be true. -->
         <v-dialog
-          v-if="metaFlag && ((!csvHolder && run_id) || optionFlag)"
+          width="600"
+          height="800"
+          v-if="((tissue_position_list_obj && run_id) || image_processing_begun)"
           :value="metaFlag"
           @click:outside="metaFlag = !metaFlag">
           <v-card  :disabled="loading"
@@ -50,74 +51,51 @@
               Run ID: {{run_id}}
             </v-card-title>
             <v-card-text>
-              <v-text-field
+              <selector
                 v-model="metadata.species"
-                outlined
-                dense
-                label="Species"
-                readonly
+                display_label="Species"
+                :display_options="drop_down_manager.species_list"
+                @option-added="drop_down_manager.species_list.push($event)"
                 >
-              </v-text-field>
-              <v-text-field
-                v-model="metadata.organ"
-                outlined
-                dense
-                label="Organ"
-                readonly>
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.collaborator"
-              label="Collaborator"
-              readonly
-              dense
-              outlined
+              </selector>
+              <selector
+              v-model="metadata.organ"
+              display_label="Organ"
+              :display_options="drop_down_manager.organ_list"
+              @option-added="drop_down_manager.organ_list.push($event)"
               >
-              </v-text-field>
-              <v-text-field
-                v-model="metadata.type"
-                outlined
-                dense
-                label="Type"
-                readonly
-                >
-              </v-text-field>
-              <v-text-field
-                v-model="metadata.assay"
-                outlined
-                dense
-                label="Assay"
-                readonly>
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.diseaseState"
-              outlined
-              dense
-              label="Disease State"
-              @change="changeDiseaseState"
-              readonly
+              </selector>
+              <selector
+              v-model="metadata.tissue_source"
+              display_label="Tissue Source"
+              :display_options="drop_down_manager.tissue_source_list"
+              @option-added="drop_down_manager.tissue_source_list.push($event)"
               >
-              </v-text-field>
-              <v-text-field
-              outlined
-              dense
-              label="Disease Name"
-              v-model="metadata.diseaseName"
-              v-if="metadata.diseaseState === 'Disease'"
-              readonly
+              </selector>
+              <selector
+                v-model="metadata.tissue_type"
+                display_label="Tissue Type"
+                :display_options="drop_down_manager.tissue_type_list"
+                @option-added="drop_down_manager.tissue_type_list.push($event)">
+              </selector>
+              <v-select
+              :items="drop_down_manager.assay_list"
+              v-model="metadata.assay"
+              label="Assay"
               >
-              </v-text-field>
-              <v-text-field
-              outlined
-              dense
-              label="Internal Experimental Condition"
-              v-model="metadata.tissueSlideExperiment"
-              readonly
+              </v-select>
+              <selector
+                v-show="metadata.assay === 'CUT&Tag'"
+                v-model="metadata.antibody"
+                display_label="Epitope Name"
+                :display_options="drop_down_manager.epitope_list"
+                @option-added="drop_down_manager.epitope_list.push($event)"
               >
-              </v-text-field>
+              </selector>
               <v-text-field
               outlined
               dense
-              label="Tissue Block Experimental Condition"
+              label="Tissue Experimental Condition"
               v-model="metadata.tissueBlockExperiment"
               >
               </v-text-field>
@@ -128,26 +106,26 @@
               v-model="metadata.sampleID"
               >
               </v-text-field>
-              <v-text-field
-                v-model="metadata.barcodes"
-                outlined
-                dense
-                label="Barcode"
-                readonly>
-              </v-text-field>
+              <v-select
+              v-model="metadata.barcodes"
+              outlined
+              dense
+              label="Barcode File"
+              :items="[1, 2, 3, 4]"
+              >
+              </v-select>
               <v-text-field
               v-model="metadata.chip_resolution"
               outlined
               dense
               label="Chip Resolution"
-              readonly>
+              >
               </v-text-field>
               <v-text-field
               v-model="metadata.comments_flowB"
               outlined
               dense
               label="Comments Flow B"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -155,7 +133,6 @@
               outlined
               dense
               label="B Flow Crosses"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -163,7 +140,6 @@
               outlined
               dense
               label="B Flow Leaks"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -171,7 +147,6 @@
               outlined
               dense
               label="Flow A Comments"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -179,7 +154,6 @@
               outlined
               dense
               label="A Flow Crosses"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -187,7 +161,6 @@
               outlined
               dense
               label="A Flow Blocks"
-              readonly
               >
               </v-text-field>
               <v-text-field
@@ -195,7 +168,6 @@
               outlined
               dense
               label="A Flow Leak"
-              readonly
               >
               </v-text-field>
             </v-card-text>
@@ -203,7 +175,7 @@
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
           <!-- workflow menu -->
-          <template v-if="run_id && optionFlag">
+          <template v-if="run_id && image_processing_begun">
             <v-card>
               <!-- zoom slider -->
               <v-slider
@@ -224,7 +196,7 @@
                 <v-btn
                 color="blue"
                 class="leftRotate"
-                :disabled="!current_image || isCropMode || grid || optionUpdate"
+                :disabled="!current_image || isCropMode || grid || updating_existing"
                 @click="rotate_image(0)"
                 small
                 >
@@ -235,7 +207,7 @@
                 <v-btn
                 color="blue"
                 class="spaced_btn"
-                :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || optionUpdate"
+                :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || updating_existing"
                 @click="rotate_image(1)"
                 small
                 >
@@ -249,8 +221,8 @@
                 :disabled="!current_image || isCropMode || grid"
                 >
                 </v-switch> -->
-                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || optionUpdate">90</label>
-                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || optionUpdate">45</label>
+                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || updating_existing">90</label>
+                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || updating_existing">45</label>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -261,7 +233,7 @@
                   dense
                   x-small
                   @click="isCropMode=true"
-                  :disabled="!current_image || isCropMode || grid || optionUpdate">
+                  :disabled="!current_image || isCropMode || grid || updating_existing">
                   Activate
                 </v-btn>
                 <v-btn
@@ -296,7 +268,7 @@
                 color = "primary"
                 x-small
                 @click="generateLattices"
-                :disabled="(!roi_active && !optionUpdate)|| roi.polygons.length > 0">
+                :disabled="(!roi_active && !updating_existing)|| roi.polygons.length > 0">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -318,12 +290,12 @@
                   step="1"
                   min="0"
                   max="25"
-                  :disabled="!current_image || (!roi_active && !optionUpdate) || spatial"
+                  :disabled="!current_image || (!roi_active && !updating_existing) || spatial"
                   >
                   </v-slider>
                    Neighborhood: {{ neighbor_size }}
                   <v-slider
-                  :disabled="!current_image || (!roi_active && !optionUpdate) || spatial"
+                  :disabled="!current_image || (!roi_active && !updating_existing) || spatial"
                   v-model="neighbor_size"
                   class="slider"
                   step="1"
@@ -338,7 +310,7 @@
                   color="primary"
                   @click="thresh_clicked"
                   small
-                  :disabled="!current_image || (!roi_active && !optionUpdate) || spatial || thresh_same"
+                  :disabled="!current_image || (!roi_active && !updating_existing) || spatial || thresh_same"
                   >
                   Threshold
                   </v-btn>
@@ -351,7 +323,7 @@
                 x-small
                 color="primary"
                 @click="change_image('postB')"
-                :disabled="(!thresh_image_created && !optionUpdate) || postB_image_displayed || spatial"
+                :disabled="(!thresh_image_created && !updating_existing) || postB_image_displayed || spatial"
                 >
                 PostB
                 </v-btn>
@@ -361,7 +333,7 @@
                 x-small
                 color="primary"
                 @click="change_image('BSA')"
-                :disabled="(!thresh_image_created && !optionUpdate) || bsa_image_displayed || spatial"
+                :disabled="(!thresh_image_created && !updating_existing) || bsa_image_displayed || spatial"
                 > BSA </v-btn>
                 <v-btn
                 id="bw_button"
@@ -398,7 +370,7 @@
                 />
                 <template>
                   <v-btn
-                  :disabled="(!tixels_filled && !optionUpdate)"
+                  :disabled="(!tixels_filled && !updating_existing)"
                   outlined
                   x-small
                   dense
@@ -419,14 +391,14 @@
               </v-list>
             </v-card>
           </template>
-          <v-card v-if="run_id && !loading && !optionFlag && csvHolder">
+          <v-card v-if="run_id && !loading && !image_processing_begun && tissue_position_list_obj">
             <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
             <v-card-actions>
               <v-btn
                 outlined
                 dense
                 color="primary"
-                @click="optionFlag=true;optionCreate=true;"
+                @click="image_processing_begun=true;optionCreate=true;"
                 x-small>
                 Reprocess
               </v-btn>
@@ -434,7 +406,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="optionFlag=true;optionUpdate=true;tixels_filled=true; loadImage(); uploadingTixels()"
+                @click="image_processing_begun=true;updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
                 x-small>
                 Update
               </v-btn>
@@ -516,7 +488,7 @@
                     id="roiLayer"
                     @mouseup="handleMouseUp">
                     <template v-if="current_image && !loading">
-                      <template v-if="!optionUpdate && !isBrushMode && !isEraseMode">
+                      <template v-if="!updating_existing && !isBrushMode && !isEraseMode">
                         <v-line
                           :config="roi.generateBoundary()"/>
                       </template>
@@ -527,7 +499,7 @@
                         @mousedown="handleMouseDown"
                         @mouseover="handleMouseOver"/>
                         <v-transformer ref="transformer" />
-                        <template v-if="!isBrushMode && !isEraseMode && !optionUpdate && !tixels_filled">
+                        <template v-if="!isBrushMode && !isEraseMode && !updating_existing && !tixels_filled">
                           <v-circle
                             v-for="c in roi.getAnchors()"
                             v-bind:key="c.id"
@@ -536,7 +508,7 @@
                             @dragmove="handleDragMove"
                             :config="c"/>
                         </template>
-                        <v-circle v-if="!isBrushMode && !isEraseMode && !optionUpdate && !tixels_filled"
+                        <v-circle v-if="!isBrushMode && !isEraseMode && !updating_existing && !tixels_filled"
                           v-bind:key="roi.getCenterAnchor().id"
                           @dragstart="handleDragCenterStart"
                           @dragend="handleDragCenterEnd"
@@ -624,6 +596,8 @@ import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
 import { resolveAuthGroup } from '@/utils/auth';
+import Selector from '@/views/Home/components/settings/admin/modules/Selector.vue';
+import { DropDownFieldManager } from '@/views/Home/components/settings/admin/modules/DropDownFieldManager';
 import { ROI } from './roi';
 import { Crop } from './crop';
 import { Circle, Point } from './types';
@@ -645,25 +619,28 @@ const metaHeaders = [
   { text: 'Field', value: 'key' },
   { text: 'Value', value: 'value' },
 ];
+const assay_dict: Record<string, any> = {
+  cut_n_tag: 'CUT&Tag',
+  'wt_dbit-seq': 'Transcriptome',
+  'ATAC-seq': 'ATAC-seq',
+};
 interface Metadata {
   points: number[] | any;
   run: string | null;
   blockSize: number | null;
   cValue: number | null;
   threshold: number | null;
-  type: string | null;
+  tissue_type: string | null;
   species: string | null;
   assay: string | null;
+  antibody: string | null;
   numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
-  barcodes: number | string | null;
+  barcodes: number | null;
   organ: string | null;
-  diseaseState: string | null;
-  diseaseName: string | null;
-  collaborator: string | null;
+  tissue_source: string | null;
   chip_resolution: number | null;
-  tissueSlideExperiment: string | null;
   tissueBlockExperiment: string | null;
   comments_flowB: string | null;
   crosses_flowB: Array<number> | null;
@@ -680,7 +657,7 @@ interface Metadata {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  components: { SpatialFolderViewer },
+  components: { SpatialFolderViewer, Selector },
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
@@ -688,6 +665,7 @@ export default defineComponent({
     // root directory of that s3 bucket
     const root = 'Images';
     const welcome_screen = ref<boolean>(true);
+    const drop_down_manager = new DropDownFieldManager();
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const allFiles = ref<any[]>([]);
@@ -698,6 +676,7 @@ export default defineComponent({
     const search = ref<string | null>();
     const selected = ref<any | null>();
     const run_id = ref<string>('');
+    const full_bsa_filename = computed(() => `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`);
     const width_window = window.innerWidth;
     const height_window = window.innerHeight;
     const konvaConfig = ref<any>({ width_window, height_window });
@@ -713,7 +692,6 @@ export default defineComponent({
     const roi = ref<ROI>(new ROI([0, 0], 0.15));
     const roi_active = ref<boolean>(false);
     const active_roi_available = ref<boolean>(false);
-    const lines = ref<Konva.Line[]>();
     const isMouseDown = ref(false);
     const stageWidth = ref(window.innerWidth);
     const stageHeight = ref(window.innerHeight);
@@ -746,17 +724,17 @@ export default defineComponent({
     const threshLoading = ref<boolean>(false);
     const thresh = ref<boolean>(false);
     const spatial = ref<boolean>(false);
-    const csvHolder = ref<any>();
+    const tissue_position_list_obj = ref<any>();
     const optionCreate = ref<boolean>(false);
-    const optionUpdate = ref<boolean>(false);
-    const optionFlag = ref<boolean>(false);
+    const updating_existing = ref<boolean>(false);
+    const image_processing_begun = ref<boolean>(false);
     const generating = ref<boolean>(false);
     const runIdFlag = ref<boolean>(false);
     const runIDSelected = ref<boolean>(false);
     const metaFlag = ref<boolean>(false);
     const flowMetadata = ref<Record<string, any>>({});
     // value used to store the loaded image to be used for cropping
-    const imageh = ref<any>();
+    const bsa_blob = ref<any>();
     const c_val = ref<number>(7);
     const neighbor_size = ref<number>(7);
     const bsa_image_displayed = ref<boolean>(true);
@@ -785,7 +763,7 @@ export default defineComponent({
       blockSize: null,
       cValue: null,
       threshold: null,
-      type: null,
+      tissue_type: null,
       species: null,
       assay: null,
       numChannels: '50',
@@ -794,11 +772,8 @@ export default defineComponent({
       crop_area: null,
       barcodes: null,
       chip_resolution: null,
-      diseaseState: '',
-      diseaseName: '',
-      tissueSlideExperiment: '',
       tissueBlockExperiment: '',
-      collaborator: '',
+      tissue_source: '',
       comments_flowB: '',
       crosses_flowB: [],
       blocks_flowB: [],
@@ -809,6 +784,7 @@ export default defineComponent({
       leak_flowA: '',
       sampleID: '',
       onTissueTixels: null,
+      antibody: '',
     });
     function initialize() {
       roi.value = new ROI([0, 0], scaleFactor.value);
@@ -831,8 +807,8 @@ export default defineComponent({
       onOff.value = false;
       runIdFlag.value = false;
       loading.value = false;
-      imageh.value = null;
-      optionUpdate.value = false;
+      bsa_blob.value = null;
+      updating_existing.value = false;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       // metaFlag.value = false;
     }
@@ -841,11 +817,6 @@ export default defineComponent({
       // console.log('y: '.concat((ev.evt.layerY / scaleFactor.value).toString()));
       // console.log(ev.evt.layerX / scaleFactor.value);
       // console.log(ev);
-    }
-    function changeDiseaseState() {
-      if (metadata.value.diseaseState === 'Normal') {
-        metadata.value.diseaseName = '';
-      }
     }
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
@@ -872,24 +843,21 @@ export default defineComponent({
         metadata.value.organ = slimsData.cntn_cf_fk_organ;
         metadata.value.species = slimsData.cntn_cf_fk_species;
         metadata.value.chip_resolution = slimsData.Resolution;
-        metadata.value.collaborator = slimsData.cntn_cf_source;
-        metadata.value.assay = slimsData.cntn_cf_fk_workflow;
-        metadata.value.diseaseName = slimsData.cntn_cf_disease;
-        metadata.value.tissueSlideExperiment = slimsData.cntn_cf_tissueSlideExperimentalCondition;
+        metadata.value.tissue_source = slimsData.cntn_cf_source;
         metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
         metadata.value.sampleID = slimsData.cntn_cf_sampleId;
-        if (metadata.value.diseaseName == null) {
-          metadata.value.diseaseState = 'Healthy';
+        metadata.value.antibody = slimsData.cntn_cf_fk_epitope;
+        if (slimsData.cntn_cf_fk_workflow) {
+          metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
         }
-        metadata.value.barcodes = slimsData.cntn_cf_fk_barcodeOrientation;
-        if (metadata.value.barcodes === '1 (normal)' || metadata.value.barcodes === '1' || metadata.value.barcodes === 1) {
-          metadata.value.barcodes = '1';
-        } else if (metadata.value.barcodes === '2 (reverseB)' || metadata.value.barcodes === '2' || metadata.value.barcodes === 2) {
-          metadata.value.barcodes = '2';
-        } else if (metadata.value.barcodes === '3 (reverseAB)' || metadata.value.barcodes === '3' || metadata.value.barcodes === 3) {
-          metadata.value.barcodes = '3';
-        } else if (metadata.value.barcodes === '4 (reverseA)' || metadata.value.barcodes === '4' || metadata.value.barcodes === 4) {
-          metadata.value.barcodes = '4';
+        if (slimsData.cntn_cf_fk_barcodeOrientation === '1 (normal)') {
+          metadata.value.barcodes = 1;
+        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '2 (reverseB)') {
+          metadata.value.barcodes = 2;
+        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '3 (reverseAB)') {
+          metadata.value.barcodes = 4;
+        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '4 (reverseA)') {
+          metadata.value.barcodes = 3;
         }
         metadata.value.comments_flowB = slimsData.comments_flowB;
         metadata.value.crosses_flowB = slimsData.crosses_flowB;
@@ -899,7 +867,7 @@ export default defineComponent({
         metadata.value.crosses_flowA = slimsData.crosses_flowA;
         metadata.value.blocks_flowA = slimsData.blocks_flowA;
         metadata.value.leak_flowA = slimsData.leak_flowA;
-        metadata.value.type = slimsData.cntn_cf_fk_tissueType;
+        metadata.value.tissue_type = slimsData.cntn_cf_fk_tissueType;
       } catch (error) {
         console.log(error);
       }
@@ -932,26 +900,30 @@ export default defineComponent({
       const scale_payload = { params: { filename: scale_filename, bucket_name } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       scaleFactor_json.value = scale_pos;
-      csvHolder.value = resp_pos;
+      tissue_position_list_obj.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         metadata.value = resp;
-        optionFlag.value = false;
+        image_processing_begun.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         // otherwise call getMeta to query the API
       } else {
         await getMeta();
-        optionFlag.value = true;
+        image_processing_begun.value = true;
         snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
       }
     }
-    function loadGray() {
-      if (!client.value) return;
+    function load_image_promise_jpg(pl: any): Promise<any> | null {
+      if (!client.value) return null;
+      const promise = client.value.getImageAsJPG(pl);
+      return promise;
+    }
+    function loadGrayCropped(filename: string): Promise<any> | null {
+      if (!client.value) return null;
       // path to image
-      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       try {
         let c = crop.value.getCoordinatesOnImage();
-        if (optionUpdate.value) {
+        if (updating_existing.value) {
           c = metadata.value.crop_area;
         }
         const x1 = c[0];
@@ -959,56 +931,65 @@ export default defineComponent({
         const x2 = c[2];
         const y2 = c[3];
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
-        postB_image_promise.value = client.value.getGrayImageAsJPG(pl);
+        const promise = client.value.getGrayImageAsCroppedJPG(pl);
+        return promise;
       } catch (error) {
-        console.log(error);
         loading.value = false;
+        return null;
       }
+    }
+    function set_current_image(blob: any) {
+      const imgObj = new window.Image();
+      imgObj.src = URL.createObjectURL(blob);
+      const scalefactor = 0.1;
+      if (imgObj) {
+        imgObj.onload = (ev: any) => {
+          current_image.value = {
+            x: 0,
+            y: 0,
+            draggable: false,
+            scale: { x: scalefactor, y: scalefactor },
+            image: imgObj,
+            src: null,
+            original_src: null,
+          };
+          onChangeScale('');
+        };
+      }
+      return imgObj;
     }
     async function loadImage() {
       if (!client.value) return;
       loading.value = true;
       loadingMessage.value = false;
       let filename: any;
+      let use_cache = false;
       // path to images
-      if (optionUpdate.value) {
+      if (updating_existing.value) {
         filename = `${root}/${run_id.value}/spatial/figure/postB_BSA.tif`;
         bsa_image_displayed.value = true;
         postB_image_displayed.value = false;
         bw_image_displayed.value = false;
+        use_cache = true;
       } else {
-        filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
+        filename = full_bsa_filename.value;
       }
       const filenameList = { params: { path: root, filter: `${run_id.value}`, bucket_name } };
       try {
-        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation } };
+        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
         const img = await client.value.getImageAsJPG(pl);
-        imageh.value = img;
+        bsa_blob.value = img;
         allFiles.value = await client.value.getFileList(filenameList);
-        const imgObj = new window.Image();
-        imgObj.src = URL.createObjectURL(img);
-        const temp = imgObj.src;
-        const scalefactor = 0.1;
-        if (imgObj) {
-          imgObj.onload = (ev: any) => {
-            current_image.value = {
-              x: 0,
-              y: 0,
-              draggable: false,
-              scale: { x: scalefactor, y: scalefactor },
-              image: imgObj,
-              src: null,
-              original_src: null,
-            };
-            bsa_image.value = temp;
-            // imgObj.onload = null;
-          };
+        const img_obj = set_current_image(img);
+        bsa_image.value = img_obj.src;
+        if (updating_existing.value) {
+          const postB_figure_filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
+          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: 'true', bucket_name } };
+          const pro = load_image_promise_jpg(pl_postB);
+          if (pro) postB_image_promise.value = pro;
         }
         loading.value = false;
         runIdFlag.value = false;
-        if (optionUpdate.value) {
-          loadGray();
-        }
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -1016,22 +997,28 @@ export default defineComponent({
       }
       // console.log(current_image.value.original_src);
     }
-    async function loadAll() {
-      await loadMetadata();
-      await loadImage();
-      loading.value = false;
-    }
 
-    function rotate_image(choice: number) {
+    async function rotate_image(choice: number) {
+      loading.value = true;
       if (choice === 0) {
         const rotationAmount = parseInt(degreeRotation.value, 10);
         orientation.value.rotation += rotationAmount;
       } else {
         orientation.value.rotation += 270;
       }
-      loadImage();
+      const filename = `Images/${run_id.value}/${run_id.value}_postB_BSA.tif`;
+      const pl = { params: { filename, bucket_name, use_cache: 'true', rotation: orientation.value.rotation } };
+      // const img = await client.value?.rotate_image(filename, orientation.value.rotation);
+      const img = await client.value?.getImageAsJPG(pl);
+      bsa_blob.value = img;
+      set_current_image(img);
+      loading.value = false;
     }
-
+    async function loadAll() {
+      await loadMetadata();
+      await loadImage();
+      loading.value = false;
+    }
     function searchRuns(ev: any) {
       const stringforRegex = ev;
       const updated = [];
@@ -1059,7 +1046,7 @@ export default defineComponent({
       const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
-      roi.value.loadTixels(csvHolder.value);
+      roi.value.loadTixels(tissue_position_list_obj.value);
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
@@ -1131,6 +1118,9 @@ export default defineComponent({
     }
     function handleDragCenterMove(ev: any) {
       roi.value.moveToNewCenter(ev.target._lastPos);
+    }
+    function onload_window(ev: any) {
+      console.log(ev);
     }
     function handleMouseDown(ev: any) {
       const { id } = ev.target.attrs;
@@ -1226,7 +1216,7 @@ export default defineComponent({
       bw_image_displayed.value = false;
       let new_img = null;
       if (img === 'postB') {
-        if (optionUpdate.value && postB_image_promise.value != null) {
+        if (!postB_image.value && updating_existing.value && postB_image_promise.value != null) {
           await postB_image_promise.value.then((gray: any) => {
             postB_image.value = URL.createObjectURL(gray);
           });
@@ -1244,19 +1234,20 @@ export default defineComponent({
     }
     function onCropButton(ev: any) {
       const coords = crop.value.getCoordinatesOnImage();
-      loadGray();
       const { width, height } = current_image.value.image;
       const [x1, y1, x2, y2] = coords;
       if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
         snackbar.dispatch({ text: 'Keeping Cropping on Image', options: { color: 'warning', right: true } });
       } else {
+        const promise = loadGrayCropped(full_bsa_filename.value);
+        if (promise) postB_image_promise.value = promise;
         cropLoading.value = true;
         cropFlag.value = true;
         isCropMode.value = true;
         active_roi_available.value = true;
         const imgObj = new window.Image();
         const newImage = new window.Image();
-        imgObj.src = URL.createObjectURL(imageh.value);
+        imgObj.src = URL.createObjectURL(bsa_blob.value);
         const canvas = document.createElement('canvas');
         const ctxe = canvas.getContext('2d');
         imgObj.onload = (v: any) => {
@@ -1267,23 +1258,9 @@ export default defineComponent({
           imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
           // extractChannels();
           canvas.toBlob((blob: any) => {
-            newImage.src = URL.createObjectURL(blob);
-            const temp = newImage.src;
-            newImage.onload = (e: any) => {
-              current_image.value = {
-                x: 0,
-                y: 0,
-                draggable: false,
-                scale: { x: scaleFactor.value, y: scaleFactor.value },
-                image: newImage,
-                src: null,
-                original_src: null,
-                alternative_src: null,
-              };
-              bsa_image.value = temp;
-              onChangeScale('');
-              cropLoading.value = false;
-            };
+            const img_obj = set_current_image(blob);
+            bsa_image.value = img_obj.src;
+            cropLoading.value = false;
           });
         };
         roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
@@ -1340,8 +1317,6 @@ export default defineComponent({
               alternative_src: null,
             };
             onChangeScale(sv);
-            // current_image.value.image.src = newsrc;
-            // current_image.value.scale = { x: sv, y: sv };
           };
           thresh_same.value = true;
           loading.value = false;
@@ -1359,11 +1334,6 @@ export default defineComponent({
         postB_image.value = src;
         threshold_image(postB_image.value);
       });
-      // setting the filled grid back to default state
-      // if (tixels_filled.value) {
-      //   clear_filled_tixels();
-      // }
-      // tixels_filled.value = false;
     }
     const updateProgress = async (value: number) => {
       if (!client.value) return;
@@ -1390,51 +1360,6 @@ export default defineComponent({
         four.value = 100;
       }
     };
-    async function generateh5ad() {
-      if (!client.value) return;
-      if (!spatial.value) return;
-      try {
-        const task = 'atlasbrowser.generate_h5ad';
-        const queue = 'atxcloud_atlasbrowser';
-        const params = {
-          run_id: run_id.value,
-          root_dir: root,
-        };
-        const args: any[] = [params];
-        const kwargs: any = {};
-        const taskObject = await client.value.postTask(task, args, kwargs, queue);
-        generating.value = true;
-        await checkTaskStatus(taskObject._id);
-        /* eslint-disable no-await-in-loop */
-        while (taskStatush5.value.status !== 'SUCCESS' && taskStatush5.value.status !== 'FAILURE') {
-          if (taskStatush5.value.status === 'PROGRESS') {
-            await updateH5ad(taskStatus.value.progress);
-            progressMessage.value = `${taskStatush5.value.progress}% - ${taskStatush5.value.position}`;
-          }
-          await new Promise((r) => {
-            taskTimeout.value = window.setTimeout(r, 1000);
-          });
-          taskTimeout.value = null;
-          await checkTaskStatus(taskObject._id);
-        }
-        /* eslint-disable no-await-in-loop */
-        if (taskStatush5.value.status !== 'SUCCESS') {
-          generating.value = false;
-          four.value = 0;
-          snackbar.dispatch({ text: 'Worker failed', options: { right: true, color: 'error' } });
-          loading.value = false;
-          return;
-        }
-        await updateH5ad(taskStatus.value.progress);
-        four.value = 0;
-        generating.value = false;
-      } catch (error) {
-        console.log(error);
-        generating.value = false;
-        four.value = 0;
-        snackbar.dispatch({ text: 'Error generating h5ad file', options: { right: true, color: 'error' } });
-      }
-    }
     async function showSpatialFolder() {
       checkSpatial.value = true;
     }
@@ -1448,10 +1373,10 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'atx-cloud_atlasbrowser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
-        if (optionUpdate.value) {
+        if (updating_existing.value) {
           cropCoords = metadata.value.crop_area;
         }
         const points: number[] = [];
@@ -1468,10 +1393,7 @@ export default defineComponent({
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
-          barcodes: Number(metadata.value.barcodes),
-          diseaseState: metadata.value.diseaseState,
-          diseaseName: metadata.value.diseaseName,
-          tissueSlideExperiment: metadata.value.tissueSlideExperiment,
+          barcodes: metadata.value.barcodes,
           tissueBlockExperiment: metadata.value.tissueBlockExperiment,
           comments_flowB: metadata.value.comments_flowB,
           crosses_flowB: metadata.value.crosses_flowB,
@@ -1483,6 +1405,7 @@ export default defineComponent({
           leak_flowA: metadata.value.leak_flowA,
           onTissueTixels: roi.value.getOnTissue(),
         });
+        console.log(metadata);
         const params = {
           run_id: run_id.value,
           files: allFiles.value,
@@ -1491,7 +1414,7 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
-          barcodes: Number(metadata.value.barcodes),
+          barcodes: metadata.value.barcodes,
           root_dir: root,
           bucket: bucket_name,
         };
@@ -1522,7 +1445,6 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Spatial Folder Successfully Uploaded', options: { right: true, color: 'success' } });
         await updateProgress(taskStatus.value.progress);
         progressMessage.value = taskStatus.value.status;
-        const resp = taskStatus.value.result;
         loading.value = false;
         loadingMessage.value = false;
         one.value = 0;
@@ -1661,6 +1583,7 @@ export default defineComponent({
     return {
       allFiles,
       run_id,
+      full_bsa_filename,
       metadata,
       items,
       itemsHolder,
@@ -1706,7 +1629,6 @@ export default defineComponent({
       stageWidth,
       initialize,
       generateSpatial,
-      generateh5ad,
       isCropMode,
       isBrushMode,
       setBrushMode,
@@ -1723,6 +1645,7 @@ export default defineComponent({
       cropLoading,
       threshLoading,
       orientation,
+      drop_down_manager,
       onLatticeButton,
       onCropButton,
       one,
@@ -1736,15 +1659,15 @@ export default defineComponent({
       grid,
       thresh,
       cropFlag,
-      csvHolder,
+      tissue_position_list_obj,
       uploadingTixels,
       optionCreate,
-      optionUpdate,
-      optionFlag,
+      updating_existing,
+      image_processing_begun,
       generating,
       runIdFlag,
       metaFlag,
-      imageh,
+      bsa_blob,
       getMeta,
       resolveAuthGroup,
       welcome_screen,
@@ -1756,21 +1679,17 @@ export default defineComponent({
       roi_active,
       finding_roi,
       thresh_image_created,
-      // display_bsa,
       bw_image,
-      // display_bw,
       thresh_same,
       tixels_filled,
       bsa_image_displayed,
       change_image,
-      // display_postB,
       handle_spatial_call,
       rotate_image,
       saved_grid_state,
       hide_grid,
       load_tixel_state,
       clear_filled_tixels,
-      changeDiseaseState,
       degreeRotation,
       assignMetadata,
       imageDataToBlob,
@@ -1783,7 +1702,7 @@ export default defineComponent({
       bucket_name,
       bsa_image,
       black_white,
-      loadGray,
+      loadGrayCropped,
       postB_image_promise,
       postB_image,
       bw_image_displayed,

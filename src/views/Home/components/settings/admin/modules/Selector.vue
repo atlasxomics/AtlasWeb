@@ -42,7 +42,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref, watch } from '@vue/composition-api';
+import { computed, defineComponent, ref, watch, onMounted } from '@vue/composition-api';
 
 export default defineComponent({
   name: 'custom-selector',
@@ -50,7 +50,11 @@ export default defineComponent({
     display_options: { type: Array, required: true },
     display_label: { type: String, required: true },
     variable: { required: true },
-    disabled: { type: Boolean, required: true },
+    disabled: { type: Boolean },
+  },
+  model: {
+    prop: 'variable',
+    event: 'changed',
   },
   watch: {
     variable(new_val) {
@@ -71,10 +75,16 @@ export default defineComponent({
       add_option.value = false;
       value_changed();
     }
+    onMounted(() => {
+      if (props.variable) {
+        if (!props.display_options.includes(props.variable)) {
+          ctx.emit('option-added', props.variable);
+        }
+        local_variable.value = String(props.variable);
+      }
+    });
     return {
       local_variable,
-      // local_options,
-      // local_label,
       custom_option,
       add_option,
       value_changed,
