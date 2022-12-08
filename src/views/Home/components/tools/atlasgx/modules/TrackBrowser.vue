@@ -155,7 +155,7 @@ export default defineComponent({
         },
       };
       const ref_bucket = 'atx-track-host';
-      const fl_payload = { path: 'data', filter: [`${rid}/tracks`], bucket: ref_bucket };
+      const fl_payload = { path: 'data', filter: [`${rid}/tracks`] };
       const fl_payload_ref = { bucket: ref_bucket, path: 'ref', filter: [`${speciesMap[selectedSpecies.value]}`] };
       const resp = await client.value.getFileList(fl_payload);
       resp.sort((a: any, b: any) => {
