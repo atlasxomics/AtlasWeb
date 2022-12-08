@@ -285,14 +285,12 @@ export default defineComponent({
     }
     // calls api and sends a code to user's email when they forget password
     async function send_forgot_password_code(username: string) {
-      console.log('sending forgot pw request');
       try {
         const temp_client = new Client(
           PROD_SERVER_URL,
           '',
         );
         const resp = await temp_client.forgotPasswordRequest(username);
-        console.log(resp);
         return resp;
       } catch (e) {
         snackbar.dispatch({ text: 'Error when sending password reset code.', options: { color: 'red' } });
@@ -303,7 +301,6 @@ export default defineComponent({
     async function forgot_password_request(username: string) {
       try {
         const resp = await send_forgot_password_code(username);
-        console.log(resp);
         username_from_child.value = username;
         if (resp.state === 'Success' && resp.CodeDeliveryDetails.DeliveryMedium.toLowerCase() === 'email') {
           forgotPasswordScreenDisplayed.value = false;

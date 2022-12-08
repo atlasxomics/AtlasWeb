@@ -60,15 +60,12 @@ export default defineComponent({
     const loginErrorMessage = computed(() => props.loginErrorMessage_prop);
     function loginUser() {
       const pl = { username: username.value, password: password.value };
-      console.log('login selected');
       this.$emit('login-selected', pl);
     }
     function register_user() {
-      console.log('registration selected');
       this.$emit('registration-selected');
     }
     function forgot_password() {
-      console.log('forgot password selected');
       this.$emit('forgot-password');
     }
     return {
