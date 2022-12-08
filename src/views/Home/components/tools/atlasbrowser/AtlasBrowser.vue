@@ -974,11 +974,12 @@ export default defineComponent({
       } else {
         filename = full_bsa_filename.value;
       }
-      const filenameList = { path: root, filter: `${run_id.value}`, bucket: bucket_name };
+      const filenameList = { path: root, filter: [`${run_id.value}`], bucket: bucket_name };
       try {
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
         const img = await client.value.getImageAsJPG(pl);
         bsa_blob.value = img;
+        console.log(filenameList);
         allFiles.value = await client.value.getFileList(filenameList);
         const img_obj = set_current_image(img);
         bsa_image.value = img_obj.src;
@@ -1373,7 +1374,7 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         if (updating_existing.value) {
@@ -1491,6 +1492,7 @@ export default defineComponent({
       // Change the filter parameters of the below opject to change the displayed runs
       // Cap sensitive
       const fl_payload = { bucket: bucket_name, path: root, filter: [run_id.value.concat('_postB_BSA.tif')] };
+      console.log(fl_payload);
       const filelist = await client.value.getFileList(fl_payload);
       if (filelist !== false) {
         const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
