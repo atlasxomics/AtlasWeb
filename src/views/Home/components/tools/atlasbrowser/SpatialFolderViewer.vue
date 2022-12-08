@@ -83,7 +83,7 @@ export default defineComponent({
     async function loadDisplayImage(filename: string) {
       try {
         image_selected.value = true;
-        const pl = { params: { bucket_name: props.bucket_name, filename } };
+        const pl = { params: { bucket_name: props.bucket_name, filename, use_cache: 'false' } };
         const image = await client.value?.getImageAsJPG(pl);
         if (image) {
           selectedImageURL.value = URL.createObjectURL(image);
