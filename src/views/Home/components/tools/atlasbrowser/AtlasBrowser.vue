@@ -985,7 +985,7 @@ export default defineComponent({
         if (updating_existing.value) {
           const postB_figure_filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
           const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: 'true', bucket_name } };
-          const pro = load_image_promise_jpg(pl);
+          const pro = load_image_promise_jpg(pl_postB);
           if (pro) postB_image_promise.value = pro;
         }
         loading.value = false;
@@ -1216,7 +1216,7 @@ export default defineComponent({
       bw_image_displayed.value = false;
       let new_img = null;
       if (img === 'postB') {
-        if (updating_existing.value && postB_image_promise.value != null) {
+        if (!postB_image.value && updating_existing.value && postB_image_promise.value != null) {
           await postB_image_promise.value.then((gray: any) => {
             postB_image.value = URL.createObjectURL(gray);
           });
@@ -1445,7 +1445,6 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Spatial Folder Successfully Uploaded', options: { right: true, color: 'success' } });
         await updateProgress(taskStatus.value.progress);
         progressMessage.value = taskStatus.value.status;
-        const resp = taskStatus.value.result;
         loading.value = false;
         loadingMessage.value = false;
         one.value = 0;
