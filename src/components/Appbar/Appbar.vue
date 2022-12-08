@@ -6,7 +6,7 @@
       <div style="cursor: pointer;">
       <v-img @click="redirectToVisual" width="40px" src="favicon-nobg.png"></v-img>
       </div>
-      <v-app-bar-nav-icon @click="$emit('openDrawer')"></v-app-bar-nav-icon>
+      <v-app-bar-nav-icon v-if="resolveAuthGroup(['admin', 'user'])" @click="$emit('openDrawer')"></v-app-bar-nav-icon>
       <v-tooltip
         v-for="menu in subMenu"
         v-bind:key="menu.text"
