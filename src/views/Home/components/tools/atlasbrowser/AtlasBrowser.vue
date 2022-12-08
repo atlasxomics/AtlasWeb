@@ -676,6 +676,7 @@ export default defineComponent({
     const search = ref<string | null>();
     const selected = ref<any | null>();
     const run_id = ref<string>('');
+    const full_bsa_filename = computed(() => `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`);
     const width_window = window.innerWidth;
     const height_window = window.innerHeight;
     const konvaConfig = ref<any>({ width_window, height_window });
@@ -912,25 +913,29 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
       }
     }
-    function loadGray() {
-      if (!client.value) return;
+    function load_image_promise_jpg(pl: any): Promise<any> | null {
+      if (!client.value) return null;
+      const promise = client.value.getImageAsJPG(pl);
+      return promise;
+    }
+    function loadGrayCropped(filename: string): Promise<any> | null {
+      if (!client.value) return null;
       // path to image
-      const filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
       try {
         let c = crop.value.getCoordinatesOnImage();
         if (updating_existing.value) {
           c = metadata.value.crop_area;
         }
-        console.log(c);
         const x1 = c[0];
         const y1 = c[1];
         const x2 = c[2];
         const y2 = c[3];
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
-        postB_image_promise.value = client.value.getGrayImageAsJPG(pl);
+        const promise = client.value.getGrayImageAsCroppedJPG(pl);
+        return promise;
       } catch (error) {
-        console.log(error);
         loading.value = false;
+        return null;
       }
     }
     function set_current_image(blob: any) {
@@ -967,7 +972,7 @@ export default defineComponent({
         bw_image_displayed.value = false;
         use_cache = true;
       } else {
-        filename = `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`;
+        filename = full_bsa_filename.value;
       }
       const filenameList = { params: { path: root, filter: `${run_id.value}`, bucket_name } };
       try {
@@ -977,11 +982,14 @@ export default defineComponent({
         allFiles.value = await client.value.getFileList(filenameList);
         const img_obj = set_current_image(img);
         bsa_image.value = img_obj.src;
+        if (updating_existing.value) {
+          const postB_figure_filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
+          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: 'true', bucket_name } };
+          const pro = load_image_promise_jpg(pl);
+          if (pro) postB_image_promise.value = pro;
+        }
         loading.value = false;
         runIdFlag.value = false;
-        if (updating_existing.value) {
-          loadGray();
-        }
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -991,6 +999,7 @@ export default defineComponent({
     }
 
     async function rotate_image(choice: number) {
+      loading.value = true;
       if (choice === 0) {
         const rotationAmount = parseInt(degreeRotation.value, 10);
         orientation.value.rotation += rotationAmount;
@@ -998,9 +1007,12 @@ export default defineComponent({
         orientation.value.rotation += 270;
       }
       const filename = `Images/${run_id.value}/${run_id.value}_postB_BSA.tif`;
-      const img = await client.value?.rotate_file_object(filename, orientation.value.rotation);
+      const pl = { params: { filename, bucket_name, use_cache: 'true', rotation: orientation.value.rotation } };
+      // const img = await client.value?.rotate_image(filename, orientation.value.rotation);
+      const img = await client.value?.getImageAsJPG(pl);
       bsa_blob.value = img;
       set_current_image(img);
+      loading.value = false;
     }
     async function loadAll() {
       await loadMetadata();
@@ -1222,12 +1234,13 @@ export default defineComponent({
     }
     function onCropButton(ev: any) {
       const coords = crop.value.getCoordinatesOnImage();
-      loadGray();
       const { width, height } = current_image.value.image;
       const [x1, y1, x2, y2] = coords;
       if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
         snackbar.dispatch({ text: 'Keeping Cropping on Image', options: { color: 'warning', right: true } });
       } else {
+        const promise = loadGrayCropped(full_bsa_filename.value);
+        if (promise) postB_image_promise.value = promise;
         cropLoading.value = true;
         cropFlag.value = true;
         isCropMode.value = true;
@@ -1571,6 +1584,7 @@ export default defineComponent({
     return {
       allFiles,
       run_id,
+      full_bsa_filename,
       metadata,
       items,
       itemsHolder,
@@ -1689,7 +1703,7 @@ export default defineComponent({
       bucket_name,
       bsa_image,
       black_white,
-      loadGray,
+      loadGrayCropped,
       postB_image_promise,
       postB_image,
       bw_image_displayed,
