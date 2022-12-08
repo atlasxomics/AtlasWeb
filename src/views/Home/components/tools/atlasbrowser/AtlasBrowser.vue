@@ -974,7 +974,7 @@ export default defineComponent({
       } else {
         filename = full_bsa_filename.value;
       }
-      const filenameList = { params: { path: root, filter: `${run_id.value}`, bucket_name } };
+      const filenameList = { path: root, filter: `${run_id.value}`, bucket: bucket_name };
       try {
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
         const img = await client.value.getImageAsJPG(pl);
@@ -1490,7 +1490,7 @@ export default defineComponent({
       loading.value = true;
       // Change the filter parameters of the below opject to change the displayed runs
       // Cap sensitive
-      const fl_payload = { params: { bucket_name, path: root, filter: run_id.value.concat('_postB_BSA.tif') } };
+      const fl_payload = { bucket: bucket_name, path: root, filter: [run_id.value.concat('_postB_BSA.tif')] };
       const filelist = await client.value.getFileList(fl_payload);
       if (filelist !== false) {
         const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
