@@ -564,16 +564,12 @@ export default defineComponent({
         const TSS: any = [];
         const nFrags: any = [];
         spatialData.value.spatial.forEach((v: string[], i: number) => {
-          TSS.push(parseFloat(v[3]));
-          nFrags.push(parseFloat(v[4]));
-          const value1 = v[1];
-          const value2 = v[2];
-          const [tempX, tempY] = value1.split(',');
-          const [tempUX, tempUY] = value2.split(',');
-          const ax = parseFloat(tempX.slice(1));
-          const ay = parseFloat(tempY.slice(0, -1));
-          const auX = parseFloat(tempUX.slice(1));
-          const auY = parseFloat(tempUY.slice(0, -1));
+          TSS.push(parseFloat(v[5]));
+          nFrags.push(parseFloat(v[6]));
+          const ax = parseFloat(v[1]);
+          const ay = parseFloat(v[2]);
+          const auX = parseFloat(v[3]);
+          const auY = parseFloat(v[4]);
           const uX = auX - minX_UMAP.value;
           const uY = auY - minY_UMAP.value;
           const x = ax - minX.value;
@@ -628,14 +624,10 @@ export default defineComponent({
         lowestCount.value = 10000;
         spatialData.value.spatial.forEach((v: string[], i: number) => {
           if (v[0].includes('C')) {
-            const value1 = v[1];
-            const value2 = v[2];
-            const [tempX, tempY] = value1.split(',');
-            const [tempUX, tempUY] = value2.split(',');
-            const ax = parseFloat(tempX.slice(1));
-            const ay = parseFloat(tempY.slice(0, -1));
-            const auX = parseFloat(tempUX.slice(1));
-            const auY = parseFloat(tempUY.slice(0, -1));
+            const ax = parseFloat(v[1]);
+            const ay = parseFloat(v[2]);
+            const auX = parseFloat(v[3]);
+            const auY = parseFloat(v[4]);
             const uX = auX - minX_UMAP.value;
             const uY = auY - minY_UMAP.value;
             const x = ax - minX.value;
@@ -736,18 +728,10 @@ export default defineComponent({
         const totalHold: any = {};
         spatialData.value.spatial.forEach((list: string[], index: any) => {
           if (list[0].includes('C')) {
-            const value1 = list[1];
-            const value2 = list[2];
-            const [tempX, tempY] = value1.split(',');
-            const [tempUX, tempUY] = value2.split(',');
-            const x = parseFloat(tempX.slice(1));
-            const y = parseFloat(tempY.slice(0, -1));
-            const uX = parseFloat(tempUX.slice(1));
-            const uY = parseFloat(tempUY.slice(0, -1));
-            spatialX.push(x);
-            spatialY.push(y);
-            umapX.push(uX);
-            umapY.push(uY);
+            spatialX.push(parseFloat(list[1]));
+            spatialY.push(parseFloat(list[2]));
+            umapX.push(parseFloat(list[3]));
+            umapY.push(parseFloat(list[4]));
             if (!Object.keys(totalHold).includes(list[0])) totalHold[list[0]] = 1;
             else totalHold[list[0]] += 1;
           }
