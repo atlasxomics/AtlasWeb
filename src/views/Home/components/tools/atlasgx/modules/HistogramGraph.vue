@@ -82,7 +82,7 @@ export default defineComponent({
       } else {
         for (let i = 0; i < tixels.length; i += 1) {
           const trace = {
-            x: (!assayFromParent.value) ? Object.values((i === 0) ? tixels[i] : tixels[i].map((v: number) => Math.log10(v + 1))) : Object.values(tixels[i]),
+            x: Object.values(tixels[i]),
             marker: { color: 'lightblue' },
             histnorm: 'count',
             type: 'histogram',
