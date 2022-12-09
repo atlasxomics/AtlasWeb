@@ -417,9 +417,9 @@ export default class Client {
       return Promise.reject(e);
     }
   }
-  async getGrayImageAsJPG(payload: ImageFileRequest): Promise<File> {
+  async getGrayImageAsCroppedJPG(payload: ImageFileRequest): Promise<File> {
     try {
-      const resp = await this.axios.get('/api/v1/storage/grayscale_image_jpg', { params: payload.params, responseType: 'blob' });
+      const resp = await this.axios.get('/api/v1/storage/grayscale_image_jpg_cropping', { params: payload.params, responseType: 'blob' });
       return new File([resp.data], payload.params.filename, { type: 'image/jpeg' });
     } catch (e) {
       return Promise.reject(e);

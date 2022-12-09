@@ -67,7 +67,7 @@ export default defineComponent({
         return;
       }
       const folder_path = props.root.concat('/').concat(props.selectedRunID).concat('/');
-      const file_payload = { params: { bucket_name: props.bucket_name, path: folder_path } };
+      const file_payload = { bucket: props.bucket_name, path: folder_path, filter: [''] };
       const run_files = await client.value.getFileList(file_payload);
       for (let i = 0; i < run_files.length; i += 1) {
         if (run_files[i] !== folder_path) {
@@ -83,7 +83,7 @@ export default defineComponent({
     async function loadDisplayImage(filename: string) {
       try {
         image_selected.value = true;
-        const pl = { params: { bucket_name: props.bucket_name, filename } };
+        const pl = { params: { bucket_name: props.bucket_name, filename, use_cache: 'false' } };
         const image = await client.value?.getImageAsJPG(pl);
         if (image) {
           selectedImageURL.value = URL.createObjectURL(image);

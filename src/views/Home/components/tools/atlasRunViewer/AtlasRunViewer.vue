@@ -65,7 +65,7 @@ export default defineComponent({
       availableFiles.value = [];
       // const folder_path = 'data/'.concat(runID);
       const folder_path = root.concat('/').concat(selectedRunID.value);
-      const file_payload = { params: { bucket_name, path: folder_path } };
+      const file_payload = { bucket: bucket_name, path: folder_path, filter: [''] };
       const run_files = await client.value.getFileList(file_payload);
       for (let i = 0; i < run_files.length; i += 1) {
         const tempObj = { id: i, file: run_files[i] };
@@ -127,7 +127,7 @@ export default defineComponent({
     async function loadRunIds() {
       const uniqueRuns = new Set();
       // const payload = { params: { path: 'data/' } };
-      const payload = { params: { bucket_name, path: root.concat('/'), filter: 'postB_BSA.tif' } };
+      const payload = { bucket: bucket_name, path: root.concat('/'), filter: ['postB_BSA.tif'] };
       const allData = await client.value?.getFileList(payload);
       try {
         allData.forEach((file: any) => {

@@ -156,7 +156,7 @@ export default defineComponent({
       loading.value = false;
     }
     async function updateProgress(value: number) {
-
+      // not working
     }
     async function createObjects() {
       if (!client.value) return;

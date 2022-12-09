@@ -721,7 +721,12 @@ export default defineComponent({
       } else {
         allTheRuns.value = await client?.value!.getPublicRuns();
         privateRuns.value = allTheRuns.value.filter((v: any) => v.public !== 1);
-        getSecureData(true);
+        if (privateRuns.value.length === 0) {
+          pubPrivFlag.value = true;
+          getSecureData(false);
+        } else {
+          getSecureData(true);
+        }
       }
     });
     return {
