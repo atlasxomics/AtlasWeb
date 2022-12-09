@@ -346,7 +346,6 @@ export default defineComponent({
       search_runs();
     }
     function assign_fields(db_obj: any) {
-      console.log(db_obj);
       run_id.value = db_obj.run_id;
       search_input.value = run_id.value;
       assay.value = db_obj.assay;

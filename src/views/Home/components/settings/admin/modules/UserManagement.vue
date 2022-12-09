@@ -1,11 +1,103 @@
 <template>
     <v-container>
-        <v-row
-        >
-            <v-col
-            cols="2"
+            <v-data-table
+            :headers="headers"
+            :items="user_list"
             >
-                <h2> User List </h2>
+            <template v-slot:[`item.actions`]="{ item }">
+              <v-icon
+                @click="edit(item.id)"
+                small>
+                mdi-pencil
+              </v-icon>
+              <v-icon
+              small>
+              mdi-delete
+              </v-icon>
+            </template>
+            </v-data-table>
+            <v-dialog
+            v-model="editing"
+            width="800px"
+            >
+              <v-card>
+                <v-card-title>
+                  <span class="text-h5"> Edit User Information </span>
+                </v-card-title>
+                <v-row>
+                  <v-col
+                  style="padding-left: 20px"
+                  cols="6"
+                  >
+                    <v-text-field
+                    :value="selected_user.username"
+                    label="Username"
+                    readonly
+                    >
+                    <template slot="append-outer">
+                      <v-btn  v-if="displayed_user_status === 'UNCONFIRMED'">
+                      <v-icon
+                      @click="confirm_user_display"
+                      color="green"
+                      >
+                        mdi-check
+                      </v-icon>
+                      </v-btn>
+                      <h5 v-else> Confirmed </h5>
+                    </template>
+                    </v-text-field>
+
+                    <v-text-field
+                    :value="selected_user.name"
+                    label="Full Name"
+                    readonly
+                    >
+                    </v-text-field>
+                    <v-text-field
+                    :value="selected_user.piname"
+                    label="PI Name"
+                    readonly
+                    >
+                    </v-text-field>
+                  </v-col>
+                  <v-col
+                  cols="5"
+                  >
+                    <v-select
+                    v-model="selected_user.groups"
+                    :items="groups_list"
+                    label="User's Groups"
+                    @change="groups_list_changed()"
+                    multiple
+                  >
+                  </v-select>
+                    <v-text-field
+                      :value="selected_user.email"
+                      label="Email"
+                      readonly
+                      >
+                    </v-text-field>
+                  <v-text-field
+                    :value="selected_user.organization"
+                    label="Organization"
+                    readonly
+                    >
+                  </v-text-field>
+                  </v-col>
+                </v-row>
+                <v-flex text-xs-center>
+                  <v-btn
+                  style="justify-content: center;"
+                  :disabled="!changes_made"
+                  @click="write_changes"
+                  color="primary"
+                  >
+                  Submit Changes
+                  </v-btn>
+                </v-flex>
+              </v-card>
+            </v-dialog>
+                <!-- <h2> User List </h2>
                 <p v-for="(user, index) in user_list" :key="index">
                     <v-btn
                     @click="user_selected(user)"
@@ -108,7 +200,7 @@
             </v-col>
             <v-col
             cols="3"
-            >
+            > -->
             <h2> Modify Groups </h2>
             <v-text-field
             class="add-group"
@@ -138,8 +230,6 @@
             >
             Delete Group
             </v-btn>
-            </v-col>
-        </v-row>
     </v-container>
 </template>
 
@@ -148,6 +238,7 @@ import { defineComponent, ref, watchEffect, computed, onMounted, watch } from '@
 import store from '@/store';
 import { CreateGroupRequest, GroupRequest, UpdatingGroupsRequest, UserGroupAssignmentInform } from '@/types';
 import { snackbar } from '@/components/GlobalSnackbar';
+import Template from '../../../_empty/template.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -165,7 +256,18 @@ export default defineComponent({
     // const users_groups = ref<any[]>([]);
     const groups_list = ref<any[]>([]);
     const client = computed(() => store.state.client);
-    const selected_user = ref<any>(null);
+    const headers = [
+      { value: 'username', text: 'Username', sortable: false },
+      { value: 'status', text: 'User Status' },
+      { value: 'group_names', text: 'Groups' },
+      { value: 'email', text: 'Email', sortable: false },
+      { value: 'email_verified', text: 'Email Verified' },
+      { value: 'name', text: 'Full Name', sortable: false },
+      { value: 'organization', text: 'Organization' },
+      { value: 'piname', text: 'PI Name' },
+      { value: 'actions', text: 'Actions' },
+    ];
+    const selected_user = ref<any>({});
     const number_new_groups_options = ref<number>(1);
     const changes_made = ref<boolean>(false);
     const displayed_user_status = ref<string>('');
@@ -182,6 +284,19 @@ export default defineComponent({
     const entered_group_name = ref<string>('');
     const entered_group_description = ref<string>('');
     const delete_user_dialog = ref<boolean>(false);
+    const editing = ref<boolean>(false);
+
+    function edit(id: number) {
+      changes_made.value = false;
+      confirm_user_email_bool.value = false;
+      editing.value = true;
+      selected_user.value = user_list.value[id];
+      original_group_lis.value = selected_user.value.groups;
+      displayed_user_status.value = selected_user.value.status;
+      original_user_status.value = selected_user.value.status;
+      displayed_email_status.value = selected_user.value.email_verified;
+      console.log(selected_user);
+    }
     function confirm_user_email() {
       changes_made.value = true;
       displayed_email_status.value = 'true';
@@ -246,17 +361,7 @@ export default defineComponent({
         changes_made.value = false;
       }
     }
-    function user_selected(user: any) {
-      changes_made.value = false;
-      selected_user.value = user;
-      displayed_user_status.value = user.status;
-      original_group_lis.value = user.groups;
-      original_user_status.value = user.status;
-      displayed_email_status.value = user.email_verified;
-      confirm_user_email_bool.value = false;
-    }
     function confirm_user_display() {
-      console.log('confirming user');
       displayed_user_status.value = 'CONFIRMED';
       confirm_user_status.value = true;
       changes_made.value = true;
@@ -350,6 +455,10 @@ export default defineComponent({
     onMounted(async () => {
       await clientReady;
       user_list.value = await client.value?.get_user_list();
+      user_list.value.forEach((element: any, index: number) => {
+        const groups = element.groups.toString();
+        user_list.value[index].group_names = groups;
+      });
       groups_list.value = await client.value?.get_group_list();
       console.log(user_list);
     });
@@ -357,7 +466,6 @@ export default defineComponent({
       user_list,
       groups_list,
       selected_user,
-      user_selected,
       number_new_groups_options,
       email_user,
       // users_groups,
@@ -384,6 +492,9 @@ export default defineComponent({
       displayed_email_status,
       confirm_user_email,
       confirm_user_email_bool,
+      headers,
+      edit,
+      editing,
     };
   },
 });
