@@ -61,29 +61,29 @@
           hide-overlay>
           <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:210px;">
             <v-data-table
-            class="thickBorder"
-            v-model="selected"
-            width="20%"
-            dense
-            single-select
-            hide-default-footer
-            hide-default-header
-            :disabled="!spatialData"
-            :items="backgroundOptions"
-            :headers="backgroundHeader">
-            <template v-slot:item="row">
-              <template v-if="row.item['background'] != 'custom'">
-                <tr @click="chooseBackground(row.item['background'])">
-                <td>{{row.item['background']}}</td>
-                </tr>
+              class="thickBorder"
+              v-model="selected"
+              width="20%"
+              dense
+              single-select
+              hide-default-footer
+              hide-default-header
+              :disabled="!spatialData"
+              :items="backgroundOptions"
+              :headers="backgroundHeader">
+              <template v-slot:item="row">
+                <template v-if="row.item['background'] != 'custom'">
+                  <tr @click="chooseBackground(row.item)">
+                  <td>{{row.item['background']}}</td>
+                  </tr>
+                </template>
+                <template v-else>
+                  <tr @click="clusterColorFlag = true ; backgroundFlag= false" :style="{ 'pointer-events': isClusterView ? 'auto' : 'none' }">
+                    <td>customize heatmap</td>
+                  </tr>
+                </template>
               </template>
-              <template v-else>
-                <tr @click="clusterColorFlag = true ; backgroundFlag= false" :style="{ 'pointer-events': isClusterView ? 'auto' : 'none' }">
-                  <td>customize heatmap</td>
-                </tr>
-              </template>
-            </template>
-          </v-data-table>
+            </v-data-table>
           </v-card>
         </v-dialog>
         <v-dialog
@@ -698,9 +698,6 @@ const clusterHeaders = [
 ];
 const backgroundHeader = [
   { text: '', value: 'background' },
-];
-const heatmapHeader = [
-  { text: '', value: 'heat' },
 ];
 const backgroundOptions = [
   { background: 'black' },
@@ -1393,7 +1390,7 @@ export default defineComponent({
         histoFlag.value = false;
         geneMotifFlag.value = false;
         isClusterView.value = true;
-        if (selectedGenes.value.length > 0) selectedGenes.value = [];
+        if (childGenes.value.length > 0) selectedGenes.value = [];
         showFlag.value = [false];
         geneButton.value = [];
         trackBrowserGenes.value = [];
@@ -1578,7 +1575,6 @@ export default defineComponent({
       clusterHeaders,
       backgroundOptions,
       backgroundHeader,
-      heatmapHeader,
       genes,
       selectedGenes,
       remove,
