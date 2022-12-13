@@ -56,7 +56,7 @@
             medium
             @click="$refs.filegac.click()"><v-icon>mdi-upload</v-icon></v-btn>
         </template>
-        <span>Upload ID's</span>
+        <span>Upload gene IDs</span>
         </v-tooltip>
       </template>
       <template v-slot:append-outer v-if="selectedGenes.length > 0">
