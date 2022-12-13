@@ -32,6 +32,7 @@
       <template v-slot:selection="data">
         <v-chip
           :ref="data.item.name"
+          :id="data.item.name"
           close
           small
           :color="autoGenes.includes(data.item.name) ? 'warning' : 'rgb(0, 0, 0, .05)'"
@@ -275,10 +276,21 @@ export default defineComponent({
     });
     watch(geneButton.value, (v: any[]) => {
       const gene = v[0];
-      if (!selectedGenes.value.includes(v[0]) && (typeof gene === 'string')) {
+      if (!selectedGenes.value.includes(gene) && (typeof gene === 'string')) {
         searchInput.value = gene;
         selectedGenes.value.push(gene);
         onGenelistChanged(selectedGenes.value);
+        const observer = new MutationObserver((mutations: any) => {
+          if (document.getElementById(`${gene}`)) {
+            (ctx as any).refs[gene].toggle();
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.body, {
+          childList: true, // observe direct children
+          subtree: true, // lower descendants too
+          characterDataOldValue: true, // pass old data to callback
+        });
       }
       if (v.length === 0) {
         searchInput.value = '';
