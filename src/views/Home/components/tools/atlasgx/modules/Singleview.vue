@@ -181,14 +181,14 @@ export default defineComponent({
       return arr;
     }
     function checkBoundary(value: number) {
-      if (maxMinBoundary.value[0] === '' && maxMinBoundary.value[0] === '') return value;
+      if (maxMinBoundary.value.length === 0) return value;
       if (value > parseFloat(maxMinBoundary.value[0])) return parseFloat(maxMinBoundary.value[0]);
       if (value < parseFloat(maxMinBoundary.value[0]) && value > parseFloat(maxMinBoundary.value[1])) return value;
       if (value < parseFloat(maxMinBoundary.value[1])) return parseFloat(maxMinBoundary.value[1]);
       return value;
     }
     function checkBoundaryColor(value: number) {
-      if (maxMinBoundary.value[0] === '' && maxMinBoundary.value[0] === '') return true;
+      if (maxMinBoundary.value.length === 0) return true;
       if (value > parseFloat(maxMinBoundary.value[0])) return false;
       if (value < parseFloat(maxMinBoundary.value[0]) && value > parseFloat(maxMinBoundary.value[1])) return true;
       if (value < parseFloat(maxMinBoundary.value[1])) return false;
@@ -205,7 +205,8 @@ export default defineComponent({
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
       const [paddingX, paddingY] = [60, 30];
-      const radius = (Math.min(stageWidth, stageHeight) / (30 * 5)) * scale.value;
+      const radiusSize = (coordinates.value.length < 4000) ? 22 : 44;
+      const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
       coordinates.value.forEach((v: any, i: any) => {
         const c = {
           id: get_uuid(),
@@ -215,11 +216,14 @@ export default defineComponent({
           originalColor: 'grey',
           fill: 'grey',
           stroke: 'grey',
-          strokeWidth: 1.0,
+          strokeWidth: 0,
           cluster: v.cluster,
           total: v.genes[selectedGenesFromParent.value],
           inactive: false,
           genes: { [selectedGenesFromParent.value]: v.genes[selectedGenesFromParent.value] },
+          perfectDrawEnabled: false,
+          shadowForStrokeEnabled: false,
+          listening: false,
         };
         circles.push(c);
         geneSum.push(checkBoundary(c.total));
