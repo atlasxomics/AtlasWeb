@@ -391,6 +391,8 @@ export default defineComponent({
         circlesSpatialUMAP.value[i].stroke = c.originalColor;
         circlesSpatial.value[i].fill = c.originalColor;
         circlesSpatial.value[i].stroke = c.originalColor;
+        circlesSpatial.value[i].opacity = 1.0;
+        circlesSpatialUMAP.value[i].opacity = 1.0;
       });
       highlightedCluster.value = '';
     }
@@ -451,23 +453,17 @@ export default defineComponent({
         return;
       }
       lodash.each(filteredIndex, (v: boolean, idx: number) => {
+        circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;
+        circlesSpatial.value[idx].stroke = circlesSpatial.value[idx].originalColor;
+        circlesSpatialUMAP.value[idx].fill = circlesSpatialUMAP.value[idx].originalColor;
+        circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
         if (!v) {
-          circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;
-          circlesSpatial.value[idx].stroke = circlesSpatial.value[idx].originalColor;
-          circlesSpatialUMAP.value[idx].fill = circlesSpatialUMAP.value[idx].originalColor;
-          circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
+          circlesSpatial.value[idx].opacity = 0.2;
+          circlesSpatialUMAP.value[idx].opacity = 0.2;
         } else {
-          let color: any;
-          if (backgroundColor.value === 'white') {
-            color = 'darkgrey';
-          } else {
-            color = 'white';
-          }
           highlightIds.value.push(idx);
-          circlesSpatial.value[idx].fill = color;
-          circlesSpatial.value[idx].stroke = color;
-          circlesSpatialUMAP.value[idx].fill = color;
-          circlesSpatialUMAP.value[idx].stroke = color;
+          circlesSpatial.value[idx].opacity = 1.0;
+          circlesSpatialUMAP.value[idx].opacity = 1.0;
         }
       });
     }
@@ -525,55 +521,32 @@ export default defineComponent({
       const colors: any[] = [];
       let colors_intensity: any[] = [];
       const numClusters = lodash.uniq(spatialData.value.spatial.map((v: any) => v[0])).length;
-      if (!colorFromParent.value) {
-        const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
-        colors_raw.forEach((v: any, i: number) => {
-          if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
-        });
-        colors_intensity = colormap({ colormap: heatMap.value, nshades: 64, format: 'hex', alpha: 1 });
-        colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
-      } else {
-        let linearString = 'linear-gradient(to right,';
-        lodash.each(heatMap.value, (value: any, key: any) => {
-          colors.push(value);
-          linearString += `${value},`;
-        });
-        let holder = linearString.slice(0, -1);
-        holder += ')';
-        colorBarmap.value = holder;
-        const numberOfItems = 64;
-        const rb = rainbow();
-        rb.setNumberRange(1, numberOfItems);
-        rb.setSpectrum(...colors);
-        for (let i = 1; i <= numberOfItems; i += 1) {
-          let hash = '#';
-          colors_intensity.push(hash += rb.colourAt(i));
-        }
-      }
+      lodash.each(heatMap.value, (value: any, key: any) => {
+        colors.push(value);
+      });
+      colors_intensity = colormap({ colormap: 'jet', nshades: 64, format: 'hex', alpha: 1 });
+      colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
       clusterColors.value = colors;
-      const radiusSize = (spatialData.value.spatial.length < 4000) ? 30 : 60;
+      const radiusSize = (spatialData.value.spatial.length < 4000) ? 22 : 44;
+      const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 28 : 56;
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;
       const viewScale = Math.min(stageWidth / (maxX.value - minX.value), stageHeight / (maxY.value - minY.value));
       const viewScaleUMAP = Math.min(stageWidthR / (maxX_UMAP.value - minX_UMAP.value), stageHeightR / (maxY_UMAP.value - minY_UMAP.value));
       const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
-      const radiusUMAP = (Math.min(stageWidthR, stageHeightR) / (radiusSize * 5)) * scaleUMAP.value;
+      const radiusUMAP = (Math.min(stageWidthR, stageHeightR) / (radiusSizeUmap * 5)) * scaleUMAP.value;
       const [paddingX, paddingY] = [60, 30];
       if (isClusterView.value || averageInd.value) {
         const coordinatesSib: any = [];
         const TSS: any = [];
         const nFrags: any = [];
         spatialData.value.spatial.forEach((v: string[], i: number) => {
-          TSS.push(parseFloat(v[3]));
-          nFrags.push(parseFloat(v[4]));
-          const value1 = v[1];
-          const value2 = v[2];
-          const [tempX, tempY] = value1.split(',');
-          const [tempUX, tempUY] = value2.split(',');
-          const ax = parseFloat(tempX.slice(1));
-          const ay = parseFloat(tempY.slice(0, -1));
-          const auX = parseFloat(tempUX.slice(1));
-          const auY = parseFloat(tempUY.slice(0, -1));
+          TSS.push(parseFloat(v[5]));
+          nFrags.push(parseFloat(v[6]));
+          const ax = parseFloat(v[1]);
+          const ay = parseFloat(v[2]);
+          const auX = parseFloat(v[3]);
+          const auY = parseFloat(v[4]);
           const uX = auX - minX_UMAP.value;
           const uY = auY - minY_UMAP.value;
           const x = ax - minX.value;
@@ -592,10 +565,14 @@ export default defineComponent({
             originalColor: colors[match],
             fill: colors[match],
             stroke: colors[match],
-            strokeWidth: 1.0,
+            strokeWidth: 0,
             cluster: v[0],
             total: 0,
             genes: { },
+            perfectDrawEnabled: false,
+            shadowForStrokeEnabled: false,
+            listening: false,
+            opacity: 1.0,
           };
           const ci = {
             id: get_uuid(),
@@ -605,10 +582,14 @@ export default defineComponent({
             originalColor: colors[match],
             fill: colors[match],
             stroke: colors[match],
-            strokeWidth: 1.0,
+            strokeWidth: 0,
             cluster: v[0],
             total: 0,
             genes: { },
+            perfectDrawEnabled: false,
+            shadowForStrokeEnabled: false,
+            listening: false,
+            opacity: 1.0,
           };
           selectedGenes.value.forEach((id: any, index: any) => {
             (c.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
@@ -628,14 +609,10 @@ export default defineComponent({
         lowestCount.value = 10000;
         spatialData.value.spatial.forEach((v: string[], i: number) => {
           if (v[0].includes('C')) {
-            const value1 = v[1];
-            const value2 = v[2];
-            const [tempX, tempY] = value1.split(',');
-            const [tempUX, tempUY] = value2.split(',');
-            const ax = parseFloat(tempX.slice(1));
-            const ay = parseFloat(tempY.slice(0, -1));
-            const auX = parseFloat(tempUX.slice(1));
-            const auY = parseFloat(tempUY.slice(0, -1));
+            const ax = parseFloat(v[1]);
+            const ay = parseFloat(v[2]);
+            const auX = parseFloat(v[3]);
+            const auY = parseFloat(v[4]);
             const uX = auX - minX_UMAP.value;
             const uY = auY - minY_UMAP.value;
             const x = ax - minX.value;
@@ -653,10 +630,14 @@ export default defineComponent({
               originalColor: colors[match],
               fill: colors[match],
               stroke: colors[match],
-              strokeWidth: 1.0,
+              strokeWidth: 0,
               cluster: v[0],
               total: 0,
               genes: { },
+              perfectDrawEnabled: false,
+              shadowForStrokeEnabled: false,
+              listening: false,
+              opacity: 1.0,
             };
             const ci = {
               id: get_uuid(),
@@ -666,10 +647,14 @@ export default defineComponent({
               originalColor: colors[match],
               fill: colors[match],
               stroke: colors[match],
-              strokeWidth: 1.0,
+              strokeWidth: 0,
               cluster: v[0],
               total: 0,
               genes: { },
+              perfectDrawEnabled: false,
+              shadowForStrokeEnabled: false,
+              listening: false,
+              opacity: 1.0,
             };
             selectedGenes.value.forEach((id: any, index: any) => {
               (c.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
@@ -736,18 +721,10 @@ export default defineComponent({
         const totalHold: any = {};
         spatialData.value.spatial.forEach((list: string[], index: any) => {
           if (list[0].includes('C')) {
-            const value1 = list[1];
-            const value2 = list[2];
-            const [tempX, tempY] = value1.split(',');
-            const [tempUX, tempUY] = value2.split(',');
-            const x = parseFloat(tempX.slice(1));
-            const y = parseFloat(tempY.slice(0, -1));
-            const uX = parseFloat(tempUX.slice(1));
-            const uY = parseFloat(tempUY.slice(0, -1));
-            spatialX.push(x);
-            spatialY.push(y);
-            umapX.push(uX);
-            umapY.push(uY);
+            spatialX.push(parseFloat(list[1]));
+            spatialY.push(parseFloat(list[2]));
+            umapX.push(parseFloat(list[3]));
+            umapY.push(parseFloat(list[4]));
             if (!Object.keys(totalHold).includes(list[0])) totalHold[list[0]] = 1;
             else totalHold[list[0]] += 1;
           }
@@ -1146,8 +1123,9 @@ export default defineComponent({
     watch(geneMotif, async (v: any) => {
       if (spatialData.value !== null) {
         loading.value = true;
+        if (isDrawing.value || isDrawingRect.value) runSpatial();
         retrieveData();
-        selectedGenes.value = [];
+        if (selectedGenes.value.length > 0) selectedGenes.value = [];
       }
     });
     watch(scale, () => {

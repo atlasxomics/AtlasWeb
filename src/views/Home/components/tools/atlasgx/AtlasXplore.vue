@@ -34,7 +34,7 @@
                 @click="(geneMotif === 'gene') ? (geneMotif = 'motif') :  (geneMotif = 'gene')">{{geneMotif}}
               </v-btn>
             </template>
-            <span>Gene/Motif</span>
+            <span>Gene&lt;-&gt;Motif</span>
           </v-tooltip>
           <v-tooltip :disabled="backgroundFlag" bottom>
               <template v-slot:activator="{ on, attrs }">
@@ -48,21 +48,7 @@
                 <v-icon>mdi-palette</v-icon>
                 </v-btn>
               </template>
-              <span>Background Color</span>
-          </v-tooltip>
-          <v-tooltip :disabled="heatmapFlag" bottom>
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                  v-bind="attrs"
-                  :disabled="!spatialData"
-                  v-on="on"
-                  class="ml-3 mr-3"
-                  small
-                  @click="heatmapFlag = !heatmapFlag;">
-                <v-icon>mdi-fire</v-icon>
-                </v-btn>
-              </template>
-              <span>Heatmap</span>
+              <span>Background/Heatmap</span>
           </v-tooltip>
           <div id="geneac">
           </div>
@@ -75,45 +61,25 @@
           hide-overlay>
           <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:210px;">
             <v-data-table
-            class="thickBorder"
-            v-model="selected"
-            width="20%"
-            dense
-            single-select
-            hide-default-footer
-            hide-default-header
-            :disabled="!spatialData"
-            :items="backgroundOptions"
-            :headers="backgroundHeader"
-            @click:row="chooseBackground"
-            />
-          </v-card>
-        </v-dialog>
-        <v-dialog
-          :value="heatmapFlag"
-          @click:outside="heatmapFlag = !heatmapFlag"
-          hide-overlay>
-          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:250px;">
-            <v-data-table
-            class="thickBorder"
-            v-model="selected"
-            width="20%"
-            dense
-            single-select
-            hide-default-footer
-            hide-default-header
-            :disabled="!spatialData || !isClusterView"
-            :items="heatmapOptions"
-            :headers="heatmapHeader">
+              class="thickBorder"
+              v-model="selected"
+              width="20%"
+              dense
+              single-select
+              hide-default-footer
+              hide-default-header
+              :disabled="!spatialData"
+              :items="backgroundOptions"
+              :headers="backgroundHeader">
               <template v-slot:item="row">
-                <template v-if="row.item['heat'] != 'custom'">
-                  <tr @click="chooseHeatmap(row.item['heat'])">
-                  <td>{{row.item['heat']}}</td>
+                <template v-if="row.item['background'] != 'custom'">
+                  <tr @click="chooseBackground(row.item)">
+                  <td>{{row.item['background']}}</td>
                   </tr>
                 </template>
                 <template v-else>
-                  <tr @click="clusterColorFlag = true ; heatmapFlag = false" :style="{ 'pointer-events': isClusterView ? 'auto' : 'none' }">
-                    <td>customize</td>
+                  <tr @click="clusterColorFlag = true ; backgroundFlag= false" :style="{ 'pointer-events': isClusterView ? 'auto' : 'none' }">
+                    <td>Heatmap</td>
                   </tr>
                 </template>
               </template>
@@ -377,7 +343,7 @@
             :scrollable="true"
             @click:outside="cellTypeFlag = !cellTypeFlag">
               <v-card style="width:600px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);z-index: 999" :loading="loading">
-                <v-card-title>Cell Type Configuration</v-card-title>
+                <v-card-title>Cell Type Mapping</v-card-title>
                 <v-card-text>
                   <v-divider/>
                   <div style="width:100%; height:20px"></div>
@@ -397,7 +363,7 @@
                               class="ma-0 pa-0"
                               clearable
                               @blur="checkFieldCell(cluster, $event)"
-                              label="Cell Type"/>
+                              label="Cell Typing"/>
                             </td>
                           </tr>
                         </tbody>
@@ -496,7 +462,7 @@
             <v-icon>mdi-eyedropper-variant</v-icon>
             </v-btn>
             </template>
-            <span>Cell Type</span>
+            <span>Cell Typing</span>
             </v-tooltip>
             <v-tooltip right :disabled="scaleFlag">
             <template v-slot:activator="{ on, attrs }">
@@ -580,7 +546,7 @@
                 <v-icon>mdi-chart-line</v-icon>
               </v-btn>
             </template>
-            <span>Peak Viewer</span>
+            <span>Peak/Motif Viewer</span>
             </v-tooltip>
             <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -733,21 +699,11 @@ const clusterHeaders = [
 const backgroundHeader = [
   { text: '', value: 'background' },
 ];
-const heatmapHeader = [
-  { text: '', value: 'heat' },
-];
 const backgroundOptions = [
   { background: 'black' },
   { background: 'white' },
   { background: 'darkgrey' },
-];
-const heatmapOptions = [
-  { heat: 'jet' },
-  { heat: 'hot' },
-  { heat: 'inferno' },
-  { heat: 'picnic' },
-  { heat: 'bone' },
-  { heat: 'custom' },
+  { background: 'custom' },
 ];
 const onlyNumRule = [
   (v: any) => {
@@ -816,7 +772,6 @@ export default defineComponent({
       ngsid: '',
     });
     const backgroundColor = ref<string>('black');
-    const heatMap = ref<string>('jet');
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
     const currentTask = ref<any | null>();
@@ -881,6 +836,7 @@ export default defineComponent({
     const peakViewLoad = ref<boolean>(false);
     const geneMotifLoad = ref<boolean>(false);
     const lassoLoad = ref<boolean>(false);
+    const heatMap = ref<any>({ C1: '#D51F26', C2: '#272E6A', C3: '#208A42', C4: '#89288F', C5: '#F47D2B', C6: '#FEE500', C7: '#8A9FD1', C8: '#C06CAB', C9: '#D8A767', C10: '#90D5E4', C11: '#89C75F', C12: '#F37B7D', C13: '#9983BD', C14: '#D24B27', C15: '#3BBCA8', C16: '#6E4B9E', C17: '#0C727C', C18: '#7E1416', C19: '#E6C2DC', C20: '#3D3D3D' });
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -1118,14 +1074,14 @@ export default defineComponent({
       const clustKeys = Object.keys(totalInClust.value);
       const numClusters = Object.keys(totalInClust.value).length;
       if (!manualClusterFlag.value) {
-        const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
-        colors_raw.forEach((v: any, i: number) => {
-          if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
-        });
-        for (let i = 0; i < colors.length; i += 1) {
+        // const colors_raw = colormap({ colormap: heatMap.value, nshades: (numClusters) * 3, format: 'hex', alpha: 1 });
+        // colors_raw.forEach((v: any, i: number) => {
+        //   if ((i % 3) === 0) colors.push(colors_raw[i + 1]);
+        // });
+        for (let i = 0; i < clustKeys.length; i += 1) {
           const cidx = clustKeys[i];
-          cmap[cidx] = colors[i];
-          cmapCopy[cidx] = colors[i];
+          cmap[cidx] = heatMap.value[cidx];
+          cmapCopy[cidx] = heatMap.value[cidx];
           cellmap[cidx] = '';
           cellmapCopy[cidx] = '';
         }
@@ -1434,10 +1390,9 @@ export default defineComponent({
         histoFlag.value = false;
         geneMotifFlag.value = false;
         isClusterView.value = true;
-        selectedGenes.value = [];
+        if (childGenes.value.length > 0) selectedGenes.value = [];
         showFlag.value = [false];
         geneButton.value = [];
-        childGenes.value = [];
         trackBrowserGenes.value = [];
         updateFilename();
         updateTable();
@@ -1546,7 +1501,7 @@ export default defineComponent({
     const gene_motif_button = {
       text: geneMotif.value,
       icon: null,
-      tooltip: 'Gene/Motif',
+      tooltip: 'Gene<->Motif',
       disabled: loading.value,
       ref: 'geneMotifButton',
       enabled: true,
@@ -1555,21 +1510,12 @@ export default defineComponent({
       },
     };
     const bg_color_button = {
-      text: 'Background Color',
+      text: 'Background/Heatmap',
       icon: 'mdi-palette',
-      tooltip: 'Background Color',
+      tooltip: 'Background/Heatmap',
       enabled: true,
       click: () => {
         backgroundFlag.value = !backgroundFlag.value;
-      },
-    };
-    const heat_map_button = {
-      text: 'Heat Map',
-      icon: 'mdi-fire',
-      tooltip: 'HeatMap Color',
-      enabled: true,
-      click: () => {
-        heatmapFlag.value = !heatmapFlag.value;
       },
     };
     const gene_ac_bar = {
@@ -1580,7 +1526,7 @@ export default defineComponent({
       component: acInstance,
     };
     function prep_sub_menu() {
-      submenu.value.push(metadata_button, gene_motif_button, bg_color_button, heat_map_button, gene_ac_bar);
+      submenu.value.push(metadata_button, gene_motif_button, bg_color_button, gene_ac_bar);
     }
     async function prep_atlasxplore(run_id: string) {
       if (submenu.value.length < 1) {
@@ -1629,8 +1575,6 @@ export default defineComponent({
       clusterHeaders,
       backgroundOptions,
       backgroundHeader,
-      heatmapHeader,
-      heatmapOptions,
       genes,
       selectedGenes,
       remove,
@@ -1750,7 +1694,6 @@ export default defineComponent({
       metadata_button,
       gene_motif_button,
       bg_color_button,
-      heat_map_button,
       gene_ac_bar,
       prep_sub_menu,
       // initializeRun,
