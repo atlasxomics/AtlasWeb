@@ -103,7 +103,7 @@
                 @click="avgInd = !avgInd">{{(avgInd) ? 'Ind':'Avg'}}
               </v-btn>
             </template>
-            <span>Avg/Ind</span>
+            <span>Average&lt;-&gt;Individual</span>
           </v-tooltip>
       </template>
     </v-autocomplete>
