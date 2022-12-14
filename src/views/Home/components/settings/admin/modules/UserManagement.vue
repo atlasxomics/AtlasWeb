@@ -19,6 +19,7 @@
             <v-dialog
             v-model="editing"
             width="800px"
+            @click:outside="popup_close"
             >
               <v-card>
                 <v-card-title>
@@ -285,7 +286,10 @@ export default defineComponent({
     const entered_group_description = ref<string>('');
     const delete_user_dialog = ref<boolean>(false);
     const editing = ref<boolean>(false);
-
+    function popup_close() {
+      editing.value = false;
+      selected_user.value.groups = selected_user.value.group_names.split(',');
+    }
     function edit(id: number) {
       changes_made.value = false;
       confirm_user_email_bool.value = false;
@@ -295,7 +299,6 @@ export default defineComponent({
       displayed_user_status.value = selected_user.value.status;
       original_user_status.value = selected_user.value.status;
       displayed_email_status.value = selected_user.value.email_verified;
-      console.log(selected_user);
     }
     function confirm_user_email() {
       changes_made.value = true;
@@ -303,7 +306,6 @@ export default defineComponent({
       confirm_user_email_bool.value = true;
     }
     async function delete_user() {
-      console.log('deleting user');
       const resp = await client.value?.deleteUser(selected_user.value.username);
       const sc = resp?.status;
       if (sc === 200) {
@@ -312,7 +314,6 @@ export default defineComponent({
         delete user_list.value[selected_user.value.username];
         selected_user.value = null;
       }
-      console.log(resp);
     }
 
     function reset_fields() {
@@ -325,7 +326,6 @@ export default defineComponent({
       if (status === 200) {
         snackbar.dispatch({ text: 'Successfully Deleted '.concat(entered_group_name.value).concat('.') });
         const inx = groups_list.value.indexOf(entered_group_name.value);
-        console.log(inx);
         groups_list.value.splice(inx, 1);
         reset_fields();
       } else {
@@ -344,11 +344,9 @@ export default defineComponent({
       } else {
         snackbar.dispatch({ text: 'Error when creating group: '.concat(entered_group_name.value).concat('.') });
       }
-      console.log(resp?.status);
     }
 
     function groups_list_changed() {
-      console.log(original_group_lis.value);
       adding_group_lis.value = selected_user.value.groups.filter(
         (val: any) => !original_group_lis.value.includes(val),
       );
@@ -433,6 +431,7 @@ export default defineComponent({
     }
     async function write_changes() {
       const { username } = selected_user.value;
+      selected_user.value.group_names = selected_user.value.groups.toString();
       // confirms user status
       if (original_user_status.value !== displayed_user_status.value) {
         changes_made.value = true;
@@ -460,7 +459,6 @@ export default defineComponent({
         user_list.value[index].group_names = groups;
       });
       groups_list.value = await client.value?.get_group_list();
-      console.log(user_list);
     });
     return {
       user_list,
@@ -495,6 +493,7 @@ export default defineComponent({
       headers,
       edit,
       editing,
+      popup_close,
     };
   },
 });
