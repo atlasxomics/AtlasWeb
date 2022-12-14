@@ -11,6 +11,7 @@
                 mdi-pencil
               </v-icon>
               <v-icon
+              @click="deletion_button_selected(item.id)"
               small>
               mdi-delete
               </v-icon>
@@ -22,8 +23,10 @@
             @click:outside="popup_close"
             >
               <v-card>
-                <v-card-title>
-                  <span class="text-h5"> Edit User Information </span>
+                <v-card-title
+                  class="justify-center"
+                >
+                  Edit User Information
                 </v-card-title>
                 <v-row>
                   <v-col
@@ -86,122 +89,57 @@
                   </v-text-field>
                   </v-col>
                 </v-row>
-                <v-flex text-xs-center>
+                <v-card-actions
+                class="justify-center"
+                >
+                  <v-checkbox
+                    style="position: relative; left: 5px;"
+                    v-model="email_user"
+                    :label="`Email User`"
+                  >
+                  </v-checkbox>
                   <v-btn
-                  style="justify-content: center;"
+                  style="position: relative; left: 25px;"
                   :disabled="!changes_made"
                   @click="write_changes"
                   color="primary"
                   >
                   Submit Changes
                   </v-btn>
-                </v-flex>
+                </v-card-actions>
               </v-card>
             </v-dialog>
-                <!-- <h2> User List </h2>
-                <p v-for="(user, index) in user_list" :key="index">
-                    <v-btn
-                    @click="user_selected(user)"
-                    >
-                        {{ user.username }}
-                    </v-btn>
-                </p>
-            </v-col>
-            <v-col
-            cols="3"
-            v-if="selected_user"
-            >
-            <h2> Account Information </h2>
-            <v-text-field
-            label="Name"
-            readonly
-            v-model="selected_user.name"
-            >
-            </v-text-field>
-            <v-text-field
-            readonly
-            label="Email"
-            v-model="selected_user.email"
-            >
-            </v-text-field>
-            <p>
-             Email Confirmed: {{ displayed_email_status }}
-             <v-btn
-             v-if="displayed_email_status === 'false'"
-             @click="confirm_user_email"
-             color="green"
-             >
-             Confirm Email
-            </v-btn>
-            </p>
-            <v-text-field
-            v-model="selected_user.piname"
-            label="PI Name"
-            readonly
-            >
-            </v-text-field>
-            <v-text-field
-            v-model="selected_user.organization"
-            label="Organization"
-            readonly
-            >
-            </v-text-field>
-            <p>
-             Status: {{ displayed_user_status }}
-             <v-btn
-             v-if="displayed_user_status === 'UNCONFIRMED' || displayed_user_status === 'DISABLED'"
-             @click="confirm_user_display"
-             color="green"
-             >
-             Confirm
-            </v-btn>
-            </p>
-            <v-select
-            v-model="selected_user.groups"
-            :items="groups_list"
-            label="User's Groups"
-            @change="groups_list_changed()"
-            multiple
-            >
-            </v-select>
-            <input
-            type="checkbox"
-            id = "email_checkbox"
-            v-model="email_user">
-            <label for="email_checkbox">
-              Email User
-            </label>
-            <v-btn
-            :disabled="!changes_made"
-            @click="write_changes"
-            color="primary"
-            >
-              Confirm Changes
-            </v-btn>
-            <v-btn
-            :class="['ma-2','delete-btn']"
-            @click="delete_user_dialog = true"
-            color="red">
-            Delete User
-            </v-btn>
             <v-dialog
+            width="800px"
             v-model="delete_user_dialog"
             >
-              <v-btn
-              @click="delete_user"
+            <v-card>
+              <v-card-title
+              class="justify-center"
               >
-                Delete User
-              </v-btn>
-              <v-btn
-              @click="delete_user_dialog = false"
+                Are you sure you want to delete user: {{selected_user.username}}
+              </v-card-title>
+              <v-card-actions
+              class="justify-center"
               >
-                Cancel
-              </v-btn>
+                  <v-btn
+                    outlined
+                    large
+                    fab
+                    @click="delete_user"
+                    color="red"
+                  >
+                    <v-icon> mdi-delete </v-icon>
+                  </v-btn>
+                  <v-btn
+                  @click="delete_user_dialog = false"
+                  outlined
+                  >
+                  Cancel
+                  </v-btn>
+              </v-card-actions>
+            </v-card>
             </v-dialog>
-            </v-col>
-            <v-col
-            cols="3"
-            > -->
             <h2> Modify Groups </h2>
             <v-text-field
             class="add-group"
@@ -305,6 +243,10 @@ export default defineComponent({
       displayed_email_status.value = 'true';
       confirm_user_email_bool.value = true;
     }
+    function deletion_button_selected(id: number) {
+      selected_user.value = user_list.value[id];
+      delete_user_dialog.value = true;
+    }
     async function delete_user() {
       const resp = await client.value?.deleteUser(selected_user.value.username);
       const sc = resp?.status;
@@ -313,9 +255,10 @@ export default defineComponent({
         snackbar.dispatch({ text: 'User: '.concat(selected_user.value.username).concat(' has been successfully deleted.') });
         delete user_list.value[selected_user.value.username];
         selected_user.value = null;
+      } else {
+        snackbar.dispatch({ text: 'Error when attempting to delete user: '.concat(selected_user.value.username).concat('.') });
       }
     }
-
     function reset_fields() {
       entered_group_name.value = '';
       entered_group_description.value = '';
@@ -482,6 +425,7 @@ export default defineComponent({
       display_group_addition,
       entered_group_description,
       remove_group,
+      deletion_button_selected,
       // disable_user,
       original_user_status,
       reset_fields,
