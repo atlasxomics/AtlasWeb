@@ -1,5 +1,6 @@
 <template>
     <v-container>
+        <v-col>
             <v-data-table
             :headers="headers"
             :items="user_list"
@@ -22,11 +23,10 @@
             width="800px"
             @click:outside="popup_close"
             >
-              <v-card>
-                <v-card-title
-                  class="justify-center"
-                >
-                  Edit User Information
+            <v-card>
+              <v-card-title
+              >
+                Edit User Information
                 </v-card-title>
                 <v-row>
                   <v-col
@@ -140,10 +140,21 @@
               </v-card-actions>
             </v-card>
             </v-dialog>
-            <h2> Modify Groups </h2>
+            <v-card
+            width="600"
+            class="mx-auto my-12"
+            >
+              <v-card-title
+              class="justify-center"
+              >
+                Modify Available Groups
+              </v-card-title>
+            <v-col
+            cols="12"
+            >
             <v-text-field
             class="add-group"
-            label="New Group Name"
+            label="Group Name"
             v-model="entered_group_name"
             >
             </v-text-field>
@@ -153,22 +164,29 @@
             v-model="entered_group_description"
             >
             </v-text-field>
+            </v-col>
+            <v-card-actions
+            class="justify-center"
+            >
             <v-btn
-            class="ma-2"
             @click="add_group_clicked"
             color="green"
+            outlined
             :disabled="(entered_group_description === '' || entered_group_name === '' || groups_list.includes(entered_group_name))"
             >
             Create Group
             </v-btn>
             <v-btn
-            class="ma-2"
             @click="remove_group"
             color="red"
             :disabled="!(groups_list.includes(entered_group_name))"
+            outlined
             >
             Delete Group
             </v-btn>
+            </v-card-actions>
+            </v-card>
+        </v-col>
     </v-container>
 </template>
 
