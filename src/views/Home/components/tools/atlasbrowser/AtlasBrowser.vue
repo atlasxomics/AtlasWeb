@@ -1489,16 +1489,22 @@ export default defineComponent({
       itemsHolder.value = [];
       search.value = '';
       loading.value = true;
+      const folder_pl = { bucket_name, prefix: 'Images/' };
+      const sub_folders = await client.value.getSubFolders(folder_pl);
+      if (sub_folders) {
+        const obj_data = sub_folders.map((sub_folder_name: string) => ({ id: sub_folder_name }));
+        itemsHolder.value = obj_data;
+      }
       // Change the filter parameters of the below opject to change the displayed runs
       // Cap sensitive
-      const fl_payload = { bucket: bucket_name, path: root, filter: [run_id.value.concat('_postB_BSA.tif')] };
-      console.log(fl_payload);
-      const filelist = await client.value.getFileList(fl_payload);
-      if (filelist !== false) {
-        const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
-        items.value = qc_data;
-        itemsHolder.value = qc_data;
-      }
+      // const fl_payload = { bucket: bucket_name, path: root, filter: [run_id.value.concat('_postB_BSA.tif')] };
+      // console.log(fl_payload);
+      // const filelist = await client.value.getFileList(fl_payload);
+      // if (filelist !== false) {
+      //   const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
+      //   items.value = qc_data;
+      //   itemsHolder.value = qc_data;
+      // }
       loading.value = false;
     }
     async function selectAction(ev: any) {

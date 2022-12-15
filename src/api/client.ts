@@ -389,6 +389,14 @@ export default class Client {
       return false;
     }
   }
+  async getSubFolders(payload: any): Promise<any> {
+    try {
+      const resp = await this.axios.post('api/v1/storage/sub_folders', payload);
+      return resp.data;
+    } catch (error) {
+      return false;
+    }
+  }
   async getBuckets() {
     const resp = await this.axios.get('api/v1/storage/fetch_buckets');
     return resp.data;
