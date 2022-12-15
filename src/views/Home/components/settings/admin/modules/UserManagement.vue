@@ -140,52 +140,7 @@
               </v-card-actions>
             </v-card>
             </v-dialog>
-            <v-card
-            width="600"
-            class="mx-auto my-12"
-            >
-              <v-card-title
-              class="justify-center"
-              >
-                Modify Available Groups
-              </v-card-title>
-            <v-col
-            cols="12"
-            >
-            <v-text-field
-            class="add-group"
-            label="Group Name"
-            v-model="entered_group_name"
-            >
-            </v-text-field>
-            <v-text-field
-            class="add-group"
-            label="Description"
-            v-model="entered_group_description"
-            >
-            </v-text-field>
-            </v-col>
-            <v-card-actions
-            class="justify-center"
-            >
-            <v-btn
-            @click="add_group_clicked"
-            color="green"
-            outlined
-            :disabled="(entered_group_description === '' || entered_group_name === '' || groups_list.includes(entered_group_name))"
-            >
-            Create Group
-            </v-btn>
-            <v-btn
-            @click="remove_group"
-            color="red"
-            :disabled="!(groups_list.includes(entered_group_name))"
-            outlined
-            >
-            Delete Group
-            </v-btn>
-            </v-card-actions>
-            </v-card>
+
         </v-col>
     </v-container>
 </template>
@@ -195,7 +150,6 @@ import { defineComponent, ref, watchEffect, computed, onMounted, watch } from '@
 import store from '@/store';
 import { CreateGroupRequest, GroupRequest, UpdatingGroupsRequest, UserGroupAssignmentInform } from '@/types';
 import { snackbar } from '@/components/GlobalSnackbar';
-import Template from '../../../_empty/template.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -238,8 +192,6 @@ export default defineComponent({
     // const group_changes = new Map<string, boolean>();
     const original_group_lis = ref<string[]>([]);
     const display_group_addition = ref<boolean>(false);
-    const entered_group_name = ref<string>('');
-    const entered_group_description = ref<string>('');
     const delete_user_dialog = ref<boolean>(false);
     const editing = ref<boolean>(false);
     function popup_close() {
@@ -277,36 +229,6 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Error when attempting to delete user: '.concat(selected_user.value.username).concat('.') });
       }
     }
-    function reset_fields() {
-      entered_group_name.value = '';
-      entered_group_description.value = '';
-    }
-    async function remove_group() {
-      const resp = await client.value?.delete_group(entered_group_name.value);
-      const status = resp?.status;
-      if (status === 200) {
-        snackbar.dispatch({ text: 'Successfully Deleted '.concat(entered_group_name.value).concat('.') });
-        const inx = groups_list.value.indexOf(entered_group_name.value);
-        groups_list.value.splice(inx, 1);
-        reset_fields();
-      } else {
-        snackbar.dispatch({ text: 'Error when deleting '.concat(entered_group_name.value).concat('.') });
-      }
-    }
-    async function add_group_clicked() {
-      if (!entered_group_name.value) return;
-      if (!entered_group_description.value) return;
-      const resp = await client.value?.create_group(entered_group_name.value, entered_group_description.value);
-      const status = resp?.status;
-      if (status === 200) {
-        snackbar.dispatch({ text: 'Successfully created group: '.concat(entered_group_name.value).concat('.') });
-        groups_list.value.push(entered_group_name.value);
-        reset_fields();
-      } else {
-        snackbar.dispatch({ text: 'Error when creating group: '.concat(entered_group_name.value).concat('.') });
-      }
-    }
-
     function groups_list_changed() {
       adding_group_lis.value = selected_user.value.groups.filter(
         (val: any) => !original_group_lis.value.includes(val),
@@ -412,6 +334,9 @@ export default defineComponent({
         console.log('email user their settings have been updated.');
       }
     }
+    async function update_groups_list() {
+      groups_list.value = await client.value?.get_group_list();
+    }
     onMounted(async () => {
       await clientReady;
       user_list.value = await client.value?.get_user_list();
@@ -419,7 +344,7 @@ export default defineComponent({
         const groups = element.groups.toString();
         user_list.value[index].group_names = groups;
       });
-      groups_list.value = await client.value?.get_group_list();
+      await update_groups_list();
     });
     return {
       user_list,
@@ -438,15 +363,10 @@ export default defineComponent({
       removing_group_lis,
       adding_group_lis,
       write_changes,
-      add_group_clicked,
-      entered_group_name,
       display_group_addition,
-      entered_group_description,
-      remove_group,
       deletion_button_selected,
       // disable_user,
       original_user_status,
-      reset_fields,
       delete_user_dialog,
       delete_user,
       displayed_email_status,
@@ -456,6 +376,7 @@ export default defineComponent({
       edit,
       editing,
       popup_close,
+      update_groups_list,
     };
   },
 });
