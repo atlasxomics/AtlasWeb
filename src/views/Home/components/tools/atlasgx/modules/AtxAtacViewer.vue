@@ -69,9 +69,6 @@
               @mouseout="mouseOutOnSpatial"/>
           </v-layer>
           <v-layer
-            ref="annotationLayerDualAtac"
-            />
-          <v-layer
             ref="drawingLayer"
             id="drawingLayer"
             v-if="isDrawing">
@@ -172,9 +169,6 @@
               @mousemove="mouseMoveOnSpatialRight"
               @mouseout="mouseOutOnSpatialRight"/>
           </v-layer>
-          <v-layer
-            ref="annotationLayerDualAtacRight"
-            />
           <v-layer
             ref="drawingLayerRight"
             id="drawingLayerRight"
@@ -367,6 +361,7 @@ export default defineComponent({
     const geneMotif = computed(() => (props.geneOmotif));
     const maxMinBoundaryFromParents = computed(() => (props.userBoundary));
     const maxMinBoundary = ref<any[]>([]);
+    const currentClickedCluster = ref<string>('');
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
@@ -600,6 +595,8 @@ export default defineComponent({
           circles.push(c);
           circlesUMAP.push(ci);
         });
+        circlesSpatial.value = circles;
+        circlesSpatialUMAP.value = circlesUMAP;
         if (isClusterView.value) {
           ctx.emit('spatialCircleData', [TSS, nFrags]);
         } else ctx.emit('spatialCircleData', circles);
@@ -671,6 +668,7 @@ export default defineComponent({
           }
         });
         const geneColors = colormapBounded(colors_intensity, geneSum, selectedGenes.value.length);
+        ctx.emit('spatialCircleData', circles);
         circles.forEach((v: any, i: any) => {
           const col = checkBoundaryColor(circles[i].total);
           const clr = (col) ? geneColors[i] : inactiveColor.value;
@@ -681,16 +679,15 @@ export default defineComponent({
           circlesUMAP[i].fill = clr;
           circlesUMAP[i].stroke = clr;
         });
+        circlesSpatial.value = circles;
+        circlesSpatialUMAP.value = circlesUMAP;
         stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
-        ctx.emit('spatialCircleData', circles);
       }
       if (averageInd.value) {
         ctx.emit('singleCircleData', { coords: circles, intense: colors_intensity });
         ctx.emit('sendColorBar', { color: colorBarmap.value, maxMin: [minX.value, minY.value, maxX.value, maxY.value], tixelColor: colors_intensity });
       }
       ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
-      circlesSpatial.value = circles;
-      circlesSpatialUMAP.value = circlesUMAP;
       highlightRegion();
       spatialRun.value = false;
     }
@@ -814,7 +811,7 @@ export default defineComponent({
       spatialRun.value = false;
     }
     async function obtainSummations() {
-      const tixelDataFilename = (geneMotif.value === 'gene') ? `data/${runId.value}/h5/geneSummation.txt.gz` : `data/${runId.value}/h5/motifSummation.txt.gz`;
+      const tixelDataFilename = (geneMotif.value === 'gene') ? `data/${runId.value}/h5/summations/geneSummation` : `data/${runId.value}/h5/summations/motifSummation`;
       const array = (geneMotif.value === 'gene') ? spatialData.value.gene : spatialData.value.motif;
       const rows = selectedGenes.value.map((v: any) => array.indexOf(v));
       const preSplit = await client.value?.getSummation(tixelDataFilename, rows);
@@ -1034,9 +1031,6 @@ export default defineComponent({
         }
       }
     }
-    async function mouseOverClusterItem(ev: any) {
-      highlightCluster([ev.name]);
-    }
     function onFilesChanged(ev: any) {
       selectedFiles.value = ev;
     }
@@ -1084,7 +1078,13 @@ export default defineComponent({
     });
     watch(clickedClusterFromParent, (v: any) => {
       if (!isDrawing.value && !isDrawingRect.value) {
-        mouseOverClusterItem({ name: `${v[0]}` });
+        if (currentClickedCluster.value === v[0]) {
+          currentClickedCluster.value = '';
+          unHighlighCluster();
+        } else {
+          [currentClickedCluster.value] = v;
+          highlightCluster(v);
+        }
       }
     });
     watch(checkedClusterFromParent, (v: any) => {
@@ -1166,12 +1166,6 @@ export default defineComponent({
     });
     onMounted(async () => {
       await clientReady;
-      tooltip.add(tooltipTag);
-      tooltip.add(tooltipText);
-      tooltipRight.add(tooltipTagRight);
-      tooltipRight.add(tooltipTextRight);
-      (ctx.refs.annotationLayerDualAtac as any).getNode().add(tooltip);
-      (ctx.refs.annotationLayerDualAtacRight as any).getNode().add(tooltipRight);
     });
     return {
       get_uuid,
@@ -1203,7 +1197,6 @@ export default defineComponent({
       inactiveColor,
       backgroundColor,
       updateCircles,
-      mouseOverClusterItem,
       heatMap,
       stepArray,
       colorBarmap,
@@ -1259,6 +1252,7 @@ export default defineComponent({
       maxMinBoundaryFromParents,
       checkBoundary,
       checkBoundaryColor,
+      currentClickedCluster,
     };
   },
 });
