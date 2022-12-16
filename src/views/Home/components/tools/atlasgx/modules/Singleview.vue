@@ -61,9 +61,6 @@
               @mouseover="mouseMoveOnSpatial"
               @mouseout="mouseOutOnSpatial"/>
           </v-layer>
-          <v-layer
-            ref="annotationLayerSingle"
-            />
         </v-stage>
       </v-card>
       <v-row>
@@ -80,7 +77,7 @@
 </template>
 
 <script lang="ts">
-import { ref, watch, defineComponent, computed, onMounted, watchEffect } from '@vue/composition-api';
+import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUpdated, onBeforeUpdate } from '@vue/composition-api';
 import Konva from 'konva';
 import lodash from 'lodash';
 import colormap from 'colormap';
@@ -307,9 +304,6 @@ export default defineComponent({
     });
     onMounted(async () => {
       await clientReady;
-      tooltip.add(tooltipTag);
-      tooltip.add(tooltipText);
-      (ctx.refs.annotationLayerSingle as any).getNode().add(tooltip);
     });
     return {
       get_uuid,
