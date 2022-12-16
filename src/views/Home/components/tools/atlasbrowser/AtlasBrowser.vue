@@ -32,7 +32,7 @@
               :items="itemsHolder"
               :headers="headers"
               hide-default-footer
-              @click:row="selectAction"
+              @click:row="run_folder_selected"
             />
           </v-card>
         </v-dialog>
@@ -41,7 +41,7 @@
         <v-dialog
           width="600"
           height="800"
-          v-if="((tissue_position_list_obj && run_id) || image_processing_begun)"
+          v-if="image_processing_begun"
           :value="metaFlag"
           @click:outside="metaFlag = !metaFlag">
           <v-card  :disabled="loading"
@@ -391,14 +391,18 @@
               </v-list>
             </v-card>
           </template>
-          <v-card v-if="run_id && !loading && !image_processing_begun && tissue_position_list_obj">
+          <v-dialog
+          persistent
+          :value="prompt_to_use_existing_spatial"
+          >
+          <v-card >
             <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
             <v-card-actions>
               <v-btn
                 outlined
                 dense
                 color="primary"
-                @click="image_processing_begun=true;optionCreate=true;"
+                @click="get_image_options(run_id);prompt_to_use_existing_spatial = false;"
                 x-small>
                 Reprocess
               </v-btn>
@@ -406,12 +410,32 @@
                 outlined
                 dense
                 color="primary"
-                @click="image_processing_begun=true;updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
+                @click="image_processing_begun=true;prompt_to_use_existing_spatial = false; updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
                 x-small>
                 Update
               </v-btn>
             </v-card-actions>
           </v-card>
+          </v-dialog>
+          <v-dialog
+          persistent
+          :value="!image_processing_begun && file_options.length > 0 && !prompt_to_use_existing_spatial">
+          <v-card>
+            <v-card-text> Please select the BSA Image you would like to process </v-card-text>
+            <v-card-actions>
+              <v-select
+                v-model="full_bsa_filename"
+                :items="file_options"
+                label="Select Image"
+                outlined
+                dense
+                color="primary"
+                @change="image_processing_begun=true; loadImage();"
+                x-small>
+              </v-select>
+            </v-card-actions>
+          </v-card>
+          </v-dialog>
         </v-col>
         <!-- right section of the screen where images and loading screens are displayed -->
         <v-col cols="12" sm="9" v-if="!checkSpatial">
@@ -676,7 +700,9 @@ export default defineComponent({
     const search = ref<string | null>();
     const selected = ref<any | null>();
     const run_id = ref<string>('');
-    const full_bsa_filename = computed(() => `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`);
+    // const full_bsa_filename = computed(() => `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`);
+    const full_bsa_filename = ref<string>('');
+    const file_options = ref<any[]>([]);
     const width_window = window.innerWidth;
     const height_window = window.innerHeight;
     const konvaConfig = ref<any>({ width_window, height_window });
@@ -725,7 +751,7 @@ export default defineComponent({
     const thresh = ref<boolean>(false);
     const spatial = ref<boolean>(false);
     const tissue_position_list_obj = ref<any>();
-    const optionCreate = ref<boolean>(false);
+    const prompt_to_use_existing_spatial = ref<boolean>(false);
     const updating_existing = ref<boolean>(false);
     const image_processing_begun = ref<boolean>(false);
     const generating = ref<boolean>(false);
@@ -885,8 +911,9 @@ export default defineComponent({
       }
     }
     // io
-    async function loadMetadata() {
-      if (!client.value) return;
+    async function loadMetadata(): Promise<boolean> {
+      if (!client.value) return false;
+      runIdFlag.value = false;
       loading.value = true;
       loadingMessage.value = false;
       // specify path to images within s3
@@ -903,15 +930,18 @@ export default defineComponent({
       tissue_position_list_obj.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
+        loading.value = false;
         metadata.value = resp;
         image_processing_begun.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
+        return true;
         // otherwise call getMeta to query the API
-      } else {
-        await getMeta();
-        image_processing_begun.value = true;
-        snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
       }
+      await getMeta();
+      loading.value = false;
+      image_processing_begun.value = true;
+      snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
+      return false;
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
       if (!client.value) return null;
@@ -1015,11 +1045,11 @@ export default defineComponent({
       set_current_image(img);
       loading.value = false;
     }
-    async function loadAll() {
-      await loadMetadata();
-      await loadImage();
-      loading.value = false;
-    }
+    // async function loadAll() {
+    //   await loadMetadata();
+    //   await loadImage();
+    //   loading.value = false;
+    // }
     function searchRuns(ev: any) {
       const stringforRegex = ev;
       const updated = [];
@@ -1489,28 +1519,35 @@ export default defineComponent({
       itemsHolder.value = [];
       search.value = '';
       loading.value = true;
-      const folder_pl = { bucket_name, prefix: 'Images/' };
+      const folder_pl = { bucket_name, prefix: 'Images/', delimiter: '/' };
       const sub_folders = await client.value.getSubFolders(folder_pl);
       if (sub_folders) {
         const obj_data = sub_folders.map((sub_folder_name: string) => ({ id: sub_folder_name }));
-        itemsHolder.value = obj_data;
+        items.value = obj_data;
       }
-      // Change the filter parameters of the below opject to change the displayed runs
-      // Cap sensitive
-      // const fl_payload = { bucket: bucket_name, path: root, filter: [run_id.value.concat('_postB_BSA.tif')] };
-      // console.log(fl_payload);
-      // const filelist = await client.value.getFileList(fl_payload);
-      // if (filelist !== false) {
-      //   const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
-      //   items.value = qc_data;
-      //   itemsHolder.value = qc_data;
-      // }
+      itemsHolder.value = items.value;
       loading.value = false;
     }
     async function selectAction(ev: any) {
       welcome_screen.value = false;
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
+    }
+    async function get_image_options(folder_name: string) {
+      console.log(folder_name);
+      const pl = { bucket: bucket_name, path: `${root}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
+      file_options.value = await client.value?.getFileList(pl);
+    }
+    async function run_folder_selected(folder_name: any) {
+      if (!clientReady) {
+        return;
+      }
+      welcome_screen.value = false;
+      run_id.value = folder_name.id;
+      prompt_to_use_existing_spatial.value = await loadMetadata();
+      if (!prompt_to_use_existing_spatial.value) {
+        get_image_options(folder_name.id);
+      }
     }
     watch(brushSize, (v) => {
       brushConfig.value.radius = v;
@@ -1525,12 +1562,12 @@ export default defineComponent({
         isEraseMode.value = false;
       }
     });
-    watch(run_id, async (v, ov) => {
-      checkSpatial.value = false;
-      runIDSelected.value = true;
-      initialize();
-      await loadAll();
-    });
+    // watch(run_id, async (v, ov) => {
+    //   checkSpatial.value = false;
+    //   runIDSelected.value = true;
+    //   initialize();
+    //   // await loadAll();
+    // });
     watch(current_image, (v) => {
       if (current_image.value && !isCropMode.value) {
         crop.value = new Crop([scaleFactor.value * current_image.value.image.width, scaleFactor.value * current_image.value.image.height], scaleFactor.value);
@@ -1578,11 +1615,11 @@ export default defineComponent({
       store.commit.setSubmenu(submenu);
       window.addEventListener('resize', handleResize);
       await fetchFileList();
-      if (props.query) {
-        if (props.query.run_id) {
-          await selectAction({ id: props.query.run_id });
-        }
-      }
+      // if (props.query) {
+      //   if (props.query.run_id) {
+      //     await selectAction({ id: props.query.run_id });
+      //   }
+      // }
     });
     onUnmounted(async () => {
       store.commit.setSubmenu(null);
@@ -1668,8 +1705,8 @@ export default defineComponent({
       thresh,
       cropFlag,
       tissue_position_list_obj,
+      prompt_to_use_existing_spatial,
       uploadingTixels,
-      optionCreate,
       updating_existing,
       image_processing_begun,
       generating,
@@ -1715,6 +1752,9 @@ export default defineComponent({
       postB_image,
       bw_image_displayed,
       postB_image_displayed,
+      run_folder_selected,
+      get_image_options,
+      file_options,
     };
   },
 });

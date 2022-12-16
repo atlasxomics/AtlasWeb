@@ -688,4 +688,9 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/run_db/get_info_from_results_id', pl);
     return resp.data;
   }
+  async checkSpatialFolderExists(bucket_name: string, run_id: string) {
+    const pl = { bucket_name, run_id };
+    const resp = await this.axios.post('/api/v1/run_db/check_spatial_folder_exists', pl);
+    return resp.data;
+  }
 }
