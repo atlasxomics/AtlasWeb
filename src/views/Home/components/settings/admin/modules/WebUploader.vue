@@ -429,6 +429,9 @@ export default defineComponent({
       if (one_string.includes('genes.h5ad') && one_string.includes('motifs.h5ad')) {
         checkbox_flag.value = false;
         required_files.value = true;
+      } else if (assay.value === 'Transcriptome' && one_string.includes('genes.h5ad')) {
+        checkbox_flag.value = false;
+        required_files.value = true;
       } else {
         checkbox_flag.value = true;
         required_files.value = false;
