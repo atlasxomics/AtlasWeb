@@ -24,7 +24,9 @@
             <v-col
             cols="12"
             sm="4">
-              <v-card-title>
+              <v-card-title
+              class="justify-center"
+              >
                     Run Information
                 </v-card-title>
                 <v-row>
@@ -87,6 +89,19 @@
                 :disabled="!run_id_selected"
                 >
                 </v-text-field>
+                <v-text-field
+                :disabled="!run_id_selected"
+                label="NGS ID"
+                v-model="ngs_id"
+                >
+                </v-text-field>
+                <v-select
+                :disabled="!run_id_selected"
+                label="PMID"
+                :items="db_connection.pmid_list"
+                v-model="pmid"
+                >
+                </v-select>
                 <v-text-field
                 label="Date: MM/DD/YYYY"
                 v-model="date_human_readable"
@@ -176,15 +191,11 @@
             cols="12"
             sm="4"
             >
-                <v-card-title>
+                <v-card-title
+                class="justify-center"
+                >
                     Web Object
                 </v-card-title>
-                <v-text-field
-                :disabled="!run_id_selected"
-                label="NGS ID"
-                v-model="ngs_id"
-                >
-                </v-text-field>
                 <v-select
                 :disabled="!run_id_selected"
                 :items = public_run_items
@@ -199,20 +210,70 @@
                 v-model="selected_group"
                 >
                 </v-select>
+                <div
+                style="position: relative; left: 50%; transform: translateX(-50%);"
+                >
+                <h4
+                > Text File Generation </h4>
+                </div>
+                <div>
+                  Text Files Created: {{web_obj_created}}
+                </div>
                 <v-text-field
-                :disabled="!run_id_selected"
-                v-model="web_obj_path"
                 label="Path"
-                >
+                width="70%"
+                clearable
+                :disabled="loading"
+                :loading="loading"
+                v-model="path_name"
+                @input="pathText"
+                @keyup.enter="searchPath"
+                hint="ex: <bucket_name>/folder with <h5ad files>/">
+                <template v-slot:append-outer>
+                  <v-icon color="green" @click="searchPath">
+                    mdi-magnify
+                  </v-icon>
+                </template>
                 </v-text-field>
+                <v-simple-table v-if="(all_files.length > 0 && path_name && path_name.length > 0)" dense>
+                  <template v-slot:default>
+                    <thead>
+                      <tr><th>Status</th><th>File Name</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="item in all_files" :key="item.name">
+                        <td v-if="item.name === 'genes.h5ad' || assay != 'Transcriptome'">{{`${(item.value) ? 'Present':'Not Present'}`}}</td>
+                        <td v-if="item.name === 'genes.h5ad' || assay != 'Transcriptome'"><v-chip small :color="item.color" label>{{(item.name)}}</v-chip></td>
+                      </tr>
+                    </tbody>
+                  </template>
+                </v-simple-table>
+                <!-- <v-checkbox :color="(required_files) ? 'green' : 'red'" @click="required_files = !required_files" v-if="(all_files.length > 0 && path_name && path_name.length > 0 && checkbox_flag)" label="Is this run Transcriptome" /> -->
                 <v-select
-                :disabled="!run_id_selected"
-                label="PMID"
-                :items="db_connection.pmid_list"
-                v-model="pmid"
-                >
-                </v-select>
+                  :disabled="loading"
+                  :loading="loading"
+                  v-model="bucket_name"
+                  :items="available_buckets"
+                  clearable
+                  @input="generatePaths"
+                  label="Bucket"/>
+                <v-data-table
+                  v-if="(bucket_name && !loading)"
+                  dense
+                  single-select
+                  :items-per-page="5"
+                  :headers="bucket_headers"
+                  :items="available_paths"
+                  @click:row="updatePath">
+                </v-data-table>
+                <v-btn
+                  :disabled="!required_files"
+                  style="position: relative; left: 50%; transform: translateX(-50%);"
+                  @click="createObjects">
+                  Generate Files
+                </v-btn>
             </v-col>
+
         </v-row>
         <v-row>
             <v-col
@@ -277,24 +338,15 @@ export default defineComponent({
     const species = ref<string>('');
     const sample_id = ref<string>('');
     const tissue_type = ref<string>('');
-    // const tissue_type_list = ref<string[]>([]);
     const antibody = ref<string>('');
     const tissue_condition = ref<string>('');
     const pmid = ref<string>('');
-    // const pmid_list = ref<string[]>([]);
     const tissue_source = ref<string>('');
     const channel_width = ref<string>('');
     const number_channels = ref<string>('');
     const search_input = ref<string>('');
-    // const assay_list = ref<Array<string>>([]);
-    // const assay_list = computed(() => db_connection.field_options.assay_list);
-    // const organ_list = ref<Array<string>>([]);
-    // const species_list = ref<Array<string>>([]);
-    // const epitope_list = ref<Array<string>>([]);
-    // const group_list = ref<Array<string>>([]);
+    const web_obj_created = ref<boolean>(false);
     const available_run_ids = ref<Array<Record<string, any>>>([]);
-    // const tissue_source_list = ref<Array<string>>([]);
-    // const channel_width_list = ref<Array<string>>([]);
     const results_selection_list = ref<any[]>([]);
     const run_id = ref<string>('');
     const ngs_id = ref<string>('');
@@ -310,6 +362,18 @@ export default defineComponent({
     const selected_group = ref<string>('');
     const editing_run_id_selection = ref<boolean>(false);
     const run_ids = ref<Record<string, any>[]>([]);
+    const path_name = ref<string | null>(null);
+    const bucket_headers = [{ text: 'Path Names', value: 'path', sortable: false }];
+    const available_buckets = ref<any[]>([]);
+    const bucket_name = ref<string | null>(null);
+    const available_paths = ref<any[]>([]);
+    const loading = ref<boolean>(false);
+    const all_files = ref<any[]>([]);
+    const required_files = ref<boolean>(false);
+    const checkbox_flag = ref<boolean>(false);
+    const taskStatus = ref<any>();
+    const taskTimeout = ref<number | null>(null);
+    const progressMessage = ref<string | null>(null);
     const unique_run_id = computed(() => {
       let res = true;
       available_run_ids.value.forEach((element: any) => {
@@ -345,8 +409,54 @@ export default defineComponent({
       editing_run_id_selection.value = true;
       search_runs();
     }
+    // uses the path specified in the "path" box and determines which files are present
+    async function searchPath() {
+      console.log('searching path');
+      console.log(path_name.value);
+      console.log(bucket_name.value);
+      if (path_name.value!.length === null || path_name.value!.length === 0) return;
+      loading.value = true;
+      const fileNames = ['genes.h5ad', 'motifs.h5ad', 'motifs.csv'];
+      const payload = { path: path_name.value, bucket: bucket_name.value, filter: ['h5ad', 'motifs.csv'] };
+      const important_objects = await client.value?.getFileList(payload);
+      const one_string = important_objects.join();
+      const allFileHold: any[] = [];
+      fileNames.forEach((v: string) => {
+        if (one_string.includes(v)) allFileHold.push({ name: v, color: 'green', value: true });
+        else allFileHold.push({ name: v, color: 'red', value: false });
+      });
+      all_files.value = allFileHold;
+      if (one_string.includes('genes.h5ad') && one_string.includes('motifs.h5ad')) {
+        checkbox_flag.value = false;
+        required_files.value = true;
+      } else {
+        checkbox_flag.value = true;
+        required_files.value = false;
+      }
+      loading.value = false;
+    }
+    async function generatePaths() {
+      if (!bucket_name.value || bucket_name.value.length === 0) return;
+      required_files.value = false;
+      checkbox_flag.value = false;
+      loading.value = true;
+      const matchPath = (path: string) => {
+        const matchRegex = path.match(/(data\/.+\/)(h5)/);
+        let xploreId = matchRegex![1];
+        if (xploreId) {
+          xploreId = xploreId.slice(0, -1);
+          return xploreId;
+        }
+        return '';
+      };
+      const payload = { path: 'data', bucket: bucket_name.value, filter: ['h5ad'] };
+      const important_objects = await client.value?.getFileList(payload);
+      const withRepeats = important_objects.map((v: any) => matchPath(v));
+      const noRepeats = [...new Set(withRepeats)];
+      available_paths.value = noRepeats.map((v: any) => ({ path: v }));
+      loading.value = false;
+    }
     function assign_fields(db_obj: any) {
-      console.log(db_obj);
       run_id.value = db_obj.run_id;
       search_input.value = run_id.value;
       assay.value = db_obj.assay;
@@ -358,6 +468,18 @@ export default defineComponent({
       run_title.value = db_obj.result_title;
       run_description.value = db_obj.result_description;
       web_obj_path.value = db_obj.results_folder_path;
+      if (db_obj.web_object_available === 1) {
+        web_obj_created.value = true;
+      } else {
+        web_obj_created.value = false;
+      }
+      if (db_obj.results_folder_path) {
+        const lis = db_obj.results_folder_path.split('/');
+        [, , bucket_name.value] = lis;
+        path_name.value = lis[3].concat('/', lis[4]);
+        searchPath();
+        generatePaths();
+      }
       sample_id.value = db_obj.sample_id;
       ngs_id.value = db_obj.ngs_id;
       channel_width.value = db_obj.channel_width;
@@ -410,6 +532,10 @@ export default defineComponent({
       ngs_id.value = '';
       results_id.value = null;
     }
+    const checkTaskStatus = async (task_id: string) => {
+      if (!client.value) return;
+      taskStatus.value = await client.value.getTaskStatus(task_id);
+    };
     async function auto_populate_from_results_id(id: number) {
       try {
         const resp = await client.value?.get_info_from_results_id(id);
@@ -422,6 +548,7 @@ export default defineComponent({
     async function auto_populate_from_run_id() {
       try {
         const resp: any[] = await client.value?.get_info_from_run_id(run_id.value);
+        console.log(resp);
         if (resp[0] === 'Not-Found') {
           snackbar.dispatch({ text: 'Run ID Not Present in Database.', options: { color: 'red' } });
           clear_fields();
@@ -441,6 +568,7 @@ export default defineComponent({
           }
         }
       } catch (e) {
+        console.log(e);
         snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
       }
     }
@@ -512,6 +640,69 @@ export default defineComponent({
         console.log(e);
       }
     }
+
+    function pathText(ev: any) {
+      if (!ev || ev.length === 0) all_files.value = [];
+    }
+    function updatePath(ev: any) {
+      all_files.value = [];
+      required_files.value = false;
+      checkbox_flag.value = false;
+      path_name.value = ev.path;
+    }
+    async function fetchBuckets() {
+      const list_buckets = await client.value?.getBuckets();
+      const temp_avbuck = list_buckets.map((v: any) => v);
+      available_buckets.value = temp_avbuck;
+    }
+
+    async function updateProgress(value: number) {
+      // not working
+    }
+    async function createObjects() {
+      if (!client.value) return;
+      try {
+        const task = 'webfile.create_files';
+        const queue = 'joshua_webfile';
+        const params = {
+          aws_path: `${path_name.value}/h5/obj`,
+          rna_flag: checkbox_flag.value,
+        };
+        const args: any[] = [params];
+        const kwargs: any = {};
+        const taskObject = await client.value.postTask(task, args, kwargs, queue);
+
+        await checkTaskStatus(taskObject._id);
+        /* eslint-disable no-await-in-loop */
+        while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
+          if (taskStatus.value.status === 'PROGRESS') {
+            await updateProgress(taskStatus.value.progress);
+            progressMessage.value = `${taskStatus.value.progress}% - ${taskStatus.value.position}`;
+          }
+          await new Promise((r) => {
+            taskTimeout.value = window.setTimeout(r, 1000);
+          });
+          taskTimeout.value = null;
+          await checkTaskStatus(taskObject._id);
+        }
+        if (taskStatus.value.status !== 'SUCCESS') {
+          snackbar.dispatch({ text: 'Worker failed in Creating Object', options: { right: true, color: 'error' } });
+          loading.value = false;
+        } else {
+          snackbar.dispatch({ text: 'The Web Objects are created', options: { right: true, color: 'success' } });
+          progressMessage.value = taskStatus.value.status;
+          const resp = taskStatus.value.result;
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    watch(all_files, (v: any) => {
+      if (v.length === 0) {
+        required_files.value = false;
+        checkbox_flag.value = false;
+      }
+    });
     onMounted(() => {
       console.log(db_connection.group_list);
       const run_ids_promise = client.value?.get_run_ids();
@@ -519,6 +710,7 @@ export default defineComponent({
         run_ids.value = value;
         available_run_ids.value = value;
       });
+      fetchBuckets();
     });
     return {
       assay,
@@ -556,6 +748,19 @@ export default defineComponent({
       tissue_type,
       db_connection,
       results_selection_list,
+      path_name,
+      bucket_headers,
+      available_buckets,
+      bucket_name,
+      available_paths,
+      loading,
+      all_files,
+      required_files,
+      checkbox_flag,
+      taskStatus,
+      taskTimeout,
+      progressMessage,
+      web_obj_created,
       auto_populate_from_results_id,
       results_id_selected,
       close_edit_run_id,
@@ -568,6 +773,13 @@ export default defineComponent({
       auto_populate_from_run_id,
       upload_data,
       run_selected,
+      fetchBuckets,
+      searchPath,
+      updatePath,
+      generatePaths,
+      createObjects,
+      pathText,
+      updateProgress,
     };
   },
 });
