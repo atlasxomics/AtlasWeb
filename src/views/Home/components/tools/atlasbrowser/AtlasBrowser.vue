@@ -520,7 +520,6 @@
                   ref="konvaStage"
                   class="mainStage"
                   :config="konvaConfig"
-                  v-resize="onResize"
                   @mousemove="handleMouseMoveStage">
                   <v-layer
                     v-if="current_image"
@@ -556,14 +555,12 @@
                             v-for="c in roi.getAnchors()"
                             v-bind:key="c.id"
                             @dragstart="handleDragStart"
-                            @dragend="handleDragEnd"
                             @dragmove="handleDragMove"
                             :config="c"/>
                         </template>
                         <v-circle v-if="!isBrushMode && !isEraseMode && !updating_existing && !tixels_filled"
                           v-bind:key="roi.getCenterAnchor().id"
                           @dragstart="handleDragCenterStart"
-                          @dragend="handleDragCenterEnd"
                           @dragmove="handleDragCenterMove"
                           :config="roi.getCenterAnchor()"/>
                     </template>
@@ -588,8 +585,6 @@
                         </template>
                         <v-circle v-if="!isBrushMode"
                             v-bind:key="crop.getCenterAnchor().id"
-                            @dragstart="handleDragCenterStart_Crop"
-                            @dragend="handleDragCenterEnd_Crop"
                             @dragmove="handleDragCenterMove_Crop"
                             :config="crop.getCenterAnchor()"/>
                       </template>
@@ -1022,7 +1017,6 @@ export default defineComponent({
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
         const img = await client.value.getImageAsJPG(pl);
         bsa_blob.value = img;
-        console.log(filenameList);
         allFiles.value = await client.value.getFileList(filenameList);
         const img_obj = set_current_image(img);
         bsa_image.value = img_obj.src;
@@ -1385,7 +1379,6 @@ export default defineComponent({
           leak_flowA: metadata.value.leak_flowA,
           onTissueTixels: roi.value.getOnTissue(),
         });
-        console.log(metadata);
         const params = {
           run_id: run_id.value,
           files: allFiles.value,
@@ -1482,7 +1475,6 @@ export default defineComponent({
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
     async function get_image_options(folder_name: string) {
-      console.log(folder_name);
       const pl = { bucket: bucket_name, path: `${root}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
       file_options.value = await client.value?.getFileList(pl);
       if (file_options.value.length === 1) {
