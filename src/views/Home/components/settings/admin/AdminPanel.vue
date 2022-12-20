@@ -15,8 +15,15 @@
       <v-tab-item key="WorkerStatus">
         <worker-status/>
       </v-tab-item>
-      <v-tab-item key="UserManagement">
-        <user-management/>
+      <v-tab-item key="UserManagement" eager>
+        <user-management
+        ref="user_managment"
+        />
+      </v-tab-item>
+      <v-tab-item key="GroupManagment">
+        <group-managment
+        @update-groups="update_groups_list">
+        </group-managment>/>
       </v-tab-item>
       <v-tab-item key="Uploader" eager>
         <web-uploader
@@ -46,6 +53,7 @@ import AddRemoveUser from './modules/AddRemoveUser.vue';
 import UserManagement from './modules/UserManagement.vue';
 import WebUploader from './modules/WebUploader.vue';
 import CreateWebObject from './modules/CreateWebObject.vue';
+import GroupManagment from './modules/GroupManagment.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -56,7 +64,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Add A Run', 'Create Web Files'];
+const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Group Managment', 'Add A Run', 'Create Web Files'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -69,6 +77,7 @@ export default defineComponent({
     UserManagement,
     WebUploader,
     CreateWebObject,
+    GroupManagment,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -77,6 +86,10 @@ export default defineComponent({
     const tab = ref<any>(1);
     const parent_results_id = ref<any>(null);
     const example_ref = ref(null);
+    function update_groups_list() {
+      console.log('getting updated list');
+      (ctx as any).refs.user_managment.update_groups_list();
+    }
     onMounted(async () => {
       await clientReady;
       if (props.query.params) {
@@ -93,6 +106,7 @@ export default defineComponent({
       client,
       parent_results_id,
       resolveAuthGroup,
+      update_groups_list,
     };
   },
 });

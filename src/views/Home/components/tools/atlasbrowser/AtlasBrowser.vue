@@ -5,9 +5,9 @@
       <v-row>
         <!-- search funtionality on press of magnifying glass -->
         <v-dialog
-          v-if="runIdFlag"
-          :value="runIdFlag"
-          @click:outside="runIdFlag = !runIdFlag"
+          v-if="run_id_search_active"
+          :value="run_id_search_active"
+          @click:outside="run_id_search_active = !run_id_search_active"
           hide-overlay>
           <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
               :disabled="loading">
@@ -23,7 +23,6 @@
             </v-card-title>
             <!-- display of available runs for selection -->
             <v-data-table
-              v-model="selected"
               height="20vh"
               width="20%"
               dense
@@ -32,7 +31,7 @@
               :items="itemsHolder"
               :headers="headers"
               hide-default-footer
-              @click:row="selectAction"
+              @click:row="run_folder_selected"
             />
           </v-card>
         </v-dialog>
@@ -41,9 +40,9 @@
         <v-dialog
           width="600"
           height="800"
-          v-if="((tissue_position_list_obj && run_id) || image_processing_begun)"
-          :value="metaFlag"
-          @click:outside="metaFlag = !metaFlag">
+          v-if="image_processing_begun"
+          :value="show_metadata"
+          @click:outside="show_metadata = !show_metadata">
           <v-card  :disabled="loading"
           >
             <v-card-title
@@ -391,27 +390,80 @@
               </v-list>
             </v-card>
           </template>
-          <v-card v-if="run_id && !loading && !image_processing_begun && tissue_position_list_obj">
-            <v-card-text>{{ run_id }} has already been processed. Would you like to reprocess or update the On/Off label </v-card-text>
-            <v-card-actions>
+          <v-dialog
+          persistent
+          :value="prompt_to_use_existing_spatial"
+          max-width="800px"
+          >
+          <v-card>
+            <v-card-title
+            class="justify-center"
+            >
+            {{ run_id }} Spatial Folder Found. </v-card-title>
+            <v-card-title
+            class="justify-center"
+            >
+            Would you like to update the existing spatial folder or reprocess the image?
+            </v-card-title>
+            <v-card-actions
+            class="justify-center"
+            >
               <v-btn
                 outlined
                 dense
                 color="primary"
-                @click="image_processing_begun=true;optionCreate=true;"
-                x-small>
+                @click="get_image_options(run_id);prompt_to_use_existing_spatial = false;"
+                medium>
                 Reprocess
               </v-btn>
               <v-btn
                 outlined
                 dense
                 color="primary"
-                @click="image_processing_begun=true;updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
-                x-small>
+                @click="prompt_to_use_existing_spatial = false; updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
+                medium>
                 Update
               </v-btn>
             </v-card-actions>
           </v-card>
+          </v-dialog>
+          <v-dialog
+          persistent
+          :value="!image_processing_begun && file_options.length > 1 && !prompt_to_use_existing_spatial"
+          max-width="800px"
+          >
+          <v-card>
+            <v-card-title
+            class="justify-center"
+            > Multiple Images Found.  </v-card-title>
+            <v-card-title
+            class="justify-center"
+            > Please select the BSA image to be used for processing. </v-card-title>
+            <v-card-actions
+            class="justify-center"
+            >
+            <v-col>
+              <v-select
+                v-model="full_bsa_filename"
+                :items="file_options"
+                label="Select Image"
+                outlined
+                dense
+                color="primary"
+                small>
+              </v-select>
+              <v-btn
+              :disabled="full_bsa_filename === ''"
+              style="position: relative; left: 50%; transform: translateX(-50%);"
+              outlined
+              @click="loadImage();"
+              >
+              Submit
+              </v-btn>
+            </v-col>
+            </v-card-actions>
+          </v-card>
+          </v-dialog>
         </v-col>
         <!-- right section of the screen where images and loading screens are displayed -->
         <v-col cols="12" sm="9" v-if="!checkSpatial">
@@ -468,7 +520,6 @@
                   ref="konvaStage"
                   class="mainStage"
                   :config="konvaConfig"
-                  v-resize="onResize"
                   @mousemove="handleMouseMoveStage">
                   <v-layer
                     v-if="current_image"
@@ -504,14 +555,12 @@
                             v-for="c in roi.getAnchors()"
                             v-bind:key="c.id"
                             @dragstart="handleDragStart"
-                            @dragend="handleDragEnd"
                             @dragmove="handleDragMove"
                             :config="c"/>
                         </template>
                         <v-circle v-if="!isBrushMode && !isEraseMode && !updating_existing && !tixels_filled"
                           v-bind:key="roi.getCenterAnchor().id"
                           @dragstart="handleDragCenterStart"
-                          @dragend="handleDragCenterEnd"
                           @dragmove="handleDragCenterMove"
                           :config="roi.getCenterAnchor()"/>
                     </template>
@@ -536,8 +585,6 @@
                         </template>
                         <v-circle v-if="!isBrushMode"
                             v-bind:key="crop.getCenterAnchor().id"
-                            @dragstart="handleDragCenterStart_Crop"
-                            @dragend="handleDragCenterEnd_Crop"
                             @dragmove="handleDragCenterMove_Crop"
                             :config="crop.getCenterAnchor()"/>
                       </template>
@@ -674,12 +721,10 @@ export default defineComponent({
     const itemsHolder = ref<any[]>([]);
     const searchInput = ref<any[]>([]);
     const search = ref<string | null>();
-    const selected = ref<any | null>();
     const run_id = ref<string>('');
-    const full_bsa_filename = computed(() => `${root}/${run_id.value}/${run_id.value}_postB_BSA.tif`);
-    const width_window = window.innerWidth;
-    const height_window = window.innerHeight;
-    const konvaConfig = ref<any>({ width_window, height_window });
+    const full_bsa_filename = ref<string>('');
+    const file_options = ref<any[]>([]);
+    const konvaConfig = ref<any>({ width_window: window.innerWidth, height_window: window.innerHeight });
     const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
     const tixels_filled = ref<boolean>(false);
@@ -703,7 +748,6 @@ export default defineComponent({
     const two = ref(0);
     const three = ref(0);
     const four = ref(0);
-    const atfilter = ref(false);
     const atpixels = ref<any[] | null>([]);
     const threshold = ref(210);
     const thresh_image_created = ref<boolean>(false);
@@ -712,27 +756,22 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const loadingMessage = ref<boolean>(false);
     const taskStatus = ref<any>();
-    const taskStatush5 = ref<any>();
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
     const channels = ref(50);
-    const onOff = ref<boolean>(false);
     const grid = ref<boolean>(false);
     const cropFlag = ref<boolean>(false);
     const cropLoading = ref<boolean>(false);
     const threshLoading = ref<boolean>(false);
-    const thresh = ref<boolean>(false);
     const spatial = ref<boolean>(false);
     const tissue_position_list_obj = ref<any>();
-    const optionCreate = ref<boolean>(false);
+    const prompt_to_use_existing_spatial = ref<boolean>(false);
     const updating_existing = ref<boolean>(false);
     const image_processing_begun = ref<boolean>(false);
-    const generating = ref<boolean>(false);
-    const runIdFlag = ref<boolean>(false);
+    const run_id_search_active = ref<boolean>(false);
     const runIDSelected = ref<boolean>(false);
-    const metaFlag = ref<boolean>(false);
-    const flowMetadata = ref<Record<string, any>>({});
+    const show_metadata = ref<boolean>(false);
     // value used to store the loaded image to be used for cropping
     const bsa_blob = ref<any>();
     const c_val = ref<number>(7);
@@ -748,9 +787,6 @@ export default defineComponent({
       tissue_lowres_scalef: null,
     });
     const checkSpatial = ref<boolean>(false);
-    const imageChannels = ref<Record<string, any>>();
-    const missingGreen = ref<Uint8ClampedArray>(new Uint8ClampedArray(1));
-    const imageDataObj = ref<ImageData>({ data: new Uint8ClampedArray([1]), width: 1, height: 1 });
     const bw_image = ref<any>();
     const company_image = ref<any | null>(null);
     const availableFiles = ref<any[]>([]);
@@ -795,22 +831,21 @@ export default defineComponent({
       roi_active.value = false;
       isBrushMode.value = false;
       isEraseMode.value = false;
-      atfilter.value = false;
       thresh_image_created.value = false;
       thresh_same.value = false;
       tixels_filled.value = false;
       isCropMode.value = false;
       grid.value = false;
       cropFlag.value = false;
-      thresh.value = false;
       spatial.value = false;
-      onOff.value = false;
-      runIdFlag.value = false;
+      run_id_search_active.value = false;
       loading.value = false;
       bsa_blob.value = null;
       updating_existing.value = false;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
-      // metaFlag.value = false;
+      full_bsa_filename.value = '';
+      image_processing_begun.value = false;
+      // show_metadata.value = false;
     }
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
@@ -826,7 +861,6 @@ export default defineComponent({
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
-      taskStatush5.value = await client.value.getTaskStatus(task_id);
     };
     function onChangeScale(ev: any) {
       const v = scaleFactor.value;
@@ -885,8 +919,9 @@ export default defineComponent({
       }
     }
     // io
-    async function loadMetadata() {
-      if (!client.value) return;
+    async function loadMetadata(): Promise<boolean> {
+      if (!client.value) return false;
+      run_id_search_active.value = false;
       loading.value = true;
       loadingMessage.value = false;
       // specify path to images within s3
@@ -903,15 +938,16 @@ export default defineComponent({
       tissue_position_list_obj.value = resp_pos;
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
+        loading.value = false;
         metadata.value = resp;
-        image_processing_begun.value = false;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
+        return true;
         // otherwise call getMeta to query the API
-      } else {
-        await getMeta();
-        image_processing_begun.value = true;
-        snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
       }
+      await getMeta();
+      loading.value = false;
+      snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
+      return false;
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
       if (!client.value) return null;
@@ -960,6 +996,8 @@ export default defineComponent({
     }
     async function loadImage() {
       if (!client.value) return;
+      welcome_screen.value = false;
+      image_processing_begun.value = true;
       loading.value = true;
       loadingMessage.value = false;
       let filename: any;
@@ -979,7 +1017,6 @@ export default defineComponent({
         const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
         const img = await client.value.getImageAsJPG(pl);
         bsa_blob.value = img;
-        console.log(filenameList);
         allFiles.value = await client.value.getFileList(filenameList);
         const img_obj = set_current_image(img);
         bsa_image.value = img_obj.src;
@@ -990,7 +1027,7 @@ export default defineComponent({
           if (pro) postB_image_promise.value = pro;
         }
         loading.value = false;
-        runIdFlag.value = false;
+        run_id_search_active.value = false;
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -1007,17 +1044,10 @@ export default defineComponent({
       } else {
         orientation.value.rotation += 270;
       }
-      const filename = `Images/${run_id.value}/${run_id.value}_postB_BSA.tif`;
-      const pl = { params: { filename, bucket_name, use_cache: 'true', rotation: orientation.value.rotation } };
-      // const img = await client.value?.rotate_image(filename, orientation.value.rotation);
+      const pl = { params: { filename: full_bsa_filename.value, bucket_name, use_cache: 'true', rotation: orientation.value.rotation } };
       const img = await client.value?.getImageAsJPG(pl);
       bsa_blob.value = img;
       set_current_image(img);
-      loading.value = false;
-    }
-    async function loadAll() {
-      await loadMetadata();
-      await loadImage();
       loading.value = false;
     }
     function searchRuns(ev: any) {
@@ -1031,16 +1061,9 @@ export default defineComponent({
       }
       itemsHolder.value = updated;
     }
-    function horizontalFlip(ev: any) {
-      orientation.value.horizontal_flip = !orientation.value.horizontal_flip;
-    }
-    function verticalFlip(ev: any) {
-      orientation.value.vertical_flip = !orientation.value.vertical_flip;
-    }
     function uploadingTixels(ev: any) {
       grid.value = true;
       cropFlag.value = true;
-      onOff.value = true;
       const partitioned = splitarray(metadata.value.points, 2);
       // conversion of the x and y coordinates designated in the tissue_positions_list file
       // to being in memory of the app
@@ -1081,12 +1104,6 @@ export default defineComponent({
         crop.value.coordinates[id].y = Math.min(Math.max(0, pos.y), stageHeight.value);
       }
     }
-    function handleDragCenterStart_Crop(ev: any) {
-      // crop.value.polygons = [];
-    }
-    function handleDragCenterEnd_Crop(ev: any) {
-      // console.log(ev);
-    }
     function handleDragCenterMove_Crop(ev: any) {
       crop.value.moveToNewCenter(ev.target._lastPos, stageWidth.value, stageHeight.value);
     }
@@ -1095,10 +1112,6 @@ export default defineComponent({
       // console.log(ev);
       const { id } = ev.target.attrs;
       roi.value.polygons = [];
-    }
-    function handleDragEnd(ev: any) {
-      const { id } = ev.target.attrs;
-      const pos = ev.target._lastPos;
     }
     function handleDragMove(ev: any) {
       const { id } = ev.target.attrs;
@@ -1114,14 +1127,8 @@ export default defineComponent({
     function handleDragCenterStart(ev: any) {
       roi.value.polygons = [];
     }
-    function handleDragCenterEnd(ev: any) {
-      // console.log(ev);
-    }
     function handleDragCenterMove(ev: any) {
       roi.value.moveToNewCenter(ev.target._lastPos);
-    }
-    function onload_window(ev: any) {
-      console.log(ev);
     }
     function handleMouseDown(ev: any) {
       const { id } = ev.target.attrs;
@@ -1188,9 +1195,6 @@ export default defineComponent({
         load_tixel_state();
       }
     }
-    function onResize(ev: any) {
-      // console.log('OnResize');
-    }
     function onLatticeButton(ev: any) {
       generateLattices(ev);
     }
@@ -1256,8 +1260,6 @@ export default defineComponent({
           canvas.width = coords[2] - coords[0];
           canvas.height = coords[3] - coords[1];
           ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
-          imageDataObj.value = ctxe!.getImageData(0, 0, canvas.width, canvas.height);
-          // extractChannels();
           canvas.toBlob((blob: any) => {
             const img_obj = set_current_image(blob);
             bsa_image.value = img_obj.src;
@@ -1278,17 +1280,6 @@ export default defineComponent({
         roi.value.polygons[i].fill = null;
         const cleared = saved_grid_state.value?.clear();
       }
-    }
-
-    function imageDataToBlob() {
-      const w = imageDataObj.value.width;
-      const h = imageDataObj.value.height;
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const context = canvas.getContext('2d');
-      context!.putImageData(imageDataObj.value, 0, 0);
-      return canvas.toDataURL();
     }
 
     function threshold_image(img_src: any) {
@@ -1343,24 +1334,6 @@ export default defineComponent({
       let valuethree: any;
       one.value = value;
     };
-    const updateH5ad = async (value: number) => {
-      if (!client.value) return;
-      if (value === 20) {
-        four.value = 20;
-      }
-      if (value === 40) {
-        four.value = 40;
-      }
-      if (value === 60) {
-        four.value = 60;
-      }
-      if (value === 80) {
-        four.value = 80;
-      }
-      if (value === 100) {
-        four.value = 100;
-      }
-    };
     async function showSpatialFolder() {
       checkSpatial.value = true;
     }
@@ -1406,7 +1379,6 @@ export default defineComponent({
           leak_flowA: metadata.value.leak_flowA,
           onTissueTixels: roi.value.getOnTissue(),
         });
-        console.log(metadata);
         const params = {
           run_id: run_id.value,
           files: allFiles.value,
@@ -1478,7 +1450,6 @@ export default defineComponent({
         roi.value.generatePolygons();
       }
       roi.value.autoMask(atpixels.value, threshold.value);
-      onOff.value = true;
       tixels_filled.value = true;
     }
     async function fetchFileList() {
@@ -1489,22 +1460,40 @@ export default defineComponent({
       itemsHolder.value = [];
       search.value = '';
       loading.value = true;
-      // Change the filter parameters of the below opject to change the displayed runs
-      // Cap sensitive
-      const fl_payload = { bucket: bucket_name, path: root, filter: [run_id.value.concat('_postB_BSA.tif')] };
-      console.log(fl_payload);
-      const filelist = await client.value.getFileList(fl_payload);
-      if (filelist !== false) {
-        const qc_data = filelist.map((v: string) => ({ id: v.split('/')[1] }));
-        items.value = qc_data;
-        itemsHolder.value = qc_data;
+      const folder_pl = { bucket_name, prefix: 'Images/', delimiter: '/' };
+      const sub_folders = await client.value.getSubFolders(folder_pl);
+      if (sub_folders) {
+        const obj_data = sub_folders.map((sub_folder_name: string) => ({ id: sub_folder_name }));
+        items.value = obj_data;
       }
+      itemsHolder.value = items.value;
       loading.value = false;
     }
     async function selectAction(ev: any) {
       welcome_screen.value = false;
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
+    }
+    async function get_image_options(folder_name: string) {
+      const pl = { bucket: bucket_name, path: `${root}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
+      file_options.value = await client.value?.getFileList(pl);
+      if (file_options.value.length === 1) {
+        [full_bsa_filename.value] = file_options.value;
+        loadImage();
+      } else if (file_options.value.length === 0) {
+        snackbar.dispatch({ text: 'No images found in folder', options: { right: true, color: 'error' } });
+      }
+    }
+    async function run_folder_selected(folder_name: any) {
+      if (!clientReady) {
+        return;
+      }
+      run_id.value = folder_name.id;
+      initialize();
+      prompt_to_use_existing_spatial.value = await loadMetadata();
+      if (!prompt_to_use_existing_spatial.value) {
+        get_image_options(folder_name.id);
+      }
     }
     watch(brushSize, (v) => {
       brushConfig.value.radius = v;
@@ -1518,12 +1507,6 @@ export default defineComponent({
       if (v) {
         isEraseMode.value = false;
       }
-    });
-    watch(run_id, async (v, ov) => {
-      checkSpatial.value = false;
-      runIDSelected.value = true;
-      initialize();
-      await loadAll();
     });
     watch(current_image, (v) => {
       if (current_image.value && !isCropMode.value) {
@@ -1549,7 +1532,7 @@ export default defineComponent({
         enabled: true,
         disabled: loading.value,
         click: () => {
-          runIdFlag.value = !runIdFlag.value;
+          run_id_search_active.value = !run_id_search_active.value;
         },
       },
       {
@@ -1559,8 +1542,8 @@ export default defineComponent({
         enabled: true,
         disabled: loading.value,
         click: () => {
-          metaFlag.value = !metaFlag.value;
-          if (runIDSelected.value === false) {
+          show_metadata.value = !show_metadata.value;
+          if (!run_id.value) {
             console.log('error message');
             snackbar.dispatch({ text: 'Must select a Run ID', options: { right: true, color: 'error' } });
           }
@@ -1572,11 +1555,6 @@ export default defineComponent({
       store.commit.setSubmenu(submenu);
       window.addEventListener('resize', handleResize);
       await fetchFileList();
-      if (props.query) {
-        if (props.query.run_id) {
-          await selectAction({ id: props.query.run_id });
-        }
-      }
     });
     onUnmounted(async () => {
       store.commit.setSubmenu(null);
@@ -1593,21 +1571,16 @@ export default defineComponent({
       headers,
       selectAction,
       search,
-      selected,
       konvaConfig,
       circleConfig,
       brushConfig,
       handleDragStart_Crop,
       handleDragEnd_Crop,
       handleDragMove_Crop,
-      handleDragCenterStart_Crop,
-      handleDragCenterEnd_Crop,
       handleDragCenterMove_Crop,
       handleDragStart,
-      handleDragEnd,
       handleDragMove,
       handleDragCenterStart,
-      handleDragCenterEnd,
       handleDragCenterMove,
       handleMouseDown,
       handleMouseOver,
@@ -1615,19 +1588,13 @@ export default defineComponent({
       handleMouseDownBrush,
       handleMouseUpBrush,
       handleMouseUp,
-      horizontalFlip,
-      verticalFlip,
       crop,
       roi,
       objectToArray,
       generateLattices,
       current_image,
-      imageChannels,
-      missingGreen,
-      imageDataObj,
       loadImage,
       searchRuns,
-      onResize,
       stageWidth,
       initialize,
       generateSpatial,
@@ -1638,7 +1605,6 @@ export default defineComponent({
       brushSize,
       scaleFactor,
       onChangeScale,
-      atfilter,
       atpixels,
       autoFill,
       threshold,
@@ -1655,20 +1621,17 @@ export default defineComponent({
       three,
       four,
       channels,
-      onOff,
       spatial,
       scaleFactor_json,
       grid,
-      thresh,
       cropFlag,
       tissue_position_list_obj,
+      prompt_to_use_existing_spatial,
       uploadingTixels,
-      optionCreate,
       updating_existing,
       image_processing_begun,
-      generating,
-      runIdFlag,
-      metaFlag,
+      run_id_search_active,
+      show_metadata,
       bsa_blob,
       getMeta,
       resolveAuthGroup,
@@ -1694,11 +1657,9 @@ export default defineComponent({
       clear_filled_tixels,
       degreeRotation,
       assignMetadata,
-      imageDataToBlob,
       checkSpatial,
       showSpatialFolder,
       availableFiles,
-      flowMetadata,
       imageClick,
       root,
       bucket_name,
@@ -1709,6 +1670,9 @@ export default defineComponent({
       postB_image,
       bw_image_displayed,
       postB_image_displayed,
+      run_folder_selected,
+      get_image_options,
+      file_options,
     };
   },
 });

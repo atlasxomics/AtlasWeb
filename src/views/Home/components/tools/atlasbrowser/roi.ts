@@ -15,7 +15,6 @@ export class ROI {
     this.scalefactor = scale;
     this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
     this.initializeROI(coord[0], coord[1]);
-    // this.scalefactor = 0.15;
     this.channels = 50;
     this.polygons = [];
   }
