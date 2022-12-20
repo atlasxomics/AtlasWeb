@@ -111,7 +111,7 @@ export default defineComponent({
     function loadFile(filename: string) {
       const file_array = filename.split('.');
       const suffix = file_array[file_array.length - 1];
-      if (suffix === 'tif' || suffix === 'png') {
+      if (suffix.toLowerCase() === 'tif' || suffix.toLowerCase() === 'png' || suffix.toLowerCase() === 'jpg' || suffix.toLowerCase() === 'jpeg') {
         loadDisplayImage(filename);
       } else if (suffix === 'json') {
         loadJSONFile(filename);
