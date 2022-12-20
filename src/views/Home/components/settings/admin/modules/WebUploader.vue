@@ -216,8 +216,17 @@
                 <h4
                 > Text File Generation </h4>
                 </div>
-                <div>
+                <!-- <div>
                   Text Files Created: {{web_obj_created}}
+                </div> -->
+                <div>
+                  Last File Generation Attempt: {{files_creation_job_status}}
+                  <v-icon
+                  v-if="run_id_selected"
+                  @click="get_job_status"
+                  >
+                    mdi-refresh
+                  </v-icon>
                 </div>
                 <v-text-field
                 label="Path"
@@ -357,6 +366,7 @@ export default defineComponent({
     const run_description = ref<string>('');
     const run_title = ref<string>('');
     const regulation = ref<string>('');
+    const files_creation_job_status = ref<string>('');
     const public_run = ref<boolean>(false);
     const show_result_selection = ref<boolean>(false);
     const selected_group = ref<string>('');
@@ -548,10 +558,25 @@ export default defineComponent({
         console.log(e);
       }
     }
+    async function get_job_status() {
+      try {
+        const pl = { run_id: run_id.value, job_name: 'webfile.create_files' };
+        const resp = client.value?.get_job_status_runid_job_name(pl);
+        console.log(resp);
+        resp!.then((v: any) => {
+          if (v) {
+            console.log(v);
+            files_creation_job_status.value = v.job_status;
+          }
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    }
     async function auto_populate_from_run_id() {
       try {
+        get_job_status();
         const resp: any[] = await client.value?.get_info_from_run_id(run_id.value);
-        console.log(resp);
         if (resp[0] === 'Not-Found') {
           snackbar.dispatch({ text: 'Run ID Not Present in Database.', options: { color: 'red' } });
           clear_fields();
@@ -666,13 +691,13 @@ export default defineComponent({
       if (!client.value) return;
       try {
         const task = 'webfile.create_files';
-        const queue = 'joshua_webfile';
+        const queue = 'jonah_webfile';
         const params = {
           aws_path: `${path_name.value}/h5/obj`,
           rna_flag: checkbox_flag.value,
         };
         const args: any[] = [params];
-        const kwargs: any = {};
+        const kwargs: any = { run_id: run_id.value };
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
 
         await checkTaskStatus(taskObject._id);
@@ -764,6 +789,8 @@ export default defineComponent({
       taskTimeout,
       progressMessage,
       web_obj_created,
+      files_creation_job_status,
+      get_job_status,
       auto_populate_from_results_id,
       results_id_selected,
       close_edit_run_id,

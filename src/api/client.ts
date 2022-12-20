@@ -680,4 +680,8 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/run_db/get_info_from_results_id', pl);
     return resp.data;
   }
+  async get_job_status_runid_job_name(pl: any) {
+    const resp = await this.axios.post('/api/v1/run_db/get_job_runid_jobname', pl);
+    return resp.data;
+  }
 }
