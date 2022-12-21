@@ -598,6 +598,7 @@
                 :geneOmotif="geneMotif"
                 :idOfRun="runId"
                 :userBoundary="userMaxMinValue"
+                :assay_flag="assayFlag"
                 ref="mainAtxViewer"/>
             </div>
             </v-col>
@@ -651,7 +652,7 @@
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                 </template>
-                <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
+                <!-- <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/> -->
               </v-card>
             </div>
           </v-col>
@@ -744,6 +745,7 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const selectedGenes = ref<any[]>([]);
     const childGenes = ref<any[]>([]);
+    const delayCounter = ref<number>(0);
     const trackBrowserGenes = ref<any[]>([]);
     const spatialData = ref<boolean>(false);
     const clusterItems = ref<any[]>([]);
@@ -837,6 +839,7 @@ export default defineComponent({
     const geneMotifLoad = ref<boolean>(false);
     const lassoLoad = ref<boolean>(false);
     const heatMap = ref<any>({ C1: '#D51F26', C2: '#272E6A', C3: '#208A42', C4: '#89288F', C5: '#F47D2B', C6: '#FEE500', C7: '#8A9FD1', C8: '#C06CAB', C9: '#D8A767', C10: '#90D5E4', C11: '#89C75F', C12: '#F37B7D', C13: '#9983BD', C14: '#D24B27', C15: '#3BBCA8', C16: '#6E4B9E', C17: '#0C727C', C18: '#7E1416', C19: '#E6C2DC', C20: '#3D3D3D' });
+    const oneTime = ref<boolean>(true);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -851,6 +854,31 @@ export default defineComponent({
       if (client.value!.user! === null) {
         router.push('/visualization');
       } else router.push('/');
+    }
+    async function updateOneTime(ev: any) {
+      oneTime.value = ev;
+    }
+    async function updateVar(ev: any) {
+      oneTime.value = ev;
+    }
+    function delay() {
+      /* eslint-disable no-useless-return */
+      /* eslint-disable consistent-return */
+      /* eslint-disable no-await-in-loop */
+      console.log(oneTime.value);
+      if (!oneTime.value) {
+        window.setTimeout(delay, 500);
+        return;
+      }
+    }
+    async function waitForSingleView(ev: any) {
+      /* eslint-disable no-await-in-loop */
+      if (childGenes.value.length === 0) return;
+      const gene = childGenes.value[ev];
+      const [vueComponent] = (ctx as any).refs[gene];
+      vueComponent.startView(gene);
+      // delay();
+      oneTime.value = false;
     }
     function cleanRunId(rid: string) {
       return rid.match('[A-Z]+[0-9]+')![0];
@@ -1143,11 +1171,13 @@ export default defineComponent({
     }
     async function updateTen() {
       const fileName = { params: { filename: `data/${runId.value}/h5/topTen_genes.json` } };
-      const fileNameMotif = { params: { filename: `data/${runId.value}/h5/topTen_motifs.json` } };
       const topTen_gene_json = await client.value?.getJsonFile(fileName);
-      const topTen_motif_json = await client.value?.getJsonFile(fileNameMotif);
       topTenIds.value.gene = topTen_gene_json;
-      topTenIds.value.motif = topTen_motif_json;
+      if (!assayFlag.value) {
+        const fileNameMotif = { params: { filename: `data/${runId.value}/h5/topTen_motifs.json` } };
+        const topTen_motif_json = await client.value?.getJsonFile(fileNameMotif);
+        topTenIds.value.motif = topTen_motif_json;
+      }
       spatialData.value = false;
       if (Object.keys(totalInClust.value).length > 1) {
         updateSpatial();
@@ -1350,10 +1380,12 @@ export default defineComponent({
         this.$on('sentgenes', (ev: any) => {
           isClusterView.value = false;
           childGenes.value = [];
+          delayCounter.value = 0;
           trackBrowserGenes.value = [];
           ev.forEach((v: string, i: number) => {
             childGenes.value.push(v);
           });
+          // if (averageInd.value) waitForSingleView('grgr');
           if (ev.length === 1) {
             ev.forEach((v: string, i: number) => {
               trackBrowserGenes.value.push(v);
@@ -1365,6 +1397,12 @@ export default defineComponent({
         });
       },
     }));
+    // watch(oneTime, async (v: any) => {
+    //   if (childGenes.value.length > 0 && delayCounter.value < childGenes.value.length) {
+    //     await waitForSingleView(delayCounter.value);
+    //     delayCounter.value += 1;
+    //   } else delayCounter.value = 0;
+    // });
     watch(peakViewerFlag, (v: any) => {
       if (v) {
         visible.value = 'visible';
@@ -1409,6 +1447,7 @@ export default defineComponent({
       showFlag.value = [false];
       geneButton.value = [];
       childGenes.value = [];
+      delayCounter.value = 0;
       trackBrowserGenes.value = [];
       updateTable();
     });
@@ -1434,6 +1473,7 @@ export default defineComponent({
         showFlag.value = [false];
         trackBrowserGenes.value = [];
         childGenes.value = [];
+        delayCounter.value = 0;
       } else {
         isDrawing.value = false;
         isDrawingRect.value = false;
@@ -1449,6 +1489,7 @@ export default defineComponent({
       showFlag.value = [false];
       geneButton.value = [];
       childGenes.value = [];
+      delayCounter.value = 0;
       trackBrowserGenes.value = [];
     });
     watch(showFlag, (v: any[]) => {
@@ -1714,6 +1755,11 @@ export default defineComponent({
       updateMaxMin,
       peakViewLoad,
       geneMotifLoad,
+      waitForSingleView,
+      oneTime,
+      updateOneTime,
+      delayCounter,
+      updateVar,
     };
   },
 });
