@@ -168,9 +168,9 @@ export default defineComponent({
           rna_flag: checkbox_flag.value,
         };
         const args: any[] = [params];
-        const kwargs: any = {};
+        const kwargs = {};
+        // const kwargs: any = { run_id: run_id.value };
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
-
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {

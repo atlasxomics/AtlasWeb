@@ -25,14 +25,14 @@
         @update-groups="update_groups_list">
         </group-managment>/>
       </v-tab-item>
+      <v-tab-item key="CreateWebObject">
+        <create-web-object/>
+      </v-tab-item>
       <v-tab-item key="Uploader" eager>
         <web-uploader
         ref="run_editor"
         >
         </web-uploader>
-      </v-tab-item>
-      <v-tab-item key="CreateWebObject">
-        <create-web-object/>
       </v-tab-item>
     </v-tabs-items>
   </v-container>
@@ -64,7 +64,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Group Managment', 'Add A Run', 'Create Web Files'];
+const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Group Managment', 'Create A Run', 'Add A Run'];
 
 export default defineComponent({
   name: 'AdminPanel',
