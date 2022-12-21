@@ -652,7 +652,7 @@
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                 </template>
-                <!-- <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/> -->
+                <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
               </v-card>
             </div>
           </v-col>
