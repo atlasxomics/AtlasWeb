@@ -247,7 +247,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary'],
+  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary', 'assay_flag'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -362,6 +362,7 @@ export default defineComponent({
     const maxMinBoundaryFromParents = computed(() => (props.userBoundary));
     const maxMinBoundary = ref<any[]>([]);
     const currentClickedCluster = ref<string>('');
+    const assayFlag = computed(() => (props.assay_flag));
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
       konvaConfigRight.value.draggable = flag;
@@ -708,8 +709,10 @@ export default defineComponent({
           spatialData.value.spatial = spatial;
           const gene = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 1);
           spatialData.value.gene = gene;
-          const motif = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 2);
-          spatialData.value.motif = motif;
+          if (!assayFlag.value) {
+            const motif = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 2);
+            spatialData.value.motif = motif;
+          }
         }
         const spatialX: number[] = [];
         const spatialY: number[] = [];
@@ -755,9 +758,11 @@ export default defineComponent({
         const geneFileName = `data/${runId.value}/h5/geneNames.txt.gz`;
         const gene = await client.value!.getGeneMotifNames(geneFileName);
         spatialData.value.gene = gene;
-        const motifFileName = `data/${runId.value}/h5/motifNames.txt.gz`;
-        const motif = await client.value!.getGeneMotifNames(motifFileName);
-        spatialData.value.motif = motif;
+        if (!assayFlag.value) {
+          const motifFileName = `data/${runId.value}/h5/motifNames.txt.gz`;
+          const motif = await client.value!.getGeneMotifNames(motifFileName);
+          spatialData.value.motif = motif;
+        }
       }
       loading.value = false;
       if (geneMotif.value === 'gene') {
@@ -1253,6 +1258,7 @@ export default defineComponent({
       checkBoundary,
       checkBoundaryColor,
       currentClickedCluster,
+      assayFlag,
     };
   },
 });
