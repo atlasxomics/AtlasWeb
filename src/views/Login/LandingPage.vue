@@ -462,9 +462,7 @@ export default defineComponent({
       let imageLink = '';
       const matchPath = path.match(/(data\/)(.+)(\/)/);
       const xploreId = matchPath![2];
-      imageLink = `frontPage_${xploreId}.png`;
-      // if (pub !== 1)
-      // else imageLink = `frontPage_${xploreId}.png`;
+      imageLink = `frontpage_images/frontPage_${xploreId}.png`;
       return imageLink;
     }
     function get_display_date(date: any) {
