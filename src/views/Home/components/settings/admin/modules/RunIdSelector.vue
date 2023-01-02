@@ -104,6 +104,7 @@ export default defineComponent({
       editing_run_id_selection.value = false;
       run_id_selected.value = true;
       search_input.value = run_id.value;
+      ctx.emit('close-edit-run-id');
     }
     function set_run_id(user_set_run_id: string) {
       run_id.value = user_set_run_id;

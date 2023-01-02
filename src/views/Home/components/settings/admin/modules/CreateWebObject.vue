@@ -3,24 +3,56 @@
     <v-row>
       <v-col cols="12" sm="6">
         <v-card flat>
-          <v-card-title>Select Path</v-card-title>
+          <v-card-title>Run ID</v-card-title>
+          <v-card-actions>
+        <run-id-selector
+          @run-selected="run_id_selected"
+          @edit-run-id="edit_run_id"
+          @close-edit-run-id="run_id_selected_bool = true"
+          >
+        </run-id-selector>
+          </v-card-actions>
+          </v-card>
+      </v-col>
+      <v-col cols="12" sm="6">
+        <v-card flat>
+          <v-card-title>Path to H5AD File</v-card-title>
+          <v-select
+            :disabled="loading || !run_id_selected_bool"
+            :loading="loading"
+            v-model="bucket_name"
+            :items="available_buckets"
+            clearable
+            @input="generatePaths"
+            label="Bucket"/>
+          <v-row>
           <v-text-field
           label="Path"
           width="70%"
           clearable
-          :disabled="loading"
+          :disabled="(loading || !bucket_name || path_selected)"
           :loading="loading"
           v-model="path_name"
-          @input="pathText"
-          @keyup.enter="searchPath"
+          @input="filterPaths"
           hint="ex: <bucket_name>/folder with <h5ad files>/">
-          <template v-slot:append-outer>
+          <!-- <template v-slot:append-outer>
             <v-icon color="green" @click="searchPath">
               mdi-magnify
-            </v-icon>
-          </template>
+            </v-icon> -->
+          <!-- </template> -->
           </v-text-field>
-          <v-simple-table v-if="(all_files.length > 0 && path_name && path_name.length > 0)" dense>
+            <v-icon
+            v-if="path_selected"
+            color="red"
+            @click="path_selected = false"
+            >
+              mdi-pencil
+            </v-icon>
+          </v-row>
+          <v-simple-table
+          v-if="(path_selected)"
+          dense
+          >
             <template v-slot:default>
               <thead>
                 <tr><th>Status</th><th>File Name</th></tr>
@@ -33,28 +65,15 @@
               </tbody>
             </template>
           </v-simple-table>
-          <v-checkbox :color="(required_files) ? 'green' : 'red'" @click="required_files = !required_files" v-if="(all_files.length > 0 && path_name && path_name.length > 0 && checkbox_flag)" label="Is this run Transcriptome" />
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="6">
-        <v-card flat>
-          <v-card-title>Search Bucket</v-card-title>
-          <v-select
-            :disabled="loading"
-            :loading="loading"
-            v-model="bucket_name"
-            :items="available_buckets"
-            clearable
-            @input="generatePaths"
-            label="Bucket"/>
+          <v-checkbox :color="(required_files) ? 'green' : 'red'" @click="required_files = !required_files" v-if="(all_files.length > 0 && path_name && path_name.length > 0 && checkbox_flag && run_id_selected)" label="Is this run Transcriptome" />
           <v-data-table
-            v-if="(bucket_name && !loading)"
+            v-if="(bucket_name && !loading && !path_selected)"
             dense
             single-select
             :items-per-page="5"
             :headers="bucket_headers"
-            :items="available_paths"
-            @click:row="updatePath">
+            :items="search_consistent_paths"
+            @click:row="select_path">
           </v-data-table>
         </v-card>
       </v-col>
@@ -68,6 +87,7 @@
           Submit
         </v-btn>
         <jobs-table
+        v-if="path_selected"
           :filter_username="true"
           :filter_job_name="true"
           job_name="webfile.create_files"
@@ -96,6 +116,7 @@ export default defineComponent({
     const available_buckets = ref<any[]>([]);
     const bucket_name = ref<string | null>(null);
     const available_paths = ref<any[]>([]);
+    const search_consistent_paths = ref<any>([]);
     const loading = ref<boolean>(false);
     const all_files = ref<any[]>([]);
     const required_files = ref<boolean>(false);
@@ -103,18 +124,29 @@ export default defineComponent({
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
     const progressMessage = ref<string | null>(null);
+    const path_selected = ref<boolean>(false);
+    const run_id_selected_bool = ref<boolean>(false);
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
-    function pathText(ev: any) {
-      if (!ev || ev.length === 0) all_files.value = [];
+    function filterPaths(ev: any) {
+      const temp_paths = available_paths.value.filter((v: any) => v.path.includes(ev));
+      search_consistent_paths.value = temp_paths;
     }
     function updatePath(ev: any) {
-      all_files.value = [];
+      // all_files.value = [];
       required_files.value = false;
       checkbox_flag.value = false;
       path_name.value = ev.path;
+    }
+    function run_id_selected(ev: any) {
+      console.log(ev);
+      run_id_selected_bool.value = true;
+    }
+    function edit_run_id() {
+      run_id_selected_bool.value = false;
+      console.log('edit run id');
     }
     async function fetchBuckets() {
       const list_buckets = await client.value?.getBuckets();
@@ -140,6 +172,7 @@ export default defineComponent({
       const withRepeats = important_objects.map((v: any) => matchPath(v));
       const noRepeats = [...new Set(withRepeats)];
       available_paths.value = noRepeats.map((v: any) => ({ path: v }));
+      search_consistent_paths.value = available_paths.value;
       loading.value = false;
     }
     async function searchPath() {
@@ -163,6 +196,13 @@ export default defineComponent({
         required_files.value = false;
       }
       loading.value = false;
+    }
+    function select_path(ev: any) {
+      all_files.value = [];
+      path_selected.value = true;
+      path_name.value = ev.path;
+      searchPath();
+      console.log(ev);
     }
     async function updateProgress(value: number) {
       // not working
@@ -227,13 +267,19 @@ export default defineComponent({
       taskStatus,
       taskTimeout,
       progressMessage,
+      search_consistent_paths,
+      run_id_selected_bool,
+      path_selected,
       fetchBuckets,
       searchPath,
       updatePath,
       generatePaths,
       createObjects,
-      pathText,
+      filterPaths,
       updateProgress,
+      edit_run_id,
+      run_id_selected,
+      select_path,
     };
   },
 });

@@ -15,6 +15,7 @@
                  @run-selected="run_selected"
                  @edit-run-id="run_id_confirmed = false;"
                  @custom-run-id="custom_run_id"
+                 @close-edit-run-id="run_id_confirmed = true;"
                  ref="run_id_selector"
                 >
                 </run-id-selector>
