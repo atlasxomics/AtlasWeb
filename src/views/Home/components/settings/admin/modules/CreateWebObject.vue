@@ -67,6 +67,12 @@
           @click="createObjects">
           Submit
         </v-btn>
+        <jobs-table
+          :filter_username="true"
+          :filter_job_name="true"
+          job_name="webfile.create_files"
+        >
+        </jobs-table>
       </v-col>
     </v-row>
   </v-container>
@@ -76,10 +82,13 @@
 import { Client } from '@/api';
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
+import JobsTable from '@/views/Home/components/settings/admin/modules/JobsTable.vue';
 import { defineComponent, onMounted, ref, computed, watch } from '@vue/composition-api';
+import RunIdSelector from './RunIdSelector.vue';
 
 export default defineComponent({
   name: 'CreateWebObject',
+  components: { JobsTable, RunIdSelector },
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const path_name = ref<string | null>(null);
