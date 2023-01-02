@@ -93,9 +93,10 @@ export default defineComponent({
     onMounted(async () => {
       await clientReady;
       if (props.query.params) {
-        tab.value = 3;
+        tab.value = 5;
         if (props.query.params.action === 'edit') {
-          (ctx as any).refs.run_editor.auto_populate_from_results_id(props.query.params.results_id);
+          console.log(props.query.params);
+          (ctx as any).refs.run_editor.auto_populate_from_run_id(props.query.params.run_id);
         }
       }
       store.commit.setSubmenu(null);

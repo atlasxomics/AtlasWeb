@@ -1,23 +1,5 @@
 <template>
     <v-container>
-          <v-dialog
-          :value="show_result_selection"
-          width="600px"
-          >
-            <v-card
-            >
-              <v-card-title> Multiple results found for same Run ID.</v-card-title>
-              <v-data-table
-              hide-default-footer
-              single-select
-              dense
-              :items="results_selection_list"
-              :headers="results_selection_headers"
-              @click:row="results_id_selected"
-              >
-              </v-data-table>
-            </v-card>
-          </v-dialog>
         <div
         >
         <v-row>
@@ -260,7 +242,6 @@ export default defineComponent({
     const run_title = ref<string>('');
     const regulation = ref<string>('');
     const public_run = ref<boolean>(false);
-    const show_result_selection = ref<boolean>(false);
     const selected_group = ref<string>('');
     const run_id_confirmed = ref<boolean>(false);
     const public_run_items: any[] = [
@@ -350,26 +331,20 @@ export default defineComponent({
     //     console.log(e);
     //   }
     // }
-    async function auto_populate_from_run_id() {
+    async function auto_populate_from_run_id(user_specified_run_id: string | null) {
       try {
-        const resp: any[] = await client.value?.get_info_from_run_id(run_id.value);
+        let run_id_to_use = run_id.value;
+        if (user_specified_run_id) {
+          run_id_to_use = user_specified_run_id;
+        }
+        const resp: any[] = await client.value?.get_info_from_run_id(run_id_to_use);
         if (resp[0] === 'Not-Found') {
           snackbar.dispatch({ text: 'Run ID Not Present in Database.', options: { color: 'red' } });
           clear_fields();
         } else {
           snackbar.dispatch({ text: 'Run Information Successfully Loaded.', options: { color: 'green' } });
-          if (resp.length > 1) {
-          // handle multiple runs
-            results_selection_list.value = [];
-            resp.forEach((element: any, index: number) => {
-              const cop = { ...element };
-              cop.inx = index;
-              results_selection_list.value.push(cop);
-            });
-            show_result_selection.value = true;
-          } else {
-            assign_fields(resp[0]);
-          }
+          assign_fields(resp[0]);
+          run_id_confirmed.value = true;
         }
       } catch (e) {
         snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
@@ -377,14 +352,13 @@ export default defineComponent({
     }
     function run_selected(ele: any) {
       run_id.value = ele;
-      auto_populate_from_run_id();
+      auto_populate_from_run_id(null);
       run_id_confirmed.value = true;
     }
     function results_id_selected(ele: any) {
       const { inx: index } = ele;
       const data = results_selection_list.value[index];
       assign_fields(data);
-      show_result_selection.value = false;
     }
     async function upload_data() {
       try {
@@ -449,7 +423,6 @@ export default defineComponent({
       tissue_source,
       number_channels,
       available_run_ids,
-      show_result_selection,
       results_selection_headers,
       multiple_run_information,
       tissue_type,

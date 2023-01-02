@@ -107,7 +107,7 @@
                     <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
                     <v-icon
                     v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.results_id)"
+                    @click="edit_result(data.run_id)"
                     style="position: relative; left: 40px; bottom: 10px;"
                     size="30"
                     > mdi-pencil </v-icon>
@@ -132,7 +132,7 @@
                     <v-card-text style="color:white">Placeholder</v-card-text>
                     <v-icon
                     v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.results_id)"
+                    @click="edit_result(data.run_id)"
                     style="position: relative; left: 40px; bottom: 45px;"
                     size="30"
                     > mdi-pencil </v-icon>
@@ -165,7 +165,7 @@
                     </v-list-item-content>
                     <v-icon
                     v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.results_id)"
+                    @click="edit_result(data.run_id)"
                     style="position: relative; left: 40px; bottom: 45px;"
                     size="30"
                     > mdi-pencil </v-icon>
@@ -183,7 +183,7 @@
                     </v-list-item-content>
                     <v-icon
                     v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.results_id)"
+                    @click="edit_result(data.run_id)"
                     style="position: relative; left: 40px; bottom: 45px;"
                     size="30"
                     > mdi-pencil </v-icon>
@@ -280,8 +280,8 @@ export default defineComponent({
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
-    function edit_result(results_id: string) {
-      const query = { component: 'AdminPanel', params: { action: 'edit', results_id } };
+    function edit_result(run_id: string) {
+      const query = { component: 'AdminPanel', params: { action: 'edit', run_id } };
       const newRoute = generateRouteByQuery(currentRoute.value, query);
       router.push(newRoute);
     }
