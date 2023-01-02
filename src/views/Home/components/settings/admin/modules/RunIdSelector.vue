@@ -105,6 +105,11 @@ export default defineComponent({
       run_id_selected.value = true;
       search_input.value = run_id.value;
     }
+    function set_run_id(user_set_run_id: string) {
+      run_id.value = user_set_run_id;
+      search_input.value = user_set_run_id;
+      run_id_selected.value = true;
+    }
     function user_entered_run_id() {
       clear_fields();
       const temp_ele = { run_id: search_input.value };
@@ -145,6 +150,7 @@ export default defineComponent({
       close_edit_run_id,
       user_entered_run_id,
       run_successfully_uploaded,
+      set_run_id,
     };
   },
 });

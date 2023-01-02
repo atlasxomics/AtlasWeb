@@ -322,20 +322,13 @@ export default defineComponent({
       ngs_id.value = '';
       results_id.value = null;
     }
-    // async function auto_populate_from_results_id(id: number) {
-    //   try {
-    //     const resp = await client.value?.get_info_from_results_id(id);
-    //     assign_fields(resp);
-    //     run_id_confirmed.value = true;
-    //   } catch (e) {
-    //     console.log(e);
-    //   }
-    // }
     async function auto_populate_from_run_id(user_specified_run_id: string | null) {
       try {
         let run_id_to_use = run_id.value;
         if (user_specified_run_id) {
           run_id_to_use = user_specified_run_id;
+          const run_id_selector = ctx.refs.run_id_selector as any;
+          run_id_selector.set_run_id(run_id_to_use);
         }
         const resp: any[] = await client.value?.get_info_from_run_id(run_id_to_use);
         if (resp[0] === 'Not-Found') {
