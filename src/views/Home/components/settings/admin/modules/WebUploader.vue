@@ -21,76 +21,43 @@
         <div
         >
         <v-row>
+
             <v-col
             cols="12"
             sm="4">
               <v-card-title>
                     Run Information
                 </v-card-title>
-                <v-row>
-                  <v-text-field
-                  :disabled="run_id_selected"
-                  label="Select Run ID"
-                  v-model="search_input"
-                  @input="search_runs"
-                  @click="run_id_search_clicked = true;"
-                  v-click-outside="outside_search"
-                  >
-                  </v-text-field>
-                    <v-icon
-                    v-if="unique_run_id && search_input && !run_id_selected"
-                    color="green"
-                    @click="user_entered_run_id"
-                    >
-                    mdi-plus
-                    </v-icon>
-                    <v-icon
-                    v-if="run_id_selected"
-                    @click="edit_run_id"
-                    color="red"
-                    >
-                      mdi-pencil
-                    </v-icon>
-                    <v-icon
-                    v-if="editing_run_id_selection"
-                    color="red"
-                    @click="close_edit_run_id"
-                    >
-                    mdi-close
-                    </v-icon>
-                </v-row>
-                  <v-data-table
-                  v-if="!run_id_selected"
-                  dense
-                  single-select
-                  :items-per-page="4"
-                  :headers="headers"
-                  :items="available_run_ids"
-                  @click:row="run_selected"
-                  >
-                  </v-data-table>
+                <run-id-selector
+                 @clear-fields="clear_fields"
+                 @run-selected="run_selected"
+                 @edit-run-id="run_id_confirmed = false;"
+                 @custom-run-id="custom_run_id"
+                 ref="run_id_selector"
+                >
+                </run-id-selector>
                 <v-text-field
                 v-model="run_title"
                 label="Run Title"
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 >
                 </v-text-field>
                 <v-text-field
                 v-model="run_description"
                 label="Run Description"
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 >
                 </v-text-field>
                 <v-text-field
                 v-model="sample_id"
                 label = "Sample ID"
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 >
                 </v-text-field>
                 <v-text-field
                 label="Date: MM/DD/YYYY"
                 v-model="date_human_readable"
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 >
                 </v-text-field>
             </v-col>
@@ -107,12 +74,12 @@
             v-model="assay"
             label="Assay"
             :items="db_connection.assay_list"
-            :disabled="!run_id_selected"
+            :disabled="!run_id_confirmed"
             >
             </v-select>
             <selector
             v-show="assay == 'CUT&Tag'"
-            :disabled="!run_id_selected"
+            :disabled="!run_id_confirmed"
             v-model="antibody"
             display_label="Epitope Name"
             :display_options="db_connection.epitope_list"
@@ -120,7 +87,7 @@
             >
             </selector>
             <selector
-              :disabled="!run_id_selected"
+              :disabled="!run_id_confirmed"
               v-model="species"
               display_label="Species"
               :display_options="db_connection.species_list"
@@ -128,7 +95,7 @@
             >
             </selector>
             <selector
-            :disabled="!run_id_selected"
+            :disabled="!run_id_confirmed"
             v-model="organ"
             :display_options="db_connection.organ_list"
             display_label="Organ"
@@ -136,7 +103,7 @@
             >
             </selector>
             <selector
-            :disabled="!run_id_selected"
+            :disabled="!run_id_confirmed"
             v-model="tissue_type"
             :display_options="db_connection.tissue_type_list"
             display_label="Tissue Type"
@@ -144,7 +111,7 @@
             >
             </selector>
             <selector
-            :disabled="!run_id_selected"
+            :disabled="!run_id_confirmed"
             v-model="tissue_source"
             :display_options="db_connection.tissue_source_list"
             display_label="Tissue Source"
@@ -152,20 +119,20 @@
             >
             </selector>
             <v-text-field
-              :disabled="!run_id_selected"
+              :disabled="!run_id_confirmed"
               label="Tissue Condition"
               v-model="tissue_condition"
             >
             </v-text-field>
             <v-select
-            :disabled="!run_id_selected"
+            :disabled="!run_id_confirmed"
             label="Channel Width µm"
             v-model="channel_width"
             :items="[10, 20, 25, 50]"
             >
             </v-select>
             <v-select
-            :disabled="!run_id_selected"
+            :disabled="!run_id_confirmed"
             label="Number of Channels"
             v-model="number_channels"
             :items="[50, 100]"
@@ -180,33 +147,33 @@
                     Web Object
                 </v-card-title>
                 <v-text-field
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 label="NGS ID"
                 v-model="ngs_id"
                 >
                 </v-text-field>
                 <v-select
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 :items = public_run_items
                 label="Public"
                 v-model="public_run"
                 >
                 </v-select>
                 <v-select
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 :items="db_connection.group_list"
                 label="Group"
                 v-model="selected_group"
                 >
                 </v-select>
                 <v-text-field
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 v-model="web_obj_path"
                 label="Path"
                 >
                 </v-text-field>
                 <v-select
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 label="PMID"
                 :items="db_connection.pmid_list"
                 v-model="pmid"
@@ -218,7 +185,7 @@
             <v-col
             >
                 <v-btn
-                :disabled="!run_id_selected"
+                :disabled="!run_id_confirmed"
                 style="position: relative; left: 50%; bottom: 5%;"
                 @click="upload_data"
                 >
@@ -237,10 +204,11 @@ import store from '@/store';
 import { defineComponent, onMounted, ref, computed, watch } from '@vue/composition-api';
 import Selector from './Selector.vue';
 import { DropDownFieldManager } from './DropDownFieldManager';
+import RunIdSelector from './RunIdSelector.vue';
 
 export default defineComponent({
   name: 'WebUploader',
-  components: { Selector },
+  components: { Selector, RunIdSelector },
   setup(props, ctx) {
     const date_human_readable = ref<string>('');
     function date_human_to_epoch(date_human: string) {
@@ -252,7 +220,6 @@ export default defineComponent({
       const epoch = Date.UTC(year_int, month_int, day_int);
       return epoch;
     }
-    const headers = [{ text: 'Run ID', value: 'run_id', sortable: false }];
     const results_selection_headers: any[] = [{ text: 'NGS ID', value: 'ngs_id' }, { text: 'Results ID', value: 'results_id' }];
     const date_epoch = computed(() => date_human_to_epoch(date_human_readable.value));
     const month_dict: Record<string, any> = {
@@ -283,32 +250,19 @@ export default defineComponent({
     const tissue_source = ref<string>('');
     const channel_width = ref<string>('');
     const number_channels = ref<string>('');
-    const search_input = ref<string>('');
     const available_run_ids = ref<Array<Record<string, any>>>([]);
     const results_selection_list = ref<any[]>([]);
     const run_id = ref<string>('');
     const ngs_id = ref<string>('');
     const results_id = ref<number|null>(null);
-    const run_id_search_clicked = ref<boolean>(false);
     const multiple_run_information = ref<Record<string, any>>({});
-    const run_id_selected = ref<boolean>(false);
     const run_description = ref<string>('');
     const run_title = ref<string>('');
     const regulation = ref<string>('');
     const public_run = ref<boolean>(false);
     const show_result_selection = ref<boolean>(false);
     const selected_group = ref<string>('');
-    const editing_run_id_selection = ref<boolean>(false);
-    const run_ids = ref<Record<string, any>[]>([]);
-    const unique_run_id = computed(() => {
-      let res = true;
-      available_run_ids.value.forEach((element: any) => {
-        if (element.run_id === search_input.value) {
-          res = false;
-        }
-      });
-      return res;
-    });
+    const run_id_confirmed = ref<boolean>(false);
     const public_run_items: any[] = [
       {
         text: 'True',
@@ -319,25 +273,13 @@ export default defineComponent({
         value: false,
       },
     ];
-    function search_runs() {
-      const regexString = search_input.value;
-      const matches: Array<Record<string, any>> = [];
-      const regex = new RegExp(`.*${regexString}.*`);
-      run_ids.value.forEach((element: any) => {
-        if (regex.test(element.run_id)) {
-          matches.push({ run_id: element.run_id });
-        }
-      });
-      available_run_ids.value = matches;
-    }
-    function edit_run_id() {
-      run_id_selected.value = false;
-      editing_run_id_selection.value = true;
-      search_runs();
+    function custom_run_id(new_run_id: string) {
+      run_id_confirmed.value = true;
+      run_id.value = new_run_id;
     }
     function assign_fields(db_obj: any) {
       run_id.value = db_obj.run_id;
-      search_input.value = run_id.value;
+
       assay.value = db_obj.assay;
       species.value = db_obj.species;
       organ.value = db_obj.organ;
@@ -399,15 +341,15 @@ export default defineComponent({
       ngs_id.value = '';
       results_id.value = null;
     }
-    async function auto_populate_from_results_id(id: number) {
-      try {
-        const resp = await client.value?.get_info_from_results_id(id);
-        assign_fields(resp);
-        run_id_selected.value = true;
-      } catch (e) {
-        console.log(e);
-      }
-    }
+    // async function auto_populate_from_results_id(id: number) {
+    //   try {
+    //     const resp = await client.value?.get_info_from_results_id(id);
+    //     assign_fields(resp);
+    //     run_id_confirmed.value = true;
+    //   } catch (e) {
+    //     console.log(e);
+    //   }
+    // }
     async function auto_populate_from_run_id() {
       try {
         const resp: any[] = await client.value?.get_info_from_run_id(run_id.value);
@@ -433,35 +375,16 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
       }
     }
-    function outside_search() {
-      run_id_search_clicked.value = false;
-    }
-    function user_entered_run_id() {
-      clear_fields();
-      const temp_ele = { run_id: search_input.value };
-      editing_run_id_selection.value = false;
-      run_ids.value.push(temp_ele);
-      available_run_ids.value.push(temp_ele);
-      run_id.value = search_input.value;
-      run_id_selected.value = true;
+    function run_selected(ele: any) {
+      run_id.value = ele;
+      auto_populate_from_run_id();
+      run_id_confirmed.value = true;
     }
     function results_id_selected(ele: any) {
       const { inx: index } = ele;
       const data = results_selection_list.value[index];
       assign_fields(data);
       show_result_selection.value = false;
-    }
-    function run_selected(ele: any) {
-      search_input.value = ele.run_id;
-      run_id_selected.value = true;
-      run_id.value = ele.run_id;
-      editing_run_id_selection.value = false;
-      auto_populate_from_run_id();
-    }
-    function close_edit_run_id() {
-      editing_run_id_selection.value = false;
-      run_id_selected.value = true;
-      search_input.value = run_id.value;
     }
     async function upload_data() {
       try {
@@ -492,23 +415,17 @@ export default defineComponent({
         if (resp === 'Success') {
           snackbar.dispatch({ text: 'Successful Upload!', options: { color: 'green' } });
           clear_fields();
-          search_input.value = '';
-          run_id_selected.value = false;
-          available_run_ids.value = run_ids.value;
+          run_id_confirmed.value = false;
+          const comp = ctx.refs.run_id_selector as any;
+          console.log(comp);
+          comp.run_successfully_uploaded();
+          // set available run_ids to be all run ids
         }
       } catch (e) {
         snackbar.dispatch({ text: 'Error! Unsuccessful Upload.', options: { color: 'red' } });
         console.log(e);
       }
     }
-    onMounted(() => {
-      console.log(db_connection.group_list);
-      const run_ids_promise = client.value?.get_run_ids();
-      run_ids_promise!.then((value: any[]) => {
-        run_ids.value = value;
-        available_run_ids.value = value;
-      });
-    });
     return {
       assay,
       web_obj_path,
@@ -531,32 +448,22 @@ export default defineComponent({
       date_epoch,
       tissue_source,
       number_channels,
-      run_ids,
-      run_id_search_clicked,
       available_run_ids,
-      search_input,
-      headers,
-      unique_run_id,
-      run_id_selected,
-      editing_run_id_selection,
       show_result_selection,
       results_selection_headers,
       multiple_run_information,
       tissue_type,
       db_connection,
       results_selection_list,
-      auto_populate_from_results_id,
+      run_id_confirmed,
       results_id_selected,
-      close_edit_run_id,
-      edit_run_id,
-      user_entered_run_id,
-      search_runs,
-      outside_search,
       date_human_to_epoch,
       assign_fields,
       auto_populate_from_run_id,
       upload_data,
+      clear_fields,
       run_selected,
+      custom_run_id,
     };
   },
 });
