@@ -29,7 +29,7 @@
           <v-text-field
           label="Path"
           width="70%"
-          :disabled="(loading || !bucket_name || path_selected)"
+          :disabled="(loading || !bucket_name || path_selected || !run_id_selected_bool)"
           :loading="loading"
           v-model="path_name"
           @input="filterPaths"
@@ -42,6 +42,7 @@
           </v-text-field>
             <v-icon
             v-if="path_selected"
+            :disabled="!run_id_selected_bool"
             color="red"
             @click="path_selected = false; filterPaths(null);"
             >
@@ -49,7 +50,7 @@
             </v-icon>
           </v-row>
           <v-simple-table
-          v-if="(path_selected)"
+          v-if="(path_selected) && (run_id_selected_bool)"
           dense
           >
             <template v-slot:default>
@@ -64,7 +65,7 @@
               </tbody>
             </template>
           </v-simple-table>
-          <v-checkbox :color="'green'" @click="toggle_transcriptome" value="is_transcriptome" v-if="(all_files.length > 0 && path_selected)" label="Is this run Transcriptome" />
+          <v-checkbox :color="'green'" @click="toggle_transcriptome" value="is_transcriptome" v-if="(all_files.length > 0 && path_selected)" :disabled="!run_id_selected_bool" label="Is this run Transcriptome" />
           <v-data-table
             v-if="(bucket_name && !loading && !path_selected)"
             dense
@@ -86,10 +87,12 @@
           Submit
         </v-btn>
         <jobs-table
-        v-if="path_selected"
+        v-if="path_selected && run_id_selected_bool"
           :filter_username="true"
           :filter_job_name="true"
+          :filter_run_id="true"
           job_name="webfile.create_files"
+          :run_id="run_id"
         >
         </jobs-table>
       </v-col>
@@ -124,6 +127,7 @@ export default defineComponent({
     const taskTimeout = ref<number | null>(null);
     const progressMessage = ref<string | null>(null);
     const path_selected = ref<boolean>(false);
+    const run_id = ref<string>('');
     const run_id_selected_bool = ref<boolean>(false);
     const is_transcriptome = ref<boolean>(false);
     const all_files_present = ref<boolean>(false);
@@ -140,14 +144,6 @@ export default defineComponent({
       // all_files.value = [];
       checkbox_flag.value = false;
       path_name.value = ev.path;
-    }
-    function run_id_selected(ev: any) {
-      console.log(ev);
-      run_id_selected_bool.value = true;
-    }
-    function edit_run_id() {
-      run_id_selected_bool.value = false;
-      console.log('edit run id');
     }
     async function fetchBuckets() {
       const list_buckets = await client.value?.getBuckets();
@@ -281,6 +277,15 @@ export default defineComponent({
       search_consistent_paths.value = [];
       checkbox_flag.value = false;
       genes_h5ad_present.value = false;
+      bucket_name.value = null;
+    }
+    function run_id_selected(ev: any) {
+      run_id.value = ev;
+      run_id_selected_bool.value = true;
+      reset_bucket_path();
+    }
+    function edit_run_id() {
+      run_id_selected_bool.value = false;
     }
     watch(bucket_name, () => {
       if (bucket_name.value === null) {
@@ -319,6 +324,7 @@ export default defineComponent({
       toggle_transcriptome,
       all_files_present,
       genes_h5ad_present,
+      run_id,
     };
   },
 });

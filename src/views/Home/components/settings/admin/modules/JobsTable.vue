@@ -32,6 +32,14 @@ export default defineComponent({
       type: String,
       required: false,
     },
+    filter_run_id: {
+      type: Boolean,
+      required: false,
+    },
+    run_id: {
+      type: String,
+      required: false,
+    },
   },
   setup(props: any, ctx: any) {
     const headers = [
@@ -54,6 +62,7 @@ export default defineComponent({
         filter_username: props.filter_username,
         filter_group: props.filter_group,
         job_name: props.filter_job_name ? props.job_name : null,
+        run_id: props.filter_run_id ? props.run_id : null,
       };
       client.value.getJobs(params).then((res: any) => {
         jobs.value = res;
