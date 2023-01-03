@@ -59,13 +59,13 @@
               </thead>
               <tbody>
                 <tr v-for="item in all_files" :key="item.name">
-                  <td>{{`${(item.value) ? 'Present':'Not Present'}`}}</td>
-                  <td><v-chip small :color="item.color" label>{{(item.name)}}</v-chip></td>
+                  <td v-if="item.visible">{{`${(item.value) ? 'Present':'Not Present'}`}}</td>
+                  <td v-if="item.visible"><v-chip small :color="item.color" label>{{(item.name)}}</v-chip></td>
                 </tr>
               </tbody>
             </template>
           </v-simple-table>
-          <v-checkbox :color="(required_files) ? 'green' : 'red'" @click="required_files = !required_files" v-if="(all_files.length > 0 && path_name && path_name.length > 0 && checkbox_flag && run_id_selected)" label="Is this run Transcriptome" />
+          <v-checkbox :color="'green'" @click="toggle_transcriptome" value="is_transcriptome" v-if="(all_files.length > 0 && path_selected)" label="Is this run Transcriptome" />
           <v-data-table
             v-if="(bucket_name && !loading && !path_selected)"
             dense
@@ -81,7 +81,7 @@
     <v-row>
       <v-col>
         <v-btn
-          :disabled="!required_files"
+          :disabled="((!is_transcriptome || !genes_h5ad_present) && !all_files_present || !path_selected || loading || !bucket_name || !run_id_selected_bool)"
           style="position: relative; left: 50%; bottom: 5%;"
           @click="createObjects">
           Submit
@@ -115,17 +115,20 @@ export default defineComponent({
     const bucket_headers = [{ text: 'Path Names', value: 'path', sortable: false }];
     const available_buckets = ref<any[]>([]);
     const bucket_name = ref<string | null>(null);
+    const bucket_selected = ref<boolean>(false);
     const available_paths = ref<any[]>([]);
     const search_consistent_paths = ref<any>([]);
     const loading = ref<boolean>(false);
     const all_files = ref<any[]>([]);
-    const required_files = ref<boolean>(false);
     const checkbox_flag = ref<boolean>(false);
     const taskStatus = ref<any>();
     const taskTimeout = ref<number | null>(null);
     const progressMessage = ref<string | null>(null);
     const path_selected = ref<boolean>(false);
     const run_id_selected_bool = ref<boolean>(false);
+    const is_transcriptome = ref<boolean>(false);
+    const all_files_present = ref<boolean>(false);
+    const genes_h5ad_present = ref<boolean>(false);
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
@@ -136,7 +139,6 @@ export default defineComponent({
     }
     function updatePath(ev: any) {
       // all_files.value = [];
-      required_files.value = false;
       checkbox_flag.value = false;
       path_name.value = ev.path;
     }
@@ -155,7 +157,9 @@ export default defineComponent({
     }
     async function generatePaths() {
       if (!bucket_name.value || bucket_name.value.length === 0) return;
-      required_files.value = false;
+      path_selected.value = false;
+      genes_h5ad_present.value = false;
+      all_files_present.value = false;
       checkbox_flag.value = false;
       loading.value = true;
       const matchPath = (path: string) => {
@@ -174,6 +178,24 @@ export default defineComponent({
       available_paths.value = noRepeats.map((v: any) => ({ path: v }));
       search_consistent_paths.value = available_paths.value;
       loading.value = false;
+      path_name.value = null;
+    }
+    function toggle_transcriptome() {
+      is_transcriptome.value = !is_transcriptome.value;
+      if (is_transcriptome.value === true) {
+        all_files.value.forEach((file: any, index: number) => {
+          if (file.name !== 'genes.h5ad') {
+            all_files.value[index].visible = false;
+          }
+          console.log(file);
+          console.log(index);
+        });
+      } else {
+        console.log('not transcriptome');
+        all_files.value.forEach((file: any, index: number) => {
+          all_files.value[index].visible = true;
+        });
+      }
     }
     async function searchPath() {
       if (path_name.value!.length === null || path_name.value!.length === 0) return;
@@ -184,16 +206,22 @@ export default defineComponent({
       const one_string = important_objects.join();
       const allFileHold: any[] = [];
       fileNames.forEach((v: string) => {
-        if (one_string.includes(v)) allFileHold.push({ name: v, color: 'green', value: true });
-        else allFileHold.push({ name: v, color: 'red', value: false });
+        if (one_string.includes(v)) allFileHold.push({ name: v, color: 'green', value: true, visible: true });
+        else allFileHold.push({ name: v, color: 'red', value: false, visible: true });
       });
       all_files.value = allFileHold;
-      if (one_string.includes('genes.h5ad') && one_string.includes('motifs.h5ad')) {
+      if (one_string.includes('genes.h5ad') && one_string.includes('motifs.h5ad') && one_string.includes('motifs.csv')) {
         checkbox_flag.value = false;
-        required_files.value = true;
+        all_files_present.value = true;
+        genes_h5ad_present.value = true;
+      } else if (one_string.includes('genes.h5ad')) {
+        checkbox_flag.value = true;
+        all_files_present.value = false;
+        genes_h5ad_present.value = true;
       } else {
         checkbox_flag.value = true;
-        required_files.value = false;
+        all_files_present.value = false;
+        genes_h5ad_present.value = false;
       }
       loading.value = false;
     }
@@ -245,12 +273,6 @@ export default defineComponent({
         console.log(error);
       }
     }
-    watch(all_files, (v: any) => {
-      if (v.length === 0) {
-        required_files.value = false;
-        checkbox_flag.value = false;
-      }
-    });
     onMounted(() => {
       fetchBuckets();
     });
@@ -262,7 +284,6 @@ export default defineComponent({
       available_paths,
       loading,
       all_files,
-      required_files,
       checkbox_flag,
       taskStatus,
       taskTimeout,
@@ -279,7 +300,11 @@ export default defineComponent({
       updateProgress,
       edit_run_id,
       run_id_selected,
+      is_transcriptome,
       select_path,
+      toggle_transcriptome,
+      all_files_present,
+      genes_h5ad_present,
     };
   },
 });
