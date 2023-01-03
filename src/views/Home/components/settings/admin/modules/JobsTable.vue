@@ -3,6 +3,8 @@
     :headers="headers"
     :items="jobs"
     :search="search"
+    sort-by="job_start_time"
+    sort-desc
   >
   </v-data-table>
 </template>
@@ -75,6 +77,7 @@ export default defineComponent({
       headers,
       search,
       jobs,
+      get_jobs,
     };
   },
 });

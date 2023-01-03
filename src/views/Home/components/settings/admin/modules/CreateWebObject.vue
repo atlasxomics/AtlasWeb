@@ -34,17 +34,12 @@
           v-model="path_name"
           @input="filterPaths"
           hint="ex: <bucket_name>/folder with <h5ad files>/">
-          <!-- <template v-slot:append-outer>
-            <v-icon color="green" @click="searchPath">
-              mdi-magnify
-            </v-icon> -->
-          <!-- </template> -->
           </v-text-field>
             <v-icon
             v-if="path_selected"
             :disabled="!run_id_selected_bool"
             color="red"
-            @click="path_selected = false; filterPaths(null);"
+            @click="path_selected = false;filterPaths(); creation_job_sent = false;"
             >
               mdi-pencil
             </v-icon>
@@ -81,13 +76,24 @@
     <v-row>
       <v-col>
         <v-btn
-          :disabled="((!is_transcriptome || !genes_h5ad_present) && !all_files_present || !path_selected || loading || !bucket_name || !run_id_selected_bool)"
-          style="position: relative; left: 45%;"
+          :disabled="((!is_transcriptome || !genes_h5ad_present) && !all_files_present || !path_selected || loading || !bucket_name || !run_id_selected_bool || creation_job_sent)"
+          style="position: relative; left: 45%; bottom: 2%;"
           @click="createObjects">
           Submit
         </v-btn>
+        <v-card flat
+        class="mx-auto"
+        v-if="run_id_selected_bool"
+        >
+        <v-card-title
+        style="position: relative;"
+        class="justify-center"
+        >Run Creation History for {{run_id}}</v-card-title>
+        <v-card-actions
+        class="justify-center"
+        >
         <jobs-table
-        v-if="path_selected && run_id_selected_bool"
+          ref="job_table"
           :filter_username="true"
           :filter_job_name="true"
           :filter_run_id="true"
@@ -95,6 +101,8 @@
           :run_id="run_id"
         >
         </jobs-table>
+        </v-card-actions>
+      </v-card>
       </v-col>
     </v-row>
   </v-container>
@@ -118,6 +126,7 @@ export default defineComponent({
     const available_buckets = ref<any[]>([]);
     const bucket_name = ref<string | null>(null);
     const bucket_selected = ref<boolean>(false);
+    const creation_job_sent = ref<boolean>(false);
     const available_paths = ref<any[]>([]);
     const search_consistent_paths = ref<any>([]);
     const loading = ref<boolean>(false);
@@ -136,7 +145,7 @@ export default defineComponent({
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
-    function filterPaths(ev: any) {
+    function filterPaths() {
       const temp_paths = available_paths.value.filter((v: any) => v.path.includes(path_name.value));
       search_consistent_paths.value = temp_paths;
     }
@@ -153,6 +162,7 @@ export default defineComponent({
     async function generatePaths() {
       if (!bucket_name.value || bucket_name.value.length === 0) return;
       path_selected.value = false;
+      creation_job_sent.value = false;
       genes_h5ad_present.value = false;
       all_files_present.value = false;
       checkbox_flag.value = false;
@@ -176,14 +186,13 @@ export default defineComponent({
       path_name.value = '';
     }
     function toggle_transcriptome() {
+      creation_job_sent.value = false;
       is_transcriptome.value = !is_transcriptome.value;
       if (is_transcriptome.value === true) {
         all_files.value.forEach((file: any, index: number) => {
           if (file.name !== 'genes.h5ad') {
             all_files.value[index].visible = false;
           }
-          console.log(file);
-          console.log(index);
         });
       } else {
         console.log('not transcriptome');
@@ -230,19 +239,26 @@ export default defineComponent({
     async function updateProgress(value: number) {
       // not working
     }
+    function update_jobs_table() {
+      const jobs_table = ctx.refs.job_table as any;
+      console.log(jobs_table);
+      jobs_table.get_jobs();
+    }
     async function createObjects() {
       if (!client.value) return;
       try {
         const task = 'webfile.create_files';
-        const queue = 'joshua_webfile';
+        const queue = 'jonah_webfile';
         const params = {
           aws_path: `${path_name.value}/h5/obj`,
           rna_flag: checkbox_flag.value,
         };
         const args: any[] = [params];
-        const kwargs = {};
+        const kwargs = { run_id: run_id.value };
         // const kwargs: any = { run_id: run_id.value };
         const taskObject = await client.value.postTask(task, args, kwargs, queue);
+        update_jobs_table();
+        creation_job_sent.value = true;
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -258,9 +274,11 @@ export default defineComponent({
         }
         if (taskStatus.value.status !== 'SUCCESS') {
           snackbar.dispatch({ text: 'Worker failed in Creating Object', options: { right: true, color: 'error' } });
+          creation_job_sent.value = false;
           loading.value = false;
         } else {
           snackbar.dispatch({ text: 'The Web Objects are created', options: { right: true, color: 'success' } });
+          update_jobs_table();
           progressMessage.value = taskStatus.value.status;
           const resp = taskStatus.value.result;
         }
@@ -280,6 +298,23 @@ export default defineComponent({
       bucket_name.value = null;
     }
     function run_id_selected(ev: any) {
+      creation_job_sent.value = false;
+      const run_data = client.value?.get_info_from_run_id(ev);
+      run_data!.then(async (data) => {
+        console.log(data);
+        if (data[0].results_folder_path !== null) {
+          const path = data[0].results_folder_path;
+          const inx = path.indexOf('S3://') + 5;
+          const non_pre = path.substring(inx);
+          const inx2 = non_pre.indexOf('/');
+          const bucket = non_pre.substring(0, inx2);
+          const sub_path_name = non_pre.substring(inx2 + 1, non_pre.length - 1);
+          bucket_name.value = bucket;
+          await generatePaths();
+          path_name.value = sub_path_name;
+          select_path({ path: path_name.value });
+        }
+      });
       run_id.value = ev;
       run_id_selected_bool.value = true;
       reset_bucket_path();
@@ -325,6 +360,7 @@ export default defineComponent({
       all_files_present,
       genes_h5ad_present,
       run_id,
+      creation_job_sent,
     };
   },
 });
