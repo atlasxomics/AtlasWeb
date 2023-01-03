@@ -34,7 +34,7 @@
                 @click="(geneMotif === 'gene') ? (geneMotif = 'motif') :  (geneMotif = 'gene')">{{geneMotif}}
               </v-btn>
             </template>
-            <span>Gene/Motif</span>
+            <span>Gene&lt;-&gt;Motif</span>
           </v-tooltip>
           <v-tooltip :disabled="backgroundFlag" bottom>
               <template v-slot:activator="{ on, attrs }">
@@ -48,7 +48,7 @@
                 <v-icon>mdi-palette</v-icon>
                 </v-btn>
               </template>
-              <span>Background Color</span>
+              <span>Background/Heatmap</span>
           </v-tooltip>
           <div id="geneac">
           </div>
@@ -79,7 +79,7 @@
                 </template>
                 <template v-else>
                   <tr @click="clusterColorFlag = true ; backgroundFlag= false" :style="{ 'pointer-events': isClusterView ? 'auto' : 'none' }">
-                    <td>customize heatmap</td>
+                    <td>Heatmap</td>
                   </tr>
                 </template>
               </template>
@@ -343,7 +343,7 @@
             :scrollable="true"
             @click:outside="cellTypeFlag = !cellTypeFlag">
               <v-card style="width:600px; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);z-index: 999" :loading="loading">
-                <v-card-title>Cell Type Configuration</v-card-title>
+                <v-card-title>Cell Type Mapping</v-card-title>
                 <v-card-text>
                   <v-divider/>
                   <div style="width:100%; height:20px"></div>
@@ -363,7 +363,7 @@
                               class="ma-0 pa-0"
                               clearable
                               @blur="checkFieldCell(cluster, $event)"
-                              label="Cell Type"/>
+                              label="Cell Typing"/>
                             </td>
                           </tr>
                         </tbody>
@@ -462,7 +462,7 @@
             <v-icon>mdi-eyedropper-variant</v-icon>
             </v-btn>
             </template>
-            <span>Cell Type</span>
+            <span>Cell Typing</span>
             </v-tooltip>
             <v-tooltip right :disabled="scaleFlag">
             <template v-slot:activator="{ on, attrs }">
@@ -546,7 +546,7 @@
                 <v-icon>mdi-chart-line</v-icon>
               </v-btn>
             </template>
-            <span>Peak Viewer</span>
+            <span>Peak/Motif Viewer</span>
             </v-tooltip>
             <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -1542,7 +1542,7 @@ export default defineComponent({
     const gene_motif_button = {
       text: geneMotif.value,
       icon: null,
-      tooltip: 'Gene/Motif',
+      tooltip: 'Gene<->Motif',
       disabled: loading.value,
       ref: 'geneMotifButton',
       enabled: true,
@@ -1551,9 +1551,9 @@ export default defineComponent({
       },
     };
     const bg_color_button = {
-      text: 'Background Color',
+      text: 'Background/Heatmap',
       icon: 'mdi-palette',
-      tooltip: 'Background Color',
+      tooltip: 'Background/Heatmap',
       enabled: true,
       click: () => {
         backgroundFlag.value = !backgroundFlag.value;
