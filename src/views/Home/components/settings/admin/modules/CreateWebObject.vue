@@ -29,7 +29,6 @@
           <v-text-field
           label="Path"
           width="70%"
-          clearable
           :disabled="(loading || !bucket_name || path_selected)"
           :loading="loading"
           v-model="path_name"
@@ -44,7 +43,7 @@
             <v-icon
             v-if="path_selected"
             color="red"
-            @click="path_selected = false"
+            @click="path_selected = false; filterPaths(null);"
             >
               mdi-pencil
             </v-icon>
@@ -82,7 +81,7 @@
       <v-col>
         <v-btn
           :disabled="((!is_transcriptome || !genes_h5ad_present) && !all_files_present || !path_selected || loading || !bucket_name || !run_id_selected_bool)"
-          style="position: relative; left: 50%; bottom: 5%;"
+          style="position: relative; left: 45%;"
           @click="createObjects">
           Submit
         </v-btn>
@@ -134,7 +133,7 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
     function filterPaths(ev: any) {
-      const temp_paths = available_paths.value.filter((v: any) => v.path.includes(ev));
+      const temp_paths = available_paths.value.filter((v: any) => v.path.includes(path_name.value));
       search_consistent_paths.value = temp_paths;
     }
     function updatePath(ev: any) {
@@ -178,7 +177,7 @@ export default defineComponent({
       available_paths.value = noRepeats.map((v: any) => ({ path: v }));
       search_consistent_paths.value = available_paths.value;
       loading.value = false;
-      path_name.value = null;
+      path_name.value = '';
     }
     function toggle_transcriptome() {
       is_transcriptome.value = !is_transcriptome.value;
@@ -229,8 +228,8 @@ export default defineComponent({
       all_files.value = [];
       path_selected.value = true;
       path_name.value = ev.path;
+      is_transcriptome.value = false;
       searchPath();
-      console.log(ev);
     }
     async function updateProgress(value: number) {
       // not working
@@ -273,6 +272,21 @@ export default defineComponent({
         console.log(error);
       }
     }
+    function reset_bucket_path() {
+      all_files_present.value = false;
+      all_files.value = [];
+      path_name.value = '';
+      path_selected.value = false;
+      available_paths.value = [];
+      search_consistent_paths.value = [];
+      checkbox_flag.value = false;
+      genes_h5ad_present.value = false;
+    }
+    watch(bucket_name, () => {
+      if (bucket_name.value === null) {
+        reset_bucket_path();
+      }
+    });
     onMounted(() => {
       fetchBuckets();
     });

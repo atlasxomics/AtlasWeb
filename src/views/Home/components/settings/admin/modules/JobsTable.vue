@@ -56,7 +56,6 @@ export default defineComponent({
         job_name: props.filter_job_name ? props.job_name : null,
       };
       client.value.getJobs(params).then((res: any) => {
-        console.log(res);
         jobs.value = res;
       });
     }
