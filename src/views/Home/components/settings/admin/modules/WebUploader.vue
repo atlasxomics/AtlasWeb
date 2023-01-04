@@ -11,6 +11,7 @@
                     Run Information
                 </v-card-title>
                 <run-id-selector
+                 :new_available="false"
                  @clear-fields="clear_fields"
                  @run-selected="run_selected"
                  @edit-run-id="run_id_confirmed = false;"
@@ -149,12 +150,6 @@
                 v-model="selected_group"
                 >
                 </v-select>
-                <v-text-field
-                :disabled="!run_id_confirmed"
-                v-model="web_obj_path"
-                label="Path"
-                >
-                </v-text-field>
                 <v-select
                 :disabled="!run_id_confirmed"
                 label="PMID"
@@ -162,6 +157,62 @@
                 v-model="pmid"
                 >
                 </v-select>
+                <v-text-field
+                v-if="web_obj_created"
+                :disabled="!run_id_confirmed"
+                v-model="web_obj_path"
+                label="Path"
+                readonly
+                >
+                </v-text-field>
+                <v-card
+                v-if="!web_obj_path && run_id_confirmed && data_loaded"
+                class="ma-2 warning-card">
+                  <v-card-title class="warning-card__title">
+                    <v-icon class="warning-card__icon" color="warning">mdi-alert-circle</v-icon>
+                    <span class="warning-card__text">Web Object Not Created</span>
+                  </v-card-title>
+                  <v-card-text class="warning-card__message">
+                    <p>
+                      Navigate to the "Create a Run" tab to create a web object for this run.
+                    </p>
+                    <p>
+                      Web Objects are required to view data in AtlasXplore.
+                    </p>
+                  </v-card-text>
+                </v-card>
+                <v-card
+                v-if="web_obj_created && run_id_confirmed && data_loaded"
+                class="ma-2 success-card">
+                  <v-card-title class="success-card__title">
+                    <v-icon class="success-card__icon" color="success">mdi-check-circle</v-icon>
+                    <span class="success-card__text">Web Object Uploaded.</span>
+                  </v-card-title>
+                  <v-card-text class="success-card__message">
+                    <p>
+                    The run is successfully uploaded using the path above.
+                    </p>
+                    <p>
+                    To change the web object used for this run, navigate to the "Create a Run" tab.
+                    </p>
+                  </v-card-text>
+                </v-card>
+                <v-card
+                v-if="!web_obj_created && web_obj_path && run_id_confirmed && data_loaded"
+                class="ma-2 path-no-created-card">
+                  <v-card-title class="path-no-created-card__title">
+                    <v-icon class="path-no-created-card__icon" color="#FFC300">mdi-minus-circle</v-icon>
+                    <span class="path-no-created-card__text">Web Object Available.</span>
+                  </v-card-title>
+                  <v-card-text class="path-no-created-card__message">
+                    <p>
+                    The run has been generated but not yet uploaded.
+                    </p>
+                    <p>
+                    Fill out the form and click submit to upload the run.
+                    </p>
+                  </v-card-text>
+                </v-card>
             </v-col>
         </v-row>
         <v-row>
@@ -221,6 +272,7 @@ export default defineComponent({
     };
     const client = computed(() => store.state.client);
     const db_connection = new DropDownFieldManager();
+    const data_loaded = ref<boolean>(false);
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
     const organ = ref<string>('');
@@ -245,6 +297,7 @@ export default defineComponent({
     const public_run = ref<boolean>(false);
     const selected_group = ref<string>('');
     const run_id_confirmed = ref<boolean>(false);
+    const web_obj_created = ref<boolean>(true);
     const public_run_items: any[] = [
       {
         text: 'True',
@@ -258,10 +311,10 @@ export default defineComponent({
     function custom_run_id(new_run_id: string) {
       run_id_confirmed.value = true;
       run_id.value = new_run_id;
+      web_obj_created.value = false;
     }
     function assign_fields(db_obj: any) {
       run_id.value = db_obj.run_id;
-
       assay.value = db_obj.assay;
       species.value = db_obj.species;
       organ.value = db_obj.organ;
@@ -284,6 +337,11 @@ export default defineComponent({
         public_run.value = true;
       } else {
         public_run.value = false;
+      }
+      if (db_obj.web_object_available === 1) {
+        web_obj_created.value = true;
+      } else {
+        web_obj_created.value = false;
       }
       if (db_obj.date) {
         const human_date = new Date(0);
@@ -339,12 +397,14 @@ export default defineComponent({
           snackbar.dispatch({ text: 'Run Information Successfully Loaded.', options: { color: 'green' } });
           assign_fields(resp[0]);
           run_id_confirmed.value = true;
+          data_loaded.value = true;
         }
       } catch (e) {
         snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
       }
     }
     function run_selected(ele: any) {
+      data_loaded.value = false;
       run_id.value = ele;
       auto_populate_from_run_id(null);
       run_id_confirmed.value = true;
@@ -423,6 +483,8 @@ export default defineComponent({
       db_connection,
       results_selection_list,
       run_id_confirmed,
+      web_obj_created,
+      data_loaded,
       results_id_selected,
       date_human_to_epoch,
       assign_fields,
@@ -435,3 +497,67 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+  .warning-card {
+    background-color: #fff3e0;
+    border: 1px solid #ff9800;
+  }
+  .warning-card__title {
+    align-items: center;
+    display: flex;
+  }
+  .warning-card__icon {
+    font-size: 2em;
+    margin-right: 0.5em;
+  }
+  .warning-card__text {
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+  .warning-card__message {
+    font-size: 1em;
+    margin-top: 1em;
+  }
+
+  .success-card {
+    background-color: #e0f7fa;
+    border: 1px solid #00bcd4;
+  }
+  .success-card__title {
+    align-items: center;
+    display: flex;
+  }
+  .success-card__icon {
+    font-size: 2em;
+    margin-right: 0.5em;
+  }
+  .success-card__text {
+    font-size: 1.25em;
+    font-weight: bold;
+  }
+  .success-card__message {
+    font-size: 1em;
+    margin-top: 1em;
+  }
+  .path-no-created-card {
+    background-color: #ffffe0;
+    border: 1px solid #00bcd4;
+  }
+  .path-no-created-card__title {
+    align-items: center;
+    display: flex;
+  }
+  .path-no-created-card__icon {
+    font-size: 2em;
+    margin-right: 0.5em;
+  }
+  .path-no-created-card__text {
+    font-size: 1.25em;
+    font-weight: bold;
+  }
+  .path-no-created-card__message {
+    font-size: 1em;
+    margin-top: 1em;
+  }
+</style>

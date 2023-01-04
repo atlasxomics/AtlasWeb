@@ -11,7 +11,7 @@
         >
         </v-text-field>
         <v-icon
-            v-if="unique_run_id && search_input && !run_id_selected"
+            v-if="unique_run_id && search_input && !run_id_selected && new_available"
             color="green"
             @click="user_entered_run_id"
         >
@@ -29,7 +29,7 @@
             color="red"
             @click="close_edit_run_id"
         >
-            mdi-close
+            mdi-arrow-right
         </v-icon>
         </v-row>
         <v-data-table
@@ -52,6 +52,7 @@ import store from '@/store';
 
 export default defineComponent({
   name: 'runIdSelector',
+  props: { new_available: { type: Boolean, required: true } },
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const headers = [{ text: 'Run ID', value: 'run_id', sortable: false }];

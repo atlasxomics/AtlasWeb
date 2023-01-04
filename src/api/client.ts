@@ -701,4 +701,9 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/run_db/get_jobs', pl);
     return resp.data;
   }
+  async ensure_run_id_created(run_id: string) {
+    const pl = { run_id };
+    const resp = await this.axios.post('/api/v1/run_db/ensure_run_id_created', pl);
+    return resp.data;
+  }
 }
