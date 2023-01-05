@@ -278,6 +278,7 @@ export default defineComponent({
             group: adding_group_lis.value[0],
             username: selected_user.value.username,
             email: selected_user.value.email,
+            name: selected_user.value.name,
           };
           client.value!.notify_user_group_assignment(assignment_pl);
         }
