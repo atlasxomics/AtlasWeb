@@ -106,6 +106,18 @@
       <v-col>
       </v-col>
     </v-row>
+    <v-dialog v-model="show_job_sent_dialog" max-width="500" persistent>
+      <v-card>
+        <v-card-title class="headline; justify-center">Request Received</v-card-title>
+        <v-card-text class="justify-center">Text File Creation for {{run_id}} is in progress.</v-card-text>
+        <v-card-text class="justify-center">Check the Run Creation History Table for updates.</v-card-text>
+        <v-card-actions
+        class="justify-center"
+        >
+          <v-btn color="primary" @click="show_job_sent_dialog = false; update_jobs_table();">Ok.</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -142,6 +154,7 @@ export default defineComponent({
     const is_transcriptome = ref<boolean>(false);
     const all_files_present = ref<boolean>(false);
     const genes_h5ad_present = ref<boolean>(false);
+    const show_job_sent_dialog = ref<boolean>(false);
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
@@ -246,16 +259,16 @@ export default defineComponent({
     async function updateProgress(value: number) {
       // not working
     }
-    function update_jobs_table() {
+    async function update_jobs_table() {
       const jobs_table = ctx.refs.job_table as any;
       console.log(jobs_table);
-      jobs_table.get_jobs();
+      await jobs_table.get_jobs();
     }
     async function createObjects() {
       if (!client.value) return;
       try {
+        loading.value = true;
         const ensure_created = await client.value?.ensure_run_id_created(run_id.value);
-        console.log(ensure_created);
         if (ensure_created === 'Success') {
           const task = 'webfile.create_files';
           const queue = 'jonah_webfile';
@@ -268,7 +281,8 @@ export default defineComponent({
           const kwargs = { run_id: run_id.value };
           // const kwargs: any = { run_id: run_id.value };
           const taskObject = await client.value.postTask(task, args, kwargs, queue);
-          update_jobs_table();
+          loading.value = false;
+          show_job_sent_dialog.value = true;
           creation_job_sent.value = true;
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */
@@ -284,21 +298,23 @@ export default defineComponent({
             await checkTaskStatus(taskObject._id);
           }
           update_jobs_table();
-          if (taskStatus.value.status !== 'SUCCESS') {
-            snackbar.dispatch({ text: 'Worker failed in Creating Object', options: { right: true, color: 'error' } });
-            creation_job_sent.value = false;
-            loading.value = false;
-          } else {
-            snackbar.dispatch({ text: 'The Web Objects are created', options: { right: true, color: 'success' } });
-            progressMessage.value = taskStatus.value.status;
-            const resp = taskStatus.value.result;
-          }
+          console.log(taskStatus.value);
+          // if (taskStatus.value.status !== 'SUCCESS') {
+          //   snackbar.dispatch({ text: 'Worker failed in Creating Object', options: { right: true, color: 'error' } });
+          //   creation_job_sent.value = false;
+          //   loading.value = false;
+          // } else {
+          //   snackbar.dispatch({ text: 'The Web Objects are created', options: { right: true, color: 'success' } });
+          //   progressMessage.value = taskStatus.value.status;
+          //   const resp = taskStatus.value.result;
+          // }
         } else {
           snackbar.dispatch({ text: 'Run ID not created', options: { right: true, color: 'error' } });
           creation_job_sent.value = false;
           loading.value = false;
         }
       } catch (error) {
+        loading.value = false;
         console.log(error);
       }
     }
@@ -376,6 +392,7 @@ export default defineComponent({
       createObjects,
       filterPaths,
       updateProgress,
+      update_jobs_table,
       edit_run_id,
       run_id_selected,
       is_transcriptome,
@@ -385,6 +402,7 @@ export default defineComponent({
       genes_h5ad_present,
       run_id,
       creation_job_sent,
+      show_job_sent_dialog,
     };
   },
 });
