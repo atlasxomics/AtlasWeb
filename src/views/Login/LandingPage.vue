@@ -523,7 +523,6 @@ export default defineComponent({
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
-          console.log(updateJson.result_description);
           const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
           const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
           updateJson.result_description = newText;
@@ -639,7 +638,6 @@ export default defineComponent({
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
-          console.log(updateJson.result_description);
           const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
           const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
           updateJson.result_description = newText;
@@ -650,7 +648,6 @@ export default defineComponent({
       type.sort();
       organ.sort();
       species.sort();
-      console.log(species);
       lodash.each(precount, (v: any, i: any) => {
         countHold.value[i] = v;
         count.value[i] = v;

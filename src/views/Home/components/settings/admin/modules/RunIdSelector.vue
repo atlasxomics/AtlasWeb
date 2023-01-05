@@ -3,7 +3,7 @@
             <v-row>
             <v-text-field
             :disabled="run_id_selected"
-            label="Select Run ID"
+            label="Run ID"
             v-model="search_input"
             @input="search_runs"
             @click="run_id_search_clicked = true;"

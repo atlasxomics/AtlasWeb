@@ -828,6 +828,7 @@ export default defineComponent({
       roi.value.setScaleFactor(scaleFactor.value);
       crop.value.setScaleFactor(scaleFactor.value);
       active_roi_available.value = false;
+      checkSpatial.value = false;
       roi_active.value = false;
       isBrushMode.value = false;
       isEraseMode.value = false;
@@ -934,10 +935,14 @@ export default defineComponent({
       const resp_pos = await client.value.getCsvFile(pos_payload);
       const scale_payload = { params: { filename: scale_filename, bucket_name } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
-      scaleFactor_json.value = scale_pos;
-      tissue_position_list_obj.value = resp_pos;
+      // print the result of the last 3 async calls
       // if the json file is retrieved from server use that as metadata
-      if (resp && resp_pos && scale_pos) {
+      const meta_present = ((('status_code' in resp) && resp.status_code === 200) || !('status_code' in resp));
+      const pos_present = ((('status_code' in resp_pos) && resp_pos.status_code === 200) || !('status_code' in resp_pos));
+      const scale_present = ((('status_code' in scale_pos) && scale_pos.status_code === 200) || !('status_code' in scale_pos));
+      if (meta_present && pos_present && scale_present) {
+        scaleFactor_json.value = scale_pos;
+        tissue_position_list_obj.value = resp_pos;
         loading.value = false;
         metadata.value = resp;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
@@ -1390,6 +1395,7 @@ export default defineComponent({
           barcodes: metadata.value.barcodes,
           root_dir: root,
           bucket: bucket_name,
+          bsa_filename: full_bsa_filename.value,
         };
         const args: any[] = [params];
         const kwargs: any = {};
