@@ -283,13 +283,13 @@ export default defineComponent({
             taskTimeout.value = null;
             await checkTaskStatus(taskObject._id);
           }
+          update_jobs_table();
           if (taskStatus.value.status !== 'SUCCESS') {
             snackbar.dispatch({ text: 'Worker failed in Creating Object', options: { right: true, color: 'error' } });
             creation_job_sent.value = false;
             loading.value = false;
           } else {
             snackbar.dispatch({ text: 'The Web Objects are created', options: { right: true, color: 'success' } });
-            update_jobs_table();
             progressMessage.value = taskStatus.value.status;
             const resp = taskStatus.value.result;
           }
