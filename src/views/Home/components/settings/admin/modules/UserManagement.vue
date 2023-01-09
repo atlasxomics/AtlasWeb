@@ -223,8 +223,9 @@ export default defineComponent({
       if (sc === 200) {
         delete_user_dialog.value = false;
         snackbar.dispatch({ text: 'User: '.concat(selected_user.value.username).concat(' has been successfully deleted.') });
-        delete user_list.value[selected_user.value.username];
-        selected_user.value = null;
+        // remove the item with the value selected_user.value.username from the user_list
+        user_list.value = user_list.value.filter((val) => val.username !== selected_user.value.username);
+        delete_user_dialog.value = false;
       } else {
         snackbar.dispatch({ text: 'Error when attempting to delete user: '.concat(selected_user.value.username).concat('.') });
       }
