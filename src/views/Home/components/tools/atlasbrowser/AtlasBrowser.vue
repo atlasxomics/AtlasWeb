@@ -1396,6 +1396,7 @@ export default defineComponent({
           root_dir: root,
           bucket: bucket_name,
           bsa_filename: full_bsa_filename.value,
+          updating_existing: updating_existing.value,
         };
         const args: any[] = [params];
         const kwargs: any = {};
