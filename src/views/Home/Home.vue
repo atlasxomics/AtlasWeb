@@ -124,7 +124,7 @@ export default defineComponent({
     onMounted(async () => {
       await loginExisting();
       const route = currentRoute.value;
-      if (currentRoute.value.fullPath !== '/') {
+      if (currentRoute.value.fullPath !== '/' && loggedIn.value) {
         store.commit.setComponent(route.query);
       } else {
         if ((user.value === null || user.value === undefined) && !loggedIn.value) redirectToVisual();
