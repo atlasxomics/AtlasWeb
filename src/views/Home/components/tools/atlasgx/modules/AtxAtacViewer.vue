@@ -24,7 +24,7 @@
               icon
               color="primary"
               :disabled="!spatialData"
-              @click="scale=scale*1.1"
+              @click="reScale('plus')"
               ><v-icon small>mdi-magnify-plus</v-icon>
             </v-btn>
           </v-row>
@@ -34,7 +34,7 @@
               icon
               color="primary"
               :disabled="!spatialData"
-              @click="scale=scale*0.9"
+              @click="reScale('neg')"
               ><v-icon small>mdi-magnify-minus</v-icon>
             </v-btn>
           </v-row>
@@ -49,46 +49,13 @@
         flat
         :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
         height="50vh"
-        align="center">
-        <v-stage
-          ref="konvaStageDualAtac"
-          class="mainStage"
-          :config="konvaConfigLeft"
-          :style="{ 'overflow': 'hidden' }"
-          @mousedown="mouseDownOnStageLeft"
-          @mousemove="mouseMoveOnStageLeft"
-          @mouseup="mouseUpOnStageLeft"
-          >
-          <v-layer
-            ref="spatialLayerDualAtac"
-            id="spatialLayerDualAtac">
-            <v-circle v-for="p in circlesSpatial"
-              :config="p"
-              v-bind:key="p.id"
-              @mouseover="mouseMoveOnSpatial"
-              @mouseout="mouseOutOnSpatial"/>
-          </v-layer>
-          <v-layer
-            ref="drawingLayer"
-            id="drawingLayer"
-            v-if="isDrawing">
-            <template
-              v-for="poly in regions">
-              <v-line
-                v-bind:key="poly.id"
-                :config="poly"/>
-            </template>
-            <v-line
-              :config="polygon"/>
-          </v-layer>
-          <v-layer
-            v-if="isDrawingRect"
-            ref="drawingLayerRect"
-            id="drawingLayerRect">
-            <v-rect
-              :config="rectangle"/>
-          </v-layer>
-        </v-stage>
+        align="center"
+        @mousedown="mouseDownOnStageLeft"
+        @mousemove="mouseMoveOnStageLeft"
+        @mouseup="mouseUpOnStageLeft">
+        <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
+          <g id="plane" transform="translate(0, 0)"/>
+        </svg>
       </v-card>
       <v-row>
         <v-col cols="12" sm="10">
@@ -126,7 +93,7 @@
               icon
               color="primary"
               :disabled="!spatialData"
-              @click="scaleUMAP=scaleUMAP*1.1"
+              @click="reScaleUMAP('plus')"
               ><v-icon small>mdi-magnify-plus</v-icon>
             </v-btn>
           </v-row>
@@ -136,7 +103,7 @@
               icon
               color="primary"
               :disabled="!spatialData"
-              @click="scaleUMAP=scaleUMAP*0.9"
+              @click="reScaleUMAP('neg')"
               ><v-icon small>mdi-magnify-minus</v-icon>
             </v-btn>
           </v-row>
@@ -150,46 +117,13 @@
         flat
         v-resize="onResize"
         :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-        height="50vh">
-        <v-stage
-          ref="konvaStageDualAtacRight"
-          class="mainStage"
-          :config="konvaConfigRight"
-          @mousedown="mouseDownOnStageRight"
-          @mousemove="mouseMoveOnStageRight"
-          @mouseup="mouseUpOnStageRight"
-          :style="{ 'overflow': 'hidden' }"
-          >
-          <v-layer
-            ref="spatialLayerDualAtacRight"
-            id="spatialLayerDualAtacRight">
-            <v-circle v-for="p in circlesSpatialUMAP"
-              :config="p"
-              v-bind:key="p.id"
-              @mousemove="mouseMoveOnSpatialRight"
-              @mouseout="mouseOutOnSpatialRight"/>
-          </v-layer>
-          <v-layer
-            ref="drawingLayerRight"
-            id="drawingLayerRight"
-            v-if="isDrawing">
-            <template
-              v-for="poly in regionsUMAP">
-              <v-line
-                v-bind:key="poly.id"
-                :config="poly"/>
-            </template>
-            <v-line
-              :config="polygonUMAP"/>
-          </v-layer>
-          <v-layer
-            v-if="isDrawingRect"
-            ref="drawingLayerRightRect"
-            id="drawingLayerRightRect">
-            <v-rect
-              :config="rectangleUMAP"/>
-          </v-layer>
-        </v-stage>
+        height="50vh"
+        @mousedown="mouseDownOnStageRight"
+        @mousemove="mouseMoveOnStageRight"
+        @mouseup="mouseUpOnStageRight">
+        <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
+          <g id="plane2" transform="translate(0, 0)"/>
+        </svg>
       </v-card>
       <v-row>
         <v-col cols="12" sm="10">
@@ -215,6 +149,7 @@ import { rainbow } from '@indot/rainbowvis';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
+/* eslint-disable no-unused-expressions */
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -276,46 +211,6 @@ export default defineComponent({
     const lowestCount = ref<number>(10000);
     const highestCount = ref<number>(0);
     const highlightedCluster = ref<any>();
-    const tooltip = new Konva.Label({ visible: false });
-    const tooltipRight = new Konva.Label({ visible: false });
-    const tooltipTag = new Konva.Tag({
-      fill: 'white',
-      pointerDirection: 'down',
-      pointerWidth: 10,
-      pointerHeight: 10,
-      lineJoin: 'round',
-      shadowColor: 'black',
-      shadowBlur: 10,
-      shadowOffsetX: 10,
-      shadowOffsetY: 10,
-      shadowOpacity: 0.5,
-    });
-    const tooltipText = new Konva.Text({
-      text: '',
-      fontFamily: 'Calibri',
-      fontSize: 15,
-      padding: 5,
-      fill: 'black',
-    });
-    const tooltipTextRight = new Konva.Text({
-      text: '',
-      fontFamily: 'Calibri',
-      fontSize: 15,
-      padding: 5,
-      fill: 'black',
-    });
-    const tooltipTagRight = new Konva.Tag({
-      fill: 'white',
-      pointerDirection: 'down',
-      pointerWidth: 10,
-      pointerHeight: 10,
-      lineJoin: 'round',
-      shadowColor: 'black',
-      shadowBlur: 10,
-      shadowOffsetX: 10,
-      shadowOffsetY: 10,
-      shadowOpacity: 0.5,
-    });
     const circlesSpatial = ref<any[]>([]);
     const circlesSpatialUMAP = ref<any[]>([]);
     const clusterColors = ref<string[]>([]);
@@ -329,10 +224,9 @@ export default defineComponent({
     const isDrawing = computed(() => (props.lasso));
     const isDrawingRect = computed(() => (props.rect));
     const isClicked = ref<boolean>(false);
-    const polygon = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'green', strokeWidth: 1 });
-    const polygonUMAP = ref<any>({ x: 0, y: 0, points: [], opacity: 0.8, closed: true, fill: 'white', stroke: 'green', strokeWidth: 1 });
-    const rectangle = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'green', strokeWidth: 1, endPointx: 0, endPointy: 0 });
-    const rectangleUMAP = ref<any>({ x: 0, y: 0, width: 0, height: 0, opacity: 0.8, fill: 'white', stroke: 'green', strokeWidth: 1, endPointx: 0, endPointy: 0 });
+    const isClickedU = ref<boolean>(false);
+    const polygon = ref<number[]>([]);
+    const polygonUMAP = ref<number[]>([]);
     const regions = ref<any>();
     const regionsUMAP = ref<any>();
     const lassoSide = ref<string>();
@@ -362,11 +256,28 @@ export default defineComponent({
     const maxMinBoundaryFromParents = computed(() => (props.userBoundary));
     const maxMinBoundary = ref<any[]>([]);
     const currentClickedCluster = ref<string>('');
+    const originalClickedPoint = ref<number[]>([]);
+    const originalClickedPointU = ref<number[]>([]);
+    const globalSpatial = ref<any>();
+    const globalUmap = ref<any>();
+    const globalSvgS = ref<any>();
+    const globalSvgU = ref<any>();
+    const translatePoint = ref<number[]>([]);
+    const translatePointU = ref<number[]>([]);
+    const viewBoxSpatial = ref<number[]>([width, height]);
+    const viewBoxUmap = ref<number[]>([width, height]);
+    const bufferSize = 1;
+    const buffer: any = [];
+    let strPath = '';
+    let strPathUmap = '';
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const pathUmap = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    let startRectCoords: number[];
+    const rectUmap = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    let startRectUmapCoords: number[];
+    const initialized = ref<boolean>(false);
     const assayFlag = computed(() => (props.assay_flag));
-    function setDraggable(flag: boolean) {
-      konvaConfigLeft.value.draggable = flag;
-      konvaConfigRight.value.draggable = flag;
-    }
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParentDualAtac');
       if (!parent) return;
@@ -376,25 +287,34 @@ export default defineComponent({
       konvaConfigLeft.value.height = parentHeight;
       konvaConfigRight.value.width = parentWidth;
       konvaConfigRight.value.height = parentHeight;
+      viewBoxSpatial.value = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
+      viewBoxUmap.value = [konvaConfigRight.value.width, konvaConfigRight.value.height];
     }
     function remove(item: any) {
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
       selectedGenes.value = newArr;
     }
-    function unHighlighCluster() {
-      lodash.each(circlesSpatialUMAP.value, (c: any, i: number) => {
-        circlesSpatialUMAP.value[i].fill = c.originalColor;
-        circlesSpatialUMAP.value[i].stroke = c.originalColor;
-        circlesSpatial.value[i].fill = c.originalColor;
-        circlesSpatial.value[i].stroke = c.originalColor;
-        circlesSpatial.value[i].opacity = 1.0;
-        circlesSpatialUMAP.value[i].opacity = 1.0;
+    function unHighlightCluster() {
+      const colors: any[] = [];
+      lodash.each(heatMap.value, (value: any, key: any) => {
+        colors.push(value);
       });
+      for (let i = 0; i < spatialData.value.spatial.length; i += 1) {
+        const tixel = document.getElementById(`tixel${i}`);
+        const tixelUmap = document.getElementById(`tixelUmap${i}`);
+        const regex = /\d+/g;
+        const string = (tixel) ? tixel.getAttribute('cluster') : '';
+        const match = Number(string!.match(regex)![0]) - 1;
+        tixel?.setAttribute('fill', `${colors[match]}`);
+        tixelUmap?.setAttribute('fill', `${colors[match]}`);
+        tixel?.setAttribute('opacity', '1.0');
+        tixelUmap?.setAttribute('opacity', '1.0');
+      }
       highlightedCluster.value = '';
     }
     function pointInPolygon(point: number[], vs: any[]) { // point is like [5,5], vs is like [[1,2],[10,20],[100,200]]
       let inside = false;
-      if (isDrawing) {
+      if (isDrawing.value) {
         const [x, y] = point;
         for (let i = 0, j = vs.length - 1; i < vs.length; j = i + 0, i += 1) {
           const [xi, yi] = vs[i];
@@ -403,16 +323,16 @@ export default defineComponent({
           if (intersect) inside = !inside;
         }
       }
-      if (isDrawingRect) {
+      if (isDrawingRect.value) {
         const [x, y] = point;
         let info: any;
         if (lassoSide.value === 'left') {
-          info = regions;
+          info = regions.value[0].points;
         } else {
-          info = regionsUMAP;
+          info = regionsUMAP.value[0].points;
         }
-        if (x >= info.value[0].x && x <= info.value[0].endPointx) {
-          if (y >= info.value[0].y && y <= info.value[0].endPointy) {
+        if (x >= info[0] && x <= info[0] + info[2]) {
+          if (y >= info[1] && y <= info[1] + info[3]) {
             inside = true;
           }
         }
@@ -425,63 +345,80 @@ export default defineComponent({
         let res = false;
         if (lassoSide.value === 'left') {
           regions.value.forEach((poly: any, idx: number) => {
-            if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+            if (isDrawing.value) if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+            if (isDrawingRect.value) if (pointInPolygon(pt, [])) res = true;
           });
         }
         if (lassoSide.value === 'right') {
           regionsUMAP.value.forEach((poly: any, idx: number) => {
-            if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+            if (isDrawing.value) if (pointInPolygon(pt, splitarray(poly.points, 2))) res = true;
+            if (isDrawingRect.value) if (pointInPolygon(pt, [])) res = true;
           });
         }
         return res;
       };
-      let filteredIndex: any;
+      const getCirclePositions = (element: any) => {
+        const svg = element.ownerSVGElement;
+        const pt = svg.createSVGPoint();
+        pt.x = element.cx.baseVal.value;
+        pt.y = element.cy.baseVal.value;
+        const transformer = svg.getCTM().inverse().multiply(element.getCTM());
+        return pt.matrixTransform(transformer);
+      };
+      const filteredIndex: any = [];
       if (lassoSide.value === 'left') {
-        filteredIndex = circlesSpatial.value.map((v: any) => funcInsideRegions([v.x, v.y]));
+        for (let i = 0; i < spatialData.value.spatial.length; i += 1) {
+          const tixel = document.getElementById(`tixel${i}`);
+          const transformedCoords = getCirclePositions(tixel);
+          filteredIndex.push(funcInsideRegions([parseFloat(transformedCoords.x!), parseFloat(transformedCoords.y!)]));
+        }
       } else {
-        filteredIndex = circlesSpatialUMAP.value.map((v: any) => funcInsideRegions([v.x, v.y]));
+        for (let i = 0; i < spatialData.value.spatial.length; i += 1) {
+          const tixel = document.getElementById(`tixelUmap${i}`);
+          const transformedCoords = getCirclePositions(tixel);
+          filteredIndex.push(funcInsideRegions([parseFloat(transformedCoords.x!), parseFloat(transformedCoords.y!)]));
+        }
       }
       const hitCount = filteredIndex.filter((x: boolean) => x).length;
       highlightCount.value = hitCount;
       if (hitCount < 1) {
         topSelected.value = [];
-        unHighlighCluster();
+        unHighlightCluster();
         return;
       }
       lodash.each(filteredIndex, (v: boolean, idx: number) => {
-        circlesSpatial.value[idx].fill = circlesSpatial.value[idx].originalColor;
-        circlesSpatial.value[idx].stroke = circlesSpatial.value[idx].originalColor;
-        circlesSpatialUMAP.value[idx].fill = circlesSpatialUMAP.value[idx].originalColor;
-        circlesSpatialUMAP.value[idx].stroke = circlesSpatialUMAP.value[idx].originalColor;
+        const tixel = document.getElementById(`tixel${idx}`);
+        const tixelUmap = document.getElementById(`tixelUmap${idx}`);
         if (!v) {
-          circlesSpatial.value[idx].opacity = 0.2;
-          circlesSpatialUMAP.value[idx].opacity = 0.2;
-        } else {
-          highlightIds.value.push(idx);
-          circlesSpatial.value[idx].opacity = 1.0;
-          circlesSpatialUMAP.value[idx].opacity = 1.0;
-        }
+          tixel?.setAttribute('opacity', '0.3');
+          tixelUmap?.setAttribute('opacity', '0.2');
+        } else highlightIds.value.push(idx);
       });
     }
     function highlightCluster(clusterName: string[]) {
+      const colors: any[] = [];
+      lodash.each(heatMap.value, (value: any, key: any) => {
+        colors.push(value);
+      });
       if (backgroundColor.value === 'darkgrey') {
         inactiveColor.value = 'white';
       } else {
         inactiveColor.value = 'darkgrey';
       }
-      lodash.each(circlesSpatial.value, (c: any, i: number) => {
-        if (!clusterName.includes(c.cluster)) {
-          circlesSpatial.value[i].fill = inactiveColor.value;
-          circlesSpatial.value[i].stroke = inactiveColor.value;
-          circlesSpatialUMAP.value[i].fill = inactiveColor.value;
-          circlesSpatialUMAP.value[i].stroke = inactiveColor.value;
+      for (let i = 0; i < spatialData.value.spatial.length; i += 1) {
+        const tixel = document.getElementById(`tixel${i}`);
+        const tixelUmap = document.getElementById(`tixelUmap${i}`);
+        const regex = /\d+/g;
+        const string = (tixel) ? tixel.getAttribute('cluster') : '';
+        const match = Number(string!.match(regex)![0]) - 1;
+        if (clusterName.includes(string!)) {
+          tixel?.setAttribute('fill', `${colors[match]}`);
+          tixelUmap?.setAttribute('fill', `${colors[match]}`);
         } else {
-          circlesSpatial.value[i].fill = c.originalColor;
-          circlesSpatial.value[i].stroke = c.originalColor;
-          circlesSpatialUMAP.value[i].fill = c.originalColor;
-          circlesSpatialUMAP.value[i].stroke = c.originalColor;
+          tixel?.setAttribute('fill', `${inactiveColor.value}`);
+          tixelUmap?.setAttribute('fill', `${inactiveColor.value}`);
         }
-      });
+      }
       highlightedCluster.value = clusterName;
       isHighlighted.value = true;
     }
@@ -508,21 +445,40 @@ export default defineComponent({
       if (value < parseFloat(maxMinBoundary.value[1])) return false;
       return value;
     }
-    async function updateCircles() {
-      if (spatialData.value === null || spatialData.value.spatial === undefined) return;
-      isHighlighted.value = false;
-      const circles: any[] = [];
-      const circlesUMAP: any[] = [];
-      stepArray.value = [];
+    async function resizeCircles() {
+      if (!initialized.value) return;
+      const radiusSize = (spatialData.value.spatial.length < 4000) ? 22 : 44;
+      const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 28 : 56;
+      const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
+      const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;
+      const viewScale = Math.min(stageWidth / (maxX.value - minX.value), stageHeight / (maxY.value - minY.value));
+      const viewScaleUMAP = Math.min(stageWidthR / (maxX_UMAP.value - minX_UMAP.value), stageHeightR / (maxY_UMAP.value - minY_UMAP.value));
+      const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
+      const radiusUMAP = (Math.min(stageWidthR, stageHeightR) / (radiusSizeUmap * 5)) * scaleUMAP.value;
+      const inV = scale.value * viewScale * minX.value - radius;
+      const inH = scale.value * viewScale * minY.value - radius;
+      const inVU = scaleUMAP.value * viewScaleUMAP * minX_UMAP.value - radiusUMAP;
+      const inHU = scaleUMAP.value * viewScaleUMAP * minY_UMAP.value - radiusUMAP;
+      spatialData.value.spatial.forEach((v: string[], i: number) => {
+        const x = parseFloat(v[1]);
+        const y = parseFloat(v[2]);
+        const auX = parseFloat(v[3]);
+        const auY = parseFloat(v[4]);
+        const circle = document.getElementById(`tixel${i}`)!;
+        const circleUmap = document.getElementById(`tixelUmap${i}`)!;
+        circle.setAttribute('cx', `${x * scale.value * viewScale - inV}`);
+        circle.setAttribute('cy', `${y * scale.value * viewScale - inH}`);
+        circle.setAttribute('r', `${radius}`);
+        circleUmap.setAttribute('cx', `${auX * scaleUMAP.value * viewScaleUMAP - inVU}`);
+        circleUmap.setAttribute('cy', `${auY * scaleUMAP.value * viewScaleUMAP - inHU}`);
+        circleUmap.setAttribute('r', `${radiusUMAP}`);
+      });
+    }
+    async function initializePlots() {
       const colors: any[] = [];
-      let colors_intensity: any[] = [];
-      const numClusters = lodash.uniq(spatialData.value.spatial.map((v: any) => v[0])).length;
       lodash.each(heatMap.value, (value: any, key: any) => {
         colors.push(value);
       });
-      colors_intensity = colormap({ colormap: 'jet', nshades: 64, format: 'hex', alpha: 1 });
-      colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
-      clusterColors.value = colors;
       const radiusSize = (spatialData.value.spatial.length < 4000) ? 22 : 44;
       const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 28 : 56;
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
@@ -532,6 +488,57 @@ export default defineComponent({
       const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
       const radiusUMAP = (Math.min(stageWidthR, stageHeightR) / (radiusSizeUmap * 5)) * scaleUMAP.value;
       const [paddingX, paddingY] = [60, 30];
+      const inV = scale.value * viewScale * minX.value - radius;
+      const inH = scale.value * viewScale * minY.value - radius;
+      const inVU = scaleUMAP.value * viewScaleUMAP * minX_UMAP.value - radiusUMAP;
+      const inHU = scaleUMAP.value * viewScaleUMAP * minY_UMAP.value - radiusUMAP;
+      const NS = 'http://www.w3.org/2000/svg';
+      globalSpatial.value = document.getElementById('plane')!;
+      globalUmap.value = document.getElementById('plane2')!;
+      globalSvgS.value = document.getElementById('svgSpatial')!;
+      globalSvgU.value = document.getElementById('svgUmap')!;
+      spatialData.value.spatial.forEach((v: string[], i: number) => {
+        const x = parseFloat(v[1]);
+        const y = parseFloat(v[2]);
+        const auX = parseFloat(v[3]);
+        const auY = parseFloat(v[4]);
+        const regex = /\d+/g;
+        const string = v[0];
+        const match = Number(string.match(regex)![0]) - 1;
+        const circle = document.createElementNS(NS, 'circle');
+        const circleUmap = document.createElementNS(NS, 'circle');
+        circle.setAttribute('cx', `${x * scale.value * viewScale - inV}`);
+        circle.setAttribute('cy', `${y * scale.value * viewScale - inH}`);
+        circle.setAttribute('r', `${radius}`);
+        circle.setAttribute('fill', `${colors[match]}`);
+        circle.setAttribute('id', `tixel${i}`);
+        circle.setAttribute('cluster', `${v[0]}`);
+        circle.setAttribute('opacity', '1.0');
+        circleUmap.setAttribute('cx', `${auX * scaleUMAP.value * viewScaleUMAP - inVU}`);
+        circleUmap.setAttribute('cy', `${auY * scaleUMAP.value * viewScaleUMAP - inHU}`);
+        circleUmap.setAttribute('r', `${radiusUMAP}`);
+        circleUmap.setAttribute('fill', `${colors[match]}`);
+        circleUmap.setAttribute('id', `tixelUmap${i}`);
+        circleUmap.setAttribute('cluster', `${v[0]}`);
+        circleUmap.setAttribute('opacity', '1.0');
+        globalSpatial.value.appendChild(circle);
+        globalUmap.value.appendChild(circleUmap);
+      });
+      initialized.value = true;
+    }
+    async function updateCircles() {
+      if (spatialData.value === null || spatialData.value.spatial === undefined) return;
+      isHighlighted.value = false;
+      const circles: any[] = [];
+      stepArray.value = [];
+      const colors: any[] = [];
+      let colors_intensity: any[] = [];
+      lodash.each(heatMap.value, (value: any, key: any) => {
+        colors.push(value);
+      });
+      colors_intensity = colormap({ colormap: 'jet', nshades: 64, format: 'hex', alpha: 1 });
+      colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
+      clusterColors.value = colors;
       if (isClusterView.value || averageInd.value) {
         const coordinatesSib: any = [];
         const TSS: any = [];
@@ -539,65 +546,29 @@ export default defineComponent({
         spatialData.value.spatial.forEach((v: string[], i: number) => {
           TSS.push(parseFloat(v[5]));
           nFrags.push(parseFloat(v[6]));
-          const ax = parseFloat(v[1]);
-          const ay = parseFloat(v[2]);
-          const auX = parseFloat(v[3]);
-          const auY = parseFloat(v[4]);
-          const uX = auX - minX_UMAP.value;
-          const uY = auY - minY_UMAP.value;
-          const x = ax - minX.value;
-          const y = ay - minY.value;
+          const x = parseFloat(v[1]);
+          const y = parseFloat(v[2]);
           const regex = /\d+/g;
           const string = v[0];
           const match = Number(string.match(regex)![0]) - 1;
           coordinatesSib.push([x, y, v]);
           const c = {
-            id: get_uuid(),
-            x: x * scale.value * viewScale + paddingX,
-            y: y * scale.value * viewScale + paddingY,
+            cluster: v[0],
             ogx: x,
             ogy: y,
-            radius,
-            originalColor: colors[match],
-            fill: colors[match],
-            stroke: colors[match],
-            strokeWidth: 0,
-            cluster: v[0],
             total: 0,
             genes: { },
-            perfectDrawEnabled: false,
-            shadowForStrokeEnabled: false,
-            listening: false,
-            opacity: 1.0,
           };
-          const ci = {
-            id: get_uuid(),
-            x: uX * scaleUMAP.value * viewScaleUMAP + paddingX,
-            y: uY * scaleUMAP.value * viewScaleUMAP + paddingY,
-            radius: radiusUMAP,
-            originalColor: colors[match],
-            fill: colors[match],
-            stroke: colors[match],
-            strokeWidth: 0,
-            cluster: v[0],
-            total: 0,
-            genes: { },
-            perfectDrawEnabled: false,
-            shadowForStrokeEnabled: false,
-            listening: false,
-            opacity: 1.0,
-          };
+          const tixel = document.getElementById(`tixel${i}`);
+          const tixelUmap = document.getElementById(`tixelUmap${i}`);
+          tixel?.setAttribute('fill', `${colors[match]}`);
+          tixelUmap?.setAttribute('fill', `${colors[match]}`);
           selectedGenes.value.forEach((id: any, index: any) => {
             (c.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
-            (ci.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
           });
           c.total = lodash.sum(Object.values(c.genes));
-          ci.total = lodash.sum(Object.values(ci.genes));
           circles.push(c);
-          circlesUMAP.push(ci);
         });
-        circlesSpatial.value = circles;
-        circlesSpatialUMAP.value = circlesUMAP;
         if (isClusterView.value) {
           ctx.emit('spatialCircleData', [TSS, nFrags]);
         } else ctx.emit('spatialCircleData', circles);
@@ -606,82 +577,37 @@ export default defineComponent({
         highestCount.value = -10000;
         lowestCount.value = 10000;
         spatialData.value.spatial.forEach((v: string[], i: number) => {
-          if (v[0].includes('C')) {
-            const ax = parseFloat(v[1]);
-            const ay = parseFloat(v[2]);
-            const auX = parseFloat(v[3]);
-            const auY = parseFloat(v[4]);
-            const uX = auX - minX_UMAP.value;
-            const uY = auY - minY_UMAP.value;
-            const x = ax - minX.value;
-            const y = ay - minY.value;
-            const regex = /\d+/g;
-            const string = v[0];
-            const match = Number(string.match(regex)![0]) - 1;
-            const c = {
-              id: get_uuid(),
-              x: x * scale.value * viewScale + paddingX,
-              y: y * scale.value * viewScale + paddingY,
-              ogx: x,
-              ogy: y,
-              radius,
-              originalColor: colors[match],
-              fill: colors[match],
-              stroke: colors[match],
-              strokeWidth: 0,
-              cluster: v[0],
-              total: 0,
-              genes: { },
-              perfectDrawEnabled: false,
-              shadowForStrokeEnabled: false,
-              listening: false,
-              opacity: 1.0,
-            };
-            const ci = {
-              id: get_uuid(),
-              x: uX * scaleUMAP.value * viewScaleUMAP + paddingX,
-              y: uY * scaleUMAP.value * viewScaleUMAP + paddingY,
-              radius: radiusUMAP,
-              originalColor: colors[match],
-              fill: colors[match],
-              stroke: colors[match],
-              strokeWidth: 0,
-              cluster: v[0],
-              total: 0,
-              genes: { },
-              perfectDrawEnabled: false,
-              shadowForStrokeEnabled: false,
-              listening: false,
-              opacity: 1.0,
-            };
-            selectedGenes.value.forEach((id: any, index: any) => {
-              (c.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
-              (ci.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
-            });
-            c.total = lodash.sum(Object.values(c.genes));
-            ci.total = lodash.sum(Object.values(ci.genes));
-            geneSum.push(checkBoundary(c.total));
-            const avg = c.total / selectedGenes.value.length;
-            if (avg > highestCount.value) highestCount.value = avg;
-            if (avg < lowestCount.value) lowestCount.value = avg;
-            circles.push(c);
-            circlesUMAP.push(ci);
-          }
+          let summer = 0;
+          const x = parseFloat(v[1]);
+          const y = parseFloat(v[2]);
+          const c = {
+            cluster: v[0],
+            ogx: x,
+            ogy: y,
+            total: 0,
+            genes: { },
+          };
+          selectedGenes.value.forEach((id: any, index: any) => {
+            summer += parseFloat(geneSummation.value[index][i]);
+            (c.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
+          });
+          c.total = summer;
+          geneSum.push(checkBoundary(summer));
+          const avg = summer / selectedGenes.value.length;
+          if (avg > highestCount.value) highestCount.value = avg;
+          if (avg < lowestCount.value) lowestCount.value = avg;
+          circles.push(c);
         });
         const geneColors = colormapBounded(colors_intensity, geneSum, selectedGenes.value.length);
         ctx.emit('spatialCircleData', circles);
         circles.forEach((v: any, i: any) => {
           const col = checkBoundaryColor(circles[i].total);
           const clr = (col) ? geneColors[i] : inactiveColor.value;
-          circles[i].originalColor = clr;
-          circles[i].fill = clr;
-          circles[i].stroke = clr;
-          circlesUMAP[i].originalColor = clr;
-          circlesUMAP[i].fill = clr;
-          circlesUMAP[i].stroke = clr;
+          const tixel = document.getElementById(`tixel${i}`);
+          const tixelUmap = document.getElementById(`tixelUmap${i}`);
+          tixel?.setAttribute('fill', `${clr}`);
+          tixelUmap?.setAttribute('fill', `${clr}`);
         });
-        circlesSpatial.value = circles;
-        circlesSpatialUMAP.value = circlesUMAP;
         stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
       }
       if (averageInd.value) {
@@ -689,7 +615,6 @@ export default defineComponent({
         ctx.emit('sendColorBar', { color: colorBarmap.value, maxMin: [minX.value, minY.value, maxX.value, maxY.value], tixelColor: colors_intensity });
       }
       ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
-      highlightRegion();
       spatialRun.value = false;
     }
     const checkTaskStatus = async (task_id: string) => {
@@ -752,7 +677,7 @@ export default defineComponent({
         maxX_UMAP.value = Math.max(...umapX);
         maxY_UMAP.value = Math.max(...umapY);
         ctx.emit('totalClust', totalInClust.value);
-        updateCircles();
+        initializePlots();
       }
       if (!props.query.public && (spatialData.value.gene === null || spatialData.value.gene === undefined)) {
         const geneFileName = `data/${runId.value}/h5/geneNames.txt.gz`;
@@ -826,191 +751,202 @@ export default defineComponent({
       });
       geneSummation.value = emptyArrayHolder;
     }
-    // Drawing
-    async function mouseMoveOnSpatial(ev: any) {
-      const mousePos = (ctx as any).refs.konvaStageDualAtac.getNode().getRelativePointerPosition();
-      const item = ev.target.attrs;
-      tooltip.position({
-        x: mousePos.x,
-        y: mousePos.y,
-      });
-      let text = `Cluster: ${item.cluster}`;
-      if (selectedGenes.value.length > 0) {
-        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(3)}`;
-        lodash.forIn(item.genes, (v: number, k: string) => {
-          text = `${text}\n${k}: ${v}`;
-        });
-      }
-      tooltipText.text(text);
-      tooltip.show();
-    }
-    async function mouseOutOnSpatial(ev: any) {
-      const mousePos = { x: ev.evt.layerX, y: ev.evt.layerY };
-      const stageWidth = (ctx as any).refs.konvaStageDualAtac.$el.offsetWidth;
-      const stageHeight = (ctx as any).refs.konvaStageDualAtac.$el.offsetHeight;
-      const first = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[0].getNode().absolutePosition();
-      const second = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[49].getNode().absolutePosition();
-      const third = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[circlesSpatial.value.length - 50].getNode().absolutePosition();
-      const end = (ctx as any).refs.konvaStageDualAtac.$children[0].$children[circlesSpatial.value.length - 1].getNode().absolutePosition();
-      const boundaries = [first, second, third, end];
-      let leftmost = 1000;
-      let bottommost = 0;
-      let rightmost = 0;
-      let topmost = 1000;
-      boundaries.forEach((v: any, i: number) => {
-        if (v.x > rightmost) {
-          if (v.x > stageWidth) {
-            rightmost = stageWidth - 2;
-          } else rightmost = v.x;
-        }
-        if (v.x < leftmost) {
-          if (v.x < 0) {
-            leftmost = 15;
-          } else leftmost = v.x;
-        }
-        if (v.y > bottommost) {
-          if (v.y > stageHeight) {
-            bottommost = stageHeight - 2;
-          } else bottommost = v.y;
-        }
-        if (v.y < topmost) {
-          if (v.y < 0) {
-            topmost = 15;
-          } else topmost = v.y;
-        }
-      });
-      const finale = [leftmost, topmost, rightmost, bottommost];
-      isHighlighted.value = false;
-      tooltip.hide();
-      tooltipRight.hide();
-      if ((!isDrawing.value && !isDrawingRect.value) && (mousePos.x < finale[0] || mousePos.y < finale[1] || mousePos.x > finale[2] || mousePos.y > finale[3])) unHighlighCluster();
-    }
-    async function mouseMoveOnSpatialRight(ev: any) {
-      const mousePosRight = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();
-      const item = ev.target.attrs;
-      tooltipRight.position({
-        x: mousePosRight.x,
-        y: mousePosRight.y,
-      });
-      let text = `Cluster: ${item.cluster}`;
-      if (selectedGenes.value.length > 0) {
-        text = `${text}\nAvg: ${(item.total / selectedGenes.value.length).toFixed(3)}`;
-        lodash.forIn(item.genes, (v: number, k: string) => {
-          text = `${text}\n${k}: ${v}`;
-        });
-      }
-      tooltipTextRight.text(text);
-      tooltipRight.show();
-    }
-    async function mouseOutOnSpatialRight(ev: any) {
-      isHighlighted.value = false;
-      tooltip.hide();
-      tooltipRight.hide();
-      if ((!isDrawing.value && !isDrawingRect.value)) unHighlighCluster();
-    }
     // Drawing Region
     function removeRegions() {
+      strPath = '';
+      strPathUmap = '';
+      path.setAttribute('d', '');
+      path.setAttribute('d', '');
+      rect.setAttribute('x', '0');
+      rect.setAttribute('y', '0');
+      rect.setAttribute('width', '0');
+      rect.setAttribute('height', '0');
+      rectUmap.setAttribute('x', '0');
+      rectUmap.setAttribute('y', '0');
+      rectUmap.setAttribute('width', '0');
+      rectUmap.setAttribute('height', '0');
       regionsUMAP.value = [];
-      polygonUMAP.value.points = [];
+      polygonUMAP.value = [];
       regions.value = [];
-      polygon.value.points = [];
-      rectangle.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-      rectangleUMAP.value = { x: 0, y: 0, id: 1, width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-      highlightRegion();
+      polygon.value = [];
+      unHighlightCluster();
     }
+
+    const appendToBuffer = (pt: any) => {
+      buffer.push(pt);
+      while (buffer.length > bufferSize) {
+        buffer.shift();
+      }
+    };
+    const getAveragePoint = (offset: number) => {
+      const len = buffer.length;
+      if (len % 2 === 1 || len >= bufferSize) {
+        let totalX = 0;
+        let totalY = 0;
+        let pt;
+        let i;
+        let count = 0;
+        for (i = offset; i < len; i += 1) {
+          count += 1;
+          pt = buffer[i];
+          totalX += pt.x;
+          totalY += pt.y;
+        }
+        return {
+          x: totalX / count,
+          y: totalY / count,
+        };
+      }
+      return { x: 'no' };
+    };
+    const updateSvgPath = () => {
+      let pt = getAveragePoint(0);
+      if (pt.x !== 'no') {
+        if (isClicked.value) strPath += ` L${pt.x} ${pt.y}`;
+        if (isClickedU.value) strPathUmap += ` L${pt.x} ${pt.y}`;
+        let tmpPath = '';
+        for (let offset = 2; offset < buffer.length; offset += 2) {
+          pt = getAveragePoint(offset);
+          tmpPath += ` L${pt.x} ${pt.y}`;
+        }
+        if (isClicked.value) path.setAttribute('d', strPath + tmpPath);
+        if (isClickedU.value) pathUmap.setAttribute('d', strPathUmap + tmpPath);
+      }
+    };
     function mouseDownOnStageLeft(ev: any) {
+      isClicked.value = true;
       if (isDrawing.value) {
         lassoSide.value = 'left';
         removeRegions();
-        isClicked.value = true;
-        polygon.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'green', strokeWidth: 3 };
-        polygon.value.points = [];
-      }
-      if (isDrawingRect.value) {
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#6ffc03');
+        path.setAttribute('stroke-width', '1');
+        if (!path.getAttribute('id')) path.setAttribute('id', 'spa');
+        appendToBuffer({ x: ev.layerX, y: ev.layerY });
+        strPath += `M${ev.layerX} ${ev.layerY}`;
+        path.setAttribute('d', strPath);
+        globalSvgS.value.appendChild(path);
+      } else if (isDrawingRect.value) {
         lassoSide.value = 'left';
         removeRegions();
-        const mousePos = (ctx as any).refs.konvaStageDualAtac.getNode().getRelativePointerPosition();
-        rectangle.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        rectangleUMAP.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        highlightRegion();
-        isClicked.value = true;
+        rect.setAttribute('x', `${ev.layerX}`);
+        rect.setAttribute('y', `${ev.layerY}`);
+        rect.setAttribute('fill', 'none');
+        rect.setAttribute('stroke', '#6ffc03');
+        rect.setAttribute('width', '0');
+        rect.setAttribute('height', '0');
+        globalSvgS.value.appendChild(rect);
+        startRectCoords = [ev.layerX, ev.layerY];
+      } else {
+        originalClickedPoint.value = [ev.layerX, ev.layerY];
+        const translateValue = globalSpatial.value.getAttribute('transform');
+        const matchValue = translateValue.match(/\d.+/);
+        const splitValue = matchValue[0].slice(0, matchValue[0].length - 1).split(',');
+        translatePoint.value = [parseFloat(splitValue[0]), parseFloat(splitValue[1])];
       }
     }
     function mouseDownOnStageRight(ev: any) {
+      isClickedU.value = true;
       if (isDrawing.value) {
         lassoSide.value = 'right';
         removeRegions();
-        isClicked.value = true;
-        polygonUMAP.value = { x: 0, y: 0, id: get_uuid(), points: [], opacity: 0.6, listening: true, closed: true, fill: '', stroke: 'green', strokeWidth: 3 };
-        polygonUMAP.value.points = [];
-      }
-      if (isDrawingRect.value) {
+        pathUmap.setAttribute('fill', 'none');
+        pathUmap.setAttribute('stroke', '#6ffc03');
+        pathUmap.setAttribute('stroke-width', '1');
+        if (!pathUmap.getAttribute('id')) pathUmap.setAttribute('id', 'uma');
+        appendToBuffer({ x: ev.layerX, y: ev.layerY });
+        strPathUmap += `M${ev.layerX} ${ev.layerY}`;
+        pathUmap.setAttribute('d', strPathUmap);
+        globalSvgU.value.appendChild(pathUmap);
+        polygonUMAP.value = [];
+      } else if (isDrawingRect.value) {
         lassoSide.value = 'right';
         removeRegions();
-        const mousePos = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();
-        rectangleUMAP.value = { x: mousePos.x, y: mousePos.y, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        rectangle.value = { x: 0, y: 0, id: get_uuid(), width: 0, height: 0, points: [], opacity: 0.6, fill: '', stroke: 'green', strokeWidth: 3, endPointx: 0, endPointy: 0 };
-        highlightRegion();
-        isClicked.value = true;
+        rectUmap.setAttribute('x', `${ev.layerX}`);
+        rectUmap.setAttribute('y', `${ev.layerY}`);
+        rectUmap.setAttribute('fill', 'none');
+        rectUmap.setAttribute('stroke', '#6ffc03');
+        rectUmap.setAttribute('width', '0');
+        rectUmap.setAttribute('height', '0');
+        globalSvgU.value.appendChild(rectUmap);
+        startRectUmapCoords = [ev.layerX, ev.layerY];
+      } else {
+        originalClickedPointU.value = [ev.layerX, ev.layerY];
+        const translateValue = globalUmap.value.getAttribute('transform');
+        const matchValue = translateValue.match(/\d.+/);
+        const splitValue = matchValue[0].slice(0, matchValue[0].length - 1).split(',');
+        translatePointU.value = [parseFloat(splitValue[0]), parseFloat(splitValue[1])];
       }
     }
     function mouseMoveOnStageLeft(ev: any) {
+      if (!isClicked.value) return;
+
       if (isDrawing.value) {
         if (isClicked.value) {
-          const mousePos = (ctx as any).refs.konvaStageDualAtac.getNode().getRelativePointerPosition();
-          polygon.value.points.push(Math.round(mousePos.x));
-          polygon.value.points.push(Math.round(mousePos.y));
-          (ctx as any).refs.drawingLayer.getNode().batchDraw(); // forced update since due to pointer issue
+          appendToBuffer({ x: ev.layerX, y: ev.layerY });
+          updateSvgPath();
+          polygon.value.push(ev.layerX);
+          polygon.value.push(ev.layerY);
         }
-      }
-      if (isDrawingRect.value) {
+      } else if (isDrawingRect.value) {
         if (isClicked.value) {
-          const mousePos = (ctx as any).refs.konvaStageDualAtac.getNode().getRelativePointerPosition();
-          const xdiff = Math.abs(mousePos.x - rectangle.value.x);
-          const ydiff = Math.abs(mousePos.y - rectangle.value.y);
-          rectangle.value.width = xdiff;
-          rectangle.value.height = ydiff;
-          rectangle.value.endPointx = mousePos.x;
-          rectangle.value.endPointy = mousePos.y;
-          (ctx as any).refs.drawingLayerRect.getNode().batchDraw(); // forced update since due to pointer issue
+          const xdiff = Math.abs(ev.layerX - startRectCoords[0]);
+          const ydiff = Math.abs(ev.layerY - startRectCoords[1]);
+          if (ev.layerX < startRectCoords[0]) rect.setAttribute('x', `${ev.layerX}`);
+          if (ev.layerY < startRectCoords[1]) rect.setAttribute('y', `${ev.layerY}`);
+          rect.setAttribute('width', `${xdiff}`);
+          rect.setAttribute('height', `${ydiff}`);
         }
+      } else {
+        console.log(ev);
+        const diffX = Math.abs(originalClickedPoint.value[0] - ev.layerX);
+        const diffY = Math.abs(originalClickedPoint.value[1] - ev.layerY);
+        const x = (originalClickedPoint.value[0] < ev.layerX) ? 1 : -1;
+        const y = (originalClickedPoint.value[1] < ev.layerY) ? 1 : -1;
+        globalSpatial.value.setAttribute('transform', `translate(${translatePoint.value[0] + diffX * x}, ${translatePoint.value[1] + diffY * y})`);
       }
     }
     function mouseMoveOnStageRight(ev: any) {
+      if (!isClickedU.value) return;
+
       if (isDrawing.value) {
-        if (isClicked.value) {
-          const mousePos = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();
-          polygonUMAP.value.points.push(Math.round(mousePos.x));
-          polygonUMAP.value.points.push(Math.round(mousePos.y));
-          (ctx as any).refs.drawingLayerRight.getNode().batchDraw(); // forced update since due to pointer issue
+        if (isClickedU.value) {
+          appendToBuffer({ x: ev.layerX, y: ev.layerY });
+          updateSvgPath();
+          polygonUMAP.value.push(ev.layerX);
+          polygonUMAP.value.push(ev.layerY);
         }
-      }
-      if (isDrawingRect.value) {
-        if (isClicked.value) {
-          const mousePos = (ctx as any).refs.konvaStageDualAtacRight.getNode().getRelativePointerPosition();
-          const xdiff = Math.abs(mousePos.x - rectangleUMAP.value.x);
-          const ydiff = Math.abs(mousePos.y - rectangleUMAP.value.y);
-          rectangleUMAP.value.width = xdiff;
-          rectangleUMAP.value.height = ydiff;
-          rectangleUMAP.value.endPointx = mousePos.x;
-          rectangleUMAP.value.endPointy = mousePos.y;
-          (ctx as any).refs.drawingLayerRightRect.getNode().batchDraw(); // forced update since due to pointer issue
+      } else if (isDrawingRect.value) {
+        if (isClickedU.value) {
+          const xdiff = Math.abs(ev.layerX - startRectUmapCoords[0]);
+          const ydiff = Math.abs(ev.layerY - startRectUmapCoords[1]);
+          if (ev.layerX < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${ev.layerX}`);
+          if (ev.layerY < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${ev.layerY}`);
+          rectUmap.setAttribute('width', `${xdiff}`);
+          rectUmap.setAttribute('height', `${ydiff}`);
         }
+      } else {
+        const diffX = Math.abs(originalClickedPointU.value[0] - ev.layerX);
+        const diffY = Math.abs(originalClickedPointU.value[1] - ev.layerY);
+        const x = (originalClickedPointU.value[0] < ev.layerX) ? 1 : -1;
+        const y = (originalClickedPointU.value[1] < ev.layerY) ? 1 : -1;
+        globalUmap.value.setAttribute('transform', `translate(${translatePointU.value[0] + diffX * x}, ${translatePointU.value[1] + diffY * y})`);
       }
     }
     function mouseUpOnStageLeft(ev: any) {
+      isClicked.value = false;
       if (isDrawing.value) {
-        isClicked.value = false;
-        regions.value.push(deepCopy(polygon.value));
-        polygon.value.points = [];
+        const regValue = { key: 'lasso', points: polygon.value };
+        regions.value.push(regValue);
+        polygon.value = [];
         highlightRegion();
         if (highlightCount.value > 0) {
           runSpatial();
         }
       }
       if (isDrawingRect.value) {
-        isClicked.value = false;
-        regions.value.push(deepCopy(rectangle.value));
+        const regValue = { key: 'rect', points: [parseFloat(rect.getAttribute('x')!), parseFloat(rect.getAttribute('y')!), parseFloat(rect.getAttribute('width')!), parseFloat(rect.getAttribute('height')!)] };
+        regions.value.push(regValue);
         highlightRegion();
         if (highlightCount.value > 0) {
           runSpatial();
@@ -1018,18 +954,19 @@ export default defineComponent({
       }
     }
     function mouseUpOnStageRight(ev: any) {
+      isClickedU.value = false;
       if (isDrawing.value) {
-        isClicked.value = false;
-        regionsUMAP.value.push(deepCopy(polygonUMAP.value));
-        polygonUMAP.value.points = [];
+        const regValue = { key: 'lasso', points: polygonUMAP.value };
+        regionsUMAP.value.push(regValue);
+        polygonUMAP.value = [];
         highlightRegion();
         if (highlightCount.value > 0) {
           runSpatial();
         }
       }
       if (isDrawingRect.value) {
-        isClicked.value = false;
-        regionsUMAP.value.push(deepCopy(rectangleUMAP.value));
+        const regValue = { key: 'rect', points: [parseFloat(rectUmap.getAttribute('x')!), parseFloat(rectUmap.getAttribute('y')!), parseFloat(rectUmap.getAttribute('width')!), parseFloat(rectUmap.getAttribute('height')!)] };
+        regionsUMAP.value.push(regValue);
         highlightRegion();
         if (highlightCount.value > 0) {
           runSpatial();
@@ -1039,53 +976,48 @@ export default defineComponent({
     function onFilesChanged(ev: any) {
       selectedFiles.value = ev;
     }
-    function reScale() {
-      updateCircles();
+    function reScale(scalar: string) {
+      let scaled: any = [];
+      if (scalar === 'plus') scaled = [viewBoxSpatial.value[0] - 20, viewBoxSpatial.value[1] - 20];
+      else scaled = [viewBoxSpatial.value[0] + 20, viewBoxSpatial.value[0] + 20];
+      viewBoxSpatial.value = scaled;
     }
-    function reScaleUMAP() {
-      updateCircles();
+    function reScaleUMAP(scalar: string) {
+      let scaled: any = [];
+      if (scalar === 'plus') scaled = [viewBoxUmap.value[0] - 20, viewBoxUmap.value[1] - 20];
+      else scaled = [viewBoxUmap.value[0] + 20, viewBoxUmap.value[0] + 20];
+      viewBoxUmap.value = scaled;
     }
     function resetScaleAndPos(ev: any) {
-      const stage = (ctx as any).refs.konvaStageDualAtac.getNode();
-      const newPos = { x: 0, y: 0 };
-      stage.position(newPos);
-      scale.value = 0.75;
+      const reset = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
+      viewBoxSpatial.value = reset;
     }
     function resetScaleAndPosUMAP(ev: any) {
-      const stage = (ctx as any).refs.konvaStageDualAtacRight.getNode();
-      const newPos = { x: 0, y: 0 };
-      stage.position(newPos);
-      scaleUMAP.value = 0.75;
+      const reset = [konvaConfigRight.value.width, konvaConfigRight.value.height];
+      viewBoxUmap.value = reset;
     }
-    function onResize() {
-      fitStageToParent();
-      updateCircles();
+    async function onResize() {
+      await fitStageToParent();
+      resizeCircles();
     }
-    watch(backgroundColor, (v: any) => {
-      if (isDrawing.value || isDrawingRect.value) {
-        highlightRegion();
-      }
-    });
     watch(averageInd, (v: any) => {
       if (selectedGenes.value.length > 0) {
         updateCircles();
       }
     });
     watch(isDrawing, (v: boolean) => {
-      setDraggable(!v);
       removeRegions();
-      if (!isDrawing.value) unHighlighCluster();
+      if (!isDrawing.value) unHighlightCluster();
     });
     watch(isDrawingRect, (v: boolean) => {
-      setDraggable(!v);
       removeRegions();
-      if (!isDrawingRect.value) unHighlighCluster();
+      if (!isDrawingRect.value) unHighlightCluster();
     });
     watch(clickedClusterFromParent, (v: any) => {
       if (!isDrawing.value && !isDrawingRect.value) {
         if (currentClickedCluster.value === v[0]) {
           currentClickedCluster.value = '';
-          unHighlighCluster();
+          unHighlightCluster();
         } else {
           [currentClickedCluster.value] = v;
           highlightCluster(v);
@@ -1133,12 +1065,6 @@ export default defineComponent({
         if (selectedGenes.value.length > 0) selectedGenes.value = [];
       }
     });
-    watch(scale, () => {
-      reScale();
-    });
-    watch(scaleUMAP, () => {
-      reScaleUMAP();
-    });
     watch(selectedGenes, async (v: any[]) => {
       maxMinBoundary.value = [];
       if (v && selectedGenes.value.length === 0) {
@@ -1147,12 +1073,12 @@ export default defineComponent({
         geneSummation.value = [];
         updateCircles();
       } else {
-        loading.value = true;
+        // loading.value = true;
         isClusterView.value = false;
         await obtainSummations();
         removeRegions();
         updateCircles();
-        loading.value = false;
+        // loading.value = false;
       }
     });
     watch(selectedGenesFromParent, (v: any) => {
@@ -1192,10 +1118,6 @@ export default defineComponent({
       circlesSpatialUMAP,
       isHighlighted,
       onResize,
-      mouseMoveOnSpatial,
-      mouseOutOnSpatial,
-      mouseMoveOnSpatialRight,
-      mouseOutOnSpatialRight,
       isClusterView,
       clusterItems,
       clusterColors,
@@ -1220,8 +1142,6 @@ export default defineComponent({
       polygonUMAP,
       regions,
       regionsUMAP,
-      rectangle,
-      rectangleUMAP,
       removeRegions,
       reScale,
       reScaleUMAP,
@@ -1259,6 +1179,18 @@ export default defineComponent({
       checkBoundaryColor,
       currentClickedCluster,
       assayFlag,
+      originalClickedPoint,
+      originalClickedPointU,
+      globalSpatial,
+      globalUmap,
+      globalSvgS,
+      globalSvgU,
+      initializePlots,
+      translatePoint,
+      translatePointU,
+      viewBoxSpatial,
+      viewBoxUmap,
+      initialized,
     };
   },
 });
