@@ -389,6 +389,14 @@ export default class Client {
       return false;
     }
   }
+  async getSubFolders(payload: any): Promise<any> {
+    try {
+      const resp = await this.axios.post('api/v1/storage/sub_folders', payload);
+      return resp.data;
+    } catch (error) {
+      return false;
+    }
+  }
   async getBuckets() {
     const resp = await this.axios.get('api/v1/storage/fetch_buckets');
     return resp.data;
@@ -678,6 +686,24 @@ export default class Client {
   async get_info_from_results_id(results_id: number) {
     const pl = { results_id };
     const resp = await this.axios.post('/api/v1/run_db/get_info_from_results_id', pl);
+    return resp.data;
+  }
+  async checkSpatialFolderExists(bucket_name: string, run_id: string) {
+    const pl = { bucket_name, run_id };
+    const resp = await this.axios.post('/api/v1/run_db/check_spatial_folder_exists', pl);
+    return resp.data;
+  }
+  async get_job_status_runid_job_name(pl: any) {
+    const resp = await this.axios.post('/api/v1/run_db/get_job_runid_jobname', pl);
+    return resp.data;
+  }
+  async getJobs(pl: any) {
+    const resp = await this.axios.post('/api/v1/run_db/get_jobs', pl);
+    return resp.data;
+  }
+  async ensure_run_id_created(run_id: string) {
+    const pl = { run_id };
+    const resp = await this.axios.post('/api/v1/run_db/ensure_run_id_created', pl);
     return resp.data;
   }
 }

@@ -7,6 +7,7 @@
       <v-spacer></v-spacer>
       <v-btn medium color="black" text @click="redirectToLogin">Sign In</v-btn>
     </v-app-bar>
+    <!-- Filtering side bar menu -->
     <v-row no-gutters style="margin-top:10px">
       <v-col cols="12" sm="3" style="padding-left:10px">
         <v-card :loading="loading" flat dense>
@@ -44,6 +45,7 @@
           </v-list>
         </v-card>
       </v-col>
+      <!-- Search box  -->
       <v-col cols="12" sm="8" style="padding-right:10px">
         <v-row>
           <v-col cols="12" sm="7">
@@ -58,6 +60,7 @@
               clearable
               prepend-icon="mdi-magnify"/>
           </v-col>
+          <!-- private public toggle-->
           <v-col cols="12" sm="3" class="d-flex justify-center align-center mt-4">
             <v-tooltip bottom>
               <template v-slot:activator="{ on, attrs }">
@@ -78,6 +81,7 @@
               <span>{{`${(!pubPrivFlag) ? 'Show Public' : 'Show Private'}`}}</span>
             </v-tooltip>
           </v-col>
+          <!-- toggle of full cards or list of runs -->
           <v-col cols="12" sm="2" class="mt-4">
             <v-row>
               <v-col cols="6" sm="3">
@@ -89,6 +93,7 @@
             </v-row>
           </v-col>
         </v-row>
+        <!-- view where each run has a card -->
         <template v-if="!menuListFlag">
           <template v-for="data in numOfPubsHold[pageIteration]" >
             <template v-if="data.result_description !== null">
@@ -102,11 +107,12 @@
                     <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
                     <v-icon
                     v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.results_id)"
+                    @click="edit_result(data.run_id)"
                     style="position: relative; left: 40px; bottom: 10px;"
                     size="30"
                     > mdi-pencil </v-icon>
                   </v-col>
+                  <!-- section of card with image -->
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
                       <img style="position: absolute;right: 0;height: 200px;width: 200px; max-width: 200px;max-height:200px;margin-top:5px" :src="data.imageLink"/>
@@ -126,7 +132,7 @@
                     <v-card-text style="color:white">Placeholder</v-card-text>
                     <v-icon
                     v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.results_id)"
+                    @click="edit_result(data.run_id)"
                     style="position: relative; left: 40px; bottom: 45px;"
                     size="30"
                     > mdi-pencil </v-icon>
@@ -159,7 +165,7 @@
                     </v-list-item-content>
                     <v-icon
                     v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.results_id)"
+                    @click="edit_result(data.run_id)"
                     style="position: relative; left: 40px; bottom: 45px;"
                     size="30"
                     > mdi-pencil </v-icon>
@@ -172,12 +178,12 @@
                       <v-list-item-subtitle
                         v-text="data.date"
                       ></v-list-item-subtitle>
-                      <v-list-item-subtitle class="text--primary" v-text="`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antbody: ${data.epitope}` : ''}`"></v-list-item-subtitle>
+                      <v-list-item-subtitle class="text--primary" v-text="`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`"></v-list-item-subtitle>
                       <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
                     </v-list-item-content>
                     <v-icon
                     v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.results_id)"
+                    @click="edit_result(data.run_id)"
                     style="position: relative; left: 40px; bottom: 45px;"
                     size="30"
                     > mdi-pencil </v-icon>
@@ -274,8 +280,8 @@ export default defineComponent({
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
     }
-    function edit_result(results_id: string) {
-      const query = { component: 'AdminPanel', params: { action: 'edit', results_id } };
+    function edit_result(run_id: string) {
+      const query = { component: 'AdminPanel', params: { action: 'edit', run_id } };
       const newRoute = generateRouteByQuery(currentRoute.value, query);
       router.push(newRoute);
     }
@@ -456,8 +462,7 @@ export default defineComponent({
       let imageLink = '';
       const matchPath = path.match(/(data\/)(.+)(\/)/);
       const xploreId = matchPath![2];
-      if (pub !== 1) imageLink = `${group}/frontPage_${xploreId}.png`;
-      else imageLink = `frontPage_${xploreId}.png`;
+      imageLink = `frontpage_images/frontPage_${xploreId}.png`;
       return imageLink;
     }
     function get_display_date(date: any) {

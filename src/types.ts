@@ -154,4 +154,5 @@ export interface UserGroupAssignmentInform {
   group: string,
   username: string,
   email: string,
+  name: string,
 }

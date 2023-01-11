@@ -15,17 +15,24 @@
       <v-tab-item key="WorkerStatus">
         <worker-status/>
       </v-tab-item>
-      <v-tab-item key="UserManagement">
-        <user-management/>
+      <v-tab-item key="UserManagement" eager>
+        <user-management
+        ref="user_managment"
+        />
+      </v-tab-item>
+      <v-tab-item key="GroupManagment">
+        <group-managment
+        @update-groups="update_groups_list">
+        </group-managment>/>
+      </v-tab-item>
+      <v-tab-item key="CreateWebObject">
+        <create-web-object/>
       </v-tab-item>
       <v-tab-item key="Uploader" eager>
         <web-uploader
         ref="run_editor"
         >
         </web-uploader>
-      </v-tab-item>
-      <v-tab-item key="CreateWebObject">
-        <create-web-object/>
       </v-tab-item>
     </v-tabs-items>
   </v-container>
@@ -46,6 +53,7 @@ import AddRemoveUser from './modules/AddRemoveUser.vue';
 import UserManagement from './modules/UserManagement.vue';
 import WebUploader from './modules/WebUploader.vue';
 import CreateWebObject from './modules/CreateWebObject.vue';
+import GroupManagment from './modules/GroupManagment.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -56,7 +64,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Add A Run', 'Create Web Files'];
+const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Group Managment', 'Create A Run', 'Add A Run'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -69,6 +77,7 @@ export default defineComponent({
     UserManagement,
     WebUploader,
     CreateWebObject,
+    GroupManagment,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -77,12 +86,17 @@ export default defineComponent({
     const tab = ref<any>(1);
     const parent_results_id = ref<any>(null);
     const example_ref = ref(null);
+    function update_groups_list() {
+      console.log('getting updated list');
+      (ctx as any).refs.user_managment.update_groups_list();
+    }
     onMounted(async () => {
       await clientReady;
       if (props.query.params) {
-        tab.value = 3;
+        tab.value = 5;
         if (props.query.params.action === 'edit') {
-          (ctx as any).refs.run_editor.auto_populate_from_results_id(props.query.params.results_id);
+          console.log(props.query.params);
+          (ctx as any).refs.run_editor.auto_populate_from_run_id(props.query.params.run_id);
         }
       }
       store.commit.setSubmenu(null);
@@ -93,6 +107,7 @@ export default defineComponent({
       client,
       parent_results_id,
       resolveAuthGroup,
+      update_groups_list,
     };
   },
 });
