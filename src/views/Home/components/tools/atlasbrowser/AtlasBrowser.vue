@@ -670,6 +670,7 @@ const assay_dict: Record<string, any> = {
   cut_n_tag: 'CUT&Tag',
   'wt_dbit-seq': 'Transcriptome',
   'ATAC-seq': 'ATAC-seq',
+  'atac-seq': 'ATAC-seq',
 };
 interface Metadata {
   points: number[] | any;
