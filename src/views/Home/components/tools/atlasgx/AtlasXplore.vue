@@ -210,7 +210,7 @@
               <v-icon>mdi-select</v-icon>
             </v-btn>
             </template>
-            <span>Rect Select</span>
+            <span>Quad Select</span>
             </v-tooltip>
             <v-tooltip right>
             <template v-slot:activator="{ on, attrs }">
@@ -1422,6 +1422,9 @@ export default defineComponent({
             span.innerText = 'MOTIF';
           }
         }
+        userMaxValue.value = '';
+        userMinValue.value = '';
+        userMaxMinValue.value = [userMaxValue.value, userMinValue.value];
         genes.value = [];
         featureTableFlag.value = true;
         peakViewerFlag.value = false;

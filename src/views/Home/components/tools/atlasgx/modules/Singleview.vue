@@ -22,7 +22,7 @@
               small
               icon
               color="primary"
-              @click="scale=scale*1.1"
+              @click="reScale('plus')"
               ><v-icon small>mdi-magnify-plus</v-icon>
             </v-btn>
           </v-row>
@@ -31,7 +31,7 @@
               small
               icon
               color="primary"
-              @click="scale=scale*0.9"
+              @click="reScale('neg')"
               ><v-icon small>mdi-magnify-minus</v-icon>
             </v-btn>
           </v-row>
@@ -47,21 +47,9 @@
         :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
         height="34vh"
         align="center">
-        <v-stage
-          ref="konvaStageSingle"
-          :config="konvaConfigLeft"
-          :style="{ 'overflow': 'hidden' }"
-          >
-          <v-layer
-            ref="spatialLayerSingle"
-            id="spatialLayerSingle">
-            <v-circle v-for="p in circlesSpatialSingle"
-              :config="p"
-              v-bind:key="p.id"
-              @mouseover="mouseMoveOnSpatial"
-              @mouseout="mouseOutOnSpatial"/>
-          </v-layer>
-        </v-stage>
+        <svg style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
+          <g :id="`singleView${selectedGenesFromParent}`"/>
+        </svg>
       </v-card>
       <v-row>
         <v-col cols="12" sm="11">
@@ -118,6 +106,7 @@ export default defineComponent({
     const width = window.innerWidth;
     const height = window.innerHeight;
     const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true });
+    const viewBoxSpatial = ref<number[]>([width, height]);
     const scale = ref<number>(0.68);
     const isClusterView = ref(true);
     const lowestCount = ref<number>(10000);
@@ -156,6 +145,8 @@ export default defineComponent({
     const coordinates = ref<any>();
     const maxMinBoundaryFromParents = computed(() => (props.userBoundary));
     const maxMinBoundary = ref<any[]>([]);
+    const globalSpatial = ref<any>();
+    const initialized = ref<boolean>(false);
     function setDraggable(flag: boolean) {
       konvaConfigLeft.value.draggable = flag;
     }
@@ -166,6 +157,7 @@ export default defineComponent({
       const parentHeight = (parent as any).offsetHeight;
       konvaConfigLeft.value.width = parentWidth;
       konvaConfigLeft.value.height = parentHeight;
+      viewBoxSpatial.value = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
     }
     function makearray(stopValue: number, startValue: number): any[] {
       if (highestCount.value === 0) return [];
@@ -191,7 +183,27 @@ export default defineComponent({
       if (value < parseFloat(maxMinBoundary.value[1])) return false;
       return value;
     }
-    async function updateCircles() {
+    async function resizeCircles() {
+      if (!initialized.value) return;
+      const minX = maxMin.value[0];
+      const minY = maxMin.value[1];
+      const maxX = maxMin.value[2];
+      const maxY = maxMin.value[3];
+      const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
+      const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
+      const [paddingX, paddingY] = [Math.floor(stageWidth * 0.15), Math.floor(stageHeight * 0.15)];
+      const radiusSize = (coordinates.value.length < 4000) ? 22 : 44;
+      const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
+      const inV = scale.value * viewScale * minX - radius;
+      const inH = scale.value * viewScale * minY - radius;
+      coordinates.value.forEach((v: any, i: any) => {
+        const circle = document.getElementById(`tixel${i}${selectedGenesFromParent.value}`)!;
+        circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV + paddingX}`);
+        circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH + paddingY}`);
+        circle.setAttribute('r', `${radius}`);
+      });
+    }
+    async function initializePlots() {
       if (coordinates.value === undefined) return;
       const circles: any[] = [];
       const geneSum: number[] = [];
@@ -201,77 +213,68 @@ export default defineComponent({
       const maxY = maxMin.value[3];
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
-      const [paddingX, paddingY] = [60, 30];
+      const [paddingX, paddingY] = [Math.floor(stageWidth * 0.15), Math.floor(stageHeight * 0.15)];
       const radiusSize = (coordinates.value.length < 4000) ? 22 : 44;
       const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
+      const inV = scale.value * viewScale * minX - radius;
+      const inH = scale.value * viewScale * minY - radius;
+      const NS = 'http://www.w3.org/2000/svg';
+      globalSpatial.value = document.getElementById(`singleView${selectedGenesFromParent.value}`)!;
       coordinates.value.forEach((v: any, i: any) => {
-        const c = {
-          id: get_uuid(),
-          x: v.ogx * scale.value * viewScale + paddingX,
-          y: v.ogy * scale.value * viewScale + paddingY,
-          radius,
-          originalColor: 'grey',
-          fill: 'grey',
-          stroke: 'grey',
-          strokeWidth: 0,
-          cluster: v.cluster,
-          total: v.genes[selectedGenesFromParent.value],
-          inactive: false,
-          genes: { [selectedGenesFromParent.value]: v.genes[selectedGenesFromParent.value] },
-          perfectDrawEnabled: false,
-          shadowForStrokeEnabled: false,
-          listening: false,
-        };
-        circles.push(c);
-        geneSum.push(checkBoundary(c.total));
+        geneSum.push(checkBoundary(v.genes[selectedGenesFromParent.value]));
       });
-      circlesSpatialSingle.value = circles;
       highestCount.value = -10000;
       lowestCount.value = 10000;
       const geneColors = colormapBounded(colors_intensity.value, geneSum, 1);
-      circles.forEach((v: any, i: any) => {
-        const col = checkBoundaryColor(circles[i].total);
+      coordinates.value.forEach((v: any, i: any) => {
+        const col = checkBoundaryColor(v.genes[selectedGenesFromParent.value]);
         const clr = (col) ? geneColors[i] : 'grey';
         highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
         lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
-        circles[i].originalColor = clr;
-        circles[i].fill = clr;
-        circles[i].stroke = clr;
+        const circle = document.createElementNS(NS, 'circle');
+        circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV + paddingX}`);
+        circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH + paddingY}`);
+        circle.setAttribute('r', `${radius}`);
+        circle.setAttribute('id', `tixel${i}${selectedGenesFromParent.value}`);
+        circle.setAttribute('fill', `${clr}`);
+        globalSpatial.value.appendChild(circle);
+      });
+      stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
+      initialized.value = true;
+    }
+    async function updateCircles() {
+      if (coordinates.value === undefined) return;
+      const geneSum: number[] = [];
+      coordinates.value.forEach((v: any, i: any) => {
+        geneSum.push(checkBoundary(v.genes[selectedGenesFromParent.value]));
+      });
+      highestCount.value = -10000;
+      lowestCount.value = 10000;
+      const geneColors = colormapBounded(colors_intensity.value, geneSum, 1);
+      coordinates.value.forEach((v: any, i: any) => {
+        const col = checkBoundaryColor(v.genes[selectedGenesFromParent.value]);
+        const clr = (col) ? geneColors[i] : 'grey';
+        highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
+        lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
+        const circle = document.getElementById(`tixel${i}${selectedGenesFromParent.value}`)!;
+        circle.setAttribute('fill', `${clr}`);
       });
       stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
     }
-    // Drawing
-    async function mouseMoveOnSpatial(ev: any) {
-      const mousePos = (ctx as any).refs.konvaStageSingle.getNode().getRelativePointerPosition();
-      const item = ev.target.attrs;
-      tooltip.position({
-        x: mousePos.x,
-        y: mousePos.y,
-      });
-      let text = `Cluster: ${item.cluster}`;
-      text = `${text}\nTotal: ${(item.total).toFixed(2)}`;
-      lodash.forIn(item.genes, (v: number, k: string) => {
-        text = `${text}\n${k}: ${v.toFixed(2)}`;
-      });
-      tooltipText.text(text);
-      tooltip.show();
-    }
-    async function mouseOutOnSpatial(ev: any) {
-      tooltip.hide();
-    }
     // Drawing Region
-    function reScale() {
-      updateCircles();
+    function reScale(scalar: string) {
+      let scaled: any = [];
+      if (scalar === 'plus') scaled = [viewBoxSpatial.value[0] - 20, viewBoxSpatial.value[1] - 20];
+      else scaled = [viewBoxSpatial.value[0] + 20, viewBoxSpatial.value[0] + 20];
+      viewBoxSpatial.value = scaled;
     }
     function resetScaleAndPos(ev: any) {
-      const stage = (ctx as any).refs.konvaStageSingle.getNode();
-      const newPos = { x: 0, y: 0 };
-      stage.position(newPos);
-      scale.value = 0.68;
+      const reset = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
+      viewBoxSpatial.value = reset;
     }
-    function onResize() {
-      fitStageToParent();
-      updateCircles();
+    async function onResize() {
+      await fitStageToParent();
+      resizeCircles();
     }
     watch(heatMap, (v: string) => {
       if (v === 'picnic') {
@@ -291,12 +294,10 @@ export default defineComponent({
         colors_intensity.value = v.intense;
         colorBarmap.value = y.color;
         maxMin.value = y.maxMin;
-        onResize();
+        fitStageToParent();
+        initializePlots();
       }
     }, { deep: true });
-    watch(scale, () => {
-      reScale();
-    });
     watch(maxMinBoundaryFromParents, (v: any) => {
       if (v[0] === '' && v[0] === '') maxMinBoundary.value = [];
       else maxMinBoundary.value = v;
@@ -311,8 +312,6 @@ export default defineComponent({
       loading,
       konvaConfigLeft,
       onResize,
-      mouseMoveOnSpatial,
-      mouseOutOnSpatial,
       isClusterView,
       clusterColors,
       updateCircles,
@@ -336,6 +335,11 @@ export default defineComponent({
       maxMinBoundaryFromParents,
       checkBoundary,
       checkBoundaryColor,
+      globalSpatial,
+      viewBoxSpatial,
+      resizeCircles,
+      initialized,
+      initializePlots,
     };
   },
 });
