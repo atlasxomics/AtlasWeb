@@ -670,6 +670,7 @@ const assay_dict: Record<string, any> = {
   cut_n_tag: 'CUT&Tag',
   'wt_dbit-seq': 'Transcriptome',
   'ATAC-seq': 'ATAC-seq',
+  'atac-seq': 'ATAC-seq',
 };
 interface Metadata {
   points: number[] | any;
@@ -883,6 +884,7 @@ export default defineComponent({
         metadata.value.sampleID = slimsData.cntn_cf_sampleId;
         metadata.value.antibody = slimsData.cntn_cf_fk_epitope;
         if (slimsData.cntn_cf_fk_workflow) {
+          console.log(slimsData.cntn_cf_fk_workflow);
           metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
         }
         if (slimsData.cntn_cf_fk_barcodeOrientation === '1 (normal)') {
