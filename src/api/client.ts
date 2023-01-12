@@ -433,6 +433,11 @@ export default class Client {
       return Promise.reject(e);
     }
   }
+  async generateFrontPage(url: string, runId: string): Promise<any> {
+    const pl = { url, runId };
+    const resp = await this.axios.post('/api/v1/storage/generate_frontpage', pl);
+    return resp;
+  }
   async generateQcEntry(payload: QcEntryGenerationRequest): Promise<any> {
     const resp = await this.axios.post('/api/v1/storage/qc_entry', null, payload);
     return resp.data;

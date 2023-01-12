@@ -414,15 +414,20 @@
                 single-select
                 hide-default-footer
                 hide-default-header
-                :items="['Transparent', 'Opaque']">
+                :items="saveImageTable">
                   <template v-slot:item="row">
                     <template v-if="row.item == 'Transparent'">
                       <tr @click="captureScreen('null')">
                         <td>{{row.item}}</td>
                       </tr>
                     </template>
-                    <template v-else>
+                    <template v-else-if="row.item == 'Opaque'">
                       <tr @click="captureScreen(backgroundColor)">
+                        <td>{{row.item}}</td>
+                      </tr>
+                    </template>
+                    <template v-else>
+                      <tr @click="generateFrontPage">
                         <td>{{row.item}}</td>
                       </tr>
                     </template>
@@ -733,6 +738,7 @@ export default defineComponent({
     const currentRoute = computed(() => ctx.root.$route);
     const workers = computed(() => store.state.client?.workers);
     const globalXploreData = computed(() => store.state.xploreData);
+    const saveImageTable = ref<any[]>((resolveAuthGroup(['admin'])) ? ['Transparent', 'Opaque', 'FrontPage'] : ['Transparent', 'Opaque']);
     const candidateWorkers = ref<any[]>([]);
     const filename = ref<string | null>(null);
     const holdMotif = ref<string | null>(null);
@@ -1067,6 +1073,31 @@ export default defineComponent({
           pom.click();
         });
       }
+    }
+    async function generateFrontPage() {
+      displayFlag.value = false;
+      const el = document.getElementById('spatialGroup')!;
+      const widthS = el.getBoundingClientRect().width;
+      const heightS = el.getBoundingClientRect().height;
+      el.cloneNode(true);
+      const svgURL = new XMLSerializer().serializeToString(el);
+      const image = new window.Image();
+      image.onload = async (v: any) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = widthS;
+        canvas.height = heightS;
+        const context = canvas.getContext('2d')!;
+        context.drawImage(image, 0, 0, widthS, heightS);
+        const base64image = canvas.toDataURL('image/png');
+        const pom = document.createElement('a');
+        pom.id = `${runId.value}link`;
+        pom.href = base64image;
+        const end = `frontPage_${runId.value}.png`;
+        pom.setAttribute('download', `${end}`);
+        pom.click();
+        const genPage = await client.value?.generateFrontPage(base64image, runId.value!);
+      };
+      image.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL)}`;
     }
     function sendGene(ev: any) {
       if (!selectedGenes.value.includes(ev) && genes.value.length > 0) {
@@ -1763,6 +1794,8 @@ export default defineComponent({
       updateOneTime,
       delayCounter,
       updateVar,
+      saveImageTable,
+      generateFrontPage,
     };
   },
 });

@@ -115,7 +115,7 @@
                   <!-- section of card with image -->
                   <v-col cols="12" sm="4">
                     <div style="height:inherit; width: 100%;">
-                      <img style="position: absolute;right: 0;height: 200px;width: 200px; max-width: 200px;max-height:200px;margin-top:5px" :src="data.imageLink"/>
+                      <img style="position: absolute;right: 0;height: 200px; max-width: 200px;max-height:200px;margin-top:10px;margin-right:7px;" :src="data.imageLink"/>
                     </div>
                   </v-col>
                 </v-row>
