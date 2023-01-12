@@ -13,7 +13,12 @@
         <reset-password/>
       </v-tab-item>
       <v-tab-item key="JobManagment">
-
+        <jobs-table
+        :filter_username="true"
+        :filter_job_name="false"
+        :filter_run_id="false"
+        >
+        </jobs-table>
       </v-tab-item>
       <v-tab-item key="UserManagement" eager>
         <user-management
@@ -69,7 +74,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Group Managment', 'Create A Run', 'Add A Run', 'Group Runs'];
+const tabs = ['Reset Password', 'Job Managment', 'User Management', 'Group Managment', 'Create A Run', 'Add A Run', 'Group Runs'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -84,6 +89,7 @@ export default defineComponent({
     CreateWebObject,
     GroupManagment,
     GroupingRuns,
+    JobsTable,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;

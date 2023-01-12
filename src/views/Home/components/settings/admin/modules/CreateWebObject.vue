@@ -78,7 +78,7 @@
         </v-btn>
       </v-col>
       <v-col cols="12" sm="6">
-                <v-card flat
+                <!-- <v-card flat
         class="mx-auto"
         v-if="run_id_selected_bool"
         >
@@ -99,7 +99,7 @@
         >
         </jobs-table>
         </v-card-actions>
-      </v-card>
+      </v-card> -->
       </v-col>
     </v-row>
     <v-row>
