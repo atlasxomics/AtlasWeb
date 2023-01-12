@@ -54,7 +54,7 @@
         @mousemove="mouseMoveOnStageLeft"
         @mouseup="mouseUpOnStageLeft">
         <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
-          <g id="plane" transform="translate(0, 0)"/>
+          <svg id="spatialGroup" x="0" y="0"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -122,7 +122,7 @@
         @mousemove="mouseMoveOnStageRight"
         @mouseup="mouseUpOnStageRight">
         <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
-          <g id="plane2" transform="translate(0, 0)"/>
+          <svg id="spatialUmap" x="0" y="0"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -258,8 +258,8 @@ export default defineComponent({
     const currentClickedCluster = ref<string>('');
     const originalClickedPoint = ref<number[]>([]);
     const originalClickedPointU = ref<number[]>([]);
-    const globalSpatial = ref<any>();
-    const globalUmap = ref<any>();
+    const globalSpatialGroup = ref<any>();
+    const globalUmapGroup = ref<any>();
     const globalSvgS = ref<any>();
     const globalSvgU = ref<any>();
     const translatePoint = ref<number[]>([]);
@@ -359,24 +359,23 @@ export default defineComponent({
       };
       const getCirclePositions = (element: any) => {
         const svg = element.ownerSVGElement;
-        const pt = svg.createSVGPoint();
-        pt.x = element.cx.baseVal.value;
-        pt.y = element.cy.baseVal.value;
-        const transformer = svg.getCTM().inverse().multiply(element.getCTM());
-        return pt.matrixTransform(transformer);
+        const moveXvalue = (lassoSide.value === 'left') ? globalSpatialGroup.value.getAttribute('x') : globalUmapGroup.value.getAttribute('x');
+        const moveYvalue = (lassoSide.value === 'left') ? globalSpatialGroup.value.getAttribute('y') : globalUmapGroup.value.getAttribute('y');
+        const pt = { x: parseFloat(moveXvalue) + parseFloat(element.cx.baseVal.value), y: parseFloat(moveYvalue) + parseFloat(element.cy.baseVal.value) };
+        return pt;
       };
       const filteredIndex: any = [];
       if (lassoSide.value === 'left') {
         for (let i = 0; i < spatialData.value.spatial.length; i += 1) {
           const tixel = document.getElementById(`tixel${i}`);
           const transformedCoords = getCirclePositions(tixel);
-          filteredIndex.push(funcInsideRegions([parseFloat(transformedCoords.x!), parseFloat(transformedCoords.y!)]));
+          filteredIndex.push(funcInsideRegions([transformedCoords.x!, transformedCoords.y!]));
         }
       } else {
         for (let i = 0; i < spatialData.value.spatial.length; i += 1) {
           const tixel = document.getElementById(`tixelUmap${i}`);
           const transformedCoords = getCirclePositions(tixel);
-          filteredIndex.push(funcInsideRegions([parseFloat(transformedCoords.x!), parseFloat(transformedCoords.y!)]));
+          filteredIndex.push(funcInsideRegions([transformedCoords.x!, transformedCoords.y!]));
         }
       }
       const hitCount = filteredIndex.filter((x: boolean) => x).length;
@@ -493,8 +492,8 @@ export default defineComponent({
       const inVU = scaleUMAP.value * viewScaleUMAP * minX_UMAP.value - radiusUMAP;
       const inHU = scaleUMAP.value * viewScaleUMAP * minY_UMAP.value - radiusUMAP;
       const NS = 'http://www.w3.org/2000/svg';
-      globalSpatial.value = document.getElementById('plane')!;
-      globalUmap.value = document.getElementById('plane2')!;
+      globalSpatialGroup.value = document.getElementById('spatialGroup')!;
+      globalUmapGroup.value = document.getElementById('spatialUmap')!;
       globalSvgS.value = document.getElementById('svgSpatial')!;
       globalSvgU.value = document.getElementById('svgUmap')!;
       spatialData.value.spatial.forEach((v: string[], i: number) => {
@@ -521,8 +520,8 @@ export default defineComponent({
         circleUmap.setAttribute('id', `tixelUmap${i}`);
         circleUmap.setAttribute('cluster', `${v[0]}`);
         circleUmap.setAttribute('opacity', '1.0');
-        globalSpatial.value.appendChild(circle);
-        globalUmap.value.appendChild(circleUmap);
+        globalSpatialGroup.value.appendChild(circle);
+        globalUmapGroup.value.appendChild(circleUmap);
       });
       initialized.value = true;
     }
@@ -756,7 +755,7 @@ export default defineComponent({
       strPath = '';
       strPathUmap = '';
       path.setAttribute('d', '');
-      path.setAttribute('d', '');
+      pathUmap.setAttribute('d', '');
       rect.setAttribute('x', '0');
       rect.setAttribute('y', '0');
       rect.setAttribute('width', '0');
@@ -839,10 +838,9 @@ export default defineComponent({
         startRectCoords = [ev.layerX, ev.layerY];
       } else {
         originalClickedPoint.value = [ev.layerX, ev.layerY];
-        const translateValue = globalSpatial.value.getAttribute('transform');
-        const matchValue = translateValue.match(/\d.+/);
-        const splitValue = matchValue[0].slice(0, matchValue[0].length - 1).split(',');
-        translatePoint.value = [parseFloat(splitValue[0]), parseFloat(splitValue[1])];
+        const moveXvalue = globalSpatialGroup.value.getAttribute('x');
+        const moveYvalue = globalSpatialGroup.value.getAttribute('y');
+        translatePoint.value = [parseFloat(moveXvalue), parseFloat(moveYvalue)];
       }
     }
     function mouseDownOnStageRight(ev: any) {
@@ -872,10 +870,9 @@ export default defineComponent({
         startRectUmapCoords = [ev.layerX, ev.layerY];
       } else {
         originalClickedPointU.value = [ev.layerX, ev.layerY];
-        const translateValue = globalUmap.value.getAttribute('transform');
-        const matchValue = translateValue.match(/\d.+/);
-        const splitValue = matchValue[0].slice(0, matchValue[0].length - 1).split(',');
-        translatePointU.value = [parseFloat(splitValue[0]), parseFloat(splitValue[1])];
+        const moveXvalue = globalUmapGroup.value.getAttribute('x');
+        const moveYvalue = globalUmapGroup.value.getAttribute('y');
+        translatePointU.value = [parseFloat(moveXvalue), parseFloat(moveYvalue)];
       }
     }
     function mouseMoveOnStageLeft(ev: any) {
@@ -898,12 +895,12 @@ export default defineComponent({
           rect.setAttribute('height', `${ydiff}`);
         }
       } else {
-        console.log(ev);
         const diffX = Math.abs(originalClickedPoint.value[0] - ev.layerX);
         const diffY = Math.abs(originalClickedPoint.value[1] - ev.layerY);
         const x = (originalClickedPoint.value[0] < ev.layerX) ? 1 : -1;
         const y = (originalClickedPoint.value[1] < ev.layerY) ? 1 : -1;
-        globalSpatial.value.setAttribute('transform', `translate(${translatePoint.value[0] + diffX * x}, ${translatePoint.value[1] + diffY * y})`);
+        globalSpatialGroup.value.setAttribute('x', `${translatePoint.value[0] + diffX * x}`);
+        globalSpatialGroup.value.setAttribute('y', `${translatePoint.value[1] + diffY * y}`);
       }
     }
     function mouseMoveOnStageRight(ev: any) {
@@ -930,7 +927,8 @@ export default defineComponent({
         const diffY = Math.abs(originalClickedPointU.value[1] - ev.layerY);
         const x = (originalClickedPointU.value[0] < ev.layerX) ? 1 : -1;
         const y = (originalClickedPointU.value[1] < ev.layerY) ? 1 : -1;
-        globalUmap.value.setAttribute('transform', `translate(${translatePointU.value[0] + diffX * x}, ${translatePointU.value[1] + diffY * y})`);
+        globalUmapGroup.value.setAttribute('x', `${translatePointU.value[0] + diffX * x}`);
+        globalUmapGroup.value.setAttribute('y', `${translatePointU.value[1] + diffY * y}`);
       }
     }
     function mouseUpOnStageLeft(ev: any) {
@@ -1181,8 +1179,8 @@ export default defineComponent({
       assayFlag,
       originalClickedPoint,
       originalClickedPointU,
-      globalSpatial,
-      globalUmap,
+      globalSpatialGroup,
+      globalUmapGroup,
       globalSvgS,
       globalSvgU,
       initializePlots,
