@@ -1,145 +1,147 @@
 <template>
     <v-container>
-        <v-row
-        >
-            <v-col
-            cols="2"
+        <v-col>
+            <v-data-table
+            :headers="headers"
+            :items="user_list"
             >
-                <h2> User List </h2>
-                <p v-for="(user, index) in user_list" :key="index">
-                    <v-btn
-                    @click="user_selected(user)"
-                    >
-                        {{ user.username }}
-                    </v-btn>
-                </p>
-            </v-col>
-            <v-col
-            cols="3"
-            v-if="selected_user"
-            >
-            <h2> Account Information </h2>
-            <v-text-field
-            label="Name"
-            readonly
-            v-model="selected_user.name"
-            >
-            </v-text-field>
-            <v-text-field
-            readonly
-            label="Email"
-            v-model="selected_user.email"
-            >
-            </v-text-field>
-            <p>
-             Email Confirmed: {{ displayed_email_status }}
-             <v-btn
-             v-if="displayed_email_status === 'false'"
-             @click="confirm_user_email"
-             color="green"
-             >
-             Confirm Email
-            </v-btn>
-            </p>
-            <v-text-field
-            v-model="selected_user.piname"
-            label="PI Name"
-            readonly
-            >
-            </v-text-field>
-            <v-text-field
-            v-model="selected_user.organization"
-            label="Organization"
-            readonly
-            >
-            </v-text-field>
-            <p>
-             Status: {{ displayed_user_status }}
-             <v-btn
-             v-if="displayed_user_status === 'UNCONFIRMED' || displayed_user_status === 'DISABLED'"
-             @click="confirm_user_display"
-             color="green"
-             >
-             Confirm
-            </v-btn>
-            </p>
-            <v-select
-            v-model="selected_user.groups"
-            :items="groups_list"
-            label="User's Groups"
-            @change="groups_list_changed()"
-            multiple
-            >
-            </v-select>
-            <input
-            type="checkbox"
-            id = "email_checkbox"
-            v-model="email_user">
-            <label for="email_checkbox">
-              Email User
-            </label>
-            <v-btn
-            :disabled="!changes_made"
-            @click="write_changes"
-            color="primary"
-            >
-              Confirm Changes
-            </v-btn>
-            <v-btn
-            :class="['ma-2','delete-btn']"
-            @click="delete_user_dialog = true"
-            color="red">
-            Delete User
-            </v-btn>
+            <template v-slot:[`item.actions`]="{ item }">
+              <v-icon
+                @click="edit(item.id)"
+                small>
+                mdi-pencil
+              </v-icon>
+              <v-icon
+              @click="deletion_button_selected(item.id)"
+              small>
+              mdi-delete
+              </v-icon>
+            </template>
+            </v-data-table>
             <v-dialog
+            v-model="editing"
+            width="800px"
+            @click:outside="popup_close"
+            >
+            <v-card>
+              <v-card-title
+              >
+                Edit User Information
+                </v-card-title>
+                <v-row>
+                  <v-col
+                  style="padding-left: 20px"
+                  cols="6"
+                  >
+                    <v-text-field
+                    :value="selected_user.username"
+                    label="Username"
+                    readonly
+                    >
+                    <template slot="append-outer">
+                      <v-btn  v-if="displayed_user_status === 'UNCONFIRMED'">
+                      <v-icon
+                      @click="confirm_user_display"
+                      color="green"
+                      >
+                        mdi-check
+                      </v-icon>
+                      </v-btn>
+                      <h5 v-else> Confirmed </h5>
+                    </template>
+                    </v-text-field>
+
+                    <v-text-field
+                    :value="selected_user.name"
+                    label="Full Name"
+                    readonly
+                    >
+                    </v-text-field>
+                    <v-text-field
+                    :value="selected_user.piname"
+                    label="PI Name"
+                    readonly
+                    >
+                    </v-text-field>
+                  </v-col>
+                  <v-col
+                  cols="5"
+                  >
+                    <v-select
+                    v-model="selected_user.groups"
+                    :items="groups_list"
+                    label="User's Groups"
+                    @change="groups_list_changed()"
+                    multiple
+                  >
+                  </v-select>
+                    <v-text-field
+                      :value="selected_user.email"
+                      label="Email"
+                      readonly
+                      >
+                    </v-text-field>
+                  <v-text-field
+                    :value="selected_user.organization"
+                    label="Organization"
+                    readonly
+                    >
+                  </v-text-field>
+                  </v-col>
+                </v-row>
+                <v-card-actions
+                class="justify-center"
+                >
+                  <v-checkbox
+                    style="position: relative; left: 5px;"
+                    v-model="email_user"
+                    :label="`Email User`"
+                  >
+                  </v-checkbox>
+                  <v-btn
+                  style="position: relative; left: 25px;"
+                  :disabled="!changes_made"
+                  @click="write_changes"
+                  color="primary"
+                  >
+                  Submit Changes
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+            <v-dialog
+            width="800px"
             v-model="delete_user_dialog"
             >
-              <v-btn
-              @click="delete_user"
+            <v-card>
+              <v-card-title
+              class="justify-center"
               >
-                Delete User
-              </v-btn>
-              <v-btn
-              @click="delete_user_dialog = false"
+                Are you sure you want to delete user: {{selected_user.username}}
+              </v-card-title>
+              <v-card-actions
+              class="justify-center"
               >
-                Cancel
-              </v-btn>
+                  <v-btn
+                    outlined
+                    large
+                    fab
+                    @click="delete_user"
+                    color="red"
+                  >
+                    <v-icon> mdi-delete </v-icon>
+                  </v-btn>
+                  <v-btn
+                  @click="delete_user_dialog = false"
+                  outlined
+                  >
+                  Cancel
+                  </v-btn>
+              </v-card-actions>
+            </v-card>
             </v-dialog>
-            </v-col>
-            <v-col
-            cols="3"
-            >
-            <h2> Modify Groups </h2>
-            <v-text-field
-            class="add-group"
-            label="New Group Name"
-            v-model="entered_group_name"
-            >
-            </v-text-field>
-            <v-text-field
-            class="add-group"
-            label="Description"
-            v-model="entered_group_description"
-            >
-            </v-text-field>
-            <v-btn
-            class="ma-2"
-            @click="add_group_clicked"
-            color="green"
-            :disabled="(entered_group_description === '' || entered_group_name === '' || groups_list.includes(entered_group_name))"
-            >
-            Create Group
-            </v-btn>
-            <v-btn
-            class="ma-2"
-            @click="remove_group"
-            color="red"
-            :disabled="!(groups_list.includes(entered_group_name))"
-            >
-            Delete Group
-            </v-btn>
-            </v-col>
-        </v-row>
+
+        </v-col>
     </v-container>
 </template>
 
@@ -165,7 +167,18 @@ export default defineComponent({
     // const users_groups = ref<any[]>([]);
     const groups_list = ref<any[]>([]);
     const client = computed(() => store.state.client);
-    const selected_user = ref<any>(null);
+    const headers = [
+      { value: 'username', text: 'Username', sortable: false },
+      { value: 'status', text: 'User Status' },
+      { value: 'group_names', text: 'Groups' },
+      { value: 'email', text: 'Email', sortable: false },
+      { value: 'email_verified', text: 'Email Verified' },
+      { value: 'name', text: 'Full Name', sortable: false },
+      { value: 'organization', text: 'Organization' },
+      { value: 'piname', text: 'PI Name' },
+      { value: 'actions', text: 'Actions' },
+    ];
+    const selected_user = ref<any>({});
     const number_new_groups_options = ref<number>(1);
     const changes_made = ref<boolean>(false);
     const displayed_user_status = ref<string>('');
@@ -179,61 +192,45 @@ export default defineComponent({
     // const group_changes = new Map<string, boolean>();
     const original_group_lis = ref<string[]>([]);
     const display_group_addition = ref<boolean>(false);
-    const entered_group_name = ref<string>('');
-    const entered_group_description = ref<string>('');
     const delete_user_dialog = ref<boolean>(false);
+    const editing = ref<boolean>(false);
+    function popup_close() {
+      editing.value = false;
+      selected_user.value.groups = selected_user.value.group_names.split(',');
+    }
+    function edit(id: number) {
+      changes_made.value = false;
+      confirm_user_email_bool.value = false;
+      editing.value = true;
+      selected_user.value = user_list.value[id];
+      original_group_lis.value = selected_user.value.groups;
+      displayed_user_status.value = selected_user.value.status;
+      original_user_status.value = selected_user.value.status;
+      displayed_email_status.value = selected_user.value.email_verified;
+    }
     function confirm_user_email() {
       changes_made.value = true;
       displayed_email_status.value = 'true';
       confirm_user_email_bool.value = true;
     }
+    function deletion_button_selected(id: number) {
+      selected_user.value = user_list.value[id];
+      delete_user_dialog.value = true;
+    }
     async function delete_user() {
-      console.log('deleting user');
       const resp = await client.value?.deleteUser(selected_user.value.username);
       const sc = resp?.status;
       if (sc === 200) {
         delete_user_dialog.value = false;
         snackbar.dispatch({ text: 'User: '.concat(selected_user.value.username).concat(' has been successfully deleted.') });
-        delete user_list.value[selected_user.value.username];
-        selected_user.value = null;
-      }
-      console.log(resp);
-    }
-
-    function reset_fields() {
-      entered_group_name.value = '';
-      entered_group_description.value = '';
-    }
-    async function remove_group() {
-      const resp = await client.value?.delete_group(entered_group_name.value);
-      const status = resp?.status;
-      if (status === 200) {
-        snackbar.dispatch({ text: 'Successfully Deleted '.concat(entered_group_name.value).concat('.') });
-        const inx = groups_list.value.indexOf(entered_group_name.value);
-        console.log(inx);
-        groups_list.value.splice(inx, 1);
-        reset_fields();
+        // remove the item with the value selected_user.value.username from the user_list
+        user_list.value = user_list.value.filter((val) => val.username !== selected_user.value.username);
+        delete_user_dialog.value = false;
       } else {
-        snackbar.dispatch({ text: 'Error when deleting '.concat(entered_group_name.value).concat('.') });
+        snackbar.dispatch({ text: 'Error when attempting to delete user: '.concat(selected_user.value.username).concat('.') });
       }
     }
-    async function add_group_clicked() {
-      if (!entered_group_name.value) return;
-      if (!entered_group_description.value) return;
-      const resp = await client.value?.create_group(entered_group_name.value, entered_group_description.value);
-      const status = resp?.status;
-      if (status === 200) {
-        snackbar.dispatch({ text: 'Successfully created group: '.concat(entered_group_name.value).concat('.') });
-        groups_list.value.push(entered_group_name.value);
-        reset_fields();
-      } else {
-        snackbar.dispatch({ text: 'Error when creating group: '.concat(entered_group_name.value).concat('.') });
-      }
-      console.log(resp?.status);
-    }
-
     function groups_list_changed() {
-      console.log(original_group_lis.value);
       adding_group_lis.value = selected_user.value.groups.filter(
         (val: any) => !original_group_lis.value.includes(val),
       );
@@ -246,17 +243,7 @@ export default defineComponent({
         changes_made.value = false;
       }
     }
-    function user_selected(user: any) {
-      changes_made.value = false;
-      selected_user.value = user;
-      displayed_user_status.value = user.status;
-      original_group_lis.value = user.groups;
-      original_user_status.value = user.status;
-      displayed_email_status.value = user.email_verified;
-      confirm_user_email_bool.value = false;
-    }
     function confirm_user_display() {
-      console.log('confirming user');
       displayed_user_status.value = 'CONFIRMED';
       confirm_user_status.value = true;
       changes_made.value = true;
@@ -292,6 +279,7 @@ export default defineComponent({
             group: adding_group_lis.value[0],
             username: selected_user.value.username,
             email: selected_user.value.email,
+            name: selected_user.value.name,
           };
           client.value!.notify_user_group_assignment(assignment_pl);
         }
@@ -328,6 +316,7 @@ export default defineComponent({
     }
     async function write_changes() {
       const { username } = selected_user.value;
+      selected_user.value.group_names = selected_user.value.groups.toString();
       // confirms user status
       if (original_user_status.value !== displayed_user_status.value) {
         changes_made.value = true;
@@ -347,17 +336,22 @@ export default defineComponent({
         console.log('email user their settings have been updated.');
       }
     }
+    async function update_groups_list() {
+      groups_list.value = await client.value?.get_group_list();
+    }
     onMounted(async () => {
       await clientReady;
       user_list.value = await client.value?.get_user_list();
-      groups_list.value = await client.value?.get_group_list();
-      console.log(user_list);
+      user_list.value.forEach((element: any, index: number) => {
+        const groups = element.groups.toString();
+        user_list.value[index].group_names = groups;
+      });
+      await update_groups_list();
     });
     return {
       user_list,
       groups_list,
       selected_user,
-      user_selected,
       number_new_groups_options,
       email_user,
       // users_groups,
@@ -371,19 +365,20 @@ export default defineComponent({
       removing_group_lis,
       adding_group_lis,
       write_changes,
-      add_group_clicked,
-      entered_group_name,
       display_group_addition,
-      entered_group_description,
-      remove_group,
+      deletion_button_selected,
       // disable_user,
       original_user_status,
-      reset_fields,
       delete_user_dialog,
       delete_user,
       displayed_email_status,
       confirm_user_email,
       confirm_user_email_bool,
+      headers,
+      edit,
+      editing,
+      popup_close,
+      update_groups_list,
     };
   },
 });
