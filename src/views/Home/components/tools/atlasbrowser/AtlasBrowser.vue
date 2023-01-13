@@ -195,7 +195,7 @@
                 <v-btn
                 color="blue"
                 class="leftRotate"
-                :disabled="!current_image || isCropMode || grid || updating_existing"
+                :disabled="!current_image || isCropMode || grid || updating_existing || loading"
                 @click="rotate_image(0)"
                 small
                 >
@@ -206,7 +206,7 @@
                 <v-btn
                 color="blue"
                 class="spaced_btn"
-                :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || updating_existing"
+                :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || updating_existing || loading"
                 @click="rotate_image(1)"
                 small
                 >
@@ -220,8 +220,8 @@
                 :disabled="!current_image || isCropMode || grid"
                 >
                 </v-switch> -->
-                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || updating_existing">90</label>
-                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || updating_existing">45</label>
+                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || updating_existing || loading">90</label>
+                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || updating_existing || loading">45</label>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -232,7 +232,7 @@
                   dense
                   x-small
                   @click="isCropMode=true"
-                  :disabled="!current_image || isCropMode || grid || updating_existing">
+                  :disabled="!current_image || isCropMode || grid || updating_existing || loading">
                   Activate
                 </v-btn>
                 <v-btn
