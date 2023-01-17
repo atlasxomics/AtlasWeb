@@ -57,7 +57,9 @@ export default defineComponent({
   },
   setup(props: any, ctx: any) {
     const headers = [
-      { text: 'Job Name', value: 'job_name' },
+      { text: 'Job', value: 'job_name' },
+      { text: 'Job Description', value: 'job_description' },
+      { text: 'Run ID', value: 'run_id' },
       { text: 'Job Status', value: 'job_status' },
       { text: 'User', value: 'username' },
       { text: 'Start Time', value: 'job_start_time' },
