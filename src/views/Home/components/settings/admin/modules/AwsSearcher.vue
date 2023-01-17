@@ -82,19 +82,20 @@ export default defineComponent({
       const temp_avbuck = list_buckets.map((v: any) => v);
       available_buckets.value = temp_avbuck;
     }
-    async function searchPath() {
-      if (path_name.value!.length === null || path_name.value!.length === 0) return;
-      loading.value = true;
-      const payload = { path: path_name.value, bucket: bucket_name.value, filter: ['h5ad', 'motifs.csv'] };
-      const important_objects = await client.value?.getFileList(payload);
-      const one_string = important_objects.join();
-      const allFileHold: any[] = [];
-      loading.value = false;
-    }
+    // async function searchPath() {
+    //   if (path_name.value!.length === null || path_name.value!.length === 0) return;
+    //   loading.value = true;
+    //   const payload = { path: path_name.value, bucket: bucket_name.value, filter: ['h5ad', 'motifs.csv'] };
+    //   const important_objects = await client.value?.getFileList(payload);
+    //   const one_string = important_objects.join();
+    //   const allFileHold: any[] = [];
+    //   loading.value = false;
+    // }
     function select_path(ev: any) {
       path_selected.value = true;
       path_name.value = ev.path;
-      searchPath();
+      ctx.emit('path-selected', ev.path);
+      // searchPath();
     }
     onMounted(() => {
       fetchBuckets();
