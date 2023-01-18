@@ -710,4 +710,9 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/get_study_ids');
     return resp.data;
   }
+  async get_study_runs(study_id: string) {
+    const pl = { study_id };
+    const resp = await this.axios.post('/api/v1/run_db/get_study_runs', pl);
+    return resp.data;
+  }
 }
