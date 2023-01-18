@@ -3,13 +3,14 @@
     :new_available="true"
     :label="'Study Name'"
     :id_list="study_id_list"
+    key_display_value="study_name"
     @run-selected="study_selected"
     @edit-run-id="edit_study_id"
     @close-edit-run-id="close_edit_study_id"
     @custom-run-id="user_entered_study_id"
+    ref="id_selector"
     >
     </id-selector>
-
 </template>
 
 <script lang="ts">
@@ -39,10 +40,15 @@ export default defineComponent({
       study_id_selected.value = ev;
       ctx.emit('user-entered-study-id', study_id_selected.value);
     }
+    function set_ids_selector(ids: Array<any>) {
+      const ref_mod = ctx.refs.id_selector as any;
+      ref_mod.reset_local_ids(ids);
+    }
     onMounted(() => {
       const study_id_promise = client.value?.get_study_ids();
       study_id_promise!.then((res: any) => {
         study_id_list.value = res;
+        set_ids_selector(res);
       });
     });
     return {
@@ -52,8 +58,8 @@ export default defineComponent({
       edit_study_id,
       close_edit_study_id,
       user_entered_study_id,
-    }
-  }
-})
+    };
+  },
+});
 
 </script>

@@ -56,10 +56,11 @@ export default defineComponent({
     new_available: { type: Boolean, required: true },
     label: { type: String, required: true },
     id_list: { type: Array, required: true },
+    key_display_value: { type: String, required: true },
   },
   setup(props, ctx) {
     const client = computed(() => store.state.client);
-    const headers = [{ text: props.label, value: 'id', sortable: false }];
+    const headers = [{ text: props.label, value: props.key_display_value, sortable: false }];
     const id = ref<string>('');
     const id_selected = ref<boolean>(false);
     const local_id_list = ref<Array<Record<string, any>>>([]);
@@ -88,10 +89,10 @@ export default defineComponent({
     function search_runs() {
       const regexString = search_input.value;
       const matches: Array<Record<string, any>> = [];
-      const regex = new RegExp(`.*${regexString}.*`);
+      const regex = new RegExp(regexString, 'i');
       local_id_list.value.forEach((element: any) => {
-        if (regex.test(element.id)) {
-          matches.push({ id: element.id });
+        if (regex.test(element[props.key_display_value])) {
+          matches.push(element);
         }
       });
       available_ids.value = matches;

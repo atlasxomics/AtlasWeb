@@ -3,6 +3,7 @@
         :new_available="new_available"
         label="Run ID"
         :id_list="run_id_list"
+        key_display_value="id"
         @run-selected="run_selected"
         @edit-run-id="edit_run_id"
         @close-edit-run-id="close_edit_run_id"
