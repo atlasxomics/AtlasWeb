@@ -17,6 +17,7 @@
                  @edit-run-id="run_id_confirmed = false;"
                  @custom-run-id="custom_run_id"
                  @close-edit-run-id="run_id_confirmed = true;"
+                 :label="run_id_confirmed ? 'Run ID' : 'New Run ID'"
                  ref="run_id_selector"
                 >
                 </run-id-selector>
