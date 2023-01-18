@@ -706,4 +706,8 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/run_db/ensure_run_id_created', pl);
     return resp.data;
   }
+  async get_study_ids() {
+    const resp = await this.axios.get('/api/v1/run_db/get_study_ids');
+    return resp.data;
+  }
 }

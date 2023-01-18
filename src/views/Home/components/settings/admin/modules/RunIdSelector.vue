@@ -6,8 +6,7 @@
         @run-selected="run_selected"
         @edit-run-id="edit_run_id"
         @close-edit-run-id="close_edit_run_id"
-        @custom-run-id="custom_run_id"
-        @clear-fields="clear_fields"
+        @custom-id="custom_run_id"
         ref="id_selector"
     >
     </id-selector>
@@ -28,18 +27,8 @@ export default defineComponent({
     const run_id_selected = ref<string>('');
     const run_id_list = ref<Array<Record<string, any>>>([]);
     const available_id_list = ref<Array<Record<string, any>>>([]);
-    function search_runs(search_string: string) {
-      const matches: Array<Record<string, any>> = [];
-      const regex = new RegExp(`.*${search_string}.*`);
-      run_id_list.value.forEach((element: any) => {
-        if (regex.test(element.id)) {
-          matches.push({ id: element.id });
-        }
-      });
-      available_id_list.value = matches;
-    }
     function run_selected(ev: any) {
-      run_id_selected.value = ev;
+      run_id_selected.value = ev.id;
       ctx.emit('run-selected', run_id_selected.value);
     }
     function edit_run_id() {
@@ -51,10 +40,6 @@ export default defineComponent({
     function custom_run_id(ev: any) {
       run_id_selected.value = ev;
       ctx.emit('custom-run-id', run_id_selected.value);
-    }
-    function clear_fields() {
-      run_id_selected.value = '';
-      ctx.emit('clear-fields');
     }
     function set_selector(ids: Array<any>) {
       const ref_mod = ctx.refs.id_selector as any;
@@ -69,7 +54,6 @@ export default defineComponent({
       });
     }
     onMounted(() => {
-      const run_id_promise = client.value?.get_run_ids();
       set_run_ids();
     });
     return {
@@ -80,8 +64,6 @@ export default defineComponent({
       edit_run_id,
       close_edit_run_id,
       custom_run_id,
-      clear_fields,
-      search_runs,
     };
   },
 });

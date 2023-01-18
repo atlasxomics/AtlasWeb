@@ -82,11 +82,10 @@ export default defineComponent({
       search_input.value = ele.id;
       editing_id_selection.value = false;
       id.value = ele.id;
-      ctx.emit('run-selected', id.value);
+      ctx.emit('run-selected', ele);
       id_selected.value = true;
     }
     function search_runs() {
-      ctx.emit('search-runs', search_input.value);
       const regexString = search_input.value;
       const matches: Array<Record<string, any>> = [];
       const regex = new RegExp(`.*${regexString}.*`);
@@ -103,9 +102,6 @@ export default defineComponent({
       search_runs();
       ctx.emit('edit-id');
     }
-    function clear_fields() {
-      ctx.emit('clear-fields');
-    }
     function close_edit_id() {
       editing_id_selection.value = false;
       id_selected.value = true;
@@ -118,7 +114,6 @@ export default defineComponent({
       id_selected.value = true;
     }
     function user_entered_id() {
-      clear_fields();
       const temp_ele = { id: search_input.value };
       editing_id_selection.value = false;
       local_id_list.value.push(temp_ele);
@@ -151,7 +146,6 @@ export default defineComponent({
       run_selected,
       search_runs,
       edit_id,
-      clear_fields,
       close_edit_id,
       user_entered_id,
       run_successfully_uploaded,
