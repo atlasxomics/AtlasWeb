@@ -52,7 +52,8 @@
         align="center"
         @mousedown="mouseDownOnStageLeft"
         @mousemove="mouseMoveOnStageLeft"
-        @mouseup="mouseUpOnStageLeft">
+        @mouseup="mouseUpOnStageLeft"
+        @mouseleave="hideToolTipS">
         <div id="toolTipSpatial" :style="{'width':'68px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextSpatial}}</div>
         <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
           <svg id="spatialGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
@@ -121,7 +122,8 @@
         height="50vh"
         @mousedown="mouseDownOnStageRight"
         @mousemove="mouseMoveOnStageRight"
-        @mouseup="mouseUpOnStageRight">
+        @mouseup="mouseUpOnStageRight"
+        @mouseleave="hideToolTipU">
         <div id="toolTipUmap" :style="{'width':'68px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextUmap}}</div>
         <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
           <svg id="umapGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
@@ -835,6 +837,12 @@ export default defineComponent({
       toolTipTextUmap.value = `Cluster: ${ev}`;
       visibilityUmap.value = 'visible';
     }
+    function hideToolTipS() {
+      visibility.value = 'hidden';
+    }
+    function hideToolTipU() {
+      visibilityUmap.value = 'hidden';
+    }
     function mouseDownOnStageLeft(ev: any) {
       isClicked.value = true;
       visibility.value = 'hidden';
@@ -1226,6 +1234,8 @@ export default defineComponent({
       toolTipTextUmap,
       TTposition,
       TTpositionUmap,
+      hideToolTipS,
+      hideToolTipU,
     };
   },
 });
