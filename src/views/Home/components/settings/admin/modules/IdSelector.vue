@@ -72,17 +72,17 @@ export default defineComponent({
     const unique_id = computed(() => {
       let res = true;
       available_ids.value.forEach((element: any) => {
-        if (element.id === search_input.value) {
+        if (element[props.key_display_value] === search_input.value) {
           res = false;
         }
       });
       return res;
     });
     function run_selected(ele: any) {
-      selected_id.value = ele.id;
-      search_input.value = ele.id;
+      selected_id.value = ele[props.key_display_value];
+      search_input.value = ele[props.key_display_value];
       editing_id_selection.value = false;
-      id.value = ele.id;
+      id.value = ele[props.key_display_value];
       ctx.emit('run-selected', ele);
       id_selected.value = true;
     }

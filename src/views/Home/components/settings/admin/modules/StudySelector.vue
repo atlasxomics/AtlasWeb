@@ -1,4 +1,11 @@
 <template>
+  <v-container>
+    <v-row
+    >
+        <v-col
+        cols="12"
+        sm="6"
+        >
     <id-selector
     :new_available="true"
     :label="'Study Name'"
@@ -11,6 +18,14 @@
     ref="id_selector"
     >
     </id-selector>
+        </v-col>
+    <v-col
+    cols="12"
+    sm="6"
+    >
+    </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script lang="ts">
@@ -24,10 +39,11 @@ export default defineComponent({
   components: { IdSelector },
   setup(props, ctx) {
     const client = computed(() => store.state.client);
-    const study_id_selected = ref<string>('');
+    const study_id_selected = ref<any>('');
     const study_id_list = ref<Array<Record<string, any>>>([]);
+
     function study_selected(ev: any) {
-      study_id_selected.value = ev.id;
+      study_id_selected.value = ev;
       ctx.emit('study-selected', study_id_selected.value);
     }
     function edit_study_id() {
