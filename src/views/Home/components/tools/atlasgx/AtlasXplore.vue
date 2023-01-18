@@ -579,7 +579,7 @@
                 @loading_value="updateLoading"
                 @highlightedId='updateSelectors'
                 @totalClust="updateClustTotal"
-                @spatialCircleData="updateHistograph"
+                @spatialCircleData="updateHistogram"
                 @singleCircleData="dataToSingle"
                 @sendColorBar="colorBarToSingle"
                 @totalGM="loadExpressions"
@@ -907,7 +907,7 @@ export default defineComponent({
       highlightIds.value = ev.ids;
       topSelected.value = ev.genes;
     }
-    function updateHistograph(ev: any) {
+    function updateHistogram(ev: any) {
       spatialCircleData.value = ev;
     }
     function dataToSingle(ev: any) {
@@ -1754,7 +1754,7 @@ export default defineComponent({
       totalInClust,
       unClickCluster,
       selectedClusters,
-      updateHistograph,
+      updateHistogram,
       spatialCircleData,
       colorBarToSingle,
       colorBarFromSibling,

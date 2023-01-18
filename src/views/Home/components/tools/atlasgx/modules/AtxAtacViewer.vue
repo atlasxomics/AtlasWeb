@@ -53,8 +53,9 @@
         @mousedown="mouseDownOnStageLeft"
         @mousemove="mouseMoveOnStageLeft"
         @mouseup="mouseUpOnStageLeft">
+        <div id="toolTipSpatial" :style="{'width':'68px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextSpatial}}</div>
         <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
-          <svg id="spatialGroup" x="0" y="0"></svg>
+          <svg id="spatialGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -121,8 +122,9 @@
         @mousedown="mouseDownOnStageRight"
         @mousemove="mouseMoveOnStageRight"
         @mouseup="mouseUpOnStageRight">
+        <div id="toolTipUmap" :style="{'width':'68px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextUmap}}</div>
         <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
-          <svg id="spatialUmap" x="0" y="0"></svg>
+          <svg id="umapGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -277,6 +279,14 @@ export default defineComponent({
     const rectUmap = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     let startRectUmapCoords: number[];
     const initialized = ref<boolean>(false);
+    const toolTipSpatial = document.getElementById('toolTipSpatial');
+    const toolTipUmap = document.getElementById('toolTipUmap');
+    const visibility = ref<string>('hidden');
+    const visibilityUmap = ref<string>('hidden');
+    const toolTipTextSpatial = ref<string>('');
+    const toolTipTextUmap = ref<string>('');
+    const TTposition = ref<string[]>(['0', '0']);
+    const TTpositionUmap = ref<string[]>(['0', '0']);
     const assayFlag = computed(() => (props.assay_flag));
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParentDualAtac');
@@ -493,10 +503,14 @@ export default defineComponent({
       const inHU = scaleUMAP.value * viewScaleUMAP * minY_UMAP.value - radiusUMAP;
       const NS = 'http://www.w3.org/2000/svg';
       globalSpatialGroup.value = document.getElementById('spatialGroup')!;
-      globalUmapGroup.value = document.getElementById('spatialUmap')!;
+      globalUmapGroup.value = document.getElementById('umapGroup')!;
       globalSvgS.value = document.getElementById('svgSpatial')!;
       globalSvgU.value = document.getElementById('svgUmap')!;
+      const TSS: any = [];
+      const nFrags: any = [];
       spatialData.value.spatial.forEach((v: string[], i: number) => {
+        TSS.push(parseFloat(v[5]));
+        nFrags.push(parseFloat(v[6]));
         const x = parseFloat(v[1]);
         const y = parseFloat(v[2]);
         const auX = parseFloat(v[3]);
@@ -524,6 +538,7 @@ export default defineComponent({
         globalUmapGroup.value.appendChild(circleUmap);
       });
       initialized.value = true;
+      ctx.emit('spatialCircleData', [TSS, nFrags]);
     }
     async function updateCircles() {
       if (spatialData.value === null || spatialData.value.spatial === undefined) return;
@@ -812,8 +827,17 @@ export default defineComponent({
         if (isClickedU.value) pathUmap.setAttribute('d', strPathUmap + tmpPath);
       }
     };
+    function showToolTipSpatial(ev: any) {
+      toolTipTextSpatial.value = `Cluster: ${ev}`;
+      visibility.value = 'visible';
+    }
+    function showToolTipUmap(ev: any) {
+      toolTipTextUmap.value = `Cluster: ${ev}`;
+      visibilityUmap.value = 'visible';
+    }
     function mouseDownOnStageLeft(ev: any) {
       isClicked.value = true;
+      visibility.value = 'hidden';
       if (isDrawing.value) {
         lassoSide.value = 'left';
         removeRegions();
@@ -845,6 +869,7 @@ export default defineComponent({
     }
     function mouseDownOnStageRight(ev: any) {
       isClickedU.value = true;
+      visibilityUmap.value = 'hidden';
       if (isDrawing.value) {
         lassoSide.value = 'right';
         removeRegions();
@@ -876,59 +901,63 @@ export default defineComponent({
       }
     }
     function mouseMoveOnStageLeft(ev: any) {
-      if (!isClicked.value) return;
-
-      if (isDrawing.value) {
-        if (isClicked.value) {
+      if (!isClicked.value) {
+        if (ev.target.nodeName === 'circle') {
+          showToolTipSpatial(ev.target.attributes[5].value);
+          const post = [`${ev.layerX + 10}px`, `${ev.layerY - 13}px`];
+          TTposition.value = post;
+        } else if (ev.target.id !== 'spatialGroup' && ev.target.nodeName !== 'circle') visibility.value = 'hidden';
+      } else {
+        if (isDrawing.value) {
           appendToBuffer({ x: ev.layerX, y: ev.layerY });
           updateSvgPath();
           polygon.value.push(ev.layerX);
           polygon.value.push(ev.layerY);
-        }
-      } else if (isDrawingRect.value) {
-        if (isClicked.value) {
+        } else if (isDrawingRect.value) {
           const xdiff = Math.abs(ev.layerX - startRectCoords[0]);
           const ydiff = Math.abs(ev.layerY - startRectCoords[1]);
           if (ev.layerX < startRectCoords[0]) rect.setAttribute('x', `${ev.layerX}`);
           if (ev.layerY < startRectCoords[1]) rect.setAttribute('y', `${ev.layerY}`);
           rect.setAttribute('width', `${xdiff}`);
           rect.setAttribute('height', `${ydiff}`);
+        } else {
+          const diffX = Math.abs(originalClickedPoint.value[0] - ev.layerX);
+          const diffY = Math.abs(originalClickedPoint.value[1] - ev.layerY);
+          const x = (originalClickedPoint.value[0] < ev.layerX) ? 1 : -1;
+          const y = (originalClickedPoint.value[1] < ev.layerY) ? 1 : -1;
+          globalSpatialGroup.value.setAttribute('x', `${translatePoint.value[0] + diffX * x}`);
+          globalSpatialGroup.value.setAttribute('y', `${translatePoint.value[1] + diffY * y}`);
         }
-      } else {
-        const diffX = Math.abs(originalClickedPoint.value[0] - ev.layerX);
-        const diffY = Math.abs(originalClickedPoint.value[1] - ev.layerY);
-        const x = (originalClickedPoint.value[0] < ev.layerX) ? 1 : -1;
-        const y = (originalClickedPoint.value[1] < ev.layerY) ? 1 : -1;
-        globalSpatialGroup.value.setAttribute('x', `${translatePoint.value[0] + diffX * x}`);
-        globalSpatialGroup.value.setAttribute('y', `${translatePoint.value[1] + diffY * y}`);
       }
     }
     function mouseMoveOnStageRight(ev: any) {
-      if (!isClickedU.value) return;
-
-      if (isDrawing.value) {
-        if (isClickedU.value) {
+      if (!isClickedU.value) {
+        if (ev.target.nodeName === 'circle') {
+          showToolTipUmap(ev.target.attributes[5].value);
+          const post = [`${ev.layerX + 10}px`, `${ev.layerY - 13}px`];
+          TTpositionUmap.value = post;
+        } else if (ev.target.id !== 'umapGroup' && ev.target.nodeName !== 'circle') visibilityUmap.value = 'hidden';
+      } else {
+        if (isDrawing.value) {
           appendToBuffer({ x: ev.layerX, y: ev.layerY });
           updateSvgPath();
           polygonUMAP.value.push(ev.layerX);
           polygonUMAP.value.push(ev.layerY);
-        }
-      } else if (isDrawingRect.value) {
-        if (isClickedU.value) {
+        } else if (isDrawingRect.value) {
           const xdiff = Math.abs(ev.layerX - startRectUmapCoords[0]);
           const ydiff = Math.abs(ev.layerY - startRectUmapCoords[1]);
           if (ev.layerX < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${ev.layerX}`);
           if (ev.layerY < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${ev.layerY}`);
           rectUmap.setAttribute('width', `${xdiff}`);
           rectUmap.setAttribute('height', `${ydiff}`);
+        } else {
+          const diffX = Math.abs(originalClickedPointU.value[0] - ev.layerX);
+          const diffY = Math.abs(originalClickedPointU.value[1] - ev.layerY);
+          const x = (originalClickedPointU.value[0] < ev.layerX) ? 1 : -1;
+          const y = (originalClickedPointU.value[1] < ev.layerY) ? 1 : -1;
+          globalUmapGroup.value.setAttribute('x', `${translatePointU.value[0] + diffX * x}`);
+          globalUmapGroup.value.setAttribute('y', `${translatePointU.value[1] + diffY * y}`);
         }
-      } else {
-        const diffX = Math.abs(originalClickedPointU.value[0] - ev.layerX);
-        const diffY = Math.abs(originalClickedPointU.value[1] - ev.layerY);
-        const x = (originalClickedPointU.value[0] < ev.layerX) ? 1 : -1;
-        const y = (originalClickedPointU.value[1] < ev.layerY) ? 1 : -1;
-        globalUmapGroup.value.setAttribute('x', `${translatePointU.value[0] + diffX * x}`);
-        globalUmapGroup.value.setAttribute('y', `${translatePointU.value[1] + diffY * y}`);
       }
     }
     function mouseUpOnStageLeft(ev: any) {
@@ -1189,6 +1218,14 @@ export default defineComponent({
       viewBoxSpatial,
       viewBoxUmap,
       initialized,
+      visibility,
+      visibilityUmap,
+      showToolTipSpatial,
+      showToolTipUmap,
+      toolTipTextSpatial,
+      toolTipTextUmap,
+      TTposition,
+      TTpositionUmap,
     };
   },
 });
