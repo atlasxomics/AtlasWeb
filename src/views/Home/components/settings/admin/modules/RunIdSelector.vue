@@ -3,7 +3,7 @@
         :new_available="new_available"
         label="Run ID"
         :id_list="run_id_list"
-        key_display_value="id"
+        key_display_value="run_id"
         @run-selected="run_selected"
         @edit-run-id="edit_run_id"
         @close-edit-run-id="close_edit_run_id"
@@ -27,9 +27,9 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const run_id_selected = ref<string>('');
     const run_id_list = ref<Array<Record<string, any>>>([]);
-    const available_id_list = ref<Array<Record<string, any>>>([]);
+
     function run_selected(ev: any) {
-      run_id_selected.value = ev.id;
+      run_id_selected.value = ev.run_id;
       ctx.emit('run-selected', run_id_selected.value);
     }
     function edit_run_id() {
@@ -50,7 +50,6 @@ export default defineComponent({
       const run_id_promise = client.value?.get_run_ids();
       run_id_promise!.then((res: any) => {
         run_id_list.value = res;
-        available_id_list.value = res;
         set_selector(res);
       });
     }
@@ -60,7 +59,6 @@ export default defineComponent({
     return {
       run_id_selected,
       run_id_list,
-      available_id_list,
       run_selected,
       edit_run_id,
       close_edit_run_id,
