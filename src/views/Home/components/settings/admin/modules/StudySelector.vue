@@ -9,7 +9,7 @@
     @run-selected="study_selected"
     @edit-id="edit_study_id"
     @close-edit-id="close_edit_study_id"
-    @custom-run-id="user_entered_study_id"
+    @custom-id="user_entered_study_id"
     ref="id_selector"
     >
     </id-selector>
@@ -44,20 +44,29 @@ export default defineComponent({
     }
     function user_entered_study_id(ev: any) {
       study_id_selected.value = ev;
-      ctx.emit('user-entered-study-id', study_id_selected.value);
+      ctx.emit('new-study-id', study_id_selected.value);
     }
     function set_ids_selector(ids: Array<any>) {
       const ref_mod = ctx.refs.id_selector as any;
       ref_mod.reset_local_ids(ids);
       loading.value = false;
     }
-    onMounted(() => {
+    function get_studies() {
       loading.value = true;
       const study_id_promise = client.value?.get_study_ids();
       study_id_promise!.then((res: any) => {
         study_id_list.value = res;
         set_ids_selector(res);
       });
+    }
+    function reset_fields() {
+      study_id_selected.value = '';
+      get_studies();
+      const ref_mod = ctx.refs.id_selector as any;
+      ref_mod.run_successfully_uploaded();
+    }
+    onMounted(() => {
+      get_studies();
     });
     return {
       study_id_selected,
@@ -67,6 +76,7 @@ export default defineComponent({
       close_edit_study_id,
       user_entered_study_id,
       loading,
+      reset_fields,
     };
   },
 });

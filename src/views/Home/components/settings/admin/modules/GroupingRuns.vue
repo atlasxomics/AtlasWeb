@@ -10,19 +10,22 @@
             @study-selected="study_selected"
             @edit-study-id="edit_study_id"
             @close-edit-study-id="close_edit_study_id"
+            @new-study-id="new_study"
+            ref = "study_selector"
             >
           </study-selector>
           <v-text-field
           label="Study Description"
           v-model="study.study_description"
+          :error="study_selected_bool && !study.study_description"
           >
           </v-text-field>
           <v-btn
-          :disabled="!changes_made || !study_selected_bool"
+          :disabled="!changes_made || !study_selected_bool || !study.study_description"
           @click="save_changes"
           style="margin: 14px"
           >
-            Save Changes
+            Submit
           </v-btn>
         </v-col>
         <v-col
@@ -115,6 +118,15 @@ export default defineComponent({
       });
       return changed;
     });
+    function new_study(study_name: string) {
+      study.value.study_name = study_name;
+      study.value.study_id = null;
+      study_selected_bool.value = true;
+      run_id_list.value = [];
+      original_run_ids.value = new Set();
+      runs_to_add.value = new Set();
+      runs_to_remove.value = new Set();
+    }
     function get_study_runs(study_id: string) {
       const runs = client.value?.get_study_runs(study_id);
       console.log(runs);
@@ -132,10 +144,11 @@ export default defineComponent({
     function delete_run(index: number, obj: any) {
       run_id_tissue_id.value[obj.run_id] = obj.tissue_id;
       run_id_list.value.splice(index, 1);
-      if (obj.run_id in runs_to_add.value) {
+      if (runs_to_add.value.has(obj.run_id)) {
         runs_to_add.value.delete(obj.run_id);
+      } else {
+        runs_to_remove.value.add(obj.run_id);
       }
-      runs_to_remove.value.add(obj.run_id);
     }
     function add_run(run_obj: any) {
       // adding run
@@ -149,22 +162,34 @@ export default defineComponent({
         });
         return;
       }
-      console.log('not present');
       run_id_list.value.push({
         run_id: run_obj.run_id,
         tissue_id: run_obj.tissue_id,
       });
-      if (run_obj.run_id in runs_to_remove.value) {
+      if (runs_to_remove.value.has(run_obj.run_id)) {
         runs_to_remove.value.delete(run_obj.run_id);
+      } else {
+        runs_to_add.value.add(run_obj.run_id);
       }
-      runs_to_add.value.add(run_obj.run_id);
     }
     function study_selected(ev: any) {
       study.value = ev;
       get_study_runs(study.value.study_id);
       study_selected_bool.value = true;
     }
-    function save_changes() {
+    function reset_fields() {
+      run_id_list.value = [];
+      study.value = {};
+      original_run_ids.value = new Set();
+      runs_to_add.value = new Set();
+      runs_to_remove.value = new Set();
+      run_id_tissue_id.value = {};
+      selecting_run_id.value = false;
+      study_selected_bool.value = false;
+      const selector = ctx.refs.study_selector as any;
+      selector.reset_fields();
+    }
+    async function save_changes() {
       const adding_list: any = [];
       runs_to_add.value.forEach((run_id) => {
         adding_list.push({
@@ -179,18 +204,27 @@ export default defineComponent({
           tissue_id: run_id_tissue_id.value[run_id],
         });
       });
-      const { study_description: description, study_id: id } = study.value;
+      const { study_description: description, study_id: id, study_name } = study.value;
       const pl = {
         id,
+        study_name,
         description,
         adding_list,
         removing_list,
       };
-      console.log(pl);
-      // const study_promise = client.value?.update_study_table(pl);
-      // study_promise!.then((res: any) => {
-      //   console.log(res);
-      // });
+      const result = await client.value?.update_study_table(pl);
+      if (result === 'Success') {
+        snackbar.dispatch({
+          text: 'Study updated',
+          options: { color: 'success', timeout: 3000 },
+        });
+        reset_fields();
+      } else {
+        snackbar.dispatch({
+          text: 'Error updating study',
+          options: { color: 'error', timeout: 3000 },
+        });
+      }
     }
     function edit_study_id() {
       study_selected_bool.value = false;
@@ -214,6 +248,7 @@ export default defineComponent({
       edit_study_id,
       close_edit_study_id,
       original_run_ids,
+      new_study,
     };
   },
 });
