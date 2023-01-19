@@ -49,8 +49,10 @@ export default defineComponent({
     function set_ids_selector(ids: Array<any>) {
       const ref_mod = ctx.refs.id_selector as any;
       ref_mod.reset_local_ids(ids);
+      loading.value = false;
     }
     onMounted(() => {
+      loading.value = true;
       const study_id_promise = client.value?.get_study_ids();
       study_id_promise!.then((res: any) => {
         study_id_list.value = res;

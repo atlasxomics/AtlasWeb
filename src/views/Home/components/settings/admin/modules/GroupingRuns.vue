@@ -97,29 +97,31 @@ export default defineComponent({
     const run_id_list = ref<Array<Record<string, any>>>([]);
     const study = ref<any>({});
     const original_run_ids = ref<Set<string>>(new Set());
+
+    const runs_to_add = ref<Set<string>>(new Set());
+    const runs_to_remove = ref<Set<string>>(new Set());
+    const run_id_tissue_id = ref<Record<string, any>>({});
+    const selecting_run_id = ref<boolean>(false);
+    const study_selected_bool = ref<boolean>(false);
     const changes_made = computed(() => {
       if (original_run_ids.value.size !== run_id_list.value.length) {
         return true;
       }
       let changed = false;
       run_id_list.value.forEach((item) => {
-        console.log(item);
         if (!original_run_ids.value.has(item.run_id)) {
           changed = true;
         }
       });
       return changed;
     });
-    const runs_to_add = ref<Set<string>>(new Set());
-    const runs_to_remove = ref<Set<string>>(new Set());
-    const run_id_tissue_id = ref<Record<string, any>>({});
-    const selecting_run_id = ref<boolean>(false);
-    const study_selected_bool = ref<boolean>(false);
     function get_study_runs(study_id: string) {
       const runs = client.value?.get_study_runs(study_id);
+      console.log(runs);
       runs!.then((res: any) => {
         run_id_list.value = res;
         res.forEach((item: any) => {
+          run_id_tissue_id.value[item.run_id] = item.tissue_id;
           original_run_ids.value.add(item.run_id);
         });
       });
@@ -128,7 +130,6 @@ export default defineComponent({
       return run_id_list.value.some((item) => item.run_id === run_id);
     }
     function delete_run(index: number, obj: any) {
-      console.log(index);
       run_id_tissue_id.value[obj.run_id] = obj.tissue_id;
       run_id_list.value.splice(index, 1);
       if (obj.run_id in runs_to_add.value) {
@@ -164,16 +165,32 @@ export default defineComponent({
       study_selected_bool.value = true;
     }
     function save_changes() {
+      const adding_list: any = [];
+      runs_to_add.value.forEach((run_id) => {
+        adding_list.push({
+          run_id,
+          tissue_id: run_id_tissue_id.value[run_id],
+        });
+      });
+      const removing_list: any = [];
+      runs_to_remove.value.forEach((run_id) => {
+        removing_list.push({
+          run_id,
+          tissue_id: run_id_tissue_id.value[run_id],
+        });
+      });
       const { study_description: description, study_id: id } = study.value;
       const pl = {
         id,
         description,
+        adding_list,
+        removing_list,
       };
       console.log(pl);
-      const study_promise = client.value?.update_study_table(pl);
-      study_promise!.then((res: any) => {
-        console.log(res);
-      });
+      // const study_promise = client.value?.update_study_table(pl);
+      // study_promise!.then((res: any) => {
+      //   console.log(res);
+      // });
     }
     function edit_study_id() {
       study_selected_bool.value = false;
