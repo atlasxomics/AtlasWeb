@@ -1,11 +1,5 @@
 <template>
-  <v-container>
-    <v-row
-    >
-        <v-col
-        cols="12"
-        sm="6"
-        >
+    <v-row>
     <id-selector
     :new_available="true"
     :label="'Study Name'"
@@ -18,14 +12,7 @@
     ref="id_selector"
     >
     </id-selector>
-        </v-col>
-    <v-col
-    cols="12"
-    sm="6"
-    >
-    </v-col>
     </v-row>
-  </v-container>
 </template>
 
 <script lang="ts">
