@@ -33,6 +33,7 @@
         </v-icon>
         </v-row>
         <v-data-table
+        :loading="loading"
         v-if="!id_selected"
         dense
         single-select
@@ -57,6 +58,7 @@ export default defineComponent({
     label: { type: String, required: true },
     id_list: { type: Array, required: true },
     key_display_value: { type: String, required: true },
+    loading: { type: Boolean, required: true },
   },
   setup(props, ctx) {
     const client = computed(() => store.state.client);

@@ -321,7 +321,7 @@ export default defineComponent({
     async function run_id_selected(ev: any) {
       creation_job_sent.value = false;
       reset_bucket_path();
-      const run_data = await client.value?.get_info_from_run_id(ev);
+      const run_data = await client.value?.get_info_from_run_id(ev.run_id);
       if (run_data[0].assay === 'Transcriptome') {
         is_transcriptome.value = true;
       }
@@ -337,7 +337,7 @@ export default defineComponent({
         path_name.value = sub_path_name;
         select_path({ path: path_name.value });
       }
-      run_id.value = ev;
+      run_id.value = ev.run_id;
       run_id_selected_bool.value = true;
     }
     function custom_run_id(id: string) {

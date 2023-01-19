@@ -407,7 +407,7 @@ export default defineComponent({
     }
     function run_selected(ele: any) {
       data_loaded.value = false;
-      run_id.value = ele;
+      run_id.value = ele.run_id;
       auto_populate_from_run_id(null);
       run_id_confirmed.value = true;
     }

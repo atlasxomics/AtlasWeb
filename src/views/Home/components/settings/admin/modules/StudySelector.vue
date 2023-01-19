@@ -4,10 +4,11 @@
     :new_available="true"
     :label="'Study Name'"
     :id_list="study_id_list"
+    :loading="loading"
     key_display_value="study_name"
     @run-selected="study_selected"
-    @edit-run-id="edit_study_id"
-    @close-edit-run-id="close_edit_study_id"
+    @edit-id="edit_study_id"
+    @close-edit-id="close_edit_study_id"
     @custom-run-id="user_entered_study_id"
     ref="id_selector"
     >
@@ -28,15 +29,17 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const study_id_selected = ref<any>('');
     const study_id_list = ref<Array<Record<string, any>>>([]);
-
+    const loading = ref<boolean>(false);
     function study_selected(ev: any) {
       study_id_selected.value = ev;
       ctx.emit('study-selected', study_id_selected.value);
     }
     function edit_study_id() {
+      console.log('edit_study_id');
       ctx.emit('edit-study-id');
     }
     function close_edit_study_id() {
+      console.log('close_edit_study_id');
       ctx.emit('close-edit-study-id');
     }
     function user_entered_study_id(ev: any) {
@@ -61,6 +64,7 @@ export default defineComponent({
       edit_study_id,
       close_edit_study_id,
       user_entered_study_id,
+      loading,
     };
   },
 });
