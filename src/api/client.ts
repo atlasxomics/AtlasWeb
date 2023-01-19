@@ -707,12 +707,17 @@ export default class Client {
     return resp.data;
   }
   async get_study_ids() {
-    const resp = await this.axios.get('/api/v1/run_db/get_study_ids');
+    const resp = await this.axios.get('/api/v1/run_db/get_studies');
     return resp.data;
   }
   async get_study_runs(study_id: string) {
     const pl = { study_id };
     const resp = await this.axios.post('/api/v1/run_db/get_study_runs', pl);
+    console.log(resp);
+    return resp.data;
+  }
+  async update_study_table(pl: any) {
+    const resp = await this.axios.post('/api/v1/run_db/update_study_table', pl);
     return resp.data;
   }
 }
