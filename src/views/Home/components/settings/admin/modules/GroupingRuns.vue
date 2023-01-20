@@ -106,8 +106,12 @@ export default defineComponent({
     const run_id_tissue_id = ref<Record<string, any>>({});
     const selecting_run_id = ref<boolean>(false);
     const study_selected_bool = ref<boolean>(false);
+    const original_description = ref<string>('');
     const changes_made = computed(() => {
       if (original_run_ids.value.size !== run_id_list.value.length) {
+        return true;
+      }
+      if (original_description.value !== study.value.study_description) {
         return true;
       }
       let changed = false;
@@ -174,6 +178,7 @@ export default defineComponent({
     }
     function study_selected(ev: any) {
       study.value = ev;
+      original_description.value = study.value.study_description;
       get_study_runs(study.value.study_id);
       study_selected_bool.value = true;
     }
@@ -249,6 +254,7 @@ export default defineComponent({
       close_edit_study_id,
       original_run_ids,
       new_study,
+      original_description,
     };
   },
 });
