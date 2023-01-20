@@ -720,4 +720,8 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/run_db/update_study_table', pl);
     return resp.data;
   }
+  async get_study_types() {
+    const resp = await this.axios.get('/api/v1/run_db/get_study_types');
+    return resp.data;
+  }
 }

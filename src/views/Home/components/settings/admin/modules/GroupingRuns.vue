@@ -14,19 +14,31 @@
             ref = "study_selector"
             >
           </study-selector>
+          <v-select
+          :disabled="!study_selected_bool"
+          :items="study_types"
+          label="Study Type"
+          v-model="study.study_type_name"
+          >
+          </v-select>
           <v-text-field
+          :disabled="!study_selected_bool"
           label="Study Description"
           v-model="study.study_description"
           :error="study_selected_bool && !study.study_description"
           >
           </v-text-field>
+          <v-row
+          class="justify-center"
+          >
           <v-btn
           :disabled="!changes_made || !study_selected_bool || !study.study_description"
           @click="save_changes"
-          style="margin: 14px"
+          style="margin-bottom: 70px; position: relative; top: 10px;"
           >
             Submit
           </v-btn>
+          </v-row>
         </v-col>
         <v-col
           cols="6"
@@ -86,15 +98,16 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref } from '@vue/composition-api';
+import { computed, defineComponent, onMounted, ref } from '@vue/composition-api';
 import { Client } from '@/api';
 import store from '@/store';
 import StudySelector from '@/views/Home/components/settings/admin/modules/StudySelector.vue';
 import RunIdSelector from '@/views/Home/components/settings/admin/modules/RunIdSelector.vue';
 import { snackbar } from '@/components/GlobalSnackbar';
+import Selector from './Selector.vue';
 
 export default defineComponent({
-  components: { StudySelector, RunIdSelector },
+  components: { StudySelector, RunIdSelector, Selector },
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const run_id_list = ref<Array<Record<string, any>>>([]);
@@ -107,11 +120,17 @@ export default defineComponent({
     const selecting_run_id = ref<boolean>(false);
     const study_selected_bool = ref<boolean>(false);
     const original_description = ref<string>('');
+    const original_study_type = ref<string>('');
+    const study_types = ref<Array<string>>([]);
+    const study_types_dict = ref<Record<string, any>>({});
     const changes_made = computed(() => {
       if (original_run_ids.value.size !== run_id_list.value.length) {
         return true;
       }
       if (original_description.value !== study.value.study_description) {
+        return true;
+      }
+      if (original_study_type.value !== study.value.study_type_name) {
         return true;
       }
       let changed = false;
@@ -179,6 +198,7 @@ export default defineComponent({
     function study_selected(ev: any) {
       study.value = ev;
       original_description.value = study.value.study_description;
+      original_study_type.value = study.value.study_type_name;
       get_study_runs(study.value.study_id);
       study_selected_bool.value = true;
     }
@@ -209,13 +229,15 @@ export default defineComponent({
           tissue_id: run_id_tissue_id.value[run_id],
         });
       });
-      const { study_description: description, study_id: id, study_name } = study.value;
+      const { study_description: description, study_id: id, study_name, study_type_name } = study.value;
+      const study_type_id = study_types_dict.value[study_type_name];
       const pl = {
         id,
         study_name,
         description,
         adding_list,
         removing_list,
+        study_type_id,
       };
       const result = await client.value?.update_study_table(pl);
       if (result === 'Success') {
@@ -237,6 +259,16 @@ export default defineComponent({
     function close_edit_study_id() {
       study_selected_bool.value = true;
     }
+    onMounted(() => {
+      const study_types_db = client.value?.get_study_types();
+      console.log(study_types_db);
+      study_types_db!.then((res: any) => {
+        res.forEach((item: any) => {
+          study_types.value.push(item.study_type_name);
+          study_types_dict.value[item.study_type_name] = item.study_type_id;
+        });
+      });
+    });
     return {
       study,
       run_id_list,
@@ -255,6 +287,7 @@ export default defineComponent({
       original_run_ids,
       new_study,
       original_description,
+      study_types,
     };
   },
 });
