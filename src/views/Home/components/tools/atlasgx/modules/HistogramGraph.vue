@@ -4,7 +4,7 @@
       <template v-if="idName.length > 0">
         <v-row>
           <template v-for="genes in data" >
-            <v-col vols="12" sm="4" :key="genes.id">
+            <v-col cols="12" sm="4" :key="genes.id">
               <Plotly :data="genes.data" :layout="genes.layout" :display-mode-bar="true"></Plotly>
             </v-col>
           </template>

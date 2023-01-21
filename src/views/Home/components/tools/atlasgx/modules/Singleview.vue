@@ -1,64 +1,8 @@
 <template>
-  <v-row>
-    <v-col cols="12" sm="1" class="shrinkCol">
-      <div :style="{ 'color': (backgroundColor != 'black') ? 'black' : 'white', 'z-index': 0, 'position': 'relative' }"><h4><span style="white-space: nowrap;">{{selectedGenesFromParent.trim()}}</span></h4></div>
-      <v-card
-      class="rounded-0"
-      flat
-      :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
-      height="34vh">
-        <v-card-text>
-          <v-row justify="end">
-            <v-btn
-            small
-            icon
-            color="primary"
-            @click="resetScaleAndPos"
-            ><v-icon small>mdi-arrow-expand</v-icon>
-            </v-btn>
-          </v-row>
-          <v-row justify="end">
-            <v-btn
-              small
-              icon
-              color="primary"
-              @click="reScale('plus')"
-              ><v-icon small>mdi-magnify-plus</v-icon>
-            </v-btn>
-          </v-row>
-          <v-row justify="end">
-            <v-btn
-              small
-              icon
-              color="primary"
-              @click="reScale('neg')"
-              ><v-icon small>mdi-magnify-minus</v-icon>
-            </v-btn>
-          </v-row>
-        </v-card-text>
-      </v-card>
-    </v-col>
-    <v-col cols="12" sm="11">
-      <v-card id="stageParentSingle"
-        :loading="loading"
-        class="rounded-0"
-        v-resize="onResize"
-        flat
-        :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
-        height="34vh"
-        align="center">
-        <svg style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
-          <g :id="`singleView${selectedGenesFromParent}`"/>
-        </svg>
-      </v-card>
-      <v-row>
-        <v-col cols="12" sm="11">
-          <div :style="{ 'background-image': colorBarmap, 'display': 'flex' }" >
-            <div v-for="step in stepArray" v-bind:key="`${step}`" :style="{ 'color': colorbarText, 'font-size': '18px', 'font-weight': 'bold', 'width': '20%', 'text-align': 'center' }" >
-            {{ step }}
-            </div>
-          </div>
-        </v-col>
+  <v-row no-gutters>
+    <v-col cols="12" sm="12" v-resize="onResize">
+      <v-row id="viewContainer"  style="height:34vh">
+
       </v-row>
     </v-col>
   </v-row>
@@ -72,6 +16,8 @@ import colormap from 'colormap';
 import store from '@/store';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
+/* eslint-disable no-unused-expressions */
+/* eslint-disable no-await-in-loop */
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -105,9 +51,9 @@ export default defineComponent({
     const spatialData = ref<any | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true });
+    const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true, ogx: 0 });
     const viewBoxSpatial = ref<number[]>([width, height]);
-    const scale = ref<number>(0.68);
+    const scale = ref<number>(0.8);
     const isClusterView = ref(true);
     const lowestCount = ref<number>(10000);
     const highestCount = ref<number>(0);
@@ -134,7 +80,6 @@ export default defineComponent({
     const coordGene = computed(() => (props.circleData));
     const clusterColors = ref<string[]>([]);
     const heatMap = computed(() => (props.heatmap ? props.heatmap : 'jet'));
-    const stepArray = ref<any[]>([]);
     const colorBarmap = ref<string>('');
     const colorsValues = computed(() => (props.colorBar));
     const backgroundColor = computed(() => (props.background));
@@ -151,12 +96,13 @@ export default defineComponent({
       konvaConfigLeft.value.draggable = flag;
     }
     async function fitStageToParent() {
-      const parent = document.querySelector('#stageParentSingle');
+      const parent = document.querySelector('#viewContainer');
       if (!parent) return;
       const parentWidth = (parent as any).offsetWidth;
       const parentHeight = (parent as any).offsetHeight;
-      konvaConfigLeft.value.width = parentWidth;
+      konvaConfigLeft.value.width = Math.floor(parentWidth / 3) - 1;
       konvaConfigLeft.value.height = parentHeight;
+      konvaConfigLeft.value.ogx = parentWidth;
       viewBoxSpatial.value = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
     }
     function makearray(stopValue: number, startValue: number): any[] {
@@ -191,75 +137,129 @@ export default defineComponent({
       const maxY = maxMin.value[3];
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
-      const [paddingX, paddingY] = [Math.floor(stageWidth * 0.15), Math.floor(stageHeight * 0.15)];
+      const [paddingX, paddingY] = [0, 18];
       const radiusSize = (coordinates.value.length < 4000) ? 22 : 44;
       const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
       const inV = scale.value * viewScale * minX - radius;
       const inH = scale.value * viewScale * minY - radius;
-      coordinates.value.forEach((v: any, i: any) => {
-        const circle = document.getElementById(`tixel${i}${selectedGenesFromParent.value}`)!;
-        circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV + paddingX}`);
-        circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH + paddingY}`);
-        circle.setAttribute('r', `${radius}`);
+      selectedGenesFromParent.value.forEach((gene: any) => {
+        const svg = document.getElementById(`svg${gene}`);
+        svg?.setAttribute('width', `${stageWidth}px`);
+        coordinates.value.forEach((v: any, i: any) => {
+          const circle = document.getElementById(`tixel${i}${gene}`)!;
+          circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV + paddingX}`);
+          circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH + paddingY}`);
+          circle.setAttribute('r', `${radius}`);
+        });
       });
     }
+    function timer(ms: any) { return new Promise((res: any) => setTimeout(res, ms)); }
     async function initializePlots() {
       if (coordinates.value === undefined) return;
       const circles: any[] = [];
-      const geneSum: number[] = [];
+      let geneSum: number[] = [];
       const minX = maxMin.value[0];
       const minY = maxMin.value[1];
       const maxX = maxMin.value[2];
       const maxY = maxMin.value[3];
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
-      const [paddingX, paddingY] = [Math.floor(stageWidth * 0.15), Math.floor(stageHeight * 0.15)];
+      const [paddingX, paddingY] = [0, 18];
       const radiusSize = (coordinates.value.length < 4000) ? 22 : 44;
       const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
       const inV = scale.value * viewScale * minX - radius;
       const inH = scale.value * viewScale * minY - radius;
       const NS = 'http://www.w3.org/2000/svg';
-      globalSpatial.value = document.getElementById(`singleView${selectedGenesFromParent.value}`)!;
-      coordinates.value.forEach((v: any, i: any) => {
-        geneSum.push(checkBoundary(v.genes[selectedGenesFromParent.value]));
-      });
-      highestCount.value = -10000;
-      lowestCount.value = 10000;
-      const geneColors = colormapBounded(colors_intensity.value, geneSum, 1);
-      coordinates.value.forEach((v: any, i: any) => {
-        const col = checkBoundaryColor(v.genes[selectedGenesFromParent.value]);
-        const clr = (col) ? geneColors[i] : 'grey';
-        highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
-        lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
-        const circle = document.createElementNS(NS, 'circle');
-        circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV + paddingX}`);
-        circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH + paddingY}`);
-        circle.setAttribute('r', `${radius}`);
-        circle.setAttribute('id', `tixel${i}${selectedGenesFromParent.value}`);
-        circle.setAttribute('fill', `${clr}`);
-        globalSpatial.value.appendChild(circle);
-      });
-      stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
+      const container = document.getElementById('viewContainer');
+      container?.setAttribute('style', 'height: auto');
+      const repeat = async (gene: any, index: number) => {
+        let stepArray: any = [];
+        const daddyDiv = document.createElement('div');
+        daddyDiv.setAttribute('id', `plotWrapper${gene}`);
+        const svgId = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgId.setAttribute('width', `${stageWidth}px`);
+        svgId.setAttribute('height', '34vh');
+        svgId.setAttribute('id', `svg${gene}`);
+        const svgG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const tag = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        tag.setAttribute('fill', 'white');
+        tag.setAttribute('y', '15');
+        const tagText = document.createTextNode(`${gene}`);
+        tag.appendChild(tagText);
+        const color_bar = document.createElement('div');
+        color_bar.setAttribute('id', `colorBar${gene}`);
+        color_bar.setAttribute('style', `background-image:${colorBarmap.value}; display:flex; width: 85%`);
+        geneSum = [];
+        coordinates.value.forEach((v: any, i: any) => {
+          geneSum.push(checkBoundary(v.genes[gene]));
+        });
+        highestCount.value = -10000;
+        lowestCount.value = 10000;
+        const geneColors = colormapBounded(colors_intensity.value, geneSum, 1);
+        coordinates.value.forEach((v: any, i: any) => {
+          const col = checkBoundaryColor(v.genes[gene]);
+          const clr = (col) ? geneColors[i] : 'grey';
+          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
+          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
+          const circle = document.createElementNS(NS, 'circle');
+          circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV + paddingX}`);
+          circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH + paddingY}`);
+          circle.setAttribute('r', `${radius}`);
+          circle.setAttribute('id', `tixel${i}${gene}`);
+          circle.setAttribute('fill', `${clr}`);
+          svgG.appendChild(circle);
+        });
+        stepArray = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
+        svgId.appendChild(tag);
+        svgId.appendChild(svgG);
+        daddyDiv?.appendChild(svgId);
+        stepArray.forEach((v: any) => {
+          const div = document.createElement('div');
+          div.setAttribute('style', `color:${colorbarText.value}; font-size:16px; font-weight:bold; width:20%; text-align:center`);
+          div.innerHTML = v;
+          color_bar.appendChild(div);
+        });
+        daddyDiv?.appendChild(color_bar);
+        container?.appendChild(daddyDiv);
+        await timer(30);
+      };
+      for (let i = 0; i < selectedGenesFromParent.value.length; i += 1) {
+        if (!document.getElementById(`svg${selectedGenesFromParent.value[i]}`)) await repeat(selectedGenesFromParent.value[i], i);
+      }
       initialized.value = true;
     }
     async function updateCircles() {
       if (coordinates.value === undefined) return;
+      let stepArray = [];
       const geneSum: number[] = [];
-      coordinates.value.forEach((v: any, i: any) => {
-        geneSum.push(checkBoundary(v.genes[selectedGenesFromParent.value]));
+      selectedGenesFromParent.value.forEach((gene: any) => {
+        const color_bar = document.getElementById(`colorBar${gene}`);
+        while (color_bar?.firstChild) {
+          color_bar?.firstChild.remove();
+        }
+        color_bar?.setAttribute('style', `background-image:${colorBarmap.value}; display:flex; width: 85%`);
+        coordinates.value.forEach((v: any, i: any) => {
+          geneSum.push(checkBoundary(v.genes[gene]));
+        });
+        highestCount.value = -10000;
+        lowestCount.value = 10000;
+        const geneColors = colormapBounded(colors_intensity.value, geneSum, 1);
+        coordinates.value.forEach((v: any, i: any) => {
+          const col = checkBoundaryColor(v.genes[gene]);
+          const clr = (col) ? geneColors[i] : 'grey';
+          highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
+          lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
+          const circle = document.getElementById(`tixel${i}${gene}`)!;
+          circle.setAttribute('fill', `${clr}`);
+        });
+        stepArray = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
+        stepArray.forEach((v: any) => {
+          const div = document.createElement('div');
+          div.setAttribute('style', `color:${colorbarText.value}; font-size:16px; font-weight:bold; width:20%; text-align:center`);
+          div.innerHTML = v;
+          color_bar?.appendChild(div);
+        });
       });
-      highestCount.value = -10000;
-      lowestCount.value = 10000;
-      const geneColors = colormapBounded(colors_intensity.value, geneSum, 1);
-      coordinates.value.forEach((v: any, i: any) => {
-        const col = checkBoundaryColor(v.genes[selectedGenesFromParent.value]);
-        const clr = (col) ? geneColors[i] : 'grey';
-        highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
-        lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
-        const circle = document.getElementById(`tixel${i}${selectedGenesFromParent.value}`)!;
-        circle.setAttribute('fill', `${clr}`);
-      });
-      stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
     }
     // Drawing Region
     function reScale(scalar: string) {
@@ -294,7 +294,6 @@ export default defineComponent({
         colors_intensity.value = v.intense;
         colorBarmap.value = y.color;
         maxMin.value = y.maxMin;
-        fitStageToParent();
         initializePlots();
       }
     }, { deep: true });
@@ -305,6 +304,7 @@ export default defineComponent({
     });
     onMounted(async () => {
       await clientReady;
+      fitStageToParent();
     });
     return {
       get_uuid,
@@ -316,7 +316,6 @@ export default defineComponent({
       clusterColors,
       updateCircles,
       heatMap,
-      stepArray,
       colorBarmap,
       highestCount,
       lowestCount,

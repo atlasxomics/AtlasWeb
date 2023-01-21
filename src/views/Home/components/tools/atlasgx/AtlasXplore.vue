@@ -630,17 +630,9 @@
             </v-col>
           </v-row>
           <div id="screenCaptureSingle" :style="{ 'background-color': 'transparent' }">
-            <v-row no-gutters v-show="averageInd">
-              <v-col cols="12" sm="11">
-                <v-row>
-                  <template v-for="genes in childGenes" >
-                    <v-col cols="12" sm="4" :key="genes">
-                      <singleview :gene="genes" :circleData="singleData" :userBoundary="userMaxMinValue" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
-                    </v-col>
-                  </template>
-                </v-row>
-              </v-col>
-            </v-row>
+            <v-col cols="12" sm="11">
+              <singleview v-if="averageInd && childGenes.length > 0" :gene="childGenes" :circleData="singleData" :userBoundary="userMaxMinValue" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
+            </v-col>
           </div>
           <v-col cols="12" sm="11">
             <v-card class="mt-3" v-show="featureTableFlag" flat>
