@@ -142,8 +142,7 @@ export default defineComponent({
       return changed;
     });
     function new_study(study_name: string) {
-      study.value.study_name = study_name;
-      study.value.study_id = null;
+      study.value = { study_name, study_description: '', study_type_name: '', study_id: null };
       study_selected_bool.value = true;
       run_id_list.value = [];
       original_run_ids.value = new Set();
