@@ -679,6 +679,7 @@ import BarChart from './modules/BarChart.vue';
 import LoadingPage from './modules/LoadingPage.vue';
 import HistogramGraph from './modules/HistogramGraph.vue';
 import Singleview from './modules/Singleview.vue';
+/* eslint-disable no-unused-expressions */
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -1020,25 +1021,109 @@ export default defineComponent({
     function captureScreen(background: string) {
       displayFlag.value = false;
       if (!averageInd.value) {
-        const el = document.getElementById('screenCapture')!;
-        html2canvas(el, { backgroundColor: background }).then((canvas) => {
-          const base64image = canvas.toDataURL('image/png');
-          const pom = document.createElement('a');
-          pom.href = base64image;
-          const listGene = childGenes.value.join();
-          pom.setAttribute('download', `${runId.value}/${listGene}.png`);
-          pom.click();
-        });
+        const canvas = document.createElement('canvas');
+        const canvas2 = document.createElement('canvas');
+        const canvas3 = document.createElement('canvas');
+        const context = canvas.getContext('2d')!;
+        const context2 = canvas2.getContext('2d')!;
+        const el = document.getElementById('spatialGroup')!;
+        const el2 = document.getElementById('umapGroup')!;
+        const widthS = el.getBoundingClientRect().width + 12;
+        const heightS = el.getBoundingClientRect().height + 12;
+        const widthS2 = el2.getBoundingClientRect().width + 12;
+        const heightS2 = el2.getBoundingClientRect().height + 12;
+        canvas.width = widthS;
+        canvas.height = heightS;
+        canvas2.width = widthS2;
+        canvas2.height = heightS2;
+        const svgURL = new XMLSerializer().serializeToString(el);
+        const svgURL2 = new XMLSerializer().serializeToString(el2);
+        const image = new window.Image();
+        const image2 = new window.Image();
+        let count = 0;
+        const go = () => {
+          if (count === 2) {
+            canvas3.width = (widthS > widthS2) ? widthS * 2 : widthS2 * 2;
+            canvas3.height = (heightS > heightS2) ? heightS : heightS2;
+            const context3 = canvas3.getContext('2d')!;
+            context3.drawImage(canvas, 0, 0);
+            context3.drawImage(canvas2, widthS + 30, 0);
+            const base64image = canvas3.toDataURL('image/png');
+            const pom = document.createElement('a');
+            pom.id = `${runId.value}link`;
+            pom.href = base64image;
+            const listGene = childGenes.value.join();
+            pom.setAttribute('download', `${runId.value}/${listGene}.png`);
+            pom.click();
+          }
+        };
+        image.onload = () => {
+          context.drawImage(image, 0, 0, widthS, heightS);
+          count += 1;
+          if (count === 2) go();
+        };
+        image2.onload = () => {
+          context2.drawImage(image2, 0, 0, widthS2, heightS2);
+          count += 1;
+          if (count === 2) go();
+        };
+        image.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL)}`;
+        image2.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL2)}`;
       } else {
-        const el = document.getElementById('screenCaptureSingle')!;
-        html2canvas(el, { backgroundColor: background }).then((canvas) => {
-          const base64image = canvas.toDataURL('image/png');
-          const pom = document.createElement('a');
-          pom.href = base64image;
-          const listGene = childGenes.value.join();
-          pom.setAttribute('download', `${runId.value}/${listGene}_single.png`);
-          pom.click();
+        const arrayOfCanvas: any = [];
+        const canvas2 = document.createElement('canvas');
+        const context2 = canvas2.getContext('2d');
+        let widthS = 0;
+        let heightS = 0;
+        let count = 0;
+        const numOfLines = Math.floor(childGenes.value.length / 3) + 1;
+        let xValues: any[];
+        let yValueCount = -1;
+        const go = (can: any, x: any, y: any) => {
+          count += 1;
+          console.log(can, x, y);
+          context2?.drawImage(can, x, y);
+          if (count === childGenes.value.length) {
+            const base64image = canvas2.toDataURL('image/png');
+            const pom = document.createElement('a');
+            pom.id = `${runId.value}link`;
+            pom.href = base64image;
+            const listGene = childGenes.value.join();
+            pom.setAttribute('download', `${runId.value}/${listGene}.png`);
+            pom.click();
+          }
+        };
+        childGenes.value.forEach((gene: any, i: any) => {
+          const tag = `svgGroup${gene}`;
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          const el = document.getElementById(`${tag}`)!;
+          widthS = el.getBoundingClientRect().width + 8;
+          heightS = el.getBoundingClientRect().height + 8;
+          if (i === 0) {
+            canvas2.width = widthS * 3;
+            canvas2.height = (numOfLines >= 1) ? heightS * numOfLines + (8 * numOfLines) : heightS;
+            xValues = [0, widthS * 1, widthS * 2];
+          }
+          canvas.width = widthS;
+          canvas.height = heightS;
+          const svgURL = new XMLSerializer().serializeToString(el);
+          const image = new window.Image();
+          const x = xValues[i % 3];
+          if (i % 3 === 0) yValueCount += 1;
+          const y = yValueCount * heightS;
+          image.onload = () => {
+            context?.drawImage(image, 0, 0, widthS, heightS);
+            go(canvas, x, y);
+          };
+          image.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL)}`;
+          arrayOfCanvas.push(canvas);
         });
+        // arrayOfCanvas.forEach((v: any, i: any) => {
+        //   const x = widthS * i;
+        //   const y = Math.floor(i / childGenes.value.length) * heightS;
+        //   context2?.drawImage(v, x, y);
+        // });
       }
       if (peakViewerFlag.value) {
         const ele = document.getElementById('capturePeak')!;

@@ -96,55 +96,27 @@
         <!-- view where each run has a card -->
         <template v-if="!menuListFlag">
           <template v-for="data in numOfPubsHold[pageIteration]" >
-            <template v-if="data.result_description !== null">
-              <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path">
-                <v-row>
-                  <v-col cols="12" sm="8">
-                    <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
-                    <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
-                    <v-card-text>{{data.result_description}}</v-card-text>
-                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
-                    <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
-                    <v-icon
-                    v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.run_id)"
-                    style="position: relative; left: 40px; bottom: 10px;"
-                    size="30"
-                    > mdi-pencil </v-icon>
-                  </v-col>
-                  <!-- section of card with image -->
-                  <v-col cols="12" sm="4">
-                    <div style="height:inherit; width: 100%;">
-                      <img style="position: absolute;right: 0;height: 200px; max-width: 200px;max-height:200px;margin-top:10px;margin-right:7px;" :src="data.imageLink"/>
-                    </div>
-                  </v-col>
-                </v-row>
-              </v-card>
-            </template>
-            <template v-else>
-              <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path+data.run_id">
-                <v-row>
-                  <v-col cols="12" sm="8">
-                    <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{`Spatial ${data.assay} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-card-title>
-                    <v-card-subtitle>{{data.date}}</v-card-subtitle>
-                    <v-card-text>{{`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antbody: ${data.epitope}` : ''}`}}</v-card-text>
-                    <v-card-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-card-subtitle>
-                    <v-card-text style="color:white">Placeholder</v-card-text>
-                    <v-icon
-                    v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.run_id)"
-                    style="position: relative; left: 40px; bottom: 45px;"
-                    size="30"
-                    > mdi-pencil </v-icon>
-                  </v-col>
-                  <v-col cols="12" sm="4">
-                    <div style="height:inherit; width: 100%;">
-                      <v-img style="position: absolute;right: 0;height: 200px;width: 200px; max-width: 200px;max-height:200px;margin-top: 5px;" :src="data.imageLink"/>
-                    </div>
-                  </v-col>
-                </v-row>
-              </v-card>
-            </template>
+            <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path">
+              <v-row>
+                <v-col cols="12" sm="8">
+                  <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
+                  <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
+                  <v-card-text>{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
+                  <v-icon
+                  v-if="resolveAuthGroup(['admin'])"
+                  @click="edit_result(data.run_id)"
+                  style="position: relative; left: 40px; bottom: 10px;"
+                  size="30"
+                  > mdi-pencil </v-icon>
+                </v-col>
+                <!-- section of card with image -->
+                <v-col cols="12" sm="4">
+                  <div style="height:inherit; width: 100%;">
+                    <img style="position: absolute;right: 0;height: 200px; max-width: 200px;max-height:200px;margin-top:10px;margin-right:7px;" :src="data.imageLink"/>
+                  </div>
+                </v-col>
+              </v-row>
+            </v-card>
             <div style="width:100%; height:20px" v-bind:key="data.results_id"></div>
           </template>`
         </template>
@@ -153,42 +125,22 @@
           <v-list-item-group
             multiple>
             <template v-for="data in numOfPubsHold[pageIteration]">
-              <template v-if="data.result_description !== null">
-                <v-list-item  @click="runSpatial(data)" v-bind:key="data.results_folder_path+data.run_id">
-                    <v-list-item-content>
-                      <v-list-item-title>{{data.result_title}}</v-list-item-title>
-                      <v-list-item-subtitle
-                        v-text="data.date"
-                      ></v-list-item-subtitle>
-                      <v-list-item-subtitle class="text--primary" v-text="data.result_description"></v-list-item-subtitle>
-                      <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
-                    </v-list-item-content>
-                    <v-icon
-                    v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.run_id)"
-                    style="position: relative; left: 40px; bottom: 45px;"
-                    size="30"
-                    > mdi-pencil </v-icon>
-                </v-list-item>
-              </template>
-              <template v-else>
-                <v-list-item  @click="runSpatial(data)" v-bind:key="data.results_folder_path">
-                    <v-list-item-content>
-                      <v-list-item-title>{{`Spatial ${data.assay} data of ${data.species.split('_').join(' ')} ${(!data.organ.includes('_') ? data.organ : data.organ.split('_').join(' '))}`}}</v-list-item-title>
-                      <v-list-item-subtitle
-                        v-text="data.date"
-                      ></v-list-item-subtitle>
-                      <v-list-item-subtitle class="text--primary" v-text="`Experimental Condition: ${data.experimental_condition} ${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`"></v-list-item-subtitle>
-                      <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
-                    </v-list-item-content>
-                    <v-icon
-                    v-if="resolveAuthGroup(['admin'])"
-                    @click="edit_result(data.run_id)"
-                    style="position: relative; left: 40px; bottom: 45px;"
-                    size="30"
-                    > mdi-pencil </v-icon>
-                </v-list-item>
-              </template>
+              <v-list-item  @click="runSpatial(data)" v-bind:key="data.results_folder_path+data.run_id">
+                  <v-list-item-content>
+                    <v-list-item-title>{{data.result_title}}</v-list-item-title>
+                    <v-list-item-subtitle
+                      v-text="data.date"
+                    ></v-list-item-subtitle>
+                    <v-list-item-subtitle class="text--primary">{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-list-item-subtitle>
+                    <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
+                  </v-list-item-content>
+                  <v-icon
+                  v-if="resolveAuthGroup(['admin'])"
+                  @click="edit_result(data.run_id)"
+                  style="position: relative; left: 40px; bottom: 45px;"
+                  size="30"
+                  > mdi-pencil </v-icon>
+              </v-list-item>
             </template>
           </v-list-item-group>
           </v-list>

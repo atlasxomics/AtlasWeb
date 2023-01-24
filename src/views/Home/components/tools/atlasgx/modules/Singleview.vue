@@ -180,7 +180,8 @@ export default defineComponent({
         svgId.setAttribute('width', `${stageWidth}px`);
         svgId.setAttribute('height', '34vh');
         svgId.setAttribute('id', `svg${gene}`);
-        const svgG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const svgG = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgG.setAttribute('id', `svgGroup${gene}`);
         const tag = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         tag.setAttribute('fill', 'white');
         tag.setAttribute('y', '15');
