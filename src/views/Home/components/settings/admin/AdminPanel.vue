@@ -12,8 +12,13 @@
       <v-tab-item key="ResetPassword">
         <reset-password/>
       </v-tab-item>
-      <v-tab-item key="WorkerStatus">
-        <worker-status/>
+      <v-tab-item key="JobManagment">
+        <jobs-table
+        :filter_username="true"
+        :filter_job_name="false"
+        :filter_run_id="false"
+        >
+        </jobs-table>
       </v-tab-item>
       <v-tab-item key="UserManagement" eager>
         <user-management
@@ -33,6 +38,9 @@
         ref="run_editor"
         >
         </web-uploader>
+      </v-tab-item>
+      <v-tab-item key="GroupingRuns">
+        <grouping-runs/>
       </v-tab-item>
     </v-tabs-items>
   </v-container>
@@ -54,6 +62,8 @@ import UserManagement from './modules/UserManagement.vue';
 import WebUploader from './modules/WebUploader.vue';
 import CreateWebObject from './modules/CreateWebObject.vue';
 import GroupManagment from './modules/GroupManagment.vue';
+import GroupingRuns from './modules/GroupingRuns.vue';
+import JobsTable from './modules/JobsTable.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -64,7 +74,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Worker Status', 'User Management', 'Group Managment', 'Create A Run', 'Add A Run'];
+const tabs = ['Reset Password', 'Job Managment', 'User Management', 'Group Managment', 'Create A Run', 'Add A Run', 'Group Runs'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -78,6 +88,8 @@ export default defineComponent({
     WebUploader,
     CreateWebObject,
     GroupManagment,
+    GroupingRuns,
+    JobsTable,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;

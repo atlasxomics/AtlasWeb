@@ -12,11 +12,11 @@
                 </v-card-title>
                 <run-id-selector
                  :new_available="false"
-                 @clear-fields="clear_fields"
                  @run-selected="run_selected"
                  @edit-run-id="run_id_confirmed = false;"
                  @custom-run-id="custom_run_id"
                  @close-edit-run-id="run_id_confirmed = true;"
+                 :label="run_id_confirmed ? 'Run ID' : 'New Run ID'"
                  ref="run_id_selector"
                 >
                 </run-id-selector>
@@ -308,10 +308,35 @@ export default defineComponent({
         value: false,
       },
     ];
+    function clear_fields() {
+      run_id.value = '';
+      channel_width.value = '';
+      number_channels.value = '';
+      assay.value = '';
+      species.value = '';
+      organ.value = '';
+      date_human_readable.value = '';
+      run_id.value = '';
+      run_description.value = '';
+      run_title.value = '';
+      web_obj_path.value = '';
+      antibody.value = '';
+      regulation.value = '';
+      tissue_source.value = '';
+      sample_id.value = '';
+      tissue_condition.value = '';
+      pmid.value = '';
+      selected_group.value = '';
+      tissue_type.value = '';
+      public_run.value = false;
+      ngs_id.value = '';
+      results_id.value = null;
+    }
     function custom_run_id(new_run_id: string) {
       run_id_confirmed.value = true;
       run_id.value = new_run_id;
       web_obj_created.value = false;
+      clear_fields();
     }
     function assign_fields(db_obj: any) {
       run_id.value = db_obj.run_id;
@@ -357,30 +382,7 @@ export default defineComponent({
         date_human_readable.value = number_month.concat('/'.concat(day.concat('/'.concat(year))));
       }
     }
-    function clear_fields() {
-      run_id.value = '';
-      channel_width.value = '';
-      number_channels.value = '';
-      assay.value = '';
-      species.value = '';
-      organ.value = '';
-      date_human_readable.value = '';
-      run_id.value = '';
-      run_description.value = '';
-      run_title.value = '';
-      web_obj_path.value = '';
-      antibody.value = '';
-      regulation.value = '';
-      tissue_source.value = '';
-      sample_id.value = '';
-      tissue_condition.value = '';
-      pmid.value = '';
-      selected_group.value = '';
-      tissue_type.value = '';
-      public_run.value = false;
-      ngs_id.value = '';
-      results_id.value = null;
-    }
+
     async function auto_populate_from_run_id(user_specified_run_id: string | null) {
       try {
         let run_id_to_use = run_id.value;
@@ -405,7 +407,7 @@ export default defineComponent({
     }
     function run_selected(ele: any) {
       data_loaded.value = false;
-      run_id.value = ele;
+      run_id.value = ele.run_id;
       auto_populate_from_run_id(null);
       run_id_confirmed.value = true;
     }
