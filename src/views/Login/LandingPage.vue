@@ -96,7 +96,7 @@
         <!-- view where each run has a card -->
         <template v-if="!menuListFlag">
           <template v-for="data in numOfPubsHold[pageIteration]" >
-            <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path">
+            <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path" height="245px">
               <v-row>
                 <v-col cols="12" sm="8">
                   <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
