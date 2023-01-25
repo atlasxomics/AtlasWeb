@@ -594,8 +594,8 @@ export default defineComponent({
             const avg = summer / selectedGenes.value.length;
             if (avg > highestCount.value) highestCount.value = avg;
             if (avg < lowestCount.value) lowestCount.value = avg;
-            circles.push(c);
           }
+          circles.push(c);
         });
         if (isClusterView.value) {
           ctx.emit('spatialCircleData', [TSS, nFrags]);

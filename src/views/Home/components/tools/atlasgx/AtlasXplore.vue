@@ -574,7 +574,6 @@
         <v-col cols="12" sm="11" class="mt-5">
           <v-row no-gutters>
             <v-col cols="12" sm="10">
-              <div id="screenCapture" :style="{ 'background-color': 'transparent' }">
               <atx-atac-viewer
                 @loading_value="updateLoading"
                 @highlightedId='updateSelectors'
@@ -605,7 +604,6 @@
                 :userBoundary="userMaxMinValue"
                 :assay_flag="assayFlag"
                 ref="mainAtxViewer"/>
-            </div>
             </v-col>
             <v-col cols="12" sm="2">
               <table style="margin-bottom: 0; height: 50vh;overflow-y: scroll;display: block;">
@@ -629,11 +627,9 @@
               </table>
             </v-col>
           </v-row>
-          <div id="screenCaptureSingle" :style="{ 'background-color': 'transparent' }">
-            <v-col cols="12" sm="11">
-              <singleview v-if="averageInd && childGenes.length > 0" :gene="childGenes" :circleData="singleData" :userBoundary="userMaxMinValue" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
-            </v-col>
-          </div>
+          <v-col cols="12" sm="11">
+            <singleview v-if="averageInd && childGenes.length > 0" :gene="childGenes" :circleData="singleData" :userBoundary="userMaxMinValue" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
+          </v-col>
           <v-col cols="12" sm="11">
             <v-card class="mt-3" v-show="featureTableFlag" flat>
               <table-component :loading="geneMotifLoad" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
