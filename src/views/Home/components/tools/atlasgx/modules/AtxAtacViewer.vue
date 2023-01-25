@@ -459,7 +459,7 @@ export default defineComponent({
     async function resizeCircles() {
       if (!initialized.value) return;
       const radiusSize = (spatialData.value.spatial.length < 4000) ? 22 : 44;
-      const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 28 : 56;
+      const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 30 : 58;
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;
       const viewScale = Math.min(stageWidth / (maxX.value - minX.value), stageHeight / (maxY.value - minY.value));
@@ -491,7 +491,7 @@ export default defineComponent({
         colors.push(value);
       });
       const radiusSize = (spatialData.value.spatial.length < 4000) ? 22 : 44;
-      const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 28 : 56;
+      const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 30 : 58;
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;
       const viewScale = Math.min(stageWidth / (maxX.value - minX.value), stageHeight / (maxY.value - minY.value));
@@ -549,17 +549,22 @@ export default defineComponent({
       stepArray.value = [];
       const colors: any[] = [];
       let colors_intensity: any[] = [];
+      const geneSum: number[] = [];
       lodash.each(heatMap.value, (value: any, key: any) => {
         colors.push(value);
       });
       colors_intensity = colormap({ colormap: 'jet', nshades: 64, format: 'hex', alpha: 1 });
       colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
       clusterColors.value = colors;
+      highestCount.value = -10000;
+      lowestCount.value = 10000;
+      let summer = 0;
       if (isClusterView.value || averageInd.value) {
         const coordinatesSib: any = [];
         const TSS: any = [];
         const nFrags: any = [];
         spatialData.value.spatial.forEach((v: string[], i: number) => {
+          summer = 0;
           TSS.push(parseFloat(v[5]));
           nFrags.push(parseFloat(v[6]));
           const x = parseFloat(v[1]);
@@ -580,20 +585,24 @@ export default defineComponent({
           tixel?.setAttribute('fill', `${colors[match]}`);
           tixelUmap?.setAttribute('fill', `${colors[match]}`);
           selectedGenes.value.forEach((id: any, index: any) => {
+            summer += parseFloat(geneSummation.value[index][i]);
             (c.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
           });
-          c.total = lodash.sum(Object.values(c.genes));
+          if (averageInd.value) {
+            c.total = summer;
+            geneSum.push(checkBoundary(summer));
+            const avg = summer / selectedGenes.value.length;
+            if (avg > highestCount.value) highestCount.value = avg;
+            if (avg < lowestCount.value) lowestCount.value = avg;
+          }
           circles.push(c);
         });
         if (isClusterView.value) {
           ctx.emit('spatialCircleData', [TSS, nFrags]);
         } else ctx.emit('spatialCircleData', circles);
       } else {
-        const geneSum: number[] = [];
-        highestCount.value = -10000;
-        lowestCount.value = 10000;
         spatialData.value.spatial.forEach((v: string[], i: number) => {
-          let summer = 0;
+          summer = 0;
           const x = parseFloat(v[1]);
           const y = parseFloat(v[2]);
           const c = {
