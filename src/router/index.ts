@@ -24,7 +24,7 @@ const routes: Array<RouteConfig> = [
     component: PublicMain,
   },
   {
-    path: '/visualization',
+    path: '/visualization/:group?',
     name: 'LandingPage',
     component: LandingPage,
   },

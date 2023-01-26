@@ -290,6 +290,7 @@ export default defineComponent({
     const TTposition = ref<string[]>(['0', '0']);
     const TTpositionUmap = ref<string[]>(['0', '0']);
     const assayFlag = computed(() => (props.assay_flag));
+    const current_tixel_colors = ref<string[]>([]);
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParentDualAtac');
       if (!parent) return;
@@ -317,8 +318,14 @@ export default defineComponent({
         const regex = /\d+/g;
         const string = (tixel) ? tixel.getAttribute('cluster') : '';
         const match = Number(string!.match(regex)![0]) - 1;
-        tixel?.setAttribute('fill', `${colors[match]}`);
-        tixelUmap?.setAttribute('fill', `${colors[match]}`);
+        const color = colors[match];
+        if (isClusterView.value || averageInd.value) {
+          tixel?.setAttribute('fill', `${color}`);
+          tixelUmap?.setAttribute('fill', `${color}`);
+        } else {
+          tixel?.setAttribute('fill', `${current_tixel_colors.value[i]}`);
+          tixelUmap?.setAttribute('fill', `${current_tixel_colors.value[i]}`);
+        }
         tixel?.setAttribute('opacity', '1.0');
         tixelUmap?.setAttribute('opacity', '1.0');
       }
@@ -422,9 +429,15 @@ export default defineComponent({
         const regex = /\d+/g;
         const string = (tixel) ? tixel.getAttribute('cluster') : '';
         const match = Number(string!.match(regex)![0]) - 1;
+        const color = colors[match];
         if (clusterName.includes(string!)) {
-          tixel?.setAttribute('fill', `${colors[match]}`);
-          tixelUmap?.setAttribute('fill', `${colors[match]}`);
+          if (isClusterView.value || averageInd.value) {
+            tixel?.setAttribute('fill', `${color}`);
+            tixelUmap?.setAttribute('fill', `${color}`);
+          } else {
+            tixel?.setAttribute('fill', `${current_tixel_colors.value[i]}`);
+            tixelUmap?.setAttribute('fill', `${current_tixel_colors.value[i]}`);
+          }
         } else {
           tixel?.setAttribute('fill', `${inactiveColor.value}`);
           tixelUmap?.setAttribute('fill', `${inactiveColor.value}`);
@@ -522,15 +535,15 @@ export default defineComponent({
         const match = Number(string.match(regex)![0]) - 1;
         const circle = document.createElementNS(NS, 'circle');
         const circleUmap = document.createElementNS(NS, 'circle');
-        circle.setAttribute('cx', `${x * scale.value * viewScale - inV}`);
-        circle.setAttribute('cy', `${y * scale.value * viewScale - inH}`);
+        circle.setAttribute('cx', `${x * scale.value * viewScale - inV + paddingX}`);
+        circle.setAttribute('cy', `${y * scale.value * viewScale - inH + paddingY}`);
         circle.setAttribute('r', `${radius}`);
         circle.setAttribute('fill', `${colors[match]}`);
         circle.setAttribute('id', `tixel${i}`);
         circle.setAttribute('cluster', `${v[0]}`);
         circle.setAttribute('opacity', '1.0');
-        circleUmap.setAttribute('cx', `${auX * scaleUMAP.value * viewScaleUMAP - inVU}`);
-        circleUmap.setAttribute('cy', `${auY * scaleUMAP.value * viewScaleUMAP - inHU}`);
+        circleUmap.setAttribute('cx', `${auX * scaleUMAP.value * viewScaleUMAP - inVU + paddingX}`);
+        circleUmap.setAttribute('cy', `${auY * scaleUMAP.value * viewScaleUMAP - inHU + paddingY}`);
         circleUmap.setAttribute('r', `${radiusUMAP}`);
         circleUmap.setAttribute('fill', `${colors[match]}`);
         circleUmap.setAttribute('id', `tixelUmap${i}`);
@@ -628,6 +641,7 @@ export default defineComponent({
         circles.forEach((v: any, i: any) => {
           const col = checkBoundaryColor(circles[i].total);
           const clr = (col) ? geneColors[i] : inactiveColor.value;
+          current_tixel_colors.value.push(clr);
           const tixel = document.getElementById(`tixel${i}`);
           const tixelUmap = document.getElementById(`tixelUmap${i}`);
           tixel?.setAttribute('fill', `${clr}`);
@@ -1112,17 +1126,18 @@ export default defineComponent({
     watch(selectedGenes, async (v: any[]) => {
       maxMinBoundary.value = [];
       if (v && selectedGenes.value.length === 0) {
+        current_tixel_colors.value = [];
         isClusterView.value = true;
         stepArray.value = [];
         geneSummation.value = [];
         updateCircles();
       } else {
-        // loading.value = true;
+        loading.value = true;
         isClusterView.value = false;
         await obtainSummations();
         removeRegions();
         updateCircles();
-        // loading.value = false;
+        loading.value = false;
       }
     });
     watch(selectedGenesFromParent, (v: any) => {
@@ -1245,6 +1260,7 @@ export default defineComponent({
       TTpositionUmap,
       hideToolTipS,
       hideToolTipU,
+      current_tixel_colors,
     };
   },
 });

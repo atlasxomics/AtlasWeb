@@ -29,14 +29,14 @@
                 <template v-for="(place,child) in item.palceHolder" >
                   <template v-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                   <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                  <template v-else><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                  <template v-else><v-checkbox :input-value="item.items[child] == group_from_url" color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                 </template>
                 <span v-show="!item.limit"></span>
                 <span v-show="item.limit">
                   <template v-for="child in Array.from({length:item.length - 3},(v,k)=>k+3)" >
                     <template v-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                    <template v-else><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-else><v-checkbox :input-value="item.items[child] == group_from_url" color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                   </template>
                 </span>
               </div>
@@ -224,6 +224,7 @@ export default defineComponent({
     const pubPrivFlag = ref<boolean>(false);
     const allTheRuns = ref<any[]>([]);
     const privateRuns = ref<any[]>([]);
+    const group_from_url = ref<string>('');
     function redirectToLogin() {
       router.push('/login');
     }
@@ -534,6 +535,7 @@ export default defineComponent({
       indexOfRuns.value = indexingRuns;
       numOfPubs.value = data;
       numOfPubsHold.value = data;
+      if (group_from_url.value.length > 0) checkBoxSort(group_from_url.value, 'Groups');
       loading.value = false;
     }
     async function getSecureData(pubPriv: boolean) {
@@ -666,6 +668,7 @@ export default defineComponent({
     }
     onMounted(async () => {
       if (client.value!.user === null) {
+        if (currentRoute.value.params.group) group_from_url.value = currentRoute.value.params.group;
         if (client.value.authorizationToken.length === 0) {
           const go = await client.value!.logIntoPublic();
           store.commit.setClient(await Client.CreatePublic(PROD_SERVER_URL, `JWT ${go.token}`));
@@ -725,6 +728,7 @@ export default defineComponent({
       publicPrivateView,
       resolveAuthGroup,
       edit_result,
+      group_from_url,
     };
   },
 });
