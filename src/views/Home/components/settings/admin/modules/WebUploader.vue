@@ -448,7 +448,7 @@ export default defineComponent({
           run_id_confirmed.value = false;
           const comp = ctx.refs.run_id_selector as any;
           console.log(comp);
-          comp.run_successfully_uploaded();
+          comp.reset();
           // set available run_ids to be all run ids
         }
       } catch (e) {
