@@ -446,8 +446,8 @@ export default defineComponent({
       allRuns.sort((a: any, b: any) => {
         const date1 = a.date;
         const date2 = b.date;
-        if (date1 < date2) return -1;
-        if (date1 > date2) return 1;
+        if (date1 > date2) return -1;
+        if (date1 < date2) return 1;
         return 0;
       });
       let key = '1';
