@@ -444,12 +444,10 @@ export default defineComponent({
       const raw_group: any = [];
       const indexingRuns: any = {};
       allRuns.sort((a: any, b: any) => {
-        const matchPath = a.results_folder_path.match(/(data\/)(.+)(\/)/);
-        const matchPath2 = b.results_folder_path.match(/(data\/)(.+)(\/)/);
-        const xploreId = matchPath[2];
-        const xploreId2 = matchPath2[2];
-        if (xploreId < xploreId2) return -1;
-        if (xploreId > xploreId2) return 1;
+        const date1 = a.date;
+        const date2 = b.date;
+        if (date1 < date2) return -1;
+        if (date1 > date2) return 1;
         return 0;
       });
       let key = '1';
@@ -472,7 +470,6 @@ export default defineComponent({
         else precount[json.species] += 1;
         const updateJson = json;
         updateJson.date = get_display_date(updateJson.date);
-        // updateJson.date = convertedTime.toDateString();
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
