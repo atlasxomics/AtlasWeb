@@ -33,6 +33,11 @@ export default defineComponent({
       run_id_selected.value = ev.run_id;
       ctx.emit('run-selected', ev);
     }
+    function parent_selected_run(ev: string) {
+      run_id_selected.value = ev;
+      const ref_mod = ctx.refs.id_selector as any;
+      ref_mod.set_id(ev);
+    }
     function edit_run_id() {
       ctx.emit('edit-run-id');
     }
@@ -68,6 +73,7 @@ export default defineComponent({
       run_id_selected,
       run_id_list,
       loading,
+      parent_selected_run,
       run_selected,
       edit_run_id,
       close_edit_run_id,
