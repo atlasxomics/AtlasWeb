@@ -404,7 +404,7 @@ export default defineComponent({
         const motifCsv = `data/${xploreId}/h5/obj/motifs.csv`;
         const { encoded: filenameToken } = await client!.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: xploreId, species: runObject.species, tissue: runObject.organ, assay: runObject.assay } });
         store.commit.setXploreData(runObject);
-        router.push(`public?component=PublicGeneViewer&run_id=${filenameToken.trim()}&public=true&token=${jwtToken.value.trim()}`);
+        router.push({ path: `/public?component=PublicGeneViewer&run_id=${filenameToken.trim()}&public=true&token=${jwtToken.value.trim()}`, replace: true });
         // pushByQuery({ component: 'PublicGeneViewer', run_id: filenameToken, public: 'true', token: `JWT ${jwtToken.value}` });
       } else {
         store.commit.setXploreData(runObject);

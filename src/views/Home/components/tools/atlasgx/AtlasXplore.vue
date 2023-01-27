@@ -847,7 +847,7 @@ export default defineComponent({
     }
     function redirectToVisual() {
       if (client.value!.user! === null) {
-        router.push('/visualization');
+        router.go(-1);
       } else router.push('/');
     }
     async function updateOneTime(ev: any) {
