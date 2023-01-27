@@ -2,7 +2,7 @@
   <v-container fluid>
     <v-app-bar v-if="client.user === null">
       <div>
-        <v-img width="264px" src="company_logo.png"></v-img>
+        <v-img width="264px" src="https://web.atlasxomics.com/company_logo.png"></v-img>
       </div>
       <v-spacer></v-spacer>
       <v-btn medium color="black" text @click="redirectToLogin">Sign In</v-btn>
