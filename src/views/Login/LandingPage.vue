@@ -415,7 +415,7 @@ export default defineComponent({
       let imageLink = '';
       const matchPath = path.match(/(data\/)(.+)(\/)/);
       const xploreId = matchPath![2];
-      imageLink = `frontpage_images/frontPage_${xploreId}.png`;
+      imageLink = `https://web.atlasxomics.com/frontpage_images/frontPage_${xploreId}.png`;
       return imageLink;
     }
     function get_display_date(date: any) {
