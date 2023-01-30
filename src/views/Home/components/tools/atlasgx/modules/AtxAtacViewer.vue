@@ -54,7 +54,7 @@
         @mousemove="mouseMoveOnStageLeft"
         @mouseup="mouseUpOnStageLeft"
         @mouseleave="hideToolTipS">
-        <div id="toolTipSpatial" :style="{'width':'68px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextSpatial}}</div>
+        <div id="toolTipSpatial" :style="{'width':'45px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextSpatial}}</div>
         <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
           <svg id="spatialGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
         </svg>
@@ -124,7 +124,7 @@
         @mousemove="mouseMoveOnStageRight"
         @mouseup="mouseUpOnStageRight"
         @mouseleave="hideToolTipU">
-        <div id="toolTipUmap" :style="{'width':'68px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextUmap}}</div>
+        <div id="toolTipUmap" :style="{'width':'45px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextUmap}}</div>
         <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
           <svg id="umapGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
         </svg>
@@ -291,6 +291,7 @@ export default defineComponent({
     const TTpositionUmap = ref<string[]>(['0', '0']);
     const assayFlag = computed(() => (props.assay_flag));
     const current_tixel_colors = ref<string[]>([]);
+    const multi_sample_flag = ref<boolean>(false);
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParentDualAtac');
       if (!parent) return;
@@ -549,6 +550,12 @@ export default defineComponent({
         circleUmap.setAttribute('id', `tixelUmap${i}`);
         circleUmap.setAttribute('cluster', `${v[0]}`);
         circleUmap.setAttribute('opacity', '1.0');
+        if (multi_sample_flag.value) {
+          circle.setAttribute('sample', `${v[7]}`);
+          circle.setAttribute('treatment', `${v[8]}`);
+          circleUmap.setAttribute('sample', `${v[7]}`);
+          circleUmap.setAttribute('treatment', `${v[8]}`);
+        }
         globalSpatialGroup.value.appendChild(circle);
         globalUmapGroup.value.appendChild(circleUmap);
       });
@@ -694,6 +701,7 @@ export default defineComponent({
           }
         });
         const sorter = Object.keys(totalHold);
+        if (spatialData.value.spatial[0].length > 7) multi_sample_flag.value = true;
         sorter.sort((a: any, b: any) => {
           if (a.match(/C\d+/) === null || b.match(/C\d+/) === null) return 0;
           const xCsplit = a.match(/C\d+/)[0];
@@ -763,6 +771,7 @@ export default defineComponent({
           /* eslint-disable no-await-in-loop */
           if (taskStatus.value.status !== 'SUCCESS') {
             snackbar.dispatch({ text: 'Worker failed in AtxAtacViewer', options: { right: true, color: 'error' } });
+            loading.value = false;
             return;
           }
           progressMessage.value = taskStatus.value.status;
@@ -852,12 +861,13 @@ export default defineComponent({
         if (isClickedU.value) pathUmap.setAttribute('d', strPathUmap + tmpPath);
       }
     };
-    function showToolTipSpatial(ev: any) {
-      toolTipTextSpatial.value = `Cluster: ${ev}`;
+    function showToolTipSpatial(clust: any, sample: any, treat: any) {
+      if (!multi_sample_flag.value) toolTipTextSpatial.value = `${clust}`;
+      else toolTipTextSpatial.value = `${clust} ${sample} ${treat}`;
       visibility.value = 'visible';
     }
     function showToolTipUmap(ev: any) {
-      toolTipTextUmap.value = `Cluster: ${ev}`;
+      toolTipTextUmap.value = `${ev}`;
       visibilityUmap.value = 'visible';
     }
     function hideToolTipS() {
@@ -934,7 +944,8 @@ export default defineComponent({
     function mouseMoveOnStageLeft(ev: any) {
       if (!isClicked.value) {
         if (ev.target.nodeName === 'circle') {
-          showToolTipSpatial(ev.target.attributes[5].value);
+          if (!multi_sample_flag.value) showToolTipSpatial(ev.target.attributes[5].value, '', '');
+          else showToolTipSpatial(ev.target.attributes[5].value, ev.target.attributes[7].value, ev.target.attributes[8].value);
           const post = [`${ev.layerX + 10}px`, `${ev.layerY - 13}px`];
           TTposition.value = post;
         } else if (ev.target.id !== 'spatialGroup' && ev.target.nodeName !== 'circle') visibility.value = 'hidden';
@@ -1261,6 +1272,7 @@ export default defineComponent({
       hideToolTipS,
       hideToolTipU,
       current_tixel_colors,
+      multi_sample_flag,
     };
   },
 });
