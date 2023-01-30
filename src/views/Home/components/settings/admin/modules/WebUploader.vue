@@ -21,24 +21,28 @@
                 >
                 </run-id-selector>
                 <v-text-field
+                :loading="loading"
                 v-model="run_title"
                 label="Run Title"
                 :disabled="!run_id_confirmed"
                 >
                 </v-text-field>
                 <v-text-field
+                :loading="loading"
                 v-model="run_description"
                 label="Run Description"
                 :disabled="!run_id_confirmed"
                 >
                 </v-text-field>
                 <v-text-field
+                :loading="loading"
                 v-model="sample_id"
                 label = "Sample ID"
                 :disabled="!run_id_confirmed"
                 >
                 </v-text-field>
                 <v-text-field
+                :loading="loading"
                 label="Date: MM/DD/YYYY"
                 v-model="date_human_readable"
                 :disabled="!run_id_confirmed"
@@ -59,9 +63,11 @@
             label="Assay"
             :items="db_connection.assay_list"
             :disabled="!run_id_confirmed"
+            :loading="loading"
             >
             </v-select>
             <selector
+            :loading="loading"
             v-show="assay == 'CUT&Tag'"
             :disabled="!run_id_confirmed"
             v-model="antibody"
@@ -71,6 +77,7 @@
             >
             </selector>
             <selector
+              :loading="loading"
               :disabled="!run_id_confirmed"
               v-model="species"
               display_label="Species"
@@ -79,6 +86,7 @@
             >
             </selector>
             <selector
+            :loading="loading"
             :disabled="!run_id_confirmed"
             v-model="organ"
             :display_options="db_connection.organ_list"
@@ -87,6 +95,7 @@
             >
             </selector>
             <selector
+            :loading="loading"
             :disabled="!run_id_confirmed"
             v-model="tissue_type"
             :display_options="db_connection.tissue_type_list"
@@ -95,6 +104,7 @@
             >
             </selector>
             <selector
+            :loading="loading"
             :disabled="!run_id_confirmed"
             v-model="tissue_source"
             :display_options="db_connection.tissue_source_list"
@@ -103,12 +113,14 @@
             >
             </selector>
             <v-text-field
+              :loading="loading"
               :disabled="!run_id_confirmed"
               label="Tissue Condition"
               v-model="tissue_condition"
             >
             </v-text-field>
             <v-select
+            :loading="loading"
             :disabled="!run_id_confirmed"
             label="Channel Width µm"
             v-model="channel_width"
@@ -116,6 +128,7 @@
             >
             </v-select>
             <v-select
+            :loading="loading"
             :disabled="!run_id_confirmed"
             label="Number of Channels"
             v-model="number_channels"
@@ -133,6 +146,7 @@
                 <v-text-field
                 :disabled="!run_id_confirmed"
                 label="NGS ID"
+                :loading="loading"
                 v-model="ngs_id"
                 >
                 </v-text-field>
@@ -141,6 +155,7 @@
                 :items = public_run_items
                 label="Public"
                 v-model="public_run"
+                :loading="loading"
                 >
                 </v-select>
                 <v-select
@@ -148,6 +163,7 @@
                 :items="db_connection.group_list"
                 label="Group"
                 v-model="selected_group"
+                :loading="loading"
                 >
                 </v-select>
                 <v-select
@@ -155,6 +171,7 @@
                 label="PMID"
                 :items="db_connection.pmid_list"
                 v-model="pmid"
+                :loading="loading"
                 >
                 </v-select>
                 <v-text-field
@@ -162,6 +179,7 @@
                 :disabled="!run_id_confirmed"
                 v-model="web_obj_path"
                 label="Path"
+                :loading="loading"
                 readonly
                 >
                 </v-text-field>
@@ -299,6 +317,7 @@ export default defineComponent({
     const selected_group = ref<string>('');
     const run_id_confirmed = ref<boolean>(false);
     const web_obj_created = ref<boolean>(true);
+    const loading = ref<boolean>(false);
     const public_run_items: any[] = [
       {
         text: 'True',
@@ -386,6 +405,7 @@ export default defineComponent({
 
     async function auto_populate_from_run_id(user_specified_run_id: string | null) {
       try {
+        loading.value = true;
         let run_id_to_use = run_id.value;
         if (user_specified_run_id) {
           run_id_to_use = user_specified_run_id;
@@ -393,6 +413,7 @@ export default defineComponent({
           run_id_selector.parent_selected_run(run_id_to_use);
         }
         const resp: any[] = await client.value?.get_info_from_run_id(run_id_to_use);
+        loading.value = false;
         if (resp[0] === 'Not-Found') {
           snackbar.dispatch({ text: 'Run ID Not Present in Database.', options: { color: 'red' } });
           clear_fields();
@@ -403,6 +424,7 @@ export default defineComponent({
           data_loaded.value = true;
         }
       } catch (e) {
+        loading.value = false;
         snackbar.dispatch({ text: 'Error during search.', options: { color: 'red' } });
       }
     }
@@ -418,6 +440,7 @@ export default defineComponent({
       assign_fields(data);
     }
     async function upload_data() {
+      loading.value = true;
       try {
         const data_obj = {
           assay: assay.value,
@@ -443,6 +466,7 @@ export default defineComponent({
           tissue_type: tissue_type.value,
         };
         const resp = await client.value?.upload_metadata_from_page(data_obj);
+        loading.value = false;
         if (resp === 'Success') {
           snackbar.dispatch({ text: 'Successful Upload!', options: { color: 'green' } });
           clear_fields();
@@ -453,6 +477,7 @@ export default defineComponent({
           // set available run_ids to be all run ids
         }
       } catch (e) {
+        loading.value = false;
         snackbar.dispatch({ text: 'Error! Unsuccessful Upload.', options: { color: 'red' } });
         console.log(e);
       }
@@ -488,6 +513,7 @@ export default defineComponent({
       run_id_confirmed,
       web_obj_created,
       data_loaded,
+      loading,
       results_id_selected,
       date_human_to_epoch,
       assign_fields,

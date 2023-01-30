@@ -102,16 +102,10 @@
                   <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
                   <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
                   <v-card-text>{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
-                  <v-icon
-                  v-if="resolveAuthGroup(['admin'])"
-                  @click="edit_result(data.run_id)"
-                  style="position: relative; left: 40px; bottom: 10px;"
-                  size="30"
-                  > mdi-pencil </v-icon>
                 </v-col>
                 <!-- section of card with image -->
                 <v-col cols="12" sm="4">
-                  <div style="height:inherit; width: 100%;">
+                  <div style="height:inherit; width: 100%;" @click="edit_result(data.run_id)">
                     <img style="position: absolute;right: 0;height: 200px; max-width: 200px;max-height:200px;margin-top:10px;margin-right:7px;" :src="data.imageLink"/>
                   </div>
                 </v-col>
@@ -134,12 +128,6 @@
                     <v-list-item-subtitle class="text--primary">{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-list-item-subtitle>
                     <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
                   </v-list-item-content>
-                  <v-icon
-                  v-if="resolveAuthGroup(['admin'])"
-                  @click="edit_result(data.run_id)"
-                  style="position: relative; left: 40px; bottom: 45px;"
-                  size="30"
-                  > mdi-pencil </v-icon>
               </v-list-item>
             </template>
           </v-list-item-group>
@@ -225,6 +213,9 @@ export default defineComponent({
     const allTheRuns = ref<any[]>([]);
     const privateRuns = ref<any[]>([]);
     const group_from_url = ref<string>('');
+    function image_clicked() {
+      console.log('image clicked');
+    }
     function redirectToLogin() {
       router.push('/login');
     }
@@ -234,6 +225,7 @@ export default defineComponent({
       if (shouldPush) router.push(newRoute);
     }
     function edit_result(run_id: string) {
+      if (resolveAuthGroup(['admin']) === false) return;
       const query = { component: 'AdminPanel', params: { action: 'edit', run_id } };
       const newRoute = generateRouteByQuery(currentRoute.value, query);
       router.push(newRoute);
@@ -726,6 +718,7 @@ export default defineComponent({
       resolveAuthGroup,
       edit_result,
       group_from_url,
+      image_clicked,
     };
   },
 });
