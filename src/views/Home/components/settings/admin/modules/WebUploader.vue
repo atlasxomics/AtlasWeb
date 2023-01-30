@@ -390,7 +390,7 @@ export default defineComponent({
         if (user_specified_run_id) {
           run_id_to_use = user_specified_run_id;
           const run_id_selector = ctx.refs.run_id_selector as any;
-          run_id_selector.set_run_id(run_id_to_use);
+          run_id_selector.parent_selected_run(run_id_to_use);
         }
         const resp: any[] = await client.value?.get_info_from_run_id(run_id_to_use);
         if (resp[0] === 'Not-Found') {
