@@ -272,6 +272,7 @@ export default defineComponent({
     };
     const client = computed(() => store.state.client);
     const db_connection = new DropDownFieldManager();
+    // const db_connection = { assay_list: [], organ_list: [], species_list: [], tissue_type_list: [], antibody_list: [], tissue_condition_list: [], tissue_source_list: [], channel_width_list: [], number_channels_list: [] };
     const data_loaded = ref<boolean>(false);
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
