@@ -38,10 +38,6 @@ export default defineComponent({
       type: Boolean,
       required: true,
     },
-    filter_group: {
-      type: Boolean,
-      required: false,
-    },
     filter_job_name: {
       type: Boolean,
       required: false,
@@ -61,7 +57,9 @@ export default defineComponent({
   },
   setup(props: any, ctx: any) {
     const headers = [
-      { text: 'Job Name', value: 'job_name' },
+      { text: 'Job', value: 'job_name' },
+      { text: 'Job Description', value: 'job_description' },
+      { text: 'Run ID', value: 'run_id' },
       { text: 'Job Status', value: 'job_status' },
       { text: 'User', value: 'username' },
       { text: 'Start Time', value: 'job_start_time' },
@@ -80,10 +78,10 @@ export default defineComponent({
       loading.value = true;
       const params = {
         filter_username: props.filter_username,
-        filter_group: props.filter_group,
         job_name: props.filter_job_name ? props.job_name : null,
         run_id: props.filter_run_id ? props.run_id : null,
       };
+      console.log(params);
       const res = await client.value.getJobs(params);
       jobs.value = res;
       loading.value = false;

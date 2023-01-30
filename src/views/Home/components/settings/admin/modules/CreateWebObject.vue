@@ -70,36 +70,33 @@
             </v-col>
           </v-card-actions>
           </v-card>
-        <v-btn
-          :disabled="((!is_transcriptome || !genes_h5ad_present) && !all_files_present || !path_selected || loading || !bucket_name || !run_id_selected_bool || creation_job_sent)"
-          style="position: relative; left: 45%; bottom: 2%;"
-          @click="createObjects">
-          Submit
-        </v-btn>
       </v-col>
       <v-col cols="12" sm="6">
-                <v-card flat
-        class="mx-auto"
-        v-if="run_id_selected_bool"
+        <!-- Create a flat card that asks a user for and takes in a job description -->
+        <v-card flat
         >
-        <v-card-title
-        style="position: relative;"
-        class="justify-center"
-        >Run Creation History for {{run_id}}</v-card-title>
-        <v-card-actions
-        class="justify-center"
-        >
-        <jobs-table
-          ref="job_table"
-          :filter_username="true"
-          :filter_job_name="true"
-          :filter_run_id="true"
-          job_name="webfile.create_files"
-          :run_id="run_id"
-        >
-        </jobs-table>
-        </v-card-actions>
-      </v-card>
+          <v-card-title>
+            Job Description
+          </v-card-title>
+          <v-card-text>
+            <v-text-field
+              v-model="job_description"
+              label="Job Description"
+              :disabled="loading || !run_id_selected_bool || !path_selected || ((!is_transcriptome || !genes_h5ad_present) && !all_files_present)"
+              :loading="loading"
+              >
+            </v-text-field>
+          <v-card-actions>
+          <v-btn
+            :disabled="((!is_transcriptome || !genes_h5ad_present) && !all_files_present || !path_selected || loading || !bucket_name
+            || !run_id_selected_bool || !job_description || creation_job_sent)"
+            style="position: relative; left: 45%; bottom: 2%;"
+            @click="createObjects">
+            Submit
+          </v-btn>
+          </v-card-actions>
+          </v-card-text>
+        </v-card>
       </v-col>
     </v-row>
     <v-row>
@@ -110,7 +107,7 @@
       <v-card>
         <v-card-title class="headline; justify-center">Request Received</v-card-title>
         <v-card-text class="justify-center">Text File Creation for {{run_id}} is in progress.</v-card-text>
-        <v-card-text class="justify-center">Check the Run Creation History Table for updates.</v-card-text>
+        <v-card-text class="justify-center">Check the Jobs Managment tab to view current and past jobs.</v-card-text>
         <v-card-actions
         class="justify-center"
         >
@@ -152,6 +149,7 @@ export default defineComponent({
     const run_id = ref<string>('');
     const run_id_selected_bool = ref<boolean>(false);
     const is_transcriptome = ref<boolean>(false);
+    const job_description = ref<string>('');
     const all_files_present = ref<boolean>(false);
     const genes_h5ad_present = ref<boolean>(false);
     const show_job_sent_dialog = ref<boolean>(false);
@@ -218,7 +216,7 @@ export default defineComponent({
       if (path_name.value!.length === null || path_name.value!.length === 0) return;
       loading.value = true;
       const fileNames = ['genes.h5ad', 'motifs.h5ad', 'motifs.csv'];
-      const payload = { path: path_name.value, bucket: bucket_name.value, filter: ['h5ad', 'motifs.csv'] };
+      const payload = { path: path_name.value, bucket: bucket_name.value, filter: ['h5ad', 'motifs.csv'], only_files: true };
       const important_objects = await client.value?.getFileList(payload);
       const one_string = important_objects.join();
       const allFileHold: any[] = [];
@@ -271,14 +269,15 @@ export default defineComponent({
         const ensure_created = await client.value?.ensure_run_id_created(run_id.value);
         if (ensure_created === 'Success') {
           const task = 'webfile.create_files';
-          const queue = 'atxcloud_webfile';
+          // const queue = 'atxcloud_webfile';
+          const queue = 'jonah_webfile';
           const params = {
             aws_path: `${path_name.value}/h5/obj`,
             rna_flag: checkbox_flag.value,
             bucket_name: bucket_name.value,
           };
           const args: any[] = [params];
-          const kwargs = { run_id: run_id.value };
+          const kwargs = { run_id: run_id.value, description: job_description.value };
           // const kwargs: any = { run_id: run_id.value };
           const taskObject = await client.value.postTask(task, args, kwargs, queue);
           loading.value = false;
@@ -298,16 +297,6 @@ export default defineComponent({
             await checkTaskStatus(taskObject._id);
           }
           update_jobs_table();
-          console.log(taskStatus.value);
-          // if (taskStatus.value.status !== 'SUCCESS') {
-          //   snackbar.dispatch({ text: 'Worker failed in Creating Object', options: { right: true, color: 'error' } });
-          //   creation_job_sent.value = false;
-          //   loading.value = false;
-          // } else {
-          //   snackbar.dispatch({ text: 'The Web Objects are created', options: { right: true, color: 'success' } });
-          //   progressMessage.value = taskStatus.value.status;
-          //   const resp = taskStatus.value.result;
-          // }
         } else {
           snackbar.dispatch({ text: 'Run ID not created', options: { right: true, color: 'error' } });
           creation_job_sent.value = false;
@@ -332,7 +321,7 @@ export default defineComponent({
     async function run_id_selected(ev: any) {
       creation_job_sent.value = false;
       reset_bucket_path();
-      const run_data = await client.value?.get_info_from_run_id(ev);
+      const run_data = await client.value?.get_info_from_run_id(ev.run_id);
       if (run_data[0].assay === 'Transcriptome') {
         is_transcriptome.value = true;
       }
@@ -344,12 +333,11 @@ export default defineComponent({
         const bucket = non_pre.substring(0, inx2);
         const sub_path_name = non_pre.substring(inx2 + 1, non_pre.length - 1);
         bucket_name.value = bucket;
-        console.log(bucket_name);
         await generatePaths();
         path_name.value = sub_path_name;
         select_path({ path: path_name.value });
       }
-      run_id.value = ev;
+      run_id.value = ev.run_id;
       run_id_selected_bool.value = true;
     }
     function custom_run_id(id: string) {
@@ -403,6 +391,7 @@ export default defineComponent({
       run_id,
       creation_job_sent,
       show_job_sent_dialog,
+      job_description,
     };
   },
 });

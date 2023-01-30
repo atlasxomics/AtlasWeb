@@ -2,7 +2,7 @@
   <v-container fluid>
     <v-app-bar v-if="client.user === null">
       <div>
-        <v-img width="264px" src="company_logo.png"></v-img>
+        <v-img width="264px" src="https://web.atlasxomics.com/company_logo.png"></v-img>
       </div>
       <v-spacer></v-spacer>
       <v-btn medium color="black" text @click="redirectToLogin">Sign In</v-btn>
@@ -29,14 +29,14 @@
                 <template v-for="(place,child) in item.palceHolder" >
                   <template v-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                   <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                  <template v-else><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                  <template v-else><v-checkbox :input-value="item.items[child] == group_from_url" color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                 </template>
                 <span v-show="!item.limit"></span>
                 <span v-show="item.limit">
                   <template v-for="child in Array.from({length:item.length - 3},(v,k)=>k+3)" >
                     <template v-if="item.title === 'Species'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                     <template v-else-if="item.title === 'Organ'"><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child].replace('_', ' ')} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
-                    <template v-else><v-checkbox color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
+                    <template v-else><v-checkbox :input-value="item.items[child] == group_from_url" color="black" :disabled="(countHold[item.items[child]] == 0 ? true : false)" :key="item.items[child]" :label="`${item.items[child]} (${countHold[item.items[child]]})`" @click="checkBoxSort(item.items[child], item.title)"></v-checkbox></template>
                   </template>
                 </span>
               </div>
@@ -96,7 +96,7 @@
         <!-- view where each run has a card -->
         <template v-if="!menuListFlag">
           <template v-for="data in numOfPubsHold[pageIteration]" >
-            <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path">
+            <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path" height="245px">
               <v-row>
                 <v-col cols="12" sm="8">
                   <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
@@ -224,6 +224,7 @@ export default defineComponent({
     const pubPrivFlag = ref<boolean>(false);
     const allTheRuns = ref<any[]>([]);
     const privateRuns = ref<any[]>([]);
+    const group_from_url = ref<string>('');
     function redirectToLogin() {
       router.push('/login');
     }
@@ -403,7 +404,7 @@ export default defineComponent({
         const motifCsv = `data/${xploreId}/h5/obj/motifs.csv`;
         const { encoded: filenameToken } = await client!.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: xploreId, species: runObject.species, tissue: runObject.organ, assay: runObject.assay } });
         store.commit.setXploreData(runObject);
-        router.push(`public?component=PublicGeneViewer&run_id=${filenameToken.trim()}&public=true&token=${jwtToken.value.trim()}`);
+        router.push({ path: `/public?component=PublicGeneViewer&run_id=${filenameToken.trim()}&public=true&token=${jwtToken.value.trim()}`, replace: true });
         // pushByQuery({ component: 'PublicGeneViewer', run_id: filenameToken, public: 'true', token: `JWT ${jwtToken.value}` });
       } else {
         store.commit.setXploreData(runObject);
@@ -414,7 +415,7 @@ export default defineComponent({
       let imageLink = '';
       const matchPath = path.match(/(data\/)(.+)(\/)/);
       const xploreId = matchPath![2];
-      imageLink = `frontpage_images/frontPage_${xploreId}.png`;
+      imageLink = `https://web.atlasxomics.com/frontpage_images/frontPage_${xploreId}.png`;
       return imageLink;
     }
     function get_display_date(date: any) {
@@ -443,12 +444,10 @@ export default defineComponent({
       const raw_group: any = [];
       const indexingRuns: any = {};
       allRuns.sort((a: any, b: any) => {
-        const matchPath = a.results_folder_path.match(/(data\/)(.+)(\/)/);
-        const matchPath2 = b.results_folder_path.match(/(data\/)(.+)(\/)/);
-        const xploreId = matchPath[2];
-        const xploreId2 = matchPath2[2];
-        if (xploreId < xploreId2) return -1;
-        if (xploreId > xploreId2) return 1;
+        const date1 = a.date;
+        const date2 = b.date;
+        if (date1 > date2) return -1;
+        if (date1 < date2) return 1;
         return 0;
       });
       let key = '1';
@@ -471,7 +470,6 @@ export default defineComponent({
         else precount[json.species] += 1;
         const updateJson = json;
         updateJson.date = get_display_date(updateJson.date);
-        // updateJson.date = convertedTime.toDateString();
         indexingRuns[updateJson.results_id] = updateJson;
         updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
         if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
@@ -534,6 +532,7 @@ export default defineComponent({
       indexOfRuns.value = indexingRuns;
       numOfPubs.value = data;
       numOfPubsHold.value = data;
+      if (group_from_url.value.length > 0) checkBoxSort(group_from_url.value, 'Groups');
       loading.value = false;
     }
     async function getSecureData(pubPriv: boolean) {
@@ -666,6 +665,7 @@ export default defineComponent({
     }
     onMounted(async () => {
       if (client.value!.user === null) {
+        if (currentRoute.value.params.group) group_from_url.value = currentRoute.value.params.group;
         if (client.value.authorizationToken.length === 0) {
           const go = await client.value!.logIntoPublic();
           store.commit.setClient(await Client.CreatePublic(PROD_SERVER_URL, `JWT ${go.token}`));
@@ -725,6 +725,7 @@ export default defineComponent({
       publicPrivateView,
       resolveAuthGroup,
       edit_result,
+      group_from_url,
     };
   },
 });

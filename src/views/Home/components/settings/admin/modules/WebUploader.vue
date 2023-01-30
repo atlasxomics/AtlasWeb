@@ -12,11 +12,11 @@
                 </v-card-title>
                 <run-id-selector
                  :new_available="false"
-                 @clear-fields="clear_fields"
                  @run-selected="run_selected"
                  @edit-run-id="run_id_confirmed = false;"
                  @custom-run-id="custom_run_id"
                  @close-edit-run-id="run_id_confirmed = true;"
+                 :label="run_id_confirmed ? 'Run ID' : 'New Run ID'"
                  ref="run_id_selector"
                 >
                 </run-id-selector>
@@ -272,6 +272,7 @@ export default defineComponent({
     };
     const client = computed(() => store.state.client);
     const db_connection = new DropDownFieldManager();
+    // const db_connection = { assay_list: [], organ_list: [], species_list: [], tissue_type_list: [], antibody_list: [], tissue_condition_list: [], tissue_source_list: [], channel_width_list: [], number_channels_list: [] };
     const data_loaded = ref<boolean>(false);
     const assay = ref<string>('');
     const web_obj_path = ref<string>('');
@@ -308,10 +309,35 @@ export default defineComponent({
         value: false,
       },
     ];
+    function clear_fields() {
+      run_id.value = '';
+      channel_width.value = '';
+      number_channels.value = '';
+      assay.value = '';
+      species.value = '';
+      organ.value = '';
+      date_human_readable.value = '';
+      run_id.value = '';
+      run_description.value = '';
+      run_title.value = '';
+      web_obj_path.value = '';
+      antibody.value = '';
+      regulation.value = '';
+      tissue_source.value = '';
+      sample_id.value = '';
+      tissue_condition.value = '';
+      pmid.value = '';
+      selected_group.value = '';
+      tissue_type.value = '';
+      public_run.value = false;
+      ngs_id.value = '';
+      results_id.value = null;
+    }
     function custom_run_id(new_run_id: string) {
       run_id_confirmed.value = true;
       run_id.value = new_run_id;
       web_obj_created.value = false;
+      clear_fields();
     }
     function assign_fields(db_obj: any) {
       run_id.value = db_obj.run_id;
@@ -357,37 +383,14 @@ export default defineComponent({
         date_human_readable.value = number_month.concat('/'.concat(day.concat('/'.concat(year))));
       }
     }
-    function clear_fields() {
-      run_id.value = '';
-      channel_width.value = '';
-      number_channels.value = '';
-      assay.value = '';
-      species.value = '';
-      organ.value = '';
-      date_human_readable.value = '';
-      run_id.value = '';
-      run_description.value = '';
-      run_title.value = '';
-      web_obj_path.value = '';
-      antibody.value = '';
-      regulation.value = '';
-      tissue_source.value = '';
-      sample_id.value = '';
-      tissue_condition.value = '';
-      pmid.value = '';
-      selected_group.value = '';
-      tissue_type.value = '';
-      public_run.value = false;
-      ngs_id.value = '';
-      results_id.value = null;
-    }
+
     async function auto_populate_from_run_id(user_specified_run_id: string | null) {
       try {
         let run_id_to_use = run_id.value;
         if (user_specified_run_id) {
           run_id_to_use = user_specified_run_id;
           const run_id_selector = ctx.refs.run_id_selector as any;
-          run_id_selector.set_run_id(run_id_to_use);
+          run_id_selector.parent_selected_run(run_id_to_use);
         }
         const resp: any[] = await client.value?.get_info_from_run_id(run_id_to_use);
         if (resp[0] === 'Not-Found') {
@@ -405,7 +408,7 @@ export default defineComponent({
     }
     function run_selected(ele: any) {
       data_loaded.value = false;
-      run_id.value = ele;
+      run_id.value = ele.run_id;
       auto_populate_from_run_id(null);
       run_id_confirmed.value = true;
     }
@@ -446,7 +449,7 @@ export default defineComponent({
           run_id_confirmed.value = false;
           const comp = ctx.refs.run_id_selector as any;
           console.log(comp);
-          comp.run_successfully_uploaded();
+          comp.reset();
           // set available run_ids to be all run ids
         }
       } catch (e) {
