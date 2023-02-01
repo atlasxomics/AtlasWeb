@@ -254,9 +254,9 @@ import { Client } from '@/api';
 import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import { defineComponent, onMounted, ref, computed, watch } from '@vue/composition-api';
-import Selector from './Selector.vue';
-import { DropDownFieldManager } from './DropDownFieldManager';
-import RunIdSelector from './RunIdSelector.vue';
+import Selector from './submodules/Selector.vue';
+import { DropDownFieldManager } from './submodules/DropDownFieldManager';
+import RunIdSelector from './submodules/RunIdSelector.vue';
 
 export default defineComponent({
   name: 'WebUploader',

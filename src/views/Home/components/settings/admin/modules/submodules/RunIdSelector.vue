@@ -18,7 +18,7 @@
 import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
 import { Client } from '@/api';
 import store from '@/store';
-import IdSelector from '@/views/Home/components/settings/admin/modules/IdSelector.vue';
+import IdSelector from './IdSelector.vue';
 
 export default defineComponent({
   name: 'RunIdSelector',

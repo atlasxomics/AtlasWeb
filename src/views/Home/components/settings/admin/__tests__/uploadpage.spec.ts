@@ -18,7 +18,7 @@ describe('Test WebUploader', () => {
     afterEach(() => {
         localVue = null;
     })
-    jest.mock('../modules/DropDownFieldManager', () => {
+    jest.mock('../modules/submodules/DropDownFieldManager', () => {
         return {
             DropDownFieldManager: jest.fn().mockImplementation(() =>
             {

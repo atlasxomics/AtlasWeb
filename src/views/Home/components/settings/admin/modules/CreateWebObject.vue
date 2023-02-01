@@ -124,7 +124,7 @@ import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import JobsTable from '@/views/Home/components/settings/admin/modules/JobsTable.vue';
 import { defineComponent, onMounted, ref, computed, watch } from '@vue/composition-api';
-import RunIdSelector from './RunIdSelector.vue';
+import RunIdSelector from './submodules/RunIdSelector.vue';
 
 export default defineComponent({
   name: 'CreateWebObject',
