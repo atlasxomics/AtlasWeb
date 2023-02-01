@@ -1,5 +1,6 @@
 <template>
-    <v-col>
+    <div
+    >
           <v-select
             :disabled="loading"
             :loading="loading"
@@ -19,7 +20,6 @@
           </v-text-field>
             <v-icon
             v-if="path_selected"
-            :disabled="!run_id_selected_bool"
             color="red"
             @click="path_selected = false;filterPaths()"
             >
@@ -35,7 +35,7 @@
             :items="search_consistent_paths"
             @click:row="select_path">
         </v-data-table>
-    </v-col>
+    </div>
 </template>
 
 <script lang="ts">
@@ -66,7 +66,6 @@ export default defineComponent({
       loading.value = true;
       const payload: any = { path: props.path, bucket: bucket_name.value, filter: props.filters, delimiter: props.delimiter, only_files: props.only_files };
       const important_objects = await client.value?.getFileList(payload);
-      console.log(important_objects);
       const noRepeats = [...new Set(important_objects)];
       available_paths.value = noRepeats.map((v: any) => ({ path: v }));
       search_consistent_paths.value = available_paths.value;
@@ -74,7 +73,7 @@ export default defineComponent({
       path_name.value = '';
     }
     function filterPaths() {
-      const temp_paths = available_paths.value.filter((v: any) => v.path.includes(path_name.value));
+      const temp_paths = available_paths.value.filter((v: any) => v.path.toLowerCase().includes(path_name.value.toLowerCase()));
       search_consistent_paths.value = temp_paths;
     }
     async function fetchBuckets() {
@@ -82,15 +81,6 @@ export default defineComponent({
       const temp_avbuck = list_buckets.map((v: any) => v);
       available_buckets.value = temp_avbuck;
     }
-    // async function searchPath() {
-    //   if (path_name.value!.length === null || path_name.value!.length === 0) return;
-    //   loading.value = true;
-    //   const payload = { path: path_name.value, bucket: bucket_name.value, filter: ['h5ad', 'motifs.csv'] };
-    //   const important_objects = await client.value?.getFileList(payload);
-    //   const one_string = important_objects.join();
-    //   const allFileHold: any[] = [];
-    //   loading.value = false;
-    // }
     function select_path(ev: any) {
       path_selected.value = true;
       path_name.value = ev.path;

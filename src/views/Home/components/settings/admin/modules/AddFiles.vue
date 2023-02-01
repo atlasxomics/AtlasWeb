@@ -23,8 +23,7 @@
         </v-row>
         <v-row>
             <v-col>
-                <v-row v-for="(file, index) in run_files" :key="index">
-                    {{ file.name }}
+                <v-row v-for="(file, index) in run_files" :key="index" style="position: relative; right: 15%;">
                     <selector
                     :display_options="file_type_options"
                     display_label="File Type"
@@ -35,7 +34,29 @@
                     @option-added="added_file_type($event)"
                     >
                     </selector>
+                    <v-col
+                    cols="5"
+                    style="padding: 0px;"
+                    >
+                    <aws-searcher
+                    :only_files="true"
+                    >
+                    </aws-searcher>
+                    </v-col>
+                    <v-text-field
+                    style="position: relative; left: 3%;"
+                    label="File Description"
+                    v-model="file.file_description"
+                    >
+                    </v-text-field>
                     <v-icon
+                    style="position: relative; left: 8%; bottom: 10px;"
+                    @click="edit_file(index)"
+                    >
+                      mdi-pencil
+                    </v-icon>
+                    <v-icon
+                    style="position: relative; left: 12%; bottom: 10px;"
                     @click="run_files.splice(index, 1)"
                     >
                         mdi-delete
@@ -62,10 +83,15 @@ import { Client } from '@/api';
 import store from '@/store';
 import RunIdSelector from './submodules/RunIdSelector.vue';
 import Selector from './submodules/Selector.vue';
+import AwsSearcher from './submodules/AwsSearcher.vue';
 
 export default defineComponent({
   name: 'AddFiles',
-  components: { RunIdSelector, Selector },
+  components: {
+    RunIdSelector,
+    Selector,
+    AwsSearcher,
+  },
   setup(props: any, ctx: any) {
     const client = computed(() => store.state.client);
     const run_files = ref<Array<any>>([]);
@@ -85,11 +111,14 @@ export default defineComponent({
       console.log('close_edit_run_id');
     }
     function add_file() {
-      run_files.value.push({ name: 'new file'.concat(run_files.value.length.toString()), file_type_name: '' });
+      run_files.value.push({ file_type_name: '', file_description: '', file_path: '', file_type_id: '' });
     }
     function added_file_type(file_type_name: string) {
       file_type_options.value.push(file_type_name);
       file_type_map.value[file_type_name] = null;
+    }
+    function edit_file(index: number) {
+      console.log('edit_file', index);
     }
     onMounted(async () => {
       const file_types = await client.value!.get_file_type_options();
@@ -105,6 +134,7 @@ export default defineComponent({
       close_edit_run_id,
       add_file,
       added_file_type,
+      edit_file,
     };
   },
 });
