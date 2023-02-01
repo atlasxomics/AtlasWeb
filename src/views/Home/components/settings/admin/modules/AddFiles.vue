@@ -23,17 +23,23 @@
         </v-row>
         <v-row>
             <v-col>
-                <v-row v-for="file in run_files" :key="file.name">
+                <v-row v-for="(file, index) in run_files" :key="index">
                     {{ file.name }}
                     <selector
                     :display_options="file_type_options"
                     display_label="File Type"
-                    :variable="file.file_type_id"
+                    :variable="file.file_type_name"
                     item_text="text"
                     item_value="value"
-                    @changed="file.file_type_id = $event"
+                    @changed="file.file_type_name = $event"
+                    @option-added="added_file_type($event)"
                     >
                     </selector>
+                    <v-icon
+                    @click="run_files.splice(index, 1)"
+                    >
+                        mdi-delete
+                    </v-icon>
                 </v-row>
             </v-col>
         </v-row>
@@ -41,6 +47,7 @@
             <v-btn
             color="primary"
             @click="add_file"
+            style="margin-bottom: 15px;"
             >
                Add File
             </v-btn>
@@ -62,7 +69,8 @@ export default defineComponent({
   setup(props: any, ctx: any) {
     const client = computed(() => store.state.client);
     const run_files = ref<Array<any>>([]);
-    const file_type_options = ref<Array<any>>([{ text: 'file type 1', value: 17 }, { text: 'file type 2', value: 18 }]);
+    const file_type_options = ref<Array<any>>(['file type 1', 'file type 2']);
+    const file_type_map = ref<Record<string, any>>({}); // file_type_name,  file_type_id
     async function get_run_files(tissue_id: string) {
       run_files.value = await client.value!.get_downloadable_files_for_run(tissue_id);
     }
@@ -77,27 +85,26 @@ export default defineComponent({
       console.log('close_edit_run_id');
     }
     function add_file() {
-      run_files.value.push({
-        name: 'new file'.concat(run_files.value.length.toString()),
-        file_type_id: 17,
-      });
+      run_files.value.push({ name: 'new file'.concat(run_files.value.length.toString()), file_type_name: '' });
+    }
+    function added_file_type(file_type_name: string) {
+      file_type_options.value.push(file_type_name);
+      file_type_map.value[file_type_name] = null;
     }
     onMounted(async () => {
       const file_types = await client.value!.get_file_type_options();
       file_types.forEach((file_type: any) => {
-        file_type_options.value.push({
-          text: file_type.file_type_name,
-          value: file_type.file_type_id,
-        });
+        file_type_options.value.push(file_type.file_type_name);
       });
     });
     return {
+      run_files,
+      file_type_options,
       run_id_selected,
       edit_run_id,
       close_edit_run_id,
-      run_files,
-      file_type_options,
       add_file,
+      added_file_type,
     };
   },
 });

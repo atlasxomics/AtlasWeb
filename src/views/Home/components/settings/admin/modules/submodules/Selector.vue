@@ -3,8 +3,6 @@
         <v-select
         :disabled="disabled"
         :items="display_options"
-        :item-text="item_text"
-        :item-value="item_value"
         :label="display_label"
         @input="value_changed"
         v-model="local_variable"
@@ -53,8 +51,6 @@ export default defineComponent({
     display_label: { type: String, required: true },
     variable: { required: true },
     disabled: { type: Boolean },
-    item_text: { type: String, default: 'text' },
-    item_value: { type: String, default: 'value' },
   },
   model: {
     prop: 'variable',
