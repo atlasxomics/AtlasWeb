@@ -170,7 +170,8 @@ export default defineComponent({
       });
     }
     function run_id_selected(ev: any) {
-      const { temp_tissue_id } = ev;
+      console.log('run_id_selected', ev);
+      const { tissue_id: temp_tissue_id } = ev;
       tissue_id.value = temp_tissue_id;
       get_run_files();
     }
@@ -191,9 +192,28 @@ export default defineComponent({
       console.log('edit_file', index);
     }
     function submit_file_changes() {
-      console.log('submit_file_changes');
-      console.log('removed_uuids', removed_uuids.value);
-      console.log('run_files', run_files.value);
+      const file_ids_to_remove: string[] = [];
+      removed_uuids.value.forEach((uuid: string) => {
+        file_ids_to_remove.push(original_list[uuid].file_id);
+      });
+      const file_changes: any[] = [];
+      Object.keys(changes_dict.value).forEach((key: string) => {
+        const { file_id } = changes_dict.value[key];
+        file_changes.push({ file_id, ...changes_dict.value[key] });
+      });
+      const files_to_add: any[] = [];
+      run_files.value.forEach((file: any) => {
+        if (!(file.unique_id in original_list)) {
+          files_to_add.push(file);
+        }
+      });
+      const pl = {
+        tissue_id: tissue_id.value,
+        file_ids_to_remove,
+        file_changes,
+        files_to_add,
+      };
+      const res = client.value!.submit_file_changes(pl);
     }
     onMounted(async () => {
       const file_types = await client.value!.get_file_type_options();
@@ -208,6 +228,7 @@ export default defineComponent({
       removed_uuids,
       changes_dict,
       original_list,
+      tissue_id,
       submit_file_changes,
       run_id_selected,
       edit_run_id,
