@@ -23,7 +23,7 @@
         </v-row>
         <v-row>
             <v-col>
-                <v-row v-for="(file, index) in run_files" :key="index" style="position: relative; right: 15%;">
+                <v-row v-for="(file, index) in run_files" :key="file.unique_id" style="position: relative; right: 15%;">
                     <selector
                     :display_options="file_type_options"
                     display_label="File Type"
@@ -40,6 +40,7 @@
                     >
                     <aws-searcher
                     :only_files="true"
+                    @path-selected="file.file_path = $event"
                     >
                     </aws-searcher>
                     </v-col>
@@ -80,6 +81,7 @@
 
 import { ref, defineComponent, computed, onMounted } from '@vue/composition-api';
 import { Client } from '@/api';
+import { get_uuid } from '@/utils';
 import store from '@/store';
 import RunIdSelector from './submodules/RunIdSelector.vue';
 import Selector from './submodules/Selector.vue';
@@ -111,7 +113,7 @@ export default defineComponent({
       console.log('close_edit_run_id');
     }
     function add_file() {
-      run_files.value.push({ file_type_name: '', file_description: '', file_path: '', file_type_id: '' });
+      run_files.value.push({ file_type_name: '', file_description: '', file_path: '', file_type_id: '', unique_id: get_uuid() });
     }
     function added_file_type(file_type_name: string) {
       file_type_options.value.push(file_type_name);

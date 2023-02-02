@@ -84,8 +84,8 @@ export default defineComponent({
     function select_path(ev: any) {
       path_selected.value = true;
       path_name.value = ev.path;
-      ctx.emit('path-selected', ev.path);
-      // searchPath();
+      const full_path = `S3://${bucket_name.value}/${ev.path}`;
+      ctx.emit('path-selected', full_path);
     }
     onMounted(() => {
       fetchBuckets();
