@@ -50,13 +50,14 @@
                     v-model="file.file_description"
                     >
                     </v-text-field>
-                    <v-icon
+                    <!-- <v-icon
                     style="position: relative; left: 8%; bottom: 10px;"
                     @click="edit_file(index)"
                     >
                       mdi-pencil
-                    </v-icon>
+                    </v-icon> -->
                     <v-icon
+                    large
                     style="position: relative; left: 12%; bottom: 10px;"
                     @click="run_files.splice(index, 1)"
                     >
@@ -66,12 +67,21 @@
             </v-col>
         </v-row>
         <v-row class="d-flex justify-center">
+            <v-icon
+            large
+            color="green"
+            @click="add_file"
+            >
+            mdi-plus
+            </v-icon>
+        </v-row>
+        <v-row class="d-flex justify-center">
             <v-btn
             color="primary"
-            @click="add_file"
+            @click="submit_file_changes"
             style="margin-bottom: 15px;"
             >
-               Add File
+            Submit
             </v-btn>
         </v-row>
     </v-container>
@@ -96,15 +106,73 @@ export default defineComponent({
   },
   setup(props: any, ctx: any) {
     const client = computed(() => store.state.client);
+    const tissue_id = ref<string>('');
     const run_files = ref<Array<any>>([]);
     const file_type_options = ref<Array<any>>(['file type 1', 'file type 2']);
     const file_type_map = ref<Record<string, any>>({}); // file_type_name,  file_type_id
-    async function get_run_files(tissue_id: string) {
-      run_files.value = await client.value!.get_downloadable_files_for_run(tissue_id);
+    const original_list: Record<string, any> = {};
+    const changes_dict = computed(() => {
+      const full_changes: Record<string, any> = {};
+      run_files.value.forEach((file: any) => {
+        const uid = file.unique_id;
+        if (uid in original_list) {
+          Object.keys(file).forEach((key: string) => {
+            if (file[key] !== original_list[uid][key]) {
+              if (!(uid in full_changes)) {
+                full_changes[uid] = {};
+              }
+              full_changes[uid][key] = file[key];
+            }
+          });
+        }
+      });
+      return full_changes;
+    });
+    const length_original = computed(() => {
+      let number_original = 0;
+      run_files.value.forEach((file: any) => {
+        if (file.unique_id in original_list) {
+          number_original += 1;
+        }
+      });
+      return number_original;
+    });
+    // const added_inx = computed(() => {
+    //   const added: number[] = [];
+    //   run_files.value.forEach((file: any, index: number) => {
+    //     if (!(file.unique_id in original_list)) {
+    //       added.push(index);
+    //     }
+    //   });
+    //   return added;
+    // });
+    const removed_uuids = computed(() => {
+      const removed: string[] = [];
+      Object.keys(original_list).forEach((key: string) => {
+        if (!run_files.value.includes(key)) {
+          removed.push(key);
+        }
+      });
+      return removed;
+    });
+    async function get_run_files() {
+      const files = await client.value!.get_downloadable_files_for_run(tissue_id.value);
+      files.forEach((file: any) => {
+        const unique = get_uuid();
+        run_files.value.push({
+          file_type_name: file.file_type_name,
+          file_description: file.file_description,
+          file_path: file.file_path,
+          file_type_id: file.file_type_id,
+          unique_id: unique,
+        });
+        original_list[unique] = file;
+      });
     }
     function run_id_selected(ev: any) {
-      const { tissue_id } = ev;
-      get_run_files(tissue_id);
+      const { temp_tissue_id } = ev;
+      tissue_id.value = temp_tissue_id;
+      get_run_files();
     }
     function edit_run_id() {
       console.log('edit_run_id');
@@ -122,6 +190,11 @@ export default defineComponent({
     function edit_file(index: number) {
       console.log('edit_file', index);
     }
+    function submit_file_changes() {
+      console.log('submit_file_changes');
+      console.log('removed_uuids', removed_uuids.value);
+      console.log('run_files', run_files.value);
+    }
     onMounted(async () => {
       const file_types = await client.value!.get_file_type_options();
       file_types.forEach((file_type: any) => {
@@ -131,6 +204,11 @@ export default defineComponent({
     return {
       run_files,
       file_type_options,
+      length_original,
+      removed_uuids,
+      changes_dict,
+      original_list,
+      submit_file_changes,
       run_id_selected,
       edit_run_id,
       close_edit_run_id,
