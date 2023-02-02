@@ -38,9 +38,18 @@
                     cols="5"
                     style="padding: 0px;"
                     >
+                    <v-text-field
+                    v-show="!file.editing"
+                    label="File Path"
+                    v-model="file.file_path"
+                    readonly
+                    >
+                    </v-text-field>
                     <aws-searcher
+                    v-show="file.editing"
                     :only_files="true"
                     @path-selected="file.file_path = $event"
+                    :ref="'aws_searcher_'.concat(file.unique_id)"
                     >
                     </aws-searcher>
                     </v-col>
@@ -50,12 +59,12 @@
                     v-model="file.file_description"
                     >
                     </v-text-field>
-                    <!-- <v-icon
+                    <v-icon
                     style="position: relative; left: 8%; bottom: 10px;"
                     @click="edit_file(index)"
                     >
                       mdi-pencil
-                    </v-icon> -->
+                    </v-icon>
                     <v-icon
                     large
                     style="position: relative; left: 12%; bottom: 10px;"
@@ -165,6 +174,7 @@ export default defineComponent({
           file_path: file.file_path,
           file_type_id: file.file_type_id,
           unique_id: unique,
+          editing: false,
         });
         original_list[unique] = file;
       });
@@ -182,14 +192,22 @@ export default defineComponent({
       console.log('close_edit_run_id');
     }
     function add_file() {
-      run_files.value.push({ file_type_name: '', file_description: '', file_path: '', file_type_id: '', unique_id: get_uuid() });
+      run_files.value.push({ file_type_name: '', file_description: '', file_path: '', file_type_id: '', unique_id: get_uuid(), editing: true });
     }
     function added_file_type(file_type_name: string) {
       file_type_options.value.push(file_type_name);
       file_type_map.value[file_type_name] = null;
     }
     function edit_file(index: number) {
-      console.log('edit_file', index);
+      run_files.value[index].editing = true;
+      const key = 'aws_searcher_'.concat(run_files.value[index].unique_id);
+      const aws_comp = ctx.refs[key][0] as any;
+      const path = run_files.value[index].file_path;
+      const split = path.split('S3://')[1];
+      const split_inx = split.indexOf('/');
+      const bucket = split.slice(0, split_inx);
+      const key_path = split.slice(split_inx + 1);
+      aws_comp.set_bucket_path(bucket, key_path);
     }
     function submit_file_changes() {
       const file_ids_to_remove: string[] = [];
