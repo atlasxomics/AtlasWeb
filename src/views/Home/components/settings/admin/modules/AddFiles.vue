@@ -29,6 +29,7 @@
                     :display_options="file_type_options"
                     display_label="File Type"
                     :variable="file.file_type_name"
+                    :disabled="!file.editing"
                     item_text="text"
                     item_value="value"
                     @changed="file.file_type_name = $event"
@@ -50,6 +51,8 @@
                     v-show="file.editing"
                     :only_files="true"
                     @path-selected="file.file_path = $event"
+                    @editing-path="file.file_path = null"
+                    @bucket-selected="file.file_path=null"
                     :ref="'aws_searcher_'.concat(file.unique_id)"
                     >
                     </aws-searcher>
@@ -58,13 +61,26 @@
                     style="position: relative; left: 3%;"
                     label="File Description"
                     v-model="file.file_description"
+                    :disabled="!file.editing"
                     >
                     </v-text-field>
                     <v-icon
+                    v-if="!file.editing"
                     style="position: relative; left: 8%; bottom: 10px;"
                     @click="edit_file(index)"
+                    large
                     >
                       mdi-pencil
+                    </v-icon>
+                    <v-icon
+                    color="green"
+                    v-if="file.editing"
+                    :disabled="!file.file_path || !file.file_description || !file.file_type_name"
+                    style="position: relative; left: 8%; bottom: 10px;"
+                    @click="file.editing = false"
+                    large
+                    >
+                      mdi-check
                     </v-icon>
                     <v-icon
                     large
@@ -102,6 +118,7 @@
 import { ref, defineComponent, computed, onMounted } from '@vue/composition-api';
 import { Client } from '@/api';
 import { get_uuid } from '@/utils';
+import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import RunIdSelector from './submodules/RunIdSelector.vue';
 import Selector from './submodules/Selector.vue';
@@ -228,6 +245,7 @@ export default defineComponent({
       };
       const res = await client.value!.submit_file_changes(pl);
       if (res === 'Success') {
+        snackbar.dispatch({ text: 'Success', options: { color: 'green', right: true } });
         reset_view();
       }
     }

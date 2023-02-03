@@ -6,7 +6,6 @@
             :loading="loading"
             v-model="bucket_name"
             :items="available_buckets"
-            clearable
             @input="generatePaths"
             label="Bucket"/>
           <v-row>
@@ -21,7 +20,7 @@
             <v-icon
             v-if="path_selected"
             color="red"
-            @click="path_selected = false;filterPaths()"
+            @click="edit_path"
             >
               mdi-pencil
             </v-icon>
@@ -62,6 +61,7 @@ export default defineComponent({
     const path_selected = ref<boolean>(false);
     async function generatePaths() {
       if (!bucket_name.value || bucket_name.value.length === 0) return;
+      ctx.emit('bucket-selected', bucket_name.value);
       path_selected.value = false;
       loading.value = true;
       const payload: any = { path: props.path, bucket: bucket_name.value, filter: props.filters, delimiter: props.delimiter, only_files: props.only_files };
@@ -80,6 +80,12 @@ export default defineComponent({
       const list_buckets = await client.value?.getBuckets();
       const temp_avbuck = list_buckets.map((v: any) => v);
       available_buckets.value = temp_avbuck;
+    }
+    function edit_path() {
+      console.log('editing pat');
+      path_selected.value = false;
+      filterPaths();
+      ctx.emit('editing-path');
     }
     function select_path(ev: any) {
       path_selected.value = true;
@@ -109,6 +115,7 @@ export default defineComponent({
       filterPaths,
       select_path,
       load_from_parent,
+      edit_path,
     };
   },
 });
