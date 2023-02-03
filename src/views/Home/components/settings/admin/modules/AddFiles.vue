@@ -94,6 +94,7 @@
         </v-row>
         <v-row class="d-flex justify-center">
             <v-icon
+            :disabled="currently_editing"
             large
             color="green"
             @click="add_file"
@@ -103,6 +104,7 @@
         </v-row>
         <v-row class="d-flex justify-center">
             <v-btn
+            :disabled="currently_editing"
             color="primary"
             @click="submit_file_changes"
             style="margin-bottom: 15px;"
@@ -139,6 +141,13 @@ export default defineComponent({
     const file_type_map = ref<Record<string, any>>({}); // file_type_name,  file_type_id
     const original_list = ref<Record<string, any>>({});
     const file_type_dictionary = ref<Record<string, any>>({});
+    const currently_editing = computed(() => {
+      let editing = false;
+      run_files.value.forEach((element: any) => {
+        if (element.editing) editing = true;
+      });
+      return editing;
+    });
     const changes_dict = computed(() => {
       const full_changes: Record<string, any> = {};
       run_files.value.forEach((file: any) => {
@@ -265,6 +274,7 @@ export default defineComponent({
       original_list,
       tissue_id,
       file_type_dictionary,
+      currently_editing,
       submit_file_changes,
       run_id_selected,
       edit_run_id,
