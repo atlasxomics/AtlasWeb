@@ -15,6 +15,7 @@
                         @edit-run-id="edit_run_id"
                         @close-edit-run-id="close_edit_run_id"
                         @run-selected="run_id_selected"
+                        ref="run_id_selector"
                         >
                         </run-id-selector>
                     </v-card-actions>
@@ -119,15 +120,15 @@ export default defineComponent({
     const run_files = ref<Array<any>>([]);
     const file_type_options = ref<Array<any>>([]);
     const file_type_map = ref<Record<string, any>>({}); // file_type_name,  file_type_id
-    const original_list: Record<string, any> = {};
+    const original_list = ref<Record<string, any>>({});
     const file_type_dictionary = ref<Record<string, any>>({});
     const changes_dict = computed(() => {
       const full_changes: Record<string, any> = {};
       run_files.value.forEach((file: any) => {
         const uid = file.unique_id;
-        if (uid in original_list) {
+        if (uid in original_list.value) {
           Object.keys(file).forEach((key: string) => {
-            if ((key in original_list[uid]) && (file[key] !== original_list[uid][key])) {
+            if ((key in original_list.value[uid]) && (file[key] !== original_list.value[uid][key])) {
               if (!(uid in full_changes)) {
                 full_changes[uid] = {};
               }
@@ -138,27 +139,10 @@ export default defineComponent({
       });
       return full_changes;
     });
-    const length_original = computed(() => {
-      let number_original = 0;
-      run_files.value.forEach((file: any) => {
-        if (file.unique_id in original_list) {
-          number_original += 1;
-        }
-      });
-      return number_original;
-    });
-    // const added_inx = computed(() => {
-    //   const added: number[] = [];
-    //   run_files.value.forEach((file: any, index: number) => {
-    //     if (!(file.unique_id in original_list)) {
-    //       added.push(index);
-    //     }
-    //   });
-    //   return added;
-    // });
     const removed_uuids = computed(() => {
       const removed: string[] = [];
-      Object.keys(original_list).forEach((key: string) => {
+      Object.keys(original_list.value).forEach((key: string) => {
+        console.log(key);
         if (!run_files.value.map((file: any) => file.unique_id).includes(key)) {
           removed.push(key);
         }
@@ -178,11 +162,13 @@ export default defineComponent({
           unique_id: unique,
           editing: false,
         });
-        original_list[unique] = file;
+        original_list.value[unique] = file;
       });
     }
     function run_id_selected(ev: any) {
       console.log('run_id_selected', ev);
+      original_list.value = {};
+      run_files.value = [];
       const { tissue_id: temp_tissue_id } = ev;
       tissue_id.value = temp_tissue_id;
       get_run_files();
@@ -200,6 +186,13 @@ export default defineComponent({
       file_type_options.value.push(file_type_name);
       file_type_map.value[file_type_name] = null;
     }
+    function reset_view() {
+      original_list.value = {};
+      run_files.value = [];
+      const run_selector = ctx.refs.run_id_selector;
+      run_selector.reset();
+      tissue_id.value = '';
+    }
     function edit_file(index: number) {
       run_files.value[index].editing = true;
       const key = 'aws_searcher_'.concat(run_files.value[index].unique_id);
@@ -211,10 +204,10 @@ export default defineComponent({
       const key_path = split.slice(split_inx + 1);
       aws_comp.load_from_parent(bucket, key_path);
     }
-    function submit_file_changes() {
+    async function submit_file_changes() {
       const file_ids_to_remove: string[] = [];
       removed_uuids.value.forEach((uuid: string) => {
-        file_ids_to_remove.push(original_list[uuid].file_id);
+        file_ids_to_remove.push(original_list.value[uuid].file_id);
       });
       const file_changes: any[] = [];
       Object.keys(changes_dict.value).forEach((key: string) => {
@@ -223,7 +216,7 @@ export default defineComponent({
       });
       const files_to_add: any[] = [];
       run_files.value.forEach((file: any) => {
-        if (!(file.unique_id in original_list)) {
+        if (!(file.unique_id in original_list.value)) {
           files_to_add.push(file);
         }
       });
@@ -233,7 +226,10 @@ export default defineComponent({
         file_changes,
         files_to_add,
       };
-      const res = client.value!.submit_file_changes(pl);
+      const res = await client.value!.submit_file_changes(pl);
+      if (res === 'Success') {
+        reset_view();
+      }
     }
     onMounted(async () => {
       const file_types = await client.value!.get_file_type_options();
@@ -246,7 +242,6 @@ export default defineComponent({
     return {
       run_files,
       file_type_options,
-      length_original,
       removed_uuids,
       changes_dict,
       original_list,
