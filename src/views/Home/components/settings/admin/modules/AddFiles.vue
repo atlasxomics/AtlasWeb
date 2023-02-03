@@ -117,16 +117,17 @@ export default defineComponent({
     const client = computed(() => store.state.client);
     const tissue_id = ref<string>('');
     const run_files = ref<Array<any>>([]);
-    const file_type_options = ref<Array<any>>(['file type 1', 'file type 2']);
+    const file_type_options = ref<Array<any>>([]);
     const file_type_map = ref<Record<string, any>>({}); // file_type_name,  file_type_id
     const original_list: Record<string, any> = {};
+    const file_type_dictionary = ref<Record<string, any>>({});
     const changes_dict = computed(() => {
       const full_changes: Record<string, any> = {};
       run_files.value.forEach((file: any) => {
         const uid = file.unique_id;
         if (uid in original_list) {
           Object.keys(file).forEach((key: string) => {
-            if (file[key] !== original_list[uid][key]) {
+            if ((key in original_list[uid]) && (file[key] !== original_list[uid][key])) {
               if (!(uid in full_changes)) {
                 full_changes[uid] = {};
               }
@@ -158,7 +159,7 @@ export default defineComponent({
     const removed_uuids = computed(() => {
       const removed: string[] = [];
       Object.keys(original_list).forEach((key: string) => {
-        if (!run_files.value.includes(key)) {
+        if (!run_files.value.map((file: any) => file.unique_id).includes(key)) {
           removed.push(key);
         }
       });
@@ -168,8 +169,9 @@ export default defineComponent({
       const files = await client.value!.get_downloadable_files_for_run(tissue_id.value);
       files.forEach((file: any) => {
         const unique = get_uuid();
+        const file_type_name_mapped = file_type_dictionary.value[file.file_type_id];
         run_files.value.push({
-          file_type_name: file.file_type_name,
+          file_type_name: file_type_name_mapped,
           file_description: file.file_description,
           file_path: file.file_path,
           file_type_id: file.file_type_id,
@@ -207,7 +209,7 @@ export default defineComponent({
       const split_inx = split.indexOf('/');
       const bucket = split.slice(0, split_inx);
       const key_path = split.slice(split_inx + 1);
-      aws_comp.set_bucket_path(bucket, key_path);
+      aws_comp.load_from_parent(bucket, key_path);
     }
     function submit_file_changes() {
       const file_ids_to_remove: string[] = [];
@@ -235,7 +237,9 @@ export default defineComponent({
     }
     onMounted(async () => {
       const file_types = await client.value!.get_file_type_options();
+      console.log(file_types);
       file_types.forEach((file_type: any) => {
+        file_type_dictionary.value[file_type.file_type_id] = file_type.file_type_name;
         file_type_options.value.push(file_type.file_type_name);
       });
     });
@@ -247,6 +251,7 @@ export default defineComponent({
       changes_dict,
       original_list,
       tissue_id,
+      file_type_dictionary,
       submit_file_changes,
       run_id_selected,
       edit_run_id,
