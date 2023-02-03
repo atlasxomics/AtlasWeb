@@ -24,7 +24,7 @@
         </v-row>
         <v-row>
             <v-col>
-                <v-row v-for="(file, index) in run_files" :key="file.unique_id" style="position: relative; right: 15%;">
+                <v-row v-for="(file, index) in run_files" :key="file.unique_id">
                     <selector
                     :display_options="file_type_options"
                     display_label="File Type"
@@ -38,7 +38,7 @@
                     </selector>
                     <v-col
                     cols="5"
-                    style="padding: 0px;"
+                    style="padding: 0px; margin-left: 25px"
                     >
                     <v-text-field
                     v-show="!file.editing"
@@ -58,7 +58,7 @@
                     </aws-searcher>
                     </v-col>
                     <v-text-field
-                    style="position: relative; left: 3%;"
+                    style="margin-left: 30px"
                     label="File Description"
                     v-model="file.file_description"
                     :disabled="!file.editing"
@@ -66,9 +66,9 @@
                     </v-text-field>
                     <v-icon
                     v-if="!file.editing"
-                    style="position: relative; left: 8%; bottom: 10px;"
                     @click="edit_file(index)"
                     large
+                    style="margin-left: 15px"
                     >
                       mdi-pencil
                     </v-icon>
@@ -76,7 +76,6 @@
                     color="green"
                     v-if="file.editing"
                     :disabled="!file.file_path || !file.file_description || !file.file_type_name"
-                    style="position: relative; left: 8%; bottom: 10px;"
                     @click="file.editing = false"
                     large
                     >
@@ -84,7 +83,7 @@
                     </v-icon>
                     <v-icon
                     large
-                    style="position: relative; left: 12%; bottom: 10px;"
+                    style="margin-left: 15px"
                     @click="run_files.splice(index, 1)"
                     >
                         mdi-delete
@@ -191,6 +190,13 @@ export default defineComponent({
         original_list.value[unique] = file;
       });
     }
+    async function set_file_types() {
+      const file_types = await client.value!.get_file_type_options();
+      file_types.forEach((file_type: any) => {
+        file_type_dictionary.value[file_type.file_type_id] = file_type.file_type_name;
+        file_type_options.value.push(file_type.file_type_name);
+      });
+    }
     function run_id_selected(ev: any) {
       console.log('run_id_selected', ev);
       original_list.value = {};
@@ -217,6 +223,7 @@ export default defineComponent({
       run_files.value = [];
       const run_selector = ctx.refs.run_id_selector;
       run_selector.reset();
+      set_file_types();
       tissue_id.value = '';
     }
     function edit_file(index: number) {
@@ -259,12 +266,7 @@ export default defineComponent({
       }
     }
     onMounted(async () => {
-      const file_types = await client.value!.get_file_type_options();
-      console.log(file_types);
-      file_types.forEach((file_type: any) => {
-        file_type_dictionary.value[file_type.file_type_id] = file_type.file_type_name;
-        file_type_options.value.push(file_type.file_type_name);
-      });
+      set_file_types();
     });
     return {
       run_files,
@@ -275,6 +277,7 @@ export default defineComponent({
       tissue_id,
       file_type_dictionary,
       currently_editing,
+      set_file_types,
       submit_file_changes,
       run_id_selected,
       edit_run_id,
