@@ -655,12 +655,13 @@ export default defineComponent({
           tixelUmap?.setAttribute('fill', `${clr}`);
         });
         stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
+        ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
       }
       if (averageInd.value) {
         ctx.emit('singleCircleData', { coords: circles, intense: colors_intensity });
         ctx.emit('sendColorBar', { color: colorBarmap.value, maxMin: [minX.value, minY.value, maxX.value, maxY.value], tixelColor: colors_intensity });
+        ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
       }
-      ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
       spatialRun.value = false;
     }
     const checkTaskStatus = async (task_id: string) => {
@@ -1158,7 +1159,7 @@ export default defineComponent({
       selectedGenes.value = gene;
     });
     watch(maxMinBoundaryFromParents, (v: any) => {
-      if (v[0] === '' && v[0] === '') maxMinBoundary.value = [];
+      if (v[0] === '' && v[1] === '') maxMinBoundary.value = [];
       else maxMinBoundary.value = v;
       updateCircles();
     });
