@@ -137,7 +137,6 @@ export default defineComponent({
       const maxY = maxMin.value[3];
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
-      const [paddingX, paddingY] = [0, 18];
       const radiusSize = (coordinates.value.length < 4000) ? 22 : 44;
       const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
       const inV = scale.value * viewScale * minX - radius;
@@ -147,8 +146,8 @@ export default defineComponent({
         svg?.setAttribute('width', `${stageWidth}px`);
         coordinates.value.forEach((v: any, i: any) => {
           const circle = document.getElementById(`tixel${i}${gene}`)!;
-          circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV + paddingX}`);
-          circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH + paddingY}`);
+          circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV}`);
+          circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH}`);
           circle.setAttribute('r', `${radius}`);
         });
       });
@@ -164,7 +163,6 @@ export default defineComponent({
       const maxY = maxMin.value[3];
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
-      const [paddingX, paddingY] = [0, 18];
       const radiusSize = (coordinates.value.length < 4000) ? 22 : 44;
       const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
       const inV = scale.value * viewScale * minX - radius;
@@ -182,6 +180,7 @@ export default defineComponent({
         svgId.setAttribute('id', `svg${gene}`);
         const svgG = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svgG.setAttribute('id', `svgGroup${gene}`);
+        svgG.setAttribute('y', '30');
         const tag = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         tag.setAttribute('fill', 'white');
         tag.setAttribute('y', '15');
@@ -203,8 +202,8 @@ export default defineComponent({
           highestCount.value = geneSum[i] > highestCount.value ? geneSum[i] : highestCount.value;
           lowestCount.value = geneSum[i] < lowestCount.value ? geneSum[i] : lowestCount.value;
           const circle = document.createElementNS(NS, 'circle');
-          circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV + paddingX}`);
-          circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH + paddingY}`);
+          circle.setAttribute('cx', `${v.ogx * scale.value * viewScale - inV}`);
+          circle.setAttribute('cy', `${v.ogy * scale.value * viewScale - inH}`);
           circle.setAttribute('r', `${radius}`);
           circle.setAttribute('id', `tixel${i}${gene}`);
           circle.setAttribute('fill', `${clr}`);

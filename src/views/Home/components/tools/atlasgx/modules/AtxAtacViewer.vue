@@ -56,7 +56,7 @@
         @mouseleave="hideToolTipS">
         <div id="toolTipSpatial" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left', 'padding-left': '3px', 'padding-right': '3px'}"></div>
         <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
-          <svg id="spatialGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
+          <svg id="spatialGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -126,7 +126,7 @@
         @mouseleave="hideToolTipU">
         <div id="toolTipUmap" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left', 'padding-left': '3px', 'padding-right': '3px'}">{{toolTipTextUmap}}</div>
         <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
-          <svg id="umapGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
+          <svg id="umapGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -535,15 +535,15 @@ export default defineComponent({
         const match = Number(string.match(regex)![0]) - 1;
         const circle = document.createElementNS(NS, 'circle');
         const circleUmap = document.createElementNS(NS, 'circle');
-        circle.setAttribute('cx', `${x * scale.value * viewScale - inV + paddingX}`);
-        circle.setAttribute('cy', `${y * scale.value * viewScale - inH + paddingY}`);
+        circle.setAttribute('cx', `${x * scale.value * viewScale - inV}`);
+        circle.setAttribute('cy', `${y * scale.value * viewScale - inH}`);
         circle.setAttribute('r', `${radius}`);
         circle.setAttribute('fill', `${colors[match]}`);
         circle.setAttribute('id', `tixel${i}`);
         circle.setAttribute('cluster', `${v[0]}`);
         circle.setAttribute('opacity', '1.0');
-        circleUmap.setAttribute('cx', `${auX * scaleUMAP.value * viewScaleUMAP - inVU + paddingX}`);
-        circleUmap.setAttribute('cy', `${auY * scaleUMAP.value * viewScaleUMAP - inHU + paddingY}`);
+        circleUmap.setAttribute('cx', `${auX * scaleUMAP.value * viewScaleUMAP - inVU}`);
+        circleUmap.setAttribute('cy', `${auY * scaleUMAP.value * viewScaleUMAP - inHU}`);
         circleUmap.setAttribute('r', `${radiusUMAP}`);
         circleUmap.setAttribute('fill', `${colors[match]}`);
         circleUmap.setAttribute('id', `tixelUmap${i}`);
