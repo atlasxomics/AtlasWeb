@@ -740,7 +740,6 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const selectedGenes = ref<any[]>([]);
     const childGenes = ref<any[]>([]);
-    const delayCounter = ref<number>(0);
     const trackBrowserGenes = ref<any[]>([]);
     const spatialData = ref<boolean>(false);
     const clusterItems = ref<any[]>([]);
@@ -992,15 +991,9 @@ export default defineComponent({
       userMaxMinValue.value = [userMaxValue.value, userMinValue.value];
     }
     function updateMaxMin(ev: any) {
-      if (userMaxMinValue.value[0].match(/\d+/) && userMaxMinValue.value[1].match(/\d+/)) {
-        const [max, min] = userMaxMinValue.value;
-        userMaxValue.value = max;
-        userMinValue.value = min;
-      } else {
-        const [max, min] = ev;
-        userMaxValue.value = max;
-        userMinValue.value = min;
-      }
+      const [max, min] = ev;
+      userMaxValue.value = max;
+      userMinValue.value = min;
     }
     function saveTxt() {
       listId.value = false;
@@ -1484,12 +1477,10 @@ export default defineComponent({
         this.$on('sentgenes', (ev: any) => {
           isClusterView.value = false;
           childGenes.value = [];
-          delayCounter.value = 0;
           trackBrowserGenes.value = [];
           ev.forEach((v: string, i: number) => {
             childGenes.value.push(v);
           });
-          // if (averageInd.value) waitForSingleView('grgr');
           if (ev.length === 1) {
             ev.forEach((v: string, i: number) => {
               trackBrowserGenes.value.push(v);
@@ -1501,12 +1492,6 @@ export default defineComponent({
         });
       },
     }));
-    // watch(oneTime, async (v: any) => {
-    //   if (childGenes.value.length > 0 && delayCounter.value < childGenes.value.length) {
-    //     await waitForSingleView(delayCounter.value);
-    //     delayCounter.value += 1;
-    //   } else delayCounter.value = 0;
-    // });
     watch(peakViewerFlag, (v: any) => {
       if (v) {
         visible.value = 'visible';
@@ -1554,7 +1539,6 @@ export default defineComponent({
       showFlag.value = [false];
       geneButton.value = [];
       childGenes.value = [];
-      delayCounter.value = 0;
       trackBrowserGenes.value = [];
       updateTable();
     });
@@ -1580,7 +1564,6 @@ export default defineComponent({
         showFlag.value = [false];
         trackBrowserGenes.value = [];
         childGenes.value = [];
-        delayCounter.value = 0;
       } else {
         isDrawing.value = false;
         isDrawingRect.value = false;
@@ -1596,7 +1579,6 @@ export default defineComponent({
       showFlag.value = [false];
       geneButton.value = [];
       childGenes.value = [];
-      delayCounter.value = 0;
       trackBrowserGenes.value = [];
     });
     watch(showFlag, (v: any[]) => {
@@ -1865,7 +1847,6 @@ export default defineComponent({
       waitForSingleView,
       oneTime,
       updateOneTime,
-      delayCounter,
       updateVar,
       saveImageTable,
       generateFrontPage,

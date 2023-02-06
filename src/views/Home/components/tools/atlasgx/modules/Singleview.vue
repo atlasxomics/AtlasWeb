@@ -289,12 +289,14 @@ export default defineComponent({
       }
       updateCircles();
     });
-    watch([coordGene, selectedGenesFromParent, colorsValues], ([v, x, y], [prevv, prevx, prevy]) => {
+    watch([coordGene, selectedGenesFromParent, colorsValues, maxMinBoundaryFromParents], ([v, x, y, z], [prevv, prevx, prevy, prevz]) => {
       if (v !== undefined && x !== undefined && y !== undefined && v !== prevv) {
         coordinates.value = v.coords;
         colors_intensity.value = v.intense;
         colorBarmap.value = y.color;
         maxMin.value = y.maxMin;
+        if (z[0] === '' && z[1] === '') maxMinBoundary.value = [];
+        else maxMinBoundary.value = z;
         initializePlots();
       }
     }, { deep: true });

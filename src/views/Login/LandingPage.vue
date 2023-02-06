@@ -453,31 +453,33 @@ export default defineComponent({
       let key = '1';
       for (let index = 0; index < allRuns.length; index += 1) {
         const json = allRuns[index];
-        if (split.includes(index)) key = (parseInt(key, 10) + 1).toString();
-        if (!Object.keys(data).includes(key)) data[key] = [];
-        if (!raw_group.includes(json.group)) raw_group.push(json.group);
-        if (!labs.includes(json.group)) labs.push(json.group);
-        if (!organ.includes(json.organ)) organ.push(json.organ);
-        if (!species.includes(json.species)) species.push(json.species);
-        if (!type.includes(json.assay)) type.push(json.assay);
-        if (!Object.keys(precount).includes(json.group)) precount[json.group] = 1;
-        else precount[json.group] += 1;
-        if (!Object.keys(precount).includes(json.assay)) precount[json.assay] = 1;
-        else precount[json.assay] += 1;
-        if (!Object.keys(precount).includes(json.organ)) precount[json.organ] = 1;
-        else precount[json.organ] += 1;
-        if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
-        else precount[json.species] += 1;
-        const updateJson = json;
-        updateJson.date = get_display_date(updateJson.date);
-        indexingRuns[updateJson.results_id] = updateJson;
-        updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
-        if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
-          const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
-          const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
-          updateJson.result_description = newText;
+        if (json.organ || json.group || json.assay || json.species) {
+          if (split.includes(index)) key = (parseInt(key, 10) + 1).toString();
+          if (!Object.keys(data).includes(key)) data[key] = [];
+          if (!raw_group.includes(json.group)) raw_group.push(json.group);
+          if (!labs.includes(json.group)) labs.push(json.group);
+          if (!organ.includes(json.organ)) organ.push(json.organ);
+          if (!species.includes(json.species)) species.push(json.species);
+          if (!type.includes(json.assay)) type.push(json.assay);
+          if (!Object.keys(precount).includes(json.group)) precount[json.group] = 1;
+          else precount[json.group] += 1;
+          if (!Object.keys(precount).includes(json.assay)) precount[json.assay] = 1;
+          else precount[json.assay] += 1;
+          if (!Object.keys(precount).includes(json.organ)) precount[json.organ] = 1;
+          else precount[json.organ] += 1;
+          if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
+          else precount[json.species] += 1;
+          const updateJson = json;
+          updateJson.date = get_display_date(updateJson.date);
+          indexingRuns[updateJson.results_id] = updateJson;
+          updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
+          if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
+            const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
+            const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
+            updateJson.result_description = newText;
+          }
+          data[key].push(updateJson);
         }
-        data[key].push(updateJson);
       }
       labs.sort();
       type.sort();
@@ -569,31 +571,33 @@ export default defineComponent({
       });
       for (let index = 0; index < allRuns.length; index += 1) {
         const json = allRuns[index];
-        if (split.includes(index)) key = (parseInt(key, 10) + 1).toString();
-        if (!Object.keys(data).includes(key)) data[key] = [];
-        if (!raw_group.includes(json.group)) raw_group.push(json.group);
-        if (!labs.includes(json.group)) labs.push(json.group);
-        if (!organ.includes(json.organ)) organ.push(json.organ);
-        if (!species.includes(json.species)) species.push(json.species);
-        if (!type.includes(json.assay)) type.push(json.assay);
-        if (!Object.keys(precount).includes(json.group)) precount[json.group] = 1;
-        else precount[json.group] += 1;
-        if (!Object.keys(precount).includes(json.assay)) precount[json.assay] = 1;
-        else precount[json.assay] += 1;
-        if (!Object.keys(precount).includes(json.organ)) precount[json.organ] = 1;
-        else precount[json.organ] += 1;
-        if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
-        else precount[json.species] += 1;
-        const updateJson = json;
-        updateJson.date = get_display_date(updateJson.date);
-        indexingRuns[updateJson.results_id] = updateJson;
-        updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
-        if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
-          const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
-          const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
-          updateJson.result_description = newText;
+        if (json.organ || json.group || json.assay || json.species) {
+          if (split.includes(index)) key = (parseInt(key, 10) + 1).toString();
+          if (!Object.keys(data).includes(key)) data[key] = [];
+          if (!raw_group.includes(json.group)) raw_group.push(json.group);
+          if (!labs.includes(json.group)) labs.push(json.group);
+          if (!organ.includes(json.organ)) organ.push(json.organ);
+          if (!species.includes(json.species)) species.push(json.species);
+          if (!type.includes(json.assay)) type.push(json.assay);
+          if (!Object.keys(precount).includes(json.group)) precount[json.group] = 1;
+          else precount[json.group] += 1;
+          if (!Object.keys(precount).includes(json.assay)) precount[json.assay] = 1;
+          else precount[json.assay] += 1;
+          if (!Object.keys(precount).includes(json.organ)) precount[json.organ] = 1;
+          else precount[json.organ] += 1;
+          if (!Object.keys(precount).includes(json.species)) precount[json.species] = 1;
+          else precount[json.species] += 1;
+          const updateJson = json;
+          updateJson.date = get_display_date(updateJson.date);
+          indexingRuns[updateJson.results_id] = updateJson;
+          updateJson.imageLink = grabImages(json.results_folder_path, json.public, json.group);
+          if (updateJson.result_description !== null && updateJson.result_description.match(/\d+\s+um/)) {
+            const findUM = updateJson.result_description.match(/\d+\s+um/)[0].replace('u', '\xB5');
+            const newText = updateJson.result_description.replace(/\d+\s+um/, findUM);
+            updateJson.result_description = newText;
+          }
+          data[key].push(updateJson);
         }
-        data[key].push(updateJson);
       }
       labs.sort();
       type.sort();
