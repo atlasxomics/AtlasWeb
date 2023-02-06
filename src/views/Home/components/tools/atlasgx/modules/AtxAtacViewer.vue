@@ -54,7 +54,7 @@
         @mousemove="mouseMoveOnStageLeft"
         @mouseup="mouseUpOnStageLeft"
         @mouseleave="hideToolTipS">
-        <div id="toolTipSpatial" :style="{'width':'45px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextSpatial}}</div>
+        <div id="toolTipSpatial" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left', 'padding-left': '3px', 'padding-right': '3px'}"></div>
         <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
           <svg id="spatialGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
         </svg>
@@ -124,7 +124,7 @@
         @mousemove="mouseMoveOnStageRight"
         @mouseup="mouseUpOnStageRight"
         @mouseleave="hideToolTipU">
-        <div id="toolTipUmap" :style="{'width':'45px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextUmap}}</div>
+        <div id="toolTipUmap" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left', 'padding-left': '3px', 'padding-right': '3px'}">{{toolTipTextUmap}}</div>
         <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
           <svg id="umapGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
         </svg>
@@ -285,7 +285,6 @@ export default defineComponent({
     const toolTipUmap = document.getElementById('toolTipUmap');
     const visibility = ref<string>('hidden');
     const visibilityUmap = ref<string>('hidden');
-    const toolTipTextSpatial = ref<string>('');
     const toolTipTextUmap = ref<string>('');
     const TTposition = ref<string[]>(['0', '0']);
     const TTpositionUmap = ref<string[]>(['0', '0']);
@@ -862,13 +861,30 @@ export default defineComponent({
         if (isClickedU.value) pathUmap.setAttribute('d', strPathUmap + tmpPath);
       }
     };
-    function showToolTipSpatial(clust: any, sample: any, treat: any) {
-      if (!multi_sample_flag.value) toolTipTextSpatial.value = `${clust}`;
-      else toolTipTextSpatial.value = `${clust} ${sample} ${treat}`;
+    function showToolTipSpatial(clust: string, sample: string, treat: string) {
+      const toolTipDiv = document.getElementById('toolTipSpatial');
+      while (toolTipDiv?.firstChild) {
+        toolTipDiv?.firstChild.remove();
+      }
+      if (!multi_sample_flag.value) {
+        const paragraph = document.createElement('p');
+        paragraph.innerText = `Cluster: ${clust}`;
+        paragraph.setAttribute('style', 'margin: 0; padding: 0');
+        toolTipDiv?.appendChild(paragraph);
+      } else {
+        const values = [clust, sample, treat];
+        const key = ['Cluster', 'Run_ID', 'Condition'];
+        values.forEach((v: string, i: any) => {
+          const paragraph = document.createElement('p');
+          paragraph.innerText = `${key[i]}: ${values[i]}`;
+          paragraph.setAttribute('style', 'margin: 0; padding: 0');
+          toolTipDiv?.appendChild(paragraph);
+        });
+      }
       visibility.value = 'visible';
     }
     function showToolTipUmap(ev: any) {
-      toolTipTextUmap.value = `${ev}`;
+      toolTipTextUmap.value = `Cluster: ${ev}`;
       visibilityUmap.value = 'visible';
     }
     function hideToolTipS() {
@@ -1266,7 +1282,6 @@ export default defineComponent({
       visibilityUmap,
       showToolTipSpatial,
       showToolTipUmap,
-      toolTipTextSpatial,
       toolTipTextUmap,
       TTposition,
       TTpositionUmap,
