@@ -67,7 +67,6 @@ export default defineComponent({
     const id_selected = ref<boolean>(false);
     const local_id_list = ref<Array<Record<string, any>>>([]);
     const available_ids = ref<Array<Record<string, any>>>([]);
-    const selected_id = ref<string>('');
     const editing_id_selection = ref<boolean>(false);
     const id_search_clicked = ref<boolean>(false);
     const search_input = ref<string>('');
@@ -81,7 +80,6 @@ export default defineComponent({
       return res;
     });
     function run_selected(ele: any) {
-      selected_id.value = ele[props.key_display_value];
       search_input.value = ele[props.key_display_value];
       editing_id_selection.value = false;
       id.value = ele[props.key_display_value];
@@ -133,14 +131,15 @@ export default defineComponent({
     function reset_local_ids(prop_list: Array<Record<string, any>>) {
       local_id_list.value = prop_list;
       available_ids.value = prop_list;
-      id_selected.value = false;
+    }
+    function reset_search_input() {
       search_input.value = '';
+      id_selected.value = false;
     }
     watch(props.id_list, (new_val: Array<any>) => { reset_local_ids(new_val); });
     return {
       id,
       local_id_list,
-      selected_id,
       available_ids,
       editing_id_selection,
       id_search_clicked,
@@ -148,6 +147,7 @@ export default defineComponent({
       id_selected,
       headers,
       unique_id,
+      reset_search_input,
       run_selected,
       search_runs,
       edit_id,

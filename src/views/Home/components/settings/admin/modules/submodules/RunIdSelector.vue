@@ -6,8 +6,8 @@
         :loading="loading"
         key_display_value="run_id"
         @run-selected="run_selected"
-        @edit-run-id="edit_run_id"
-        @close-edit-run-id="close_edit_run_id"
+        @edit-id="edit_run_id"
+        @close-edit-id="close_edit_run_id"
         @custom-id="custom_run_id"
         ref="id_selector"
     >
