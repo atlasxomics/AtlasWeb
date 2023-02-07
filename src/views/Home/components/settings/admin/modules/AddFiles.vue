@@ -76,7 +76,7 @@
                     color="green"
                     v-if="file.editing"
                     :disabled="!file.file_path || !file.file_description || !file.file_type_name"
-                    @click="file.editing = false"
+                    @click="save_state(index)"
                     large
                     >
                       mdi-check
@@ -84,7 +84,7 @@
                     <v-icon
                     large
                     style="margin-left: 15px"
-                    @click="run_files.splice(index, 1)"
+                    @click="remove_file(index)"
                     >
                         mdi-delete
                     </v-icon>
@@ -103,7 +103,7 @@
         </v-row>
         <v-row class="d-flex justify-center">
             <v-btn
-            :disabled="currently_editing"
+            :disabled="currently_editing || !action_made"
             color="primary"
             @click="submit_file_changes"
             style="margin-bottom: 15px;"
@@ -140,6 +140,7 @@ export default defineComponent({
     const file_type_map = ref<Record<string, any>>({}); // file_type_name,  file_type_id
     const original_list = ref<Record<string, any>>({});
     const file_type_dictionary = ref<Record<string, any>>({});
+    const action_made = ref<boolean>(false);
     const currently_editing = computed(() => {
       let editing = false;
       run_files.value.forEach((element: any) => {
@@ -199,6 +200,7 @@ export default defineComponent({
     }
     function run_id_selected(ev: any) {
       console.log('run_id_selected', ev);
+      action_made.value = false;
       original_list.value = {};
       run_files.value = [];
       const { tissue_id: temp_tissue_id } = ev;
@@ -218,6 +220,14 @@ export default defineComponent({
       file_type_options.value.push(file_type_name);
       file_type_map.value[file_type_name] = null;
     }
+    function save_state(index: number) {
+      run_files.value[index].editing = false;
+      action_made.value = true;
+    }
+    function remove_file(index: number) {
+      run_files.value.splice(index, 1);
+      action_made.value = true;
+    }
     function reset_view() {
       original_list.value = {};
       run_files.value = [];
@@ -227,6 +237,7 @@ export default defineComponent({
       tissue_id.value = '';
     }
     function edit_file(index: number) {
+      action_made.value = true;
       run_files.value[index].editing = true;
       const key = 'aws_searcher_'.concat(run_files.value[index].unique_id);
       const aws_comp = ctx.refs[key][0] as any;
@@ -277,6 +288,9 @@ export default defineComponent({
       tissue_id,
       file_type_dictionary,
       currently_editing,
+      action_made,
+      save_state,
+      remove_file,
       set_file_types,
       submit_file_changes,
       run_id_selected,
