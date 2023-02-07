@@ -33,7 +33,7 @@
                     item_text="text"
                     item_value="value"
                     @changed="file.file_type_name = $event"
-                    @option-added="added_file_type($event)"
+                    @option-added="file.file_type_name = $event; added_file_type($event)"
                     >
                     </selector>
                     <v-col

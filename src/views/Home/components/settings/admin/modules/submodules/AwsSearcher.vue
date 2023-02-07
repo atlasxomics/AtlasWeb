@@ -14,7 +14,6 @@
           :disabled="(loading || !bucket_name || path_selected)"
           :loading="loading"
           v-model="path_name"
-          @input="filterPaths"
           hint="ex: <bucket_name>/folder with <h5ad files>/">
           </v-text-field>
             <v-icon
@@ -56,25 +55,23 @@ export default defineComponent({
     const bucket_headers = [{ text: 'Path Names', value: 'path', sortable: false }];
     const bucket_name = ref<string>('');
     const available_paths = ref<any[]>([]);
-    const search_consistent_paths = ref<any[]>([]);
     const path_name = ref<string>('');
     const path_selected = ref<boolean>(false);
+    const search_consistent_paths = computed(() => available_paths.value.filter((v: any) => v.path.toLowerCase().includes(path_name.value.toLowerCase())));
+    async function get_paths_in_bucket(args: any) {
+      loading.value = true;
+      const important_objects = await client.value?.getFileList(args);
+      const noRepeats = [...new Set(important_objects)];
+      loading.value = false;
+      available_paths.value = noRepeats.map((v: any) => ({ path: v }));
+    }
     async function generatePaths() {
       if (!bucket_name.value || bucket_name.value.length === 0) return;
       ctx.emit('bucket-selected', bucket_name.value);
       path_selected.value = false;
-      loading.value = true;
-      const payload: any = { path: props.path, bucket: bucket_name.value, filter: props.filters, delimiter: props.delimiter, only_files: props.only_files };
-      const important_objects = await client.value?.getFileList(payload);
-      const noRepeats = [...new Set(important_objects)];
-      available_paths.value = noRepeats.map((v: any) => ({ path: v }));
-      search_consistent_paths.value = available_paths.value;
-      loading.value = false;
+      const args = { path: props.path, bucket: bucket_name.value, filters: props.filters, delimiter: props.filters, only_files: props.only_files };
+      await get_paths_in_bucket(args);
       path_name.value = '';
-    }
-    function filterPaths() {
-      const temp_paths = available_paths.value.filter((v: any) => v.path.toLowerCase().includes(path_name.value.toLowerCase()));
-      search_consistent_paths.value = temp_paths;
     }
     async function fetchBuckets() {
       const list_buckets = await client.value?.getBuckets();
@@ -84,7 +81,6 @@ export default defineComponent({
     function edit_path() {
       console.log('editing pat');
       path_selected.value = false;
-      filterPaths();
       ctx.emit('editing-path');
     }
     function select_path(ev: any) {
@@ -95,9 +91,10 @@ export default defineComponent({
     }
     async function load_from_parent(bucket_name_prop: string, path_name_prop: string) {
       bucket_name.value = bucket_name_prop;
-      await generatePaths();
       path_name.value = path_name_prop;
-      filterPaths();
+      path_selected.value = true;
+      const args: any = { bucket: bucket_name_prop, path: '', filters: [], delimiter: '', only_files: true };
+      await get_paths_in_bucket(args);
     }
     onMounted(() => {
       fetchBuckets();
@@ -112,7 +109,7 @@ export default defineComponent({
       search_consistent_paths,
       bucket_headers,
       generatePaths,
-      filterPaths,
+      // filterPaths,
       select_path,
       load_from_parent,
       edit_path,
