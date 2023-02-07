@@ -59,7 +59,7 @@
           :value="backgroundFlag"
           @click:outside="backgroundFlag = !backgroundFlag"
           hide-overlay>
-          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:210px;">
+          <v-card style="width: max-content;position: absolute;z-index: 999;top:40px;left:210px;">
             <v-data-table
               class="thickBorder"
               v-model="selected"
@@ -138,42 +138,6 @@
               label="NGS ID">
               </v-text-field> -->
             </v-card-text>
-          </v-card>
-        </v-dialog>
-        <v-dialog
-          v-if="geneMotifFlag"
-          :value="geneMotifFlag"
-          @click:outside="geneMotifFlag = !geneMotifFlag"
-          hide-overlay>
-          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:150px;"
-            :disabled="loading">
-            <v-data-table
-            class="thickBorder"
-            v-model="selected"
-            width="20%"
-            dense
-            single-select
-            hide-default-footer
-            hide-default-header
-            :items="['Genes', 'Motifs']">
-              <template v-slot:item="row">
-                <template v-if="row.item == 'Genes'">
-                  <tr @click="geneMotif = 'gene'">
-                    <td>{{row.item}}</td>
-                  </tr>
-                </template>
-                <template v-if="row.item == 'Motifs'">
-                  <tr @click="geneMotif = 'motif'">
-                    <td>{{row.item}}</td>
-                  </tr>
-                </template>
-                <template v-if="row.item == 'Features'">
-                  <tr @click="geneMotif = 'feat'">
-                    <td>{{row.item}}</td>
-                  </tr>
-                </template>
-              </template>
-            </v-data-table>
           </v-card>
         </v-dialog>
         <v-col cols="2" sm="1">
@@ -405,7 +369,7 @@
             :value="displayFlag"
             @click:outside="displayFlag = !displayFlag"
             hide-overlay>
-              <v-card style="width:100px;position:absolute;z-index:999;top:240px;left:65px;">
+              <v-card  style="width: max-content; position: absolute; left: 65px; top: 240px;z-index: 999">
                 <v-data-table
                 class="thickBorder"
                 v-model="selected"
@@ -783,7 +747,6 @@ export default defineComponent({
     const backgroundFlag = ref<boolean>(false);
     const heatmapFlag = ref<boolean>(false);
     const autoCompleteFlag = ref<boolean>(false);
-    const geneMotifFlag = ref<boolean>(false);
     const listId = ref<boolean>(false);
     const lassoSide = ref<string>();
     const colorOnOff = ref<string>('black');
@@ -1518,7 +1481,6 @@ export default defineComponent({
         featureTableFlag.value = true;
         peakViewerFlag.value = false;
         histoFlag.value = false;
-        geneMotifFlag.value = false;
         isClusterView.value = true;
         if (childGenes.value.length > 0) selectedGenes.value = [];
         showFlag.value = [false];
@@ -1533,7 +1495,6 @@ export default defineComponent({
       featureTableFlag.value = true;
       peakViewerFlag.value = false;
       histoFlag.value = false;
-      geneMotifFlag.value = false;
       isClusterView.value = true;
       selectedGenes.value = [];
       showFlag.value = [false];
@@ -1573,7 +1534,6 @@ export default defineComponent({
       featureTableFlag.value = true;
       peakViewerFlag.value = false;
       histoFlag.value = false;
-      geneMotifFlag.value = false;
       isClusterView.value = true;
       selectedGenes.value = [];
       showFlag.value = [false];
@@ -1741,7 +1701,6 @@ export default defineComponent({
       chooseBackground,
       chooseHeatmap,
       heatmapFlag,
-      geneMotifFlag,
       lassoSide,
       colorOnOff,
       colorOnOffRect,
