@@ -102,6 +102,9 @@
                   <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
                   <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
                   <v-card-text>{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
+                  <v-card-actions> <v-icon
+                  @click="download_option_clicked(data)"
+                  > mdi-download </v-icon> </v-card-actions>
                 </v-col>
                 <!-- section of card with image -->
                 <v-col cols="12" sm="4">
@@ -305,6 +308,11 @@ export default defineComponent({
         });
       }
       loading.value = false;
+    }
+    async function download_option_clicked(object: any) {
+      console.log(object);
+      const res = await client.value.get_file_info_run_id(object);
+      console.log(res);
     }
     async function searchRuns(event: string, from: any) {
       /* eslint-disable no-lonely-if */
@@ -697,6 +705,7 @@ export default defineComponent({
       checkBoxArr,
       searchRuns,
       textSearch,
+      download_option_clicked,
       loading,
       count,
       countHold,
