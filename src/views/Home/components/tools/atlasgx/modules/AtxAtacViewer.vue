@@ -54,7 +54,7 @@
         @mousemove="mouseMoveOnStageLeft"
         @mouseup="mouseUpOnStageLeft"
         @mouseleave="hideToolTipS">
-        <div id="toolTipSpatial" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left', 'padding-left': '3px', 'padding-right': '3px'}"></div>
+        <div id="toolTipSpatial" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}"></div>
         <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
           <svg id="spatialGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
@@ -124,7 +124,7 @@
         @mousemove="mouseMoveOnStageRight"
         @mouseup="mouseUpOnStageRight"
         @mouseleave="hideToolTipU">
-        <div id="toolTipUmap" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left', 'padding-left': '3px', 'padding-right': '3px'}">{{toolTipTextUmap}}</div>
+        <div id="toolTipUmap" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}">{{toolTipTextUmap}}</div>
         <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
           <svg id="umapGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
@@ -903,23 +903,23 @@ export default defineComponent({
         path.setAttribute('stroke', '#6ffc03');
         path.setAttribute('stroke-width', '1');
         if (!path.getAttribute('id')) path.setAttribute('id', 'spa');
-        appendToBuffer({ x: ev.layerX, y: ev.layerY });
-        strPath += `M${ev.layerX} ${ev.layerY}`;
+        appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
+        strPath += `M${ev.offsetX} ${ev.offsetY}`;
         path.setAttribute('d', strPath);
         globalSvgS.value.appendChild(path);
       } else if (isDrawingRect.value) {
         lassoSide.value = 'left';
         removeRegions();
-        rect.setAttribute('x', `${ev.layerX}`);
-        rect.setAttribute('y', `${ev.layerY}`);
+        rect.setAttribute('x', `${ev.offsetX}`);
+        rect.setAttribute('y', `${ev.offsetY}`);
         rect.setAttribute('fill', 'none');
         rect.setAttribute('stroke', '#6ffc03');
         rect.setAttribute('width', '0');
         rect.setAttribute('height', '0');
         globalSvgS.value.appendChild(rect);
-        startRectCoords = [ev.layerX, ev.layerY];
+        startRectCoords = [ev.offsetX, ev.offsetY];
       } else {
-        originalClickedPoint.value = [ev.layerX, ev.layerY];
+        originalClickedPoint.value = [ev.offsetX, ev.offsetY];
         const moveXvalue = globalSpatialGroup.value.getAttribute('x');
         const moveYvalue = globalSpatialGroup.value.getAttribute('y');
         translatePoint.value = [parseFloat(moveXvalue), parseFloat(moveYvalue)];
@@ -935,24 +935,24 @@ export default defineComponent({
         pathUmap.setAttribute('stroke', '#6ffc03');
         pathUmap.setAttribute('stroke-width', '1');
         if (!pathUmap.getAttribute('id')) pathUmap.setAttribute('id', 'uma');
-        appendToBuffer({ x: ev.layerX, y: ev.layerY });
-        strPathUmap += `M${ev.layerX} ${ev.layerY}`;
+        appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
+        strPathUmap += `M${ev.offsetX} ${ev.offsetY}`;
         pathUmap.setAttribute('d', strPathUmap);
         globalSvgU.value.appendChild(pathUmap);
         polygonUMAP.value = [];
       } else if (isDrawingRect.value) {
         lassoSide.value = 'right';
         removeRegions();
-        rectUmap.setAttribute('x', `${ev.layerX}`);
-        rectUmap.setAttribute('y', `${ev.layerY}`);
+        rectUmap.setAttribute('x', `${ev.offsetX}`);
+        rectUmap.setAttribute('y', `${ev.offsetY}`);
         rectUmap.setAttribute('fill', 'none');
         rectUmap.setAttribute('stroke', '#6ffc03');
         rectUmap.setAttribute('width', '0');
         rectUmap.setAttribute('height', '0');
         globalSvgU.value.appendChild(rectUmap);
-        startRectUmapCoords = [ev.layerX, ev.layerY];
+        startRectUmapCoords = [ev.offsetX, ev.offsetY];
       } else {
-        originalClickedPointU.value = [ev.layerX, ev.layerY];
+        originalClickedPointU.value = [ev.offsetX, ev.offsetY];
         const moveXvalue = globalUmapGroup.value.getAttribute('x');
         const moveYvalue = globalUmapGroup.value.getAttribute('y');
         translatePointU.value = [parseFloat(moveXvalue), parseFloat(moveYvalue)];
@@ -963,27 +963,27 @@ export default defineComponent({
         if (ev.target.nodeName === 'circle') {
           if (!multi_sample_flag.value) showToolTipSpatial(ev.target.attributes[5].value, '', '');
           else showToolTipSpatial(ev.target.attributes[5].value, ev.target.attributes[7].value, ev.target.attributes[8].value);
-          const post = [`${ev.layerX + 10}px`, `${ev.layerY - 13}px`];
+          const post = [`${ev.offsetX + 10}px`, `${ev.offsetY - 13}px`];
           TTposition.value = post;
         } else if (ev.target.id !== 'spatialGroup' && ev.target.nodeName !== 'circle') visibility.value = 'hidden';
       } else {
         if (isDrawing.value) {
-          appendToBuffer({ x: ev.layerX, y: ev.layerY });
+          appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
           updateSvgPath();
-          polygon.value.push(ev.layerX);
-          polygon.value.push(ev.layerY);
+          polygon.value.push(ev.offsetX);
+          polygon.value.push(ev.offsetY);
         } else if (isDrawingRect.value) {
-          const xdiff = Math.abs(ev.layerX - startRectCoords[0]);
-          const ydiff = Math.abs(ev.layerY - startRectCoords[1]);
-          if (ev.layerX < startRectCoords[0]) rect.setAttribute('x', `${ev.layerX}`);
-          if (ev.layerY < startRectCoords[1]) rect.setAttribute('y', `${ev.layerY}`);
+          const xdiff = Math.abs(ev.offsetX - startRectCoords[0]);
+          const ydiff = Math.abs(ev.offsetY - startRectCoords[1]);
+          if (ev.offsetX < startRectCoords[0]) rect.setAttribute('x', `${ev.offsetX}`);
+          if (ev.offsetY < startRectCoords[1]) rect.setAttribute('y', `${ev.offsetY}`);
           rect.setAttribute('width', `${xdiff}`);
           rect.setAttribute('height', `${ydiff}`);
         } else {
-          const diffX = Math.abs(originalClickedPoint.value[0] - ev.layerX);
-          const diffY = Math.abs(originalClickedPoint.value[1] - ev.layerY);
-          const x = (originalClickedPoint.value[0] < ev.layerX) ? 1 : -1;
-          const y = (originalClickedPoint.value[1] < ev.layerY) ? 1 : -1;
+          const diffX = Math.abs(originalClickedPoint.value[0] - ev.offsetX);
+          const diffY = Math.abs(originalClickedPoint.value[1] - ev.offsetY);
+          const x = (originalClickedPoint.value[0] < ev.offsetX) ? 1 : -1;
+          const y = (originalClickedPoint.value[1] < ev.offsetY) ? 1 : -1;
           globalSpatialGroup.value.setAttribute('x', `${translatePoint.value[0] + diffX * x}`);
           globalSpatialGroup.value.setAttribute('y', `${translatePoint.value[1] + diffY * y}`);
         }
@@ -993,27 +993,27 @@ export default defineComponent({
       if (!isClickedU.value) {
         if (ev.target.nodeName === 'circle') {
           showToolTipUmap(ev.target.attributes[5].value);
-          const post = [`${ev.layerX + 10}px`, `${ev.layerY - 13}px`];
+          const post = [`${ev.offsetX + 10}px`, `${ev.offsetY - 13}px`];
           TTpositionUmap.value = post;
         } else if (ev.target.id !== 'umapGroup' && ev.target.nodeName !== 'circle') visibilityUmap.value = 'hidden';
       } else {
         if (isDrawing.value) {
-          appendToBuffer({ x: ev.layerX, y: ev.layerY });
+          appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
           updateSvgPath();
-          polygonUMAP.value.push(ev.layerX);
-          polygonUMAP.value.push(ev.layerY);
+          polygonUMAP.value.push(ev.offsetX);
+          polygonUMAP.value.push(ev.offsetY);
         } else if (isDrawingRect.value) {
-          const xdiff = Math.abs(ev.layerX - startRectUmapCoords[0]);
-          const ydiff = Math.abs(ev.layerY - startRectUmapCoords[1]);
-          if (ev.layerX < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${ev.layerX}`);
-          if (ev.layerY < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${ev.layerY}`);
+          const xdiff = Math.abs(ev.offsetX - startRectUmapCoords[0]);
+          const ydiff = Math.abs(ev.offsetY - startRectUmapCoords[1]);
+          if (ev.offsetX < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${ev.offsetX}`);
+          if (ev.offsetY < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${ev.offsetY}`);
           rectUmap.setAttribute('width', `${xdiff}`);
           rectUmap.setAttribute('height', `${ydiff}`);
         } else {
-          const diffX = Math.abs(originalClickedPointU.value[0] - ev.layerX);
-          const diffY = Math.abs(originalClickedPointU.value[1] - ev.layerY);
-          const x = (originalClickedPointU.value[0] < ev.layerX) ? 1 : -1;
-          const y = (originalClickedPointU.value[1] < ev.layerY) ? 1 : -1;
+          const diffX = Math.abs(originalClickedPointU.value[0] - ev.offsetX);
+          const diffY = Math.abs(originalClickedPointU.value[1] - ev.offsetY);
+          const x = (originalClickedPointU.value[0] < ev.offsetX) ? 1 : -1;
+          const y = (originalClickedPointU.value[1] < ev.offsetY) ? 1 : -1;
           globalUmapGroup.value.setAttribute('x', `${translatePointU.value[0] + diffX * x}`);
           globalUmapGroup.value.setAttribute('y', `${translatePointU.value[1] + diffY * y}`);
         }
