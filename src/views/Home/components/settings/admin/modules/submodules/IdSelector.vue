@@ -133,6 +133,8 @@ export default defineComponent({
     function reset_local_ids(prop_list: Array<Record<string, any>>) {
       local_id_list.value = prop_list;
       available_ids.value = prop_list;
+      id_selected.value = false;
+      search_input.value = '';
     }
     watch(props.id_list, (new_val: Array<any>) => { reset_local_ids(new_val); });
     return {

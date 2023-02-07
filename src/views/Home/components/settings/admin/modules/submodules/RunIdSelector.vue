@@ -63,8 +63,8 @@ export default defineComponent({
     }
     function reset() {
       run_id_selected.value = '';
-      const ref_mod = ctx.refs.id_selector as any;
-      ref_mod.run_successfully_uploaded();
+      set_run_ids();
+      // ref_mod.run_successfully_uploaded();
     }
     onMounted(() => {
       set_run_ids();
