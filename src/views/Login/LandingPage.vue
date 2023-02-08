@@ -102,7 +102,11 @@
                   <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
                   <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
                   <v-card-text>{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
-                  <v-card-actions> <v-icon
+                  <v-card-actions
+                  style="position: relative; margin-top: 40px; margin-left: 10px;"
+                  > <v-icon
+                  medium
+                  v-if="resolveAuthGroup(['any'])"
                   @click="download_option_clicked(data)"
                   > mdi-download </v-icon> </v-card-actions>
                 </v-col>
@@ -113,9 +117,24 @@
                   </div>
                 </v-col>
               </v-row>
+              <v-dialog
+                v-model="download_option_selected_boolean">
+                  <file-download-page
+                    :run_id="data.run_id"
+                  >
+                  </file-download-page>
+              </v-dialog>
             </v-card>
             <div style="width:100%; height:20px" v-bind:key="data.results_id"></div>
-          </template>`
+            <!-- <v-dialog
+            v-model="download_option_selected_boolean"
+            >
+            <file-download-page
+            :run_id=""
+            >
+            </file-download-page>
+            </v-dialog> -->
+          </template>
         </template>
         <template v-else>
           <v-list two-line>
@@ -171,6 +190,7 @@ import { generateRouteByQuery } from '@/utils';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import colormap from 'colormap';
+import FileDownloadPage from './components/FileDownloadPage.vue';
 
 function makearray(stopValue: number, startValue: number, steps: number): any[] {
   const arr = [];
@@ -185,6 +205,7 @@ function makearray(stopValue: number, startValue: number, steps: number): any[] 
 export default defineComponent({
   name: 'LandingPage',
   props: ['query'],
+  components: { FileDownloadPage },
   setup(props, ctx) {
     // NOTE: May need to be computed ref
     const router = ctx.root.$router;
@@ -198,6 +219,7 @@ export default defineComponent({
     const show = ref(false);
     const groupsAndData = ref<any[]>([]);
     const dataTypes = ref<any[]>([]);
+    const download_option_selected_boolean = ref<boolean>(false);
     const numOfPubs = ref<any>({});
     const numOfPubsHold = ref<any>({});
     const checkBoxArr = ref<any[]>([]);
@@ -310,7 +332,7 @@ export default defineComponent({
       loading.value = false;
     }
     async function download_option_clicked(object: any) {
-      console.log(object);
+      download_option_selected_boolean.value = true;
       const res = await client.value.get_file_info_run_id(object);
       console.log(res);
     }
@@ -428,6 +450,12 @@ export default defineComponent({
       const [week_day, day_of_month, month, year, time, zone] = date_readable.split(' ');
       const final_string = week_day.concat(' '.concat(month.concat(' '.concat(day_of_month).concat(' '.concat(year)))));
       return final_string;
+    }
+    function getDownloadableFiles() {
+      const files = client.value.get_downloadable_files_user();
+      files.then((file_list: any[]) => {
+        console.log(file_list);
+      });
     }
     async function getData() {
       loading.value = true;
@@ -678,6 +706,7 @@ export default defineComponent({
       } else {
         allTheRuns.value = await client?.value!.getPublicRuns();
         privateRuns.value = allTheRuns.value.filter((v: any) => v.public !== 1);
+        getDownloadableFiles();
         if (privateRuns.value.length === 0) {
           pubPrivFlag.value = true;
           getSecureData(false);
@@ -697,9 +726,11 @@ export default defineComponent({
       groupsAndData,
       dataTypes,
       show,
+      getDownloadableFiles,
       client,
       checkBoxSort,
       numOfPubs,
+      download_option_selected_boolean,
       runSpatial,
       numOfPubsHold,
       checkBoxArr,

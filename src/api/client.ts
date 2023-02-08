@@ -747,4 +747,8 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/run_db/get_file_info_run_id', pl);
     return resp.data;
   }
+  async get_downloadable_files_user() {
+    const resp = await this.axios.get('/api/v1/run_db/get_downloadable_files_user');
+    return resp.data;
+  }
 }
