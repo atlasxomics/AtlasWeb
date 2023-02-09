@@ -61,10 +61,16 @@ export default defineComponent({
         set_selector(res);
       });
     }
-    function reset() {
+    function reset_visual() {
       run_id_selected.value = '';
-      set_run_ids();
+      const ref_selector = ctx.refs.id_selector as any;
+      ref_selector.reset_search_input();
+      // set_run_ids();
       // ref_mod.run_successfully_uploaded();
+    }
+    function reset_full() {
+      reset_visual();
+      set_run_ids();
     }
     onMounted(() => {
       set_run_ids();
@@ -78,7 +84,8 @@ export default defineComponent({
       edit_run_id,
       close_edit_run_id,
       custom_run_id,
-      reset,
+      reset_visual,
+      reset_full,
     };
   },
 });

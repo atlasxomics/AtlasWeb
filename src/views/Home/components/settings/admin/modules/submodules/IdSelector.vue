@@ -128,13 +128,13 @@ export default defineComponent({
       search_input.value = '';
       id_selected.value = false;
     }
-    function reset_local_ids(prop_list: Array<Record<string, any>>) {
-      local_id_list.value = prop_list;
-      available_ids.value = prop_list;
-    }
     function reset_search_input() {
       search_input.value = '';
       id_selected.value = false;
+    }
+    function reset_local_ids(prop_list: Array<Record<string, any>>) {
+      local_id_list.value = prop_list;
+      available_ids.value = prop_list;
     }
     watch(props.id_list, (new_val: Array<any>) => { reset_local_ids(new_val); });
     return {

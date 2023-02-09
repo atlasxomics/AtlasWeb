@@ -32,8 +32,8 @@
                     :disabled="!file.editing"
                     item_text="text"
                     item_value="value"
-                    @changed="file.file_type_name = $event"
-                    @option-added="file.file_type_name = $event; added_file_type($event)"
+                    @changed="file_type_selected(index, $event)"
+                    @option-added="added_file_type(index, $event)"
                     >
                     </selector>
                     <v-col
@@ -137,9 +137,9 @@ export default defineComponent({
     const tissue_id = ref<string>('');
     const run_files = ref<Array<any>>([]);
     const file_type_options = ref<Array<any>>([]);
-    const file_type_map = ref<Record<string, any>>({}); // file_type_name,  file_type_id
     const original_list = ref<Record<string, any>>({});
-    const file_type_dictionary = ref<Record<string, any>>({});
+    const file_type_id_to_name = ref<Record<string, any>>({});
+    const file_type_name_to_id = ref<Record<string, any>>({});
     const action_made = ref<boolean>(false);
     const currently_editing = computed(() => {
       let editing = false;
@@ -179,7 +179,7 @@ export default defineComponent({
       const files = await client.value!.get_downloadable_files_for_run(tissue_id.value);
       files.forEach((file: any) => {
         const unique = get_uuid();
-        const file_type_name_mapped = file_type_dictionary.value[file.file_type_id];
+        const file_type_name_mapped = file_type_id_to_name.value[file.file_type_id];
         run_files.value.push({
           file_type_name: file_type_name_mapped,
           file_description: file.file_description,
@@ -194,7 +194,8 @@ export default defineComponent({
     async function set_file_types() {
       const file_types = await client.value!.get_file_type_options();
       file_types.forEach((file_type: any) => {
-        file_type_dictionary.value[file_type.file_type_id] = file_type.file_type_name;
+        file_type_id_to_name.value[file_type.file_type_id] = file_type.file_type_name;
+        file_type_name_to_id.value[file_type.file_type_name] = file_type.file_type_id;
         file_type_options.value.push(file_type.file_type_name);
       });
     }
@@ -216,9 +217,14 @@ export default defineComponent({
     function add_file() {
       run_files.value.push({ file_type_name: '', file_description: '', file_path: '', file_type_id: '', unique_id: get_uuid(), editing: true });
     }
-    function added_file_type(file_type_name: string) {
+    function file_type_selected(index: number, file_type_name: string) {
+      run_files.value[index].file_type_name = file_type_name;
+      run_files.value[index].file_type_id = file_type_name_to_id.value[file_type_name];
+    }
+    function added_file_type(index: number, file_type_name: string) {
       file_type_options.value.push(file_type_name);
-      file_type_map.value[file_type_name] = null;
+      file_type_name_to_id.value[file_type_name] = null;
+      file_type_selected(index, file_type_name);
     }
     function save_state(index: number) {
       run_files.value[index].editing = false;
@@ -232,7 +238,7 @@ export default defineComponent({
       original_list.value = {};
       run_files.value = [];
       const run_selector = ctx.refs.run_id_selector;
-      run_selector.reset();
+      run_selector.reset_visual();
       set_file_types();
       tissue_id.value = '';
     }
@@ -286,9 +292,11 @@ export default defineComponent({
       changes_dict,
       original_list,
       tissue_id,
-      file_type_dictionary,
+      file_type_id_to_name,
       currently_editing,
       action_made,
+      added_file_type,
+      file_type_selected,
       save_state,
       remove_file,
       set_file_types,
@@ -297,7 +305,6 @@ export default defineComponent({
       edit_run_id,
       close_edit_run_id,
       add_file,
-      added_file_type,
       edit_file,
     };
   },
