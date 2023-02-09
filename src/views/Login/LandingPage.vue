@@ -166,6 +166,7 @@
             <file-download-page
               :run_id="current_run_id"
               :files="run_id_files_obj[current_run_id] || []"
+              @presigned-generated="presigned_generated"
             >
             </file-download-page>
         </v-dialog>
@@ -683,6 +684,11 @@ export default defineComponent({
       if (!pubPrivFlag.value) getSecureData(true);
       if (pubPrivFlag.value) getSecureData(false);
     }
+    function presigned_generated(file_index: number, presigned_url: string) {
+      if (!current_run_id.value) return;
+      run_id_files_obj.value[current_run_id.value][file_index].presigned_url = presigned_url;
+      console.log(presigned_url);
+    }
     onMounted(async () => {
       if (client.value!.user === null) {
         if (currentRoute.value.params.group) group_from_url.value = currentRoute.value.params.group;
@@ -753,6 +759,7 @@ export default defineComponent({
       edit_result,
       group_from_url,
       image_clicked,
+      presigned_generated,
     };
   },
 });
