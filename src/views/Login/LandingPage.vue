@@ -117,23 +117,8 @@
                   </div>
                 </v-col>
               </v-row>
-              <v-dialog
-                v-model="download_option_selected_boolean">
-                  <file-download-page
-                    :run_id="data.run_id"
-                  >
-                  </file-download-page>
-              </v-dialog>
             </v-card>
             <div style="width:100%; height:20px" v-bind:key="data.results_id"></div>
-            <!-- <v-dialog
-            v-model="download_option_selected_boolean"
-            >
-            <file-download-page
-            :run_id=""
-            >
-            </file-download-page>
-            </v-dialog> -->
           </template>
         </template>
         <template v-else>
@@ -176,6 +161,14 @@
             </li>
           </ul>
         </div>
+        <v-dialog
+          v-model="download_option_selected_boolean">
+            <file-download-page
+              :run_id="current_run_id"
+              :files="run_id_files_obj[current_run_id] || []"
+            >
+            </file-download-page>
+        </v-dialog>
       </v-col>
     </v-row>
   </v-container>
@@ -220,6 +213,8 @@ export default defineComponent({
     const groupsAndData = ref<any[]>([]);
     const dataTypes = ref<any[]>([]);
     const download_option_selected_boolean = ref<boolean>(false);
+    const current_run_id = ref<string|null>(null);
+    const run_id_files_obj = ref<Record<string, any>>({});
     const numOfPubs = ref<any>({});
     const numOfPubsHold = ref<any>({});
     const checkBoxArr = ref<any[]>([]);
@@ -332,9 +327,8 @@ export default defineComponent({
       loading.value = false;
     }
     async function download_option_clicked(object: any) {
+      current_run_id.value = object.run_id;
       download_option_selected_boolean.value = true;
-      const res = await client.value.get_file_info_run_id(object);
-      console.log(res);
     }
     async function searchRuns(event: string, from: any) {
       /* eslint-disable no-lonely-if */
@@ -451,11 +445,9 @@ export default defineComponent({
       const final_string = week_day.concat(' '.concat(month.concat(' '.concat(day_of_month).concat(' '.concat(year)))));
       return final_string;
     }
-    function getDownloadableFiles() {
-      const files = client.value.get_downloadable_files_user();
-      files.then((file_list: any[]) => {
-        console.log(file_list);
-      });
+    async function getDownloadableFiles() {
+      const files = await client.value.get_all_downloadable_files_run_id();
+      run_id_files_obj.value = files;
     }
     async function getData() {
       loading.value = true;
@@ -726,7 +718,9 @@ export default defineComponent({
       groupsAndData,
       dataTypes,
       show,
+      current_run_id,
       getDownloadableFiles,
+      run_id_files_obj,
       client,
       checkBoxSort,
       numOfPubs,

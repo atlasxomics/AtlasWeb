@@ -1,9 +1,10 @@
 <template>
-    <v-container>
-        <v-row v-for="(file, index) in file_list" :key="file.file_id">
+    <v-card flat>
+        <v-card-title class="justify-center"> {{ run_id }} Available Files </v-card-title>
+        <div v-for="(file, index) in files" :key="file.file_id">
             <h1> {{ index }} </h1>
-        </v-row>
-    </v-container>
+        </div>
+    </v-card>
 </template>
 
 <script lang="ts">
@@ -12,13 +13,10 @@ import { login, isClient, Client } from '@/api';
 
 export default defineComponent({
   name: 'DownloadFileScreen',
-  props: { run_id: { type: String, required: true } },
+  props: { run_id: { type: String || null, required: true }, files: { type: Array, required: true } },
   setup(props, ctx) {
     const file_list = ref<any[]>([]);
     const loading = ref<boolean>(false);
-    onMounted(() => {
-      console.log(props.run_id);
-    });
     return {
       file_list,
       loading,
