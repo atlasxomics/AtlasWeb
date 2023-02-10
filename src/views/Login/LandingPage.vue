@@ -161,17 +161,18 @@
             </li>
           </ul>
         </div>
-        <v-dialog
-          v-model="download_option_selected_boolean">
-            <file-download-page
-              :run_id="current_run_id"
-              :files="run_id_files_obj[current_run_id] || []"
-              @presigned-generated="presigned_generated"
-            >
-            </file-download-page>
-        </v-dialog>
       </v-col>
     </v-row>
+      <v-dialog
+       max-width="600px"
+        v-model="download_option_selected_boolean">
+          <file-download-page
+            :run_id="current_run_id"
+            :files="run_id_files_obj[current_run_id] || []"
+            @presigned-generated="presigned_generated"
+          >
+          </file-download-page>
+      </v-dialog>
   </v-container>
 </template>
 
@@ -687,7 +688,6 @@ export default defineComponent({
     function presigned_generated(file_index: number, presigned_url: string) {
       if (!current_run_id.value) return;
       run_id_files_obj.value[current_run_id.value][file_index].presigned_url = presigned_url;
-      console.log(presigned_url);
     }
     onMounted(async () => {
       if (client.value!.user === null) {

@@ -86,8 +86,7 @@ export default defineComponent({
     function select_path(ev: any) {
       path_selected.value = true;
       path_name.value = ev.path;
-      const full_path = `S3://${bucket_name.value}/${ev.path}`;
-      ctx.emit('path-selected', full_path);
+      ctx.emit('path-selected', path_name.value);
     }
     async function load_from_parent(bucket_name_prop: string, path_name_prop: string) {
       bucket_name.value = bucket_name_prop;

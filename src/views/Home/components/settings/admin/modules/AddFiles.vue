@@ -42,17 +42,25 @@
                     >
                     <v-text-field
                     v-show="!file.editing"
+                    label="Bucket Name"
+                    v-model="file.bucket_name"
+                    readonly
+                    >
+                    </v-text-field>
+                    <v-text-field
+                    v-show="!file.editing"
                     label="File Path"
                     v-model="file.file_path"
                     readonly
                     >
                     </v-text-field>
+
                     <aws-searcher
                     v-show="file.editing"
                     :only_files="true"
                     @path-selected="file.file_path = $event"
                     @editing-path="file.file_path = null"
-                    @bucket-selected="file.file_path=null"
+                    @bucket-selected="file.bucket_name = $event; file.file_path = null;"
                     :ref="'aws_searcher_'.concat(file.unique_id)"
                     >
                     </aws-searcher>
@@ -184,6 +192,7 @@ export default defineComponent({
           file_type_name: file_type_name_mapped,
           file_description: file.file_description,
           file_path: file.file_path,
+          bucket_name: file.bucket_name,
           file_type_id: file.file_type_id,
           unique_id: unique,
           editing: false,
@@ -215,7 +224,7 @@ export default defineComponent({
       console.log('close_edit_run_id');
     }
     function add_file() {
-      run_files.value.push({ file_type_name: '', file_description: '', file_path: '', file_type_id: '', unique_id: get_uuid(), editing: true });
+      run_files.value.push({ file_type_name: '', file_description: '', file_path: '', file_type_id: '', unique_id: get_uuid(), editing: true, bucket_name: '' });
     }
     function file_type_selected(index: number, file_type_name: string) {
       run_files.value[index].file_type_name = file_type_name;
@@ -247,12 +256,9 @@ export default defineComponent({
       run_files.value[index].editing = true;
       const key = 'aws_searcher_'.concat(run_files.value[index].unique_id);
       const aws_comp = ctx.refs[key][0] as any;
-      const path = run_files.value[index].file_path;
-      const split = path.split('S3://')[1];
-      const split_inx = split.indexOf('/');
-      const bucket = split.slice(0, split_inx);
-      const key_path = split.slice(split_inx + 1);
-      aws_comp.load_from_parent(bucket, key_path);
+      const { bucket_name, file_path } = run_files.value[index];
+      console.log(bucket_name, file_path);
+      aws_comp.load_from_parent(bucket_name, file_path);
     }
     async function submit_file_changes() {
       const file_ids_to_remove: string[] = [];
