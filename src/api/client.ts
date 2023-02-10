@@ -751,4 +751,12 @@ export default class Client {
     const resp = await this.axios.get('/api/v1/run_db/get_all_downloadable_files_run_id');
     return resp.data;
   }
+  async generate_presigned_urls(pl: any) {
+    const resp = await this.axios.post('/api/v1/storage/generate_presigned_urls', pl);
+    return resp.data;
+  }
+  async generate_presigned_url(pl: any) {
+    const resp = await this.axios.post('/api/v1/storage/generate_presigned_url', pl);
+    return resp.data;
+  }
 }
