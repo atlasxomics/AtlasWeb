@@ -123,14 +123,10 @@ export default defineComponent({
       id_selected.value = true;
       ctx.emit('custom-id', id.value);
     }
-    function run_successfully_uploaded() {
-      available_ids.value = local_id_list.value;
-      search_input.value = '';
-      id_selected.value = false;
-    }
     function reset_search_input() {
       search_input.value = '';
       id_selected.value = false;
+      available_ids.value = local_id_list.value;
     }
     function reset_local_ids(prop_list: Array<Record<string, any>>) {
       local_id_list.value = prop_list;
@@ -153,7 +149,6 @@ export default defineComponent({
       edit_id,
       close_edit_id,
       user_entered_id,
-      run_successfully_uploaded,
       set_id,
       reset_local_ids,
     };

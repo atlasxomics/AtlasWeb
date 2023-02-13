@@ -65,8 +65,6 @@ export default defineComponent({
       run_id_selected.value = '';
       const ref_selector = ctx.refs.id_selector as any;
       ref_selector.reset_search_input();
-      // set_run_ids();
-      // ref_mod.run_successfully_uploaded();
     }
     function reset_full() {
       reset_visual();

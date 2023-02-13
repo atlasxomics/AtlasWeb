@@ -64,7 +64,7 @@ export default defineComponent({
       study_id_selected.value = '';
       get_studies();
       const ref_mod = ctx.refs.id_selector as any;
-      ref_mod.run_successfully_uploaded();
+      ref_mod.reset_search_input();
     }
     onMounted(() => {
       get_studies();
