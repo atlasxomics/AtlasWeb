@@ -2,28 +2,50 @@
     <v-card
     >
         <v-card-title class="justify-center"> {{ run_id }} Available Files </v-card-title>
+        <v-row
+        class="ma-0"
+        >
+          <v-col
+          cols="3"
+          class="d-flex justify-center"
+          >
+          <h3>File Type </h3>
+          </v-col>
+          <v-col
+          cols="3"
+          class="d-flex justify-center"
+          >
+         <h3> Filename </h3>
+          </v-col>
+          <v-col
+          cols="3"
+          class="d-flex justify-center"
+          >
+          <h3> Description </h3>
+          </v-col>
+        </v-row>
         <v-row v-for="(file, index) in computed_files" :key="file.file_id" class="ma-0">
             <v-col
             cols="3"
+            class="d-flex justify-center"
             >
-            <v-card-text
-            label="File Type"
-            >
-              File Type:  {{file.file_type_name}}
-            </v-card-text>
+            {{file.file_type_name}}
             </v-col>
             <v-col
             cols="3"
+            class="d-flex justify-center"
             >
-            Filename: {{file.filename_short}}
+            {{file.filename_short}}
             </v-col>
             <v-col
             cols="3"
+            class="d-flex justify-center"
             >
-            Description: {{file.file_description}}
+            {{file.file_description}}
             </v-col>
             <v-col
             cols="3"
+            class="d-flex justify-center"
             >
             <div
             v-if="file.presigned_url"
