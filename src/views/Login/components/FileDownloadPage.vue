@@ -2,8 +2,7 @@
     <v-card
     >
         <v-card-title class="justify-center"> {{ run_id }} Available Files </v-card-title>
-        <div v-for="(file, index) in computed_files" :key="file.file_id">
-          <v-row>
+        <v-row v-for="(file, index) in computed_files" :key="file.file_id" class="ma-0">
             <v-col
             cols="3"
             >
@@ -46,8 +45,7 @@
               Generate URL
             </v-btn>
             </v-col>
-          </v-row>
-        </div>
+        </v-row>
     </v-card>
 </template>
 

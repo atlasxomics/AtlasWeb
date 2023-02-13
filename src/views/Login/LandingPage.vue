@@ -164,8 +164,10 @@
       </v-col>
     </v-row>
       <v-dialog
-       max-width="600px"
         v-model="download_option_selected_boolean">
+        <!-- <v-card>
+          <v-card-title class="justify-center"> Available Files </v-card-title>
+        </v-card> -->
           <file-download-page
             :run_id="current_run_id"
             :files="run_id_files_obj[current_run_id] || []"
