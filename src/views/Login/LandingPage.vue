@@ -106,7 +106,7 @@
                   style="position: relative; margin-top: 40px; margin-left: 10px;"
                   > <v-icon
                   medium
-                  v-if="resolveAuthGroup(['any'])"
+                  v-if="resolveAuthGroup(['any']) && run_id_files_obj[data.run_id]"
                   @click="download_option_clicked(data)"
                   > mdi-download </v-icon> </v-card-actions>
                 </v-col>
