@@ -52,11 +52,10 @@
             <v-text-field
               :loading="loading"
               v-model="textSearch"
-              @input="searchRuns(textSearch, $event.key);"
               @click:prepend="searchRuns(textSearch, '')"
               @keyup.enter="searchRuns(textSearch, '')"
               @click:clear="searchRuns('', '')"
-              placeholder="Search eg. PMID, Author"
+              placeholder="Search eg. PMID, Author, RunID"
               clearable
               prepend-icon="mdi-magnify"/>
           </v-col>
@@ -334,8 +333,10 @@ export default defineComponent({
         countKeys.forEach((v: any, k: any) => {
           countHold.value[v] = 0;
         });
-        const digpat = /\d/;
+        const digpat = /^\d/;
+        const runpat = /[a-zA-Z]+\d/;
         const digit = digpat.test(ev);
+        const runconfirm = runpat.test(ev);
         const hold: any = {};
         let modCount = -1;
         if (digit) {
@@ -359,6 +360,21 @@ export default defineComponent({
           });
           numOfIt.value = split;
           numOfPubsHold.value = hold;
+        } else if (runconfirm) {
+          const pubsValues = [...Object.values(numOfPubs.value)];
+          const allData: any[] = [];
+          const labs = allData.concat.apply([], pubsValues);
+          for (let i = 0; i < labs.length; i += 1) {
+            const value = labs[i];
+            const matchPath = value.results_folder_path.match(/(data\/)(.+)(\/)/);
+            const xploreId = matchPath[2];
+            if (ev.toUpperCase() === xploreId.toUpperCase()) {
+              hold[key] = [];
+              hold[key].push(value);
+              numOfPubsHold.value = hold;
+              break;
+            }
+          }
         } else {
           const lab = await client.value.searchAuthors(ev);
           const foundIds: any[] = [];
@@ -561,12 +577,10 @@ export default defineComponent({
       const indexingRuns: any = {};
       let key = '1';
       allRuns.sort((a: any, b: any) => {
-        const matchPath = a.results_folder_path.match(/(data\/)(.+)(\/)/);
-        const matchPath2 = b.results_folder_path.match(/(data\/)(.+)(\/)/);
-        const xploreId = matchPath[2];
-        const xploreId2 = matchPath2[2];
-        if (xploreId < xploreId2) return -1;
-        if (xploreId > xploreId2) return 1;
+        const date1 = a.date;
+        const date2 = b.date;
+        if (date1 > date2) return -1;
+        if (date1 < date2) return 1;
         return 0;
       });
       for (let index = 0; index < allRuns.length; index += 1) {
