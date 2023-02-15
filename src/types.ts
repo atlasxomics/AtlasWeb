@@ -156,3 +156,17 @@ export interface UserGroupAssignmentInform {
   email: string,
   name: string,
 }
+
+export interface FlaskResponse {
+  data: any;
+}
+
+export interface RunFileObject {
+  data: {
+    file_path: string;
+    file_type_id: number;
+    file_type: string;
+    file_id: number;
+    file_description: string;
+  }
+}

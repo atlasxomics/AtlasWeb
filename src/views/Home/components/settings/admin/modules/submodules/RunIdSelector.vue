@@ -6,8 +6,8 @@
         :loading="loading"
         key_display_value="run_id"
         @run-selected="run_selected"
-        @edit-run-id="edit_run_id"
-        @close-edit-run-id="close_edit_run_id"
+        @edit-id="edit_run_id"
+        @close-edit-id="close_edit_run_id"
         @custom-id="custom_run_id"
         ref="id_selector"
     >
@@ -18,7 +18,7 @@
 import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
 import { Client } from '@/api';
 import store from '@/store';
-import IdSelector from '@/views/Home/components/settings/admin/modules/IdSelector.vue';
+import IdSelector from './IdSelector.vue';
 
 export default defineComponent({
   name: 'RunIdSelector',
@@ -61,10 +61,14 @@ export default defineComponent({
         set_selector(res);
       });
     }
-    function reset() {
+    function reset_visual() {
       run_id_selected.value = '';
-      const ref_mod = ctx.refs.id_selector as any;
-      ref_mod.run_successfully_uploaded();
+      const ref_selector = ctx.refs.id_selector as any;
+      ref_selector.reset_search_input();
+    }
+    function reset_full() {
+      reset_visual();
+      set_run_ids();
     }
     onMounted(() => {
       set_run_ids();
@@ -78,7 +82,8 @@ export default defineComponent({
       edit_run_id,
       close_edit_run_id,
       custom_run_id,
-      reset,
+      reset_visual,
+      reset_full,
     };
   },
 });

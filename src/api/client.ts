@@ -18,6 +18,7 @@ import {
   UserGroupAssignmentInform,
   GroupRequest,
   CreateGroupRequest,
+  RunFileObject,
 } from '@/types';
 
 // The time (10 minutes in ms) before the token expires to refresh it
@@ -727,6 +728,35 @@ export default class Client {
   }
   async get_study_types() {
     const resp = await this.axios.get('/api/v1/run_db/get_study_types');
+    return resp.data;
+  }
+  async get_downloadable_files_for_run(tissue_id: string): Promise<Array<any>> {
+    const pl = { tissue_id };
+    const resp = await this.axios.post('/api/v1/run_db/get_file_paths_for_run', pl);
+    return resp.data;
+  }
+  async get_file_type_options(): Promise<Array<any>> {
+    const resp = await this.axios.get('/api/v1/run_db/get_file_type_options');
+    return resp.data;
+  }
+  async submit_file_changes(pl: any) {
+    const resp = await this.axios.post('/api/v1/run_db/set_run_files', pl);
+    return resp.data;
+  }
+  async get_file_info_run_id(pl: any) {
+    const resp = await this.axios.post('/api/v1/run_db/get_file_info_run_id', pl);
+    return resp.data;
+  }
+  async get_all_downloadable_files_run_id() {
+    const resp = await this.axios.get('/api/v1/run_db/get_all_downloadable_files_run_id');
+    return resp.data;
+  }
+  async generate_presigned_urls(pl: any) {
+    const resp = await this.axios.post('/api/v1/storage/generate_presigned_urls', pl);
+    return resp.data;
+  }
+  async generate_presigned_url(pl: any) {
+    const resp = await this.axios.post('/api/v1/storage/generate_presigned_url', pl);
     return resp.data;
   }
 }

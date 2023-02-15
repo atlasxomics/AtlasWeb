@@ -101,23 +101,24 @@
                   <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
                   <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
                   <v-card-text>{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
-                  <v-icon
-                  v-if="resolveAuthGroup(['admin'])"
-                  @click="edit_result(data.run_id)"
-                  style="position: relative; left: 40px; bottom: 10px;"
-                  size="30"
-                  > mdi-pencil </v-icon>
+                  <v-card-actions
+                  style="position: relative; margin-top: 40px; margin-left: 10px;"
+                  > <v-icon
+                  medium
+                  v-if="resolveAuthGroup(['any']) && run_id_files_obj[data.run_id]"
+                  @click="download_option_clicked(data)"
+                  > mdi-download </v-icon> </v-card-actions>
                 </v-col>
                 <!-- section of card with image -->
                 <v-col cols="12" sm="4">
-                  <div style="height:inherit; width: 100%;">
+                  <div style="height:inherit; width: 100%;" @click="edit_result(data.run_id)">
                     <img style="position: absolute;right: 0;height: 200px; max-width: 200px;max-height:200px;margin-top:10px;margin-right:7px;" :src="data.imageLink"/>
                   </div>
                 </v-col>
               </v-row>
             </v-card>
             <div style="width:100%; height:20px" v-bind:key="data.results_id"></div>
-          </template>`
+          </template>
         </template>
         <template v-else>
           <v-list two-line>
@@ -133,12 +134,6 @@
                     <v-list-item-subtitle class="text--primary">{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-list-item-subtitle>
                     <v-list-item-subtitle><v-chip small dark :color="labColors[data.group]">{{data.assay}}</v-chip></v-list-item-subtitle>
                   </v-list-item-content>
-                  <v-icon
-                  v-if="resolveAuthGroup(['admin'])"
-                  @click="edit_result(data.run_id)"
-                  style="position: relative; left: 40px; bottom: 45px;"
-                  size="30"
-                  > mdi-pencil </v-icon>
               </v-list-item>
             </template>
           </v-list-item-group>
@@ -167,6 +162,18 @@
         </div>
       </v-col>
     </v-row>
+      <v-dialog
+        v-model="download_option_selected_boolean">
+        <!-- <v-card>
+          <v-card-title class="justify-center"> Available Files </v-card-title>
+        </v-card> -->
+          <file-download-page
+            :run_id="current_run_id"
+            :files="run_id_files_obj[current_run_id] || []"
+            @presigned-generated="presigned_generated"
+          >
+          </file-download-page>
+      </v-dialog>
   </v-container>
 </template>
 
@@ -179,6 +186,7 @@ import { generateRouteByQuery } from '@/utils';
 import store from '@/store';
 import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import colormap from 'colormap';
+import FileDownloadPage from './components/FileDownloadPage.vue';
 
 function makearray(stopValue: number, startValue: number, steps: number): any[] {
   const arr = [];
@@ -193,6 +201,7 @@ function makearray(stopValue: number, startValue: number, steps: number): any[] 
 export default defineComponent({
   name: 'LandingPage',
   props: ['query'],
+  components: { FileDownloadPage },
   setup(props, ctx) {
     // NOTE: May need to be computed ref
     const router = ctx.root.$router;
@@ -206,6 +215,9 @@ export default defineComponent({
     const show = ref(false);
     const groupsAndData = ref<any[]>([]);
     const dataTypes = ref<any[]>([]);
+    const download_option_selected_boolean = ref<boolean>(false);
+    const current_run_id = ref<string|null>(null);
+    const run_id_files_obj = ref<Record<string, any>>({});
     const numOfPubs = ref<any>({});
     const numOfPubsHold = ref<any>({});
     const checkBoxArr = ref<any[]>([]);
@@ -224,6 +236,9 @@ export default defineComponent({
     const allTheRuns = ref<any[]>([]);
     const privateRuns = ref<any[]>([]);
     const group_from_url = ref<string>('');
+    function image_clicked() {
+      console.log('image clicked');
+    }
     function redirectToLogin() {
       router.push('/login');
     }
@@ -233,6 +248,7 @@ export default defineComponent({
       if (shouldPush) router.push(newRoute);
     }
     function edit_result(run_id: string) {
+      if (resolveAuthGroup(['admin']) === false) return;
       const query = { component: 'AdminPanel', params: { action: 'edit', run_id } };
       const newRoute = generateRouteByQuery(currentRoute.value, query);
       router.push(newRoute);
@@ -312,6 +328,10 @@ export default defineComponent({
         });
       }
       loading.value = false;
+    }
+    async function download_option_clicked(object: any) {
+      current_run_id.value = object.run_id;
+      download_option_selected_boolean.value = true;
     }
     async function searchRuns(event: string, from: any) {
       /* eslint-disable no-lonely-if */
@@ -444,6 +464,10 @@ export default defineComponent({
       const [week_day, day_of_month, month, year, time, zone] = date_readable.split(' ');
       const final_string = week_day.concat(' '.concat(month.concat(' '.concat(day_of_month).concat(' '.concat(year)))));
       return final_string;
+    }
+    async function getDownloadableFiles() {
+      const files = await client.value.get_all_downloadable_files_run_id();
+      run_id_files_obj.value = files;
     }
     async function getData() {
       loading.value = true;
@@ -681,6 +705,10 @@ export default defineComponent({
       if (!pubPrivFlag.value) getSecureData(true);
       if (pubPrivFlag.value) getSecureData(false);
     }
+    function presigned_generated(file_index: number, presigned_url: string) {
+      if (!current_run_id.value) return;
+      run_id_files_obj.value[current_run_id.value][file_index].presigned_url = presigned_url;
+    }
     onMounted(async () => {
       if (client.value!.user === null) {
         if (currentRoute.value.params.group) group_from_url.value = currentRoute.value.params.group;
@@ -696,6 +724,7 @@ export default defineComponent({
       } else {
         allTheRuns.value = await client?.value!.getPublicRuns();
         privateRuns.value = allTheRuns.value.filter((v: any) => v.public !== 1);
+        getDownloadableFiles();
         if (privateRuns.value.length === 0) {
           pubPrivFlag.value = true;
           getSecureData(false);
@@ -715,14 +744,19 @@ export default defineComponent({
       groupsAndData,
       dataTypes,
       show,
+      current_run_id,
+      getDownloadableFiles,
+      run_id_files_obj,
       client,
       checkBoxSort,
       numOfPubs,
+      download_option_selected_boolean,
       runSpatial,
       numOfPubsHold,
       checkBoxArr,
       searchRuns,
       textSearch,
+      download_option_clicked,
       loading,
       count,
       countHold,
@@ -744,6 +778,8 @@ export default defineComponent({
       resolveAuthGroup,
       edit_result,
       group_from_url,
+      image_clicked,
+      presigned_generated,
     };
   },
 });

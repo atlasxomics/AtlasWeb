@@ -111,7 +111,7 @@
         <v-card-actions
         class="justify-center"
         >
-          <v-btn color="primary" @click="show_job_sent_dialog = false; update_jobs_table();">Ok.</v-btn>
+          <v-btn color="primary" @click="show_job_sent_dialog = false;">Ok.</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -124,7 +124,7 @@ import { snackbar } from '@/components/GlobalSnackbar';
 import store from '@/store';
 import JobsTable from '@/views/Home/components/settings/admin/modules/JobsTable.vue';
 import { defineComponent, onMounted, ref, computed, watch } from '@vue/composition-api';
-import RunIdSelector from './RunIdSelector.vue';
+import RunIdSelector from './submodules/RunIdSelector.vue';
 
 export default defineComponent({
   name: 'CreateWebObject',
@@ -257,11 +257,6 @@ export default defineComponent({
     async function updateProgress(value: number) {
       // not working
     }
-    async function update_jobs_table() {
-      const jobs_table = ctx.refs.job_table as any;
-      console.log(jobs_table);
-      await jobs_table.get_jobs();
-    }
     async function createObjects() {
       if (!client.value) return;
       try {
@@ -269,7 +264,6 @@ export default defineComponent({
         const ensure_created = await client.value?.ensure_run_id_created(run_id.value);
         if (ensure_created === 'Success') {
           const task = 'webfile.create_files';
-          // const queue = 'atxcloud_webfile';
           const queue = 'atxcloud_webfile';
           const params = {
             aws_path: `${path_name.value}/h5/obj`,
@@ -278,7 +272,6 @@ export default defineComponent({
           };
           const args: any[] = [params];
           const kwargs = { run_id: run_id.value, description: job_description.value };
-          // const kwargs: any = { run_id: run_id.value };
           const taskObject = await client.value.postTask(task, args, kwargs, queue);
           loading.value = false;
           show_job_sent_dialog.value = true;
@@ -296,7 +289,6 @@ export default defineComponent({
             taskTimeout.value = null;
             await checkTaskStatus(taskObject._id);
           }
-          update_jobs_table();
         } else {
           snackbar.dispatch({ text: 'Run ID not created', options: { right: true, color: 'error' } });
           creation_job_sent.value = false;
@@ -380,7 +372,6 @@ export default defineComponent({
       createObjects,
       filterPaths,
       updateProgress,
-      update_jobs_table,
       edit_run_id,
       run_id_selected,
       is_transcriptome,
