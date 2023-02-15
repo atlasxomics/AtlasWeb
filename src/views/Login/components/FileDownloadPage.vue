@@ -48,6 +48,22 @@
             class="d-flex justify-center"
             >
             <div
+            style="margin-right: 30px;"
+            >
+              <v-progress-circular
+              v-if="false"
+              color="primary"
+              indeterminate
+              >
+              </v-progress-circular>
+            <v-icon
+            v-else
+            @click="download_local(index)"
+            >
+              mdi-download
+            </v-icon>
+            </div>
+            <div
             v-if="file.presigned_url"
             >
             <v-text-field
@@ -72,7 +88,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref, onMounted } from '@vue/composition-api';
+import { defineComponent, computed, ref, onMounted, watch } from '@vue/composition-api';
 import { login, isClient, Client } from '@/api';
 import store from '@/store';
 
@@ -84,23 +100,41 @@ export default defineComponent({
     const file_list = ref<any[]>([]);
     const loading = ref<boolean>(false);
     const computed_files = computed(() => props.files);
-    async function generate_presigned_url(index: number) {
-      if (!client.value) return;
-      const file: any = props.files[index];
+    // const loading_download = ref<boolean>(false);
+    const loading_downloads = ref<Array<boolean>>([]);
+    async function get_presigned(index: number): Promise<any> {
+      if (!client.value) return {};
+      const file: any = computed_files.value[index];
       const { file_path, bucket_name } = file;
       const pl = { path: file_path, bucket: bucket_name };
-      console.log(pl);
-      const presigned_url = await client.value.generate_presigned_url(pl);
-      console.log(presigned_url);
+      const presigned_url: any = await client.value.generate_presigned_url(pl);
+      return presigned_url;
+    }
+    async function download_local(index: number) {
+      const presigned_url = await get_presigned(index);
+      const file: any = computed_files.value[index];
+      const link = document.createElement('a');
+      link.href = presigned_url;
+      link.download = file.filename_short;
+      document.body.appendChild(link);
+      link.click();
+    }
+    async function generate_presigned_url(index: number) {
+      const presigned_url = await get_presigned(index);
       ctx.emit('presigned-generated', index, presigned_url);
     }
     function copy_url_keyboard(url: string) {
       navigator.clipboard.writeText(url).then();
     }
+    watch(computed_files, (val: any) => {
+      loading_downloads.value = Array(computed_files.value.length).fill(false);
+    });
     return {
       file_list,
       loading,
       computed_files,
+      loading_downloads,
+      download_local,
       generate_presigned_url,
       copy_url_keyboard,
     };
