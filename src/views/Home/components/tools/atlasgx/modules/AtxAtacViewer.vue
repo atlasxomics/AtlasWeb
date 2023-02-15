@@ -54,9 +54,9 @@
         @mousemove="mouseMoveOnStageLeft"
         @mouseup="mouseUpOnStageLeft"
         @mouseleave="hideToolTipS">
-        <div id="toolTipSpatial" :style="{'width':'68px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextSpatial}}</div>
+        <div id="toolTipSpatial" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}"></div>
         <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
-          <svg id="spatialGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
+          <svg id="spatialGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -124,9 +124,9 @@
         @mousemove="mouseMoveOnStageRight"
         @mouseup="mouseUpOnStageRight"
         @mouseleave="hideToolTipU">
-        <div id="toolTipUmap" :style="{'width':'68px','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'center'}">{{toolTipTextUmap}}</div>
+        <div id="toolTipUmap" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}">{{toolTipTextUmap}}</div>
         <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
-          <svg id="umapGroup" x="0" y="0" style="pointer-events:bounding-box"></svg>
+          <svg id="umapGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -285,12 +285,12 @@ export default defineComponent({
     const toolTipUmap = document.getElementById('toolTipUmap');
     const visibility = ref<string>('hidden');
     const visibilityUmap = ref<string>('hidden');
-    const toolTipTextSpatial = ref<string>('');
     const toolTipTextUmap = ref<string>('');
     const TTposition = ref<string[]>(['0', '0']);
     const TTpositionUmap = ref<string[]>(['0', '0']);
     const assayFlag = computed(() => (props.assay_flag));
     const current_tixel_colors = ref<string[]>([]);
+    const multi_sample_flag = ref<boolean>(false);
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParentDualAtac');
       if (!parent) return;
@@ -535,20 +535,26 @@ export default defineComponent({
         const match = Number(string.match(regex)![0]) - 1;
         const circle = document.createElementNS(NS, 'circle');
         const circleUmap = document.createElementNS(NS, 'circle');
-        circle.setAttribute('cx', `${x * scale.value * viewScale - inV + paddingX}`);
-        circle.setAttribute('cy', `${y * scale.value * viewScale - inH + paddingY}`);
+        circle.setAttribute('cx', `${x * scale.value * viewScale - inV}`);
+        circle.setAttribute('cy', `${y * scale.value * viewScale - inH}`);
         circle.setAttribute('r', `${radius}`);
         circle.setAttribute('fill', `${colors[match]}`);
         circle.setAttribute('id', `tixel${i}`);
         circle.setAttribute('cluster', `${v[0]}`);
         circle.setAttribute('opacity', '1.0');
-        circleUmap.setAttribute('cx', `${auX * scaleUMAP.value * viewScaleUMAP - inVU + paddingX}`);
-        circleUmap.setAttribute('cy', `${auY * scaleUMAP.value * viewScaleUMAP - inHU + paddingY}`);
+        circleUmap.setAttribute('cx', `${auX * scaleUMAP.value * viewScaleUMAP - inVU}`);
+        circleUmap.setAttribute('cy', `${auY * scaleUMAP.value * viewScaleUMAP - inHU}`);
         circleUmap.setAttribute('r', `${radiusUMAP}`);
         circleUmap.setAttribute('fill', `${colors[match]}`);
         circleUmap.setAttribute('id', `tixelUmap${i}`);
         circleUmap.setAttribute('cluster', `${v[0]}`);
         circleUmap.setAttribute('opacity', '1.0');
+        if (multi_sample_flag.value) {
+          circle.setAttribute('sample', `${v[7]}`);
+          circle.setAttribute('treatment', `${v[8]}`);
+          circleUmap.setAttribute('sample', `${v[7]}`);
+          circleUmap.setAttribute('treatment', `${v[8]}`);
+        }
         globalSpatialGroup.value.appendChild(circle);
         globalUmapGroup.value.appendChild(circleUmap);
       });
@@ -648,12 +654,13 @@ export default defineComponent({
           tixelUmap?.setAttribute('fill', `${clr}`);
         });
         stepArray.value = makearray((maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[0]) : highestCount.value, (maxMinBoundary.value.length !== 0) ? parseFloat(maxMinBoundary.value[1]) : lowestCount.value);
+        ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
       }
       if (averageInd.value) {
         ctx.emit('singleCircleData', { coords: circles, intense: colors_intensity });
         ctx.emit('sendColorBar', { color: colorBarmap.value, maxMin: [minX.value, minY.value, maxX.value, maxY.value], tixelColor: colors_intensity });
+        ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
       }
-      ctx.emit('maxMinCount', [highestCount.value.toString(), lowestCount.value.toString()]);
       spatialRun.value = false;
     }
     const checkTaskStatus = async (task_id: string) => {
@@ -694,6 +701,7 @@ export default defineComponent({
           }
         });
         const sorter = Object.keys(totalHold);
+        if (spatialData.value.spatial[0].length > 7) multi_sample_flag.value = true;
         sorter.sort((a: any, b: any) => {
           if (a.match(/C\d+/) === null || b.match(/C\d+/) === null) return 0;
           const xCsplit = a.match(/C\d+/)[0];
@@ -763,6 +771,7 @@ export default defineComponent({
           /* eslint-disable no-await-in-loop */
           if (taskStatus.value.status !== 'SUCCESS') {
             snackbar.dispatch({ text: 'Worker failed in AtxAtacViewer', options: { right: true, color: 'error' } });
+            loading.value = false;
             return;
           }
           progressMessage.value = taskStatus.value.status;
@@ -852,8 +861,26 @@ export default defineComponent({
         if (isClickedU.value) pathUmap.setAttribute('d', strPathUmap + tmpPath);
       }
     };
-    function showToolTipSpatial(ev: any) {
-      toolTipTextSpatial.value = `Cluster: ${ev}`;
+    function showToolTipSpatial(clust: string, sample: string, treat: string) {
+      const toolTipDiv = document.getElementById('toolTipSpatial');
+      while (toolTipDiv?.firstChild) {
+        toolTipDiv?.firstChild.remove();
+      }
+      if (!multi_sample_flag.value) {
+        const paragraph = document.createElement('p');
+        paragraph.innerText = `Cluster: ${clust}`;
+        paragraph.setAttribute('style', 'margin: 0; padding: 0');
+        toolTipDiv?.appendChild(paragraph);
+      } else {
+        const values = [clust, sample, treat];
+        const key = ['Cluster', 'Run_ID', 'Condition'];
+        values.forEach((v: string, i: any) => {
+          const paragraph = document.createElement('p');
+          paragraph.innerText = `${key[i]}: ${values[i]}`;
+          paragraph.setAttribute('style', 'margin: 0; padding: 0');
+          toolTipDiv?.appendChild(paragraph);
+        });
+      }
       visibility.value = 'visible';
     }
     function showToolTipUmap(ev: any) {
@@ -876,23 +903,23 @@ export default defineComponent({
         path.setAttribute('stroke', '#6ffc03');
         path.setAttribute('stroke-width', '1');
         if (!path.getAttribute('id')) path.setAttribute('id', 'spa');
-        appendToBuffer({ x: ev.layerX, y: ev.layerY });
-        strPath += `M${ev.layerX} ${ev.layerY}`;
+        appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
+        strPath += `M${ev.offsetX} ${ev.offsetY}`;
         path.setAttribute('d', strPath);
         globalSvgS.value.appendChild(path);
       } else if (isDrawingRect.value) {
         lassoSide.value = 'left';
         removeRegions();
-        rect.setAttribute('x', `${ev.layerX}`);
-        rect.setAttribute('y', `${ev.layerY}`);
+        rect.setAttribute('x', `${ev.offsetX}`);
+        rect.setAttribute('y', `${ev.offsetY}`);
         rect.setAttribute('fill', 'none');
         rect.setAttribute('stroke', '#6ffc03');
         rect.setAttribute('width', '0');
         rect.setAttribute('height', '0');
         globalSvgS.value.appendChild(rect);
-        startRectCoords = [ev.layerX, ev.layerY];
+        startRectCoords = [ev.offsetX, ev.offsetY];
       } else {
-        originalClickedPoint.value = [ev.layerX, ev.layerY];
+        originalClickedPoint.value = [ev.offsetX, ev.offsetY];
         const moveXvalue = globalSpatialGroup.value.getAttribute('x');
         const moveYvalue = globalSpatialGroup.value.getAttribute('y');
         translatePoint.value = [parseFloat(moveXvalue), parseFloat(moveYvalue)];
@@ -908,24 +935,24 @@ export default defineComponent({
         pathUmap.setAttribute('stroke', '#6ffc03');
         pathUmap.setAttribute('stroke-width', '1');
         if (!pathUmap.getAttribute('id')) pathUmap.setAttribute('id', 'uma');
-        appendToBuffer({ x: ev.layerX, y: ev.layerY });
-        strPathUmap += `M${ev.layerX} ${ev.layerY}`;
+        appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
+        strPathUmap += `M${ev.offsetX} ${ev.offsetY}`;
         pathUmap.setAttribute('d', strPathUmap);
         globalSvgU.value.appendChild(pathUmap);
         polygonUMAP.value = [];
       } else if (isDrawingRect.value) {
         lassoSide.value = 'right';
         removeRegions();
-        rectUmap.setAttribute('x', `${ev.layerX}`);
-        rectUmap.setAttribute('y', `${ev.layerY}`);
+        rectUmap.setAttribute('x', `${ev.offsetX}`);
+        rectUmap.setAttribute('y', `${ev.offsetY}`);
         rectUmap.setAttribute('fill', 'none');
         rectUmap.setAttribute('stroke', '#6ffc03');
         rectUmap.setAttribute('width', '0');
         rectUmap.setAttribute('height', '0');
         globalSvgU.value.appendChild(rectUmap);
-        startRectUmapCoords = [ev.layerX, ev.layerY];
+        startRectUmapCoords = [ev.offsetX, ev.offsetY];
       } else {
-        originalClickedPointU.value = [ev.layerX, ev.layerY];
+        originalClickedPointU.value = [ev.offsetX, ev.offsetY];
         const moveXvalue = globalUmapGroup.value.getAttribute('x');
         const moveYvalue = globalUmapGroup.value.getAttribute('y');
         translatePointU.value = [parseFloat(moveXvalue), parseFloat(moveYvalue)];
@@ -934,28 +961,29 @@ export default defineComponent({
     function mouseMoveOnStageLeft(ev: any) {
       if (!isClicked.value) {
         if (ev.target.nodeName === 'circle') {
-          showToolTipSpatial(ev.target.attributes[5].value);
-          const post = [`${ev.layerX + 10}px`, `${ev.layerY - 13}px`];
+          if (!multi_sample_flag.value) showToolTipSpatial(ev.target.attributes[5].value, '', '');
+          else showToolTipSpatial(ev.target.attributes[5].value, ev.target.attributes[7].value, ev.target.attributes[8].value);
+          const post = [`${ev.offsetX + 10}px`, `${ev.offsetY - 13}px`];
           TTposition.value = post;
         } else if (ev.target.id !== 'spatialGroup' && ev.target.nodeName !== 'circle') visibility.value = 'hidden';
       } else {
         if (isDrawing.value) {
-          appendToBuffer({ x: ev.layerX, y: ev.layerY });
+          appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
           updateSvgPath();
-          polygon.value.push(ev.layerX);
-          polygon.value.push(ev.layerY);
+          polygon.value.push(ev.offsetX);
+          polygon.value.push(ev.offsetY);
         } else if (isDrawingRect.value) {
-          const xdiff = Math.abs(ev.layerX - startRectCoords[0]);
-          const ydiff = Math.abs(ev.layerY - startRectCoords[1]);
-          if (ev.layerX < startRectCoords[0]) rect.setAttribute('x', `${ev.layerX}`);
-          if (ev.layerY < startRectCoords[1]) rect.setAttribute('y', `${ev.layerY}`);
+          const xdiff = Math.abs(ev.offsetX - startRectCoords[0]);
+          const ydiff = Math.abs(ev.offsetY - startRectCoords[1]);
+          if (ev.offsetX < startRectCoords[0]) rect.setAttribute('x', `${ev.offsetX}`);
+          if (ev.offsetY < startRectCoords[1]) rect.setAttribute('y', `${ev.offsetY}`);
           rect.setAttribute('width', `${xdiff}`);
           rect.setAttribute('height', `${ydiff}`);
         } else {
-          const diffX = Math.abs(originalClickedPoint.value[0] - ev.layerX);
-          const diffY = Math.abs(originalClickedPoint.value[1] - ev.layerY);
-          const x = (originalClickedPoint.value[0] < ev.layerX) ? 1 : -1;
-          const y = (originalClickedPoint.value[1] < ev.layerY) ? 1 : -1;
+          const diffX = Math.abs(originalClickedPoint.value[0] - ev.offsetX);
+          const diffY = Math.abs(originalClickedPoint.value[1] - ev.offsetY);
+          const x = (originalClickedPoint.value[0] < ev.offsetX) ? 1 : -1;
+          const y = (originalClickedPoint.value[1] < ev.offsetY) ? 1 : -1;
           globalSpatialGroup.value.setAttribute('x', `${translatePoint.value[0] + diffX * x}`);
           globalSpatialGroup.value.setAttribute('y', `${translatePoint.value[1] + diffY * y}`);
         }
@@ -965,27 +993,27 @@ export default defineComponent({
       if (!isClickedU.value) {
         if (ev.target.nodeName === 'circle') {
           showToolTipUmap(ev.target.attributes[5].value);
-          const post = [`${ev.layerX + 10}px`, `${ev.layerY - 13}px`];
+          const post = [`${ev.offsetX + 10}px`, `${ev.offsetY - 13}px`];
           TTpositionUmap.value = post;
         } else if (ev.target.id !== 'umapGroup' && ev.target.nodeName !== 'circle') visibilityUmap.value = 'hidden';
       } else {
         if (isDrawing.value) {
-          appendToBuffer({ x: ev.layerX, y: ev.layerY });
+          appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
           updateSvgPath();
-          polygonUMAP.value.push(ev.layerX);
-          polygonUMAP.value.push(ev.layerY);
+          polygonUMAP.value.push(ev.offsetX);
+          polygonUMAP.value.push(ev.offsetY);
         } else if (isDrawingRect.value) {
-          const xdiff = Math.abs(ev.layerX - startRectUmapCoords[0]);
-          const ydiff = Math.abs(ev.layerY - startRectUmapCoords[1]);
-          if (ev.layerX < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${ev.layerX}`);
-          if (ev.layerY < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${ev.layerY}`);
+          const xdiff = Math.abs(ev.offsetX - startRectUmapCoords[0]);
+          const ydiff = Math.abs(ev.offsetY - startRectUmapCoords[1]);
+          if (ev.offsetX < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${ev.offsetX}`);
+          if (ev.offsetY < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${ev.offsetY}`);
           rectUmap.setAttribute('width', `${xdiff}`);
           rectUmap.setAttribute('height', `${ydiff}`);
         } else {
-          const diffX = Math.abs(originalClickedPointU.value[0] - ev.layerX);
-          const diffY = Math.abs(originalClickedPointU.value[1] - ev.layerY);
-          const x = (originalClickedPointU.value[0] < ev.layerX) ? 1 : -1;
-          const y = (originalClickedPointU.value[1] < ev.layerY) ? 1 : -1;
+          const diffX = Math.abs(originalClickedPointU.value[0] - ev.offsetX);
+          const diffY = Math.abs(originalClickedPointU.value[1] - ev.offsetY);
+          const x = (originalClickedPointU.value[0] < ev.offsetX) ? 1 : -1;
+          const y = (originalClickedPointU.value[1] < ev.offsetY) ? 1 : -1;
           globalUmapGroup.value.setAttribute('x', `${translatePointU.value[0] + diffX * x}`);
           globalUmapGroup.value.setAttribute('y', `${translatePointU.value[1] + diffY * y}`);
         }
@@ -1147,7 +1175,7 @@ export default defineComponent({
       selectedGenes.value = gene;
     });
     watch(maxMinBoundaryFromParents, (v: any) => {
-      if (v[0] === '' && v[0] === '') maxMinBoundary.value = [];
+      if (v[0] === '' && v[1] === '') maxMinBoundary.value = [];
       else maxMinBoundary.value = v;
       updateCircles();
     });
@@ -1254,13 +1282,13 @@ export default defineComponent({
       visibilityUmap,
       showToolTipSpatial,
       showToolTipUmap,
-      toolTipTextSpatial,
       toolTipTextUmap,
       TTposition,
       TTpositionUmap,
       hideToolTipS,
       hideToolTipU,
       current_tixel_colors,
+      multi_sample_flag,
     };
   },
 });

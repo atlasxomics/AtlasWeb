@@ -59,7 +59,7 @@
           :value="backgroundFlag"
           @click:outside="backgroundFlag = !backgroundFlag"
           hide-overlay>
-          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:210px;">
+          <v-card style="width: max-content;position: absolute;z-index: 999;top:40px;left:210px;">
             <v-data-table
               class="thickBorder"
               v-model="selected"
@@ -138,42 +138,6 @@
               label="NGS ID">
               </v-text-field> -->
             </v-card-text>
-          </v-card>
-        </v-dialog>
-        <v-dialog
-          v-if="geneMotifFlag"
-          :value="geneMotifFlag"
-          @click:outside="geneMotifFlag = !geneMotifFlag"
-          hide-overlay>
-          <v-card style="width:100px;position: absolute;z-index: 999;top:40px;left:150px;"
-            :disabled="loading">
-            <v-data-table
-            class="thickBorder"
-            v-model="selected"
-            width="20%"
-            dense
-            single-select
-            hide-default-footer
-            hide-default-header
-            :items="['Genes', 'Motifs']">
-              <template v-slot:item="row">
-                <template v-if="row.item == 'Genes'">
-                  <tr @click="geneMotif = 'gene'">
-                    <td>{{row.item}}</td>
-                  </tr>
-                </template>
-                <template v-if="row.item == 'Motifs'">
-                  <tr @click="geneMotif = 'motif'">
-                    <td>{{row.item}}</td>
-                  </tr>
-                </template>
-                <template v-if="row.item == 'Features'">
-                  <tr @click="geneMotif = 'feat'">
-                    <td>{{row.item}}</td>
-                  </tr>
-                </template>
-              </template>
-            </v-data-table>
           </v-card>
         </v-dialog>
         <v-col cols="2" sm="1">
@@ -405,7 +369,7 @@
             :value="displayFlag"
             @click:outside="displayFlag = !displayFlag"
             hide-overlay>
-              <v-card style="width:100px;position:absolute;z-index:999;top:240px;left:65px;">
+              <v-card  style="width: max-content; position: absolute; left: 65px; top: 240px;z-index: 999">
                 <v-data-table
                 class="thickBorder"
                 v-model="selected"
@@ -740,7 +704,6 @@ export default defineComponent({
     const loading = ref<boolean>(false);
     const selectedGenes = ref<any[]>([]);
     const childGenes = ref<any[]>([]);
-    const delayCounter = ref<number>(0);
     const trackBrowserGenes = ref<any[]>([]);
     const spatialData = ref<boolean>(false);
     const clusterItems = ref<any[]>([]);
@@ -784,7 +747,6 @@ export default defineComponent({
     const backgroundFlag = ref<boolean>(false);
     const heatmapFlag = ref<boolean>(false);
     const autoCompleteFlag = ref<boolean>(false);
-    const geneMotifFlag = ref<boolean>(false);
     const listId = ref<boolean>(false);
     const lassoSide = ref<string>();
     const colorOnOff = ref<string>('black');
@@ -992,15 +954,9 @@ export default defineComponent({
       userMaxMinValue.value = [userMaxValue.value, userMinValue.value];
     }
     function updateMaxMin(ev: any) {
-      if (userMaxMinValue.value[0].match(/\d+/) && userMaxMinValue.value[1].match(/\d+/)) {
-        const [max, min] = userMaxMinValue.value;
-        userMaxValue.value = max;
-        userMinValue.value = min;
-      } else {
-        const [max, min] = ev;
-        userMaxValue.value = max;
-        userMinValue.value = min;
-      }
+      const [max, min] = ev;
+      userMaxValue.value = max;
+      userMinValue.value = min;
     }
     function saveTxt() {
       listId.value = false;
@@ -1484,12 +1440,10 @@ export default defineComponent({
         this.$on('sentgenes', (ev: any) => {
           isClusterView.value = false;
           childGenes.value = [];
-          delayCounter.value = 0;
           trackBrowserGenes.value = [];
           ev.forEach((v: string, i: number) => {
             childGenes.value.push(v);
           });
-          // if (averageInd.value) waitForSingleView('grgr');
           if (ev.length === 1) {
             ev.forEach((v: string, i: number) => {
               trackBrowserGenes.value.push(v);
@@ -1501,12 +1455,6 @@ export default defineComponent({
         });
       },
     }));
-    // watch(oneTime, async (v: any) => {
-    //   if (childGenes.value.length > 0 && delayCounter.value < childGenes.value.length) {
-    //     await waitForSingleView(delayCounter.value);
-    //     delayCounter.value += 1;
-    //   } else delayCounter.value = 0;
-    // });
     watch(peakViewerFlag, (v: any) => {
       if (v) {
         visible.value = 'visible';
@@ -1533,7 +1481,6 @@ export default defineComponent({
         featureTableFlag.value = true;
         peakViewerFlag.value = false;
         histoFlag.value = false;
-        geneMotifFlag.value = false;
         isClusterView.value = true;
         if (childGenes.value.length > 0) selectedGenes.value = [];
         showFlag.value = [false];
@@ -1548,13 +1495,11 @@ export default defineComponent({
       featureTableFlag.value = true;
       peakViewerFlag.value = false;
       histoFlag.value = false;
-      geneMotifFlag.value = false;
       isClusterView.value = true;
       selectedGenes.value = [];
       showFlag.value = [false];
       geneButton.value = [];
       childGenes.value = [];
-      delayCounter.value = 0;
       trackBrowserGenes.value = [];
       updateTable();
     });
@@ -1580,7 +1525,6 @@ export default defineComponent({
         showFlag.value = [false];
         trackBrowserGenes.value = [];
         childGenes.value = [];
-        delayCounter.value = 0;
       } else {
         isDrawing.value = false;
         isDrawingRect.value = false;
@@ -1590,13 +1534,11 @@ export default defineComponent({
       featureTableFlag.value = true;
       peakViewerFlag.value = false;
       histoFlag.value = false;
-      geneMotifFlag.value = false;
       isClusterView.value = true;
       selectedGenes.value = [];
       showFlag.value = [false];
       geneButton.value = [];
       childGenes.value = [];
-      delayCounter.value = 0;
       trackBrowserGenes.value = [];
     });
     watch(showFlag, (v: any[]) => {
@@ -1759,7 +1701,6 @@ export default defineComponent({
       chooseBackground,
       chooseHeatmap,
       heatmapFlag,
-      geneMotifFlag,
       lassoSide,
       colorOnOff,
       colorOnOffRect,
@@ -1865,7 +1806,6 @@ export default defineComponent({
       waitForSingleView,
       oneTime,
       updateOneTime,
-      delayCounter,
       updateVar,
       saveImageTable,
       generateFrontPage,
