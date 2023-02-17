@@ -101,10 +101,10 @@
 import { computed, defineComponent, onMounted, ref } from '@vue/composition-api';
 import { Client } from '@/api';
 import store from '@/store';
-import StudySelector from '@/views/Home/components/settings/admin/modules/StudySelector.vue';
-import RunIdSelector from '@/views/Home/components/settings/admin/modules/RunIdSelector.vue';
+import StudySelector from '@/views/Home/components/settings/admin/modules/submodules/StudySelector.vue';
+import RunIdSelector from '@/views/Home/components/settings/admin/modules/submodules/RunIdSelector.vue';
 import { snackbar } from '@/components/GlobalSnackbar';
-import Selector from './Selector.vue';
+import Selector from './submodules/Selector.vue';
 
 export default defineComponent({
   components: { StudySelector, RunIdSelector, Selector },

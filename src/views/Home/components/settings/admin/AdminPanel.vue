@@ -9,9 +9,6 @@
       </v-tab>
     </v-tabs>
     <v-tabs-items v-model="tab">
-      <v-tab-item key="ResetPassword">
-        <reset-password/>
-      </v-tab-item>
       <v-tab-item key="JobManagment">
         <jobs-table
         :filter_username="true"
@@ -42,6 +39,9 @@
       <v-tab-item key="GroupingRuns">
         <grouping-runs/>
       </v-tab-item>
+      <v-tab-item key="AddFiles">
+        <add-files/>
+      </v-tab-item>
     </v-tabs-items>
   </v-container>
 </template>
@@ -64,6 +64,7 @@ import CreateWebObject from './modules/CreateWebObject.vue';
 import GroupManagment from './modules/GroupManagment.vue';
 import GroupingRuns from './modules/GroupingRuns.vue';
 import JobsTable from './modules/JobsTable.vue';
+import AddFiles from './modules/AddFiles.vue';
 
 const clientReady = new Promise((resolve) => {
   const ready = computed(() => (
@@ -74,7 +75,7 @@ const clientReady = new Promise((resolve) => {
   });
 });
 
-const tabs = ['Reset Password', 'Job Managment', 'User Management', 'Group Managment', 'Create A Run', 'Add A Run', 'Group Runs'];
+const tabs = ['Job Managment', 'User Management', 'Group Managment', 'Create A Run', 'Add A Run', 'Group Runs', 'Add Files'];
 
 export default defineComponent({
   name: 'AdminPanel',
@@ -90,6 +91,7 @@ export default defineComponent({
     GroupManagment,
     GroupingRuns,
     JobsTable,
+    AddFiles,
   },
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -99,13 +101,12 @@ export default defineComponent({
     const parent_results_id = ref<any>(null);
     const example_ref = ref(null);
     function update_groups_list() {
-      console.log('getting updated list');
       (ctx as any).refs.user_managment.update_groups_list();
     }
     onMounted(async () => {
       await clientReady;
       if (props.query.params) {
-        tab.value = 5;
+        tab.value = 4;
         if (props.query.params.action === 'edit') {
           console.log(props.query.params);
           (ctx as any).refs.run_editor.auto_populate_from_run_id(props.query.params.run_id);

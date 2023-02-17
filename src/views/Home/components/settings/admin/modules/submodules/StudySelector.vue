@@ -20,7 +20,7 @@
 import { defineComponent, onMounted, ref, computed } from '@vue/composition-api';
 import { Client } from '@/api';
 import store from '@/store';
-import IdSelector from '@/views/Home/components/settings/admin/modules/IdSelector.vue';
+import IdSelector from './IdSelector.vue';
 
 export default defineComponent({
   name: 'StudySelector',
@@ -49,6 +49,7 @@ export default defineComponent({
     function set_ids_selector(ids: Array<any>) {
       const ref_mod = ctx.refs.id_selector as any;
       ref_mod.reset_local_ids(ids);
+      ref_mod.reset_search_input();
       loading.value = false;
     }
     function get_studies() {
@@ -63,7 +64,7 @@ export default defineComponent({
       study_id_selected.value = '';
       get_studies();
       const ref_mod = ctx.refs.id_selector as any;
-      ref_mod.run_successfully_uploaded();
+      ref_mod.reset_search_input();
     }
     onMounted(() => {
       get_studies();
