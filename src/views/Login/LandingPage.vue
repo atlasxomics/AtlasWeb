@@ -95,7 +95,7 @@
         <!-- view where each run has a card -->
         <template v-if="!menuListFlag">
           <template v-for="data in numOfPubsHold[pageIteration]" >
-            <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path" height="245px">
+            <v-card :style="{'border-top': `6px solid ${labColors[data.group]}`}" v-bind:key="data.results_folder_path">
               <v-row>
                 <v-col cols="12" sm="8">
                   <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
@@ -111,8 +111,8 @@
                 </v-col>
                 <!-- section of card with image -->
                 <v-col cols="12" sm="4">
-                  <div style="height:inherit; width: 100%;" @click="edit_result(data.run_id)">
-                    <img style="position: absolute;right: 0;height: 200px; max-width: 200px;max-height:200px;margin-top:10px;margin-right:7px;" :src="data.imageLink"/>
+                  <div style="height:inherit; width: 100%;text-align: right;" @click="edit_result(data.run_id)">
+                    <img style="max-width: 200px;max-height:200px;margin-top:10px;margin-right:10px;" :src="data.imageLink"/>
                   </div>
                 </v-col>
               </v-row>
