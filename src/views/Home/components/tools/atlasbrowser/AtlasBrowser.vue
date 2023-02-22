@@ -10,7 +10,8 @@
           @click:outside="run_id_search_active = !run_id_search_active"
           hide-overlay>
           <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
-              :disabled="loading">
+          :disabled="loading"
+          >
               <!-- Searching in text field -->
             <v-card-title>
               <v-text-field
@@ -28,7 +29,7 @@
               dense
               single-select
               :loading="loading"
-              :items="itemsHolder"
+              :items="run_id_folder_namesHolder"
               :headers="headers"
               hide-default-footer
               @click:row="run_folder_selected"
@@ -43,13 +44,21 @@
           v-if="image_processing_begun"
           :value="show_metadata"
           @click:outside="show_metadata = !show_metadata">
-          <v-card  :disabled="loading"
+          <v-card
           >
             <v-card-title
             class="justify-center">
               Run ID: {{run_id}}
             </v-card-title>
             <v-card-text>
+              <v-select
+              v-model="metadata.barcodes"
+              outlined
+              dense
+              label="Barcode File"
+              :items="[1, 2, 3, 4]"
+              >
+              </v-select>
               <selector
                 v-model="metadata.species"
                 display_label="Species"
@@ -92,6 +101,7 @@
               >
               </selector>
               <v-text-field
+              v-if="lims_available"
               outlined
               dense
               label="Tissue Experimental Condition"
@@ -99,20 +109,13 @@
               >
               </v-text-field>
               <v-text-field
+              v-if="lims_available"
               outlined
               dense
               label="Sample Id"
               v-model="metadata.sampleID"
               >
               </v-text-field>
-              <v-select
-              v-model="metadata.barcodes"
-              outlined
-              dense
-              label="Barcode File"
-              :items="[1, 2, 3, 4]"
-              >
-              </v-select>
               <v-text-field
               v-model="metadata.chip_resolution"
               outlined
@@ -121,6 +124,7 @@
               >
               </v-text-field>
               <v-text-field
+              v-if="lims_available"
               v-model="metadata.comments_flowB"
               outlined
               dense
@@ -128,6 +132,7 @@
               >
               </v-text-field>
               <v-text-field
+              v-if="lims_available"
               v-model="metadata.crosses_flowB"
               outlined
               dense
@@ -135,6 +140,7 @@
               >
               </v-text-field>
               <v-text-field
+              v-if="lims_available"
               v-model="metadata.leak_flowB"
               outlined
               dense
@@ -142,6 +148,7 @@
               >
               </v-text-field>
               <v-text-field
+              v-if="lims_available"
               v-model="metadata.comments_flowA"
               outlined
               dense
@@ -149,6 +156,7 @@
               >
               </v-text-field>
               <v-text-field
+              v-if="lims_available"
               v-model="metadata.crosses_flowA"
               outlined
               dense
@@ -156,6 +164,7 @@
               >
               </v-text-field>
               <v-text-field
+              v-if="lims_available"
               v-model="metadata.blocks_flowA"
               outlined
               dense
@@ -163,6 +172,7 @@
               >
               </v-text-field>
               <v-text-field
+              v-if="lims_available"
               v-model="metadata.leak_flowA"
               outlined
               dense
@@ -456,7 +466,7 @@
               :disabled="full_bsa_filename === ''"
               style="position: relative; left: 50%; transform: translateX(-50%);"
               outlined
-              @click="loadImage();"
+              @click="show_metadata = true; loadImage();"
               >
               Submit
               </v-btn>
@@ -640,6 +650,7 @@ import savePixels from 'save-pixels';
 import blobStream from 'blob-stream';
 import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
+import config from '@/config';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
 import { resolveAuthGroup } from '@/utils/auth';
@@ -709,17 +720,18 @@ export default defineComponent({
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
-    const bucket_name = 'atx-illumina';
+    const bucket_name = computed(() => config.atlasxbrowser.bucket_name);
+    const root = computed(() => config.atlasxbrowser.root_dir);
+    const lims_available = computed(() => config.atlasxbrowser.lims_available);
     // root directory of that s3 bucket
-    const root = 'Images';
     const welcome_screen = ref<boolean>(true);
     const drop_down_manager = new DropDownFieldManager();
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const allFiles = ref<any[]>([]);
     const currentRoute = computed(() => ctx.root.$route);
-    const items = ref<any[]>([]);
-    const itemsHolder = ref<any[]>([]);
+    const run_id_folder_names = ref<any[]>([]);
+    const run_id_folder_namesHolder = ref<any[]>([]);
     const searchInput = ref<any[]>([]);
     const search = ref<string | null>();
     const run_id = ref<string>('');
@@ -847,7 +859,6 @@ export default defineComponent({
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       full_bsa_filename.value = '';
       image_processing_begun.value = false;
-      // show_metadata.value = false;
     }
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
@@ -928,20 +939,24 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       // specify path to images within s3
-      const filename = `${root}/${run_id.value}/spatial/metadata.json`;
-      const scale_filename = `${root}/${run_id.value}/spatial/scalefactors_json.json`;
-      const pos_filename = `${root}/${run_id.value}/spatial/tissue_positions_list.csv`;
-      const payload = { params: { filename, bucket_name } };
+      const filename = `${root.value}/${run_id.value}/spatial/metadata.json`;
+      const scale_filename = `${root.value}/${run_id.value}/spatial/scalefactors_json.json`;
+      const pos_filename = `${root.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
+      const payload = { params: { filename, bucket_name: bucket_name.value } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename, bucket_name } };
+      const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name.value } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
-      const scale_payload = { params: { filename: scale_filename, bucket_name } };
+      const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name.value } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
-      // print the result of the last 3 async calls
       // if the json file is retrieved from server use that as metadata
-      const meta_present = ((('status_code' in resp) && resp.status_code === 200) || !('status_code' in resp));
-      const pos_present = ((('status_code' in resp_pos) && resp_pos.status_code === 200) || !('status_code' in resp_pos));
-      const scale_present = ((('status_code' in scale_pos) && scale_pos.status_code === 200) || !('status_code' in scale_pos));
+      // const meta_present = ((('status_code' in resp) && resp.status_code === 200) || !('status_code' in resp));
+      // const pos_present = ((('status_code' in resp_pos) && resp_pos.status_code === 200) || !('status_code' in resp_pos));
+      // const scale_present = ((('status_code' in scale_pos) && scale_pos.status_code === 200) || !('status_code' in scale_pos));
+      const meta_present = resp !== 'Not-Found';
+      const pos_present = resp_pos !== 'Not-Found';
+      const scale_present = scale_pos !== 'Not-Found';
+      console.log(meta_present, pos_present, scale_present);
+      // if (false) {
       if (meta_present && pos_present && scale_present) {
         scaleFactor_json.value = scale_pos;
         tissue_position_list_obj.value = resp_pos;
@@ -951,9 +966,11 @@ export default defineComponent({
         return true;
         // otherwise call getMeta to query the API
       }
-      await getMeta();
-      loading.value = false;
-      snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
+      if (lims_available.value) {
+        await getMeta();
+        loading.value = false;
+        snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
+      }
       return false;
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
@@ -973,7 +990,7 @@ export default defineComponent({
         const y1 = c[1];
         const x2 = c[2];
         const y2 = c[3];
-        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
+        const pl = { params: { bucket_name: bucket_name.value, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
         const promise = client.value.getGrayImageAsCroppedJPG(pl);
         return promise;
       } catch (error) {
@@ -1011,7 +1028,7 @@ export default defineComponent({
       let use_cache = false;
       // path to images
       if (updating_existing.value) {
-        filename = `${root}/${run_id.value}/spatial/figure/postB_BSA.tif`;
+        filename = `${root.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
         bsa_image_displayed.value = true;
         postB_image_displayed.value = false;
         bw_image_displayed.value = false;
@@ -1019,17 +1036,17 @@ export default defineComponent({
       } else {
         filename = full_bsa_filename.value;
       }
-      const filenameList = { path: root, filter: [`${run_id.value}`], bucket: bucket_name };
+      const filenameList_pl = { path: `${root.value}/${run_id.value}/`, filter: [''], bucket: bucket_name.value, only_files: true };
       try {
-        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
+        const pl = { params: { bucket_name: bucket_name.value, filename, rotation: orientation.value.rotation, use_cache } };
         const img = await client.value.getImageAsJPG(pl);
         bsa_blob.value = img;
-        allFiles.value = await client.value.getFileList(filenameList);
+        allFiles.value = await client.value.getFileList(filenameList_pl);
         const img_obj = set_current_image(img);
         bsa_image.value = img_obj.src;
         if (updating_existing.value) {
-          const postB_figure_filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
-          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: 'true', bucket_name } };
+          const postB_figure_filename = `${root.value}/${run_id.value}/spatial/figure/postB.tif`;
+          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: 'true', bucket_name: bucket_name.value } };
           const pro = load_image_promise_jpg(pl_postB);
           if (pro) postB_image_promise.value = pro;
         }
@@ -1051,7 +1068,7 @@ export default defineComponent({
       } else {
         orientation.value.rotation += 270;
       }
-      const pl = { params: { filename: full_bsa_filename.value, bucket_name, use_cache: 'true', rotation: orientation.value.rotation } };
+      const pl = { params: { filename: full_bsa_filename.value, bucket_name: bucket_name.value, use_cache: 'true', rotation: orientation.value.rotation } };
       const img = await client.value?.getImageAsJPG(pl);
       bsa_blob.value = img;
       set_current_image(img);
@@ -1061,12 +1078,12 @@ export default defineComponent({
       const stringforRegex = ev;
       const updated = [];
       const regex = new RegExp(`${stringforRegex}[a-zA-z]*[0-9]*`);
-      for (let i = 0; i < items.value.length; i += 1) {
-        if (regex.test(items.value[i].id)) {
-          updated.push(items.value[i]);
+      for (let i = 0; i < run_id_folder_names.value.length; i += 1) {
+        if (regex.test(run_id_folder_names.value[i].id)) {
+          updated.push(run_id_folder_names.value[i]);
         }
       }
-      itemsHolder.value = updated;
+      run_id_folder_namesHolder.value = updated;
     }
     function uploadingTixels(ev: any) {
       grid.value = true;
@@ -1346,6 +1363,10 @@ export default defineComponent({
     }
     async function generateSpatial() {
       if (!client.value) return;
+      if (!metadata.value.barcodes) {
+        snackbar.dispatch({ text: 'Must Select Barcode File Before Generating Spatial Folder', options: { color: 'warning', right: true } });
+        return;
+      }
       try {
         one.value = 0;
         two.value = 0;
@@ -1354,7 +1375,8 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
+        // const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         if (updating_existing.value) {
@@ -1395,8 +1417,8 @@ export default defineComponent({
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
           barcodes: metadata.value.barcodes,
-          root_dir: root,
-          bucket: bucket_name,
+          root_dir: root.value,
+          bucket: bucket_name.value,
           bsa_filename: full_bsa_filename.value,
           updating_existing: updating_existing.value,
         };
@@ -1465,17 +1487,18 @@ export default defineComponent({
       if (!client.value) {
         return;
       }
-      items.value = [];
-      itemsHolder.value = [];
+      run_id_folder_names.value = [];
+      run_id_folder_namesHolder.value = [];
       search.value = '';
       loading.value = true;
-      const folder_pl = { bucket_name, prefix: 'Images/', delimiter: '/' };
+      const folder_pl = { bucket_name: bucket_name.value, prefix: `${root.value}/`, delimiter: '/' };
+      console.log(folder_pl);
       const sub_folders = await client.value.getSubFolders(folder_pl);
       if (sub_folders) {
         const obj_data = sub_folders.map((sub_folder_name: string) => ({ id: sub_folder_name }));
-        items.value = obj_data;
+        run_id_folder_names.value = obj_data;
       }
-      itemsHolder.value = items.value;
+      run_id_folder_namesHolder.value = run_id_folder_names.value;
       loading.value = false;
     }
     async function selectAction(ev: any) {
@@ -1484,10 +1507,11 @@ export default defineComponent({
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
     async function get_image_options(folder_name: string) {
-      const pl = { bucket: bucket_name, path: `${root}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
+      const pl = { bucket: bucket_name.value, path: `${root.value}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
       file_options.value = await client.value?.getFileList(pl);
       if (file_options.value.length === 1) {
         [full_bsa_filename.value] = file_options.value;
+        show_metadata.value = true;
         loadImage();
       } else if (file_options.value.length === 0) {
         snackbar.dispatch({ text: 'No images found in folder', options: { right: true, color: 'error' } });
@@ -1564,6 +1588,7 @@ export default defineComponent({
       store.commit.setSubmenu(submenu);
       window.addEventListener('resize', handleResize);
       await fetchFileList();
+      console.log(config);
     });
     onUnmounted(async () => {
       store.commit.setSubmenu(null);
@@ -1574,8 +1599,8 @@ export default defineComponent({
       run_id,
       full_bsa_filename,
       metadata,
-      items,
-      itemsHolder,
+      run_id_folder_names,
+      run_id_folder_namesHolder,
       searchInput,
       headers,
       selectAction,
