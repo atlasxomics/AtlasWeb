@@ -1,6 +1,6 @@
 import lodash from 'lodash';
 import { get_uuid, generateRouteByQuery, objectToArray } from '@/utils';
-import { Point, Circle } from '../types';
+import { Point, Circle, Polygon } from '../types';
 
 export class ROI {
   coordinates: any | null;
@@ -289,7 +289,7 @@ export class ROI {
           const { 1: fill } = value;
           current_fill = fill;
         }
-        const polyConfig = {
+        const polyConfig: Polygon = {
           sceneFunc: (context: any, shape: any) => {
             context.beginPath();
             context.moveTo(topLC[0], topLC[1]);
@@ -308,10 +308,11 @@ export class ROI {
           radius: slope[0],
           stroke: 'black',
           strokeWidth: 1,
-          // postit: [row, col]
           posit: [j, i],
           scaleX: 1.0,
           scaleY: 1.0,
+          raw_fragments: null,
+          log_fragments: null,
         };
         this.polygons.push(polyConfig);
         top[0] += slopeO[1];
