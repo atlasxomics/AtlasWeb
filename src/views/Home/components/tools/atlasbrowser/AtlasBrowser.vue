@@ -549,7 +549,7 @@ import { DropDownFieldManager } from '@/views/Home/components/settings/admin/mod
 import { FileRequest } from '@/types';
 import { ROI } from './AtlasBrowserComponents/roi';
 import { Crop } from './AtlasBrowserComponents/crop';
-import { Circle, Point } from './types';
+import { Circle, Point, Metadata, tissue_position_list_ele_counts } from './types';
 import SpatialFolderViewer from './AtlasBrowserComponents/SpatialFolderViewer.vue';
 import MetadataDropdown from './AtlasBrowserComponents/MetadataDropdown.vue';
 // import { resolve } from 'dns';
@@ -575,35 +575,6 @@ const assay_dict: Record<string, any> = {
   'ATAC-seq': 'ATAC-seq',
   'atac-seq': 'ATAC-seq',
 };
-interface Metadata {
-  points: number[] | any;
-  run: string | null;
-  blockSize: number | null;
-  cValue: number | null;
-  threshold: number | null;
-  tissue_type: string | null;
-  species: string | null;
-  assay: string | null;
-  antibody: string | null;
-  numChannels: string | null;
-  orientation: any | null;
-  crop_area: any | null;
-  barcodes: number | null;
-  organ: string | null;
-  tissue_source: string | null;
-  chip_resolution: number | null;
-  tissueBlockExperiment: string | null;
-  comments_flowB: string | null;
-  crosses_flowB: Array<number> | null;
-  blocks_flowB: Array<number> | null;
-  leak_flowB: string | null;
-  comments_flowA: string | null;
-  crosses_flowA: Array<number> | null;
-  blocks_flowA: Array<number> | null;
-  leak_flowA: string | null;
-  sampleID: string | null;
-  onTissueTixels: number | null;
-}
 
 export default defineComponent({
   name: 'AtlasBrowser',
@@ -671,6 +642,7 @@ export default defineComponent({
     const threshLoading = ref<boolean>(false);
     const spatial = ref<boolean>(false);
     const tissue_position_list_obj = ref<any>();
+    const tixel_color_mapping = ref<Record<number, string>>({});
     const prompt_to_use_existing_spatial = ref<boolean>(false);
     const selecting_counts_pos_file = ref<boolean>(false);
     const updating_existing = ref<boolean>(false);
@@ -982,6 +954,7 @@ export default defineComponent({
     async function load_counts_positions() {
       const pl = { params: { bucket_name: 'atx-illumina', filename: 'Images/D1118/D01118_tissue_positions_list_counts.csv' } };
       const data = await client.value?.getCsvFile(pl);
+      console.log(data);
       data.sort((x: any, y: any) => {
         const row_x = Number.parseInt(x[2], 10);
         const col_x = Number.parseInt(x[3], 10);
@@ -1005,6 +978,31 @@ export default defineComponent({
         return -1;
       });
       tissue_position_list_obj.value = data;
+      const data_copy = JSON.parse(JSON.stringify(data));
+      data_copy.sort((ele1: any, ele2: any) => {
+        const counts_ele1 = ele1[7];
+        const counts_ele2 = ele2[7];
+        if (counts_ele1 > counts_ele2) {
+          return 1;
+        }
+        if (counts_ele1 < counts_ele2) {
+          return -1;
+        }
+        return 0;
+      });
+      const color_gradient = colormap({ colormap: 'jet', nshades: 100, format: 'hex' });
+      const number_channels = Math.sqrt(data_copy.length);
+      console.log(number_channels);
+      for (let i = 0; i < data_copy.length; i += 1) {
+        const pct = Math.floor((i / data_copy.length) * 100);
+        const row = Number.parseInt(data_copy[i][2], 10);
+        const col = Number.parseInt(data_copy[i][3], 10);
+        console.log(row);
+        console.log(col);
+        const tixel_num = (row * number_channels) + col;
+        tixel_color_mapping.value[tixel_num] = color_gradient[pct];
+      }
+      console.log(tixel_color_mapping);
     }
     function uploadingTixels(ev: any) {
       grid.value = true;
@@ -1263,14 +1261,15 @@ export default defineComponent({
       });
     }
     function thresh_clicked() {
-      if (!current_image.value) return;
-      if (!postB_image_promise.value) return;
-      loading.value = true;
-      postB_image_promise.value.then((gray: any) => {
-        const src = URL.createObjectURL(gray);
-        postB_image.value = src;
-        threshold_image(postB_image.value);
-      });
+      roi.value.fill_color_counts(tixel_color_mapping.value);
+      // if (!current_image.value) return;
+      // if (!postB_image_promise.value) return;
+      // loading.value = true;
+      // postB_image_promise.value.then((gray: any) => {
+      //   const src = URL.createObjectURL(gray);
+      //   postB_image.value = src;
+      //   threshold_image(postB_image.value);
+      // });
     }
     const updateProgress = async (value: number) => {
       if (!client.value) return;
@@ -1630,6 +1629,7 @@ export default defineComponent({
       lims_available,
       selecting_counts_pos_file,
       color_gradient_scale_numbers,
+      tixel_color_mapping,
     };
   },
 });

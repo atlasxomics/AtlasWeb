@@ -175,6 +175,15 @@ export class ROI {
     });
   }
 
+  fill_color_counts(tixel_color: Record<number, string>) {
+    console.log(Object.keys(tixel_color).length);
+    if (Object.keys(tixel_color).length !== this.polygons.length) return;
+    for (let i = 0; i < this.polygons.length; i += 1) {
+      this.polygons[i].fill = tixel_color[i];
+    }
+    console.log(this.polygons);
+  }
+
   setScaleFactor(scale: number) {
     const prevScalefactor = this.scalefactor;
     this.scalefactor = scale;
