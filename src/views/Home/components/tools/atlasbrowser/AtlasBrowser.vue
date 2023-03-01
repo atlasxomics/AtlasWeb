@@ -222,8 +222,12 @@
                 :disabled="!thresh_image_created || bw_image_displayed || spatial"
                 > BW </v-btn>
               </v-list>
+              <v-list
+              v-if="position_counts_present"
+              >
               <div :style="{ 'background-image': `${linear_gradient_description_string}`, 'display': 'flex', 'min-height': '50px' }" >
               </div>
+              </v-list>
               <v-list dense class="pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
                 <v-btn
@@ -651,6 +655,7 @@ export default defineComponent({
     const prompt_to_use_existing_spatial = ref<boolean>(false);
     const prompt_to_select_counts_positions = ref<boolean>(false);
     const selecting_counts_pos_file = ref<boolean>(false);
+    const position_counts_present = ref<boolean>(false);
     const updating_existing = ref<boolean>(false);
     const image_processing_begun = ref<boolean>(false);
     const run_id_search_active = ref<boolean>(false);
@@ -955,9 +960,10 @@ export default defineComponent({
       /**
        * Method to load in a tissue_positions_list file with information on fragment counts.
        */
+      if (tissue_positions_counts_filename.value === 'Not-Available') return;
       const pl = { params: { bucket_name: bucket_name.value, filename: tissue_positions_counts_filename.value } };
       const data = await client.value?.getCsvFile(pl);
-      if (!data || data[0].length !== 8) {
+      if (data === 'Not-Found' || data[0].length !== 8) {
         snackbar.dispatch({ text: 'Error! File is not proper dimensions!', options: { color: 'red' } });
         prompt_to_select_counts_positions.value = true;
       }
@@ -1022,6 +1028,7 @@ export default defineComponent({
       linear_gradient_description_string.value = `linear-gradient(to right, ${min_color}, ${pct_50_color}, ${max_color})`;
       color_gradient_scale_numbers.value = [min_number, pct_50_number, max_num];
       snackbar.dispatch({ text: 'Successfully Loaded Tissue Position Counts', options: { color: 'green', position: 'center' } });
+      position_counts_present.value = true;
     }
     function uploadingTixels(ev: any) {
       grid.value = true;
@@ -1281,14 +1288,17 @@ export default defineComponent({
     }
     function thresh_clicked() {
       roi.value.fill_color_counts(tixel_color_mapping.value);
-      // if (!current_image.value) return;
-      // if (!postB_image_promise.value) return;
-      // loading.value = true;
-      // postB_image_promise.value.then((gray: any) => {
-      //   const src = URL.createObjectURL(gray);
-      //   postB_image.value = src;
-      //   threshold_image(postB_image.value);
-      // });
+      if (!current_image.value) return;
+      if (!postB_image_promise.value) return;
+      loading.value = true;
+      postB_image_promise.value.then((gray: any) => {
+        const src = URL.createObjectURL(gray);
+        postB_image.value = src;
+        threshold_image(postB_image.value);
+      });
+    }
+    function show_counts_selected() {
+      roi.value.fill_color_counts(tissue_position_list_obj.value);
     }
     const updateProgress = async (value: number) => {
       if (!client.value) return;
@@ -1448,6 +1458,7 @@ export default defineComponent({
       const pl = { bucket: bucket_name.value, path: `${root.value}/${current_run_id}/`, filter: ['.csv'] };
       const options = await client.value?.getFileList(pl);
       count_file_options.value = options;
+      count_file_options.value.push('Not-Available');
     }
     async function get_image_options(folder_name: string) {
       const pl = { bucket: bucket_name.value, path: `${root.value}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
@@ -1660,6 +1671,8 @@ export default defineComponent({
       count_file_options,
       tissue_positions_counts_filename,
       load_counts_positions,
+      show_counts_selected,
+      position_counts_present,
     };
   },
 });
