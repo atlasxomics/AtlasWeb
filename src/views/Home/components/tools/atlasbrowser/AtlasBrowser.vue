@@ -54,7 +54,7 @@
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
           <!-- workflow menu -->
           <template v-if="run_id && image_processing_begun">
-            <v-card>
+            <!-- <v-card> -->
               <!-- zoom slider -->
               <v-slider
                 v-model="scaleFactor"
@@ -128,7 +128,7 @@
               </v-list>
               <!-- ROI Location functionality -->
               <!-- <v-list dense class="mt-n1 pt-0 pl-2"> -->
-                <v-list dense class="mt-n1 pt-0 pl-2">
+              <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
                 <v-btn
                   outlined
@@ -159,7 +159,7 @@
                   Hide Grid
                 </v-btn>
               </v-list>
-                <v-list dense>
+              <v-list dense>
                   <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
                   C value: {{ c_val }}
                    <v-slider
@@ -193,7 +193,7 @@
                   Threshold
                   </v-btn>
                 </v-list>
-              <v-list dense class="mt-n1 pt-0 pl-2">
+            <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Background Image</v-subheader>
                 <v-btn
                 id="postB_button"
@@ -222,6 +222,11 @@
                 :disabled="!thresh_image_created || bw_image_displayed || spatial"
                 > BW </v-btn>
               </v-list>
+              <div :style="{ 'background-image': 'linear-gradient(to right, #000083, #016dbf, #05ffff, #cdff33)', 'display': 'flex' }" >
+                <div v-for="anchor in color_gradient_scale_numbers" v-bind:key="`${anchor}`" :style="{'color': 'white', 'font-size': '18', 'font-weight': 'bold', 'width': '20%', 'texi-align': 'center' }">
+                  {{anchor}}
+                </div>
+              </div>
               <v-list dense class="pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
                 <v-btn
@@ -267,7 +272,7 @@
                   </v-btn>
                 </template>
               </v-list>
-            </v-card>
+            <!-- </v-card> -->
           </template>
           <v-dialog
           persistent
@@ -305,6 +310,21 @@
               </v-btn>
             </v-card-actions>
           </v-card>
+          </v-dialog>
+          <v-dialog
+          persistent
+          :value="selecting_counts_pos_file"
+          max-width="800px"
+          >
+            <v-card>
+              <v-card-title
+              class="justify-center"
+              >
+              Select tissue positions file with counts if available.
+              </v-card-title>
+              <v-card-actions>
+              </v-card-actions>
+            </v-card>
           </v-dialog>
           <v-dialog
           persistent
@@ -520,11 +540,13 @@ import blobStream from 'blob-stream';
 import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
 import config from '@/config';
+import colormap from 'colormap';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
 import { resolveAuthGroup } from '@/utils/auth';
 import Selector from '@/views/Home/components/settings/admin/modules/submodules/Selector.vue';
 import { DropDownFieldManager } from '@/views/Home/components/settings/admin/modules/submodules/DropDownFieldManager';
+import { FileRequest } from '@/types';
 import { ROI } from './AtlasBrowserComponents/roi';
 import { Crop } from './AtlasBrowserComponents/crop';
 import { Circle, Point } from './types';
@@ -650,6 +672,7 @@ export default defineComponent({
     const spatial = ref<boolean>(false);
     const tissue_position_list_obj = ref<any>();
     const prompt_to_use_existing_spatial = ref<boolean>(false);
+    const selecting_counts_pos_file = ref<boolean>(false);
     const updating_existing = ref<boolean>(false);
     const image_processing_begun = ref<boolean>(false);
     const run_id_search_active = ref<boolean>(false);
@@ -675,6 +698,7 @@ export default defineComponent({
     const availableFiles = ref<any[]>([]);
     const bsa_image = ref<any>();
     const black_white = ref<string>();
+    const color_gradient_scale_numbers = ref<number[]>([0, 1, 2, 3, 4]);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -765,7 +789,6 @@ export default defineComponent({
         metadata.value.sampleID = slimsData.cntn_cf_sampleId;
         metadata.value.antibody = slimsData.cntn_cf_fk_epitope;
         if (slimsData.cntn_cf_fk_workflow) {
-          console.log(slimsData.cntn_cf_fk_workflow);
           metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
         }
         if (slimsData.cntn_cf_fk_barcodeOrientation === '1 (normal)') {
@@ -811,11 +834,12 @@ export default defineComponent({
       // specify path to images within s3
       const filename = `${root.value}/${run_id.value}/spatial/metadata.json`;
       const scale_filename = `${root.value}/${run_id.value}/spatial/scalefactors_json.json`;
-      const pos_filename = `${root.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
+      // const pos_filename = `${root.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
+      // const pos_filename = `${root.value}/D1118/D01118_tissue_positions_list_counts.csv`;
       const payload = { params: { filename, bucket_name: bucket_name.value } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name.value } };
-      const resp_pos = await client.value.getCsvFile(pos_payload);
+      // const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name.value } };
+      // const resp_pos = await client.value.getCsvFile(pos_payload);
       const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name.value } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       // if the json file is retrieved from server use that as metadata
@@ -823,13 +847,13 @@ export default defineComponent({
       // const pos_present = ((('status_code' in resp_pos) && resp_pos.status_code === 200) || !('status_code' in resp_pos));
       // const scale_present = ((('status_code' in scale_pos) && scale_pos.status_code === 200) || !('status_code' in scale_pos));
       const meta_present = resp !== 'Not-Found';
-      const pos_present = resp_pos !== 'Not-Found';
+      // const pos_present = resp_pos !== 'Not-Found';
       const scale_present = scale_pos !== 'Not-Found';
-      console.log(meta_present, pos_present, scale_present);
       // if (false) {
-      if (meta_present && pos_present && scale_present) {
+      // if (meta_present && pos_present && scale_present) {
+      if (meta_present && scale_present) {
         scaleFactor_json.value = scale_pos;
-        tissue_position_list_obj.value = resp_pos;
+        // tissue_position_list_obj.value = resp_pos;
         loading.value = false;
         metadata.value = resp;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
@@ -954,6 +978,33 @@ export default defineComponent({
         }
       }
       run_id_folder_namesHolder.value = updated;
+    }
+    async function load_counts_positions() {
+      const pl = { params: { bucket_name: 'atx-illumina', filename: 'Images/D1118/D01118_tissue_positions_list_counts.csv' } };
+      const data = await client.value?.getCsvFile(pl);
+      data.sort((x: any, y: any) => {
+        const row_x = Number.parseInt(x[2], 10);
+        const col_x = Number.parseInt(x[3], 10);
+        const row_y = Number.parseInt(y[2], 10);
+        const col_y = Number.parseInt(y[3], 10);
+        // decided based on row:
+        // x is less than y
+        if (row_x > row_y) {
+          return 1;
+        }
+        // x is greater than y
+        if (row_x < row_y) {
+          return -1;
+        }
+        // decided based on col:
+        // x is less than y
+        if (col_x > col_y) {
+          return 1;
+        }
+        // x is greater than y
+        return -1;
+      });
+      tissue_position_list_obj.value = data;
     }
     function uploadingTixels(ev: any) {
       grid.value = true;
@@ -1362,7 +1413,6 @@ export default defineComponent({
       search.value = '';
       loading.value = true;
       const folder_pl = { bucket_name: bucket_name.value, prefix: `${root.value}/`, delimiter: '/' };
-      console.log(folder_pl);
       const sub_folders = await client.value.getSubFolders(folder_pl);
       if (sub_folders) {
         const obj_data = sub_folders.map((sub_folder_name: string) => ({ id: sub_folder_name }));
@@ -1458,7 +1508,7 @@ export default defineComponent({
       store.commit.setSubmenu(submenu);
       window.addEventListener('resize', handleResize);
       await fetchFileList();
-      console.log(config);
+      load_counts_positions();
     });
     onUnmounted(async () => {
       store.commit.setSubmenu(null);
@@ -1578,6 +1628,8 @@ export default defineComponent({
       get_image_options,
       file_options,
       lims_available,
+      selecting_counts_pos_file,
+      color_gradient_scale_numbers,
     };
   },
 });
