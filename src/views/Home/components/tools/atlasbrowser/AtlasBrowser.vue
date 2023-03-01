@@ -54,7 +54,7 @@
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
           <!-- workflow menu -->
           <template v-if="run_id && image_processing_begun">
-            <!-- <v-card> -->
+            <v-card>
               <!-- zoom slider -->
               <v-slider
                 v-model="scaleFactor"
@@ -222,10 +222,7 @@
                 :disabled="!thresh_image_created || bw_image_displayed || spatial"
                 > BW </v-btn>
               </v-list>
-              <div :style="{ 'background-image': 'linear-gradient(to right, #000083, #016dbf, #05ffff, #cdff33)', 'display': 'flex' }" >
-                <div v-for="anchor in color_gradient_scale_numbers" v-bind:key="`${anchor}`" :style="{'color': 'white', 'font-size': '18', 'font-weight': 'bold', 'width': '20%', 'texi-align': 'center' }">
-                  {{anchor}}
-                </div>
+              <div :style="{ 'background-image': `${linear_gradient_description_string}`, 'display': 'flex', 'min-height': '50px' }" >
               </div>
               <v-list dense class="pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
@@ -272,7 +269,7 @@
                   </v-btn>
                 </template>
               </v-list>
-            <!-- </v-card> -->
+            </v-card>
           </template>
           <v-dialog
           persistent
@@ -642,6 +639,7 @@ export default defineComponent({
     const threshLoading = ref<boolean>(false);
     const spatial = ref<boolean>(false);
     const tissue_position_list_obj = ref<any>();
+    const linear_gradient_description_string = ref<string>('');
     const tixel_color_mapping = ref<Record<number, string>>({});
     const prompt_to_use_existing_spatial = ref<boolean>(false);
     const selecting_counts_pos_file = ref<boolean>(false);
@@ -670,7 +668,7 @@ export default defineComponent({
     const availableFiles = ref<any[]>([]);
     const bsa_image = ref<any>();
     const black_white = ref<string>();
-    const color_gradient_scale_numbers = ref<number[]>([0, 1, 2, 3, 4]);
+    const color_gradient_scale_numbers = ref<number[]>([]);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -952,9 +950,12 @@ export default defineComponent({
       run_id_folder_namesHolder.value = updated;
     }
     async function load_counts_positions() {
+      /**
+       * Method to load in a tissue_positions_list file with information on fragment counts.
+       */
       const pl = { params: { bucket_name: 'atx-illumina', filename: 'Images/D1118/D01118_tissue_positions_list_counts.csv' } };
       const data = await client.value?.getCsvFile(pl);
-      console.log(data);
+      // Sort data based on row and col, as this is not assumed for count files
       data.sort((x: any, y: any) => {
         const row_x = Number.parseInt(x[2], 10);
         const col_x = Number.parseInt(x[3], 10);
@@ -978,7 +979,9 @@ export default defineComponent({
         return -1;
       });
       tissue_position_list_obj.value = data;
+      // Create copy for assigning color information
       const data_copy = JSON.parse(JSON.stringify(data));
+      // Sort copy array based on the fragment counts it posesses
       data_copy.sort((ele1: any, ele2: any) => {
         const counts_ele1 = ele1[7];
         const counts_ele2 = ele2[7];
@@ -991,18 +994,27 @@ export default defineComponent({
         return 0;
       });
       const color_gradient = colormap({ colormap: 'jet', nshades: 100, format: 'hex' });
+      // Code chunk used to creating a mapping between tixel number and the respective color within a color gradient
       const number_channels = Math.sqrt(data_copy.length);
-      console.log(number_channels);
       for (let i = 0; i < data_copy.length; i += 1) {
         const pct = Math.floor((i / data_copy.length) * 100);
         const row = Number.parseInt(data_copy[i][2], 10);
         const col = Number.parseInt(data_copy[i][3], 10);
-        console.log(row);
-        console.log(col);
         const tixel_num = (row * number_channels) + col;
         tixel_color_mapping.value[tixel_num] = color_gradient[pct];
       }
-      console.log(tixel_color_mapping);
+      const min_color = color_gradient[0];
+      const min_number = (Math.round(data_copy[0][7] * 100)) / 100;
+      const pct_25_color = color_gradient[24];
+      const pct_25_number = data_copy[Math.round(0.25 * data.length)][7];
+      const pct_50_color = color_gradient[49];
+      const pct_50_number = Math.round(data_copy[Math.round(0.5 * data.length)][7] * 100) / 100;
+      const pct_75_color = color_gradient[74];
+      const pct_75_number = data_copy[Math.round(0.75 * data.length)][7];
+      const max_color = color_gradient[99];
+      const max_num = Math.round(data_copy[data_copy.length - 1][7] * 100) / 100;
+      linear_gradient_description_string.value = `linear-gradient(to right, ${min_color}, ${pct_50_color}, ${max_color})`;
+      color_gradient_scale_numbers.value = [min_number, pct_50_number, max_num];
     }
     function uploadingTixels(ev: any) {
       grid.value = true;
@@ -1598,6 +1610,7 @@ export default defineComponent({
       finding_roi,
       thresh_image_created,
       bw_image,
+      linear_gradient_description_string,
       thresh_same,
       tixels_filled,
       bsa_image_displayed,
