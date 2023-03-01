@@ -301,7 +301,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="prompt_to_use_existing_spatial = false; updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
+                @click="prompt_to_use_existing_spatial = false; updating_existing=true;tixels_filled=true; prompt_to_select_counts_positions = true; get_count_file_options(run_id); loadImage(); uploadingTixels()"
                 medium>
                 Update
               </v-btn>
@@ -310,7 +310,7 @@
           </v-dialog>
           <v-dialog
           persistent
-          :value="selecting_counts_pos_file"
+          :value="prompt_to_select_counts_positions"
           max-width="800px"
           >
             <v-card>
@@ -320,6 +320,11 @@
               Select tissue positions file with counts if available.
               </v-card-title>
               <v-card-actions>
+                <v-select
+                :items="count_file_options"
+                v-model="tissue_positions_counts_filename"
+                > </v-select>
+                <v-btn @click="prompt_to_select_counts_positions = false; load_counts_positions()"> Confirm </v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
@@ -632,7 +637,7 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
-    const channels = ref(50);
+    const channels = ref<number | null>(null);
     const grid = ref<boolean>(false);
     const cropFlag = ref<boolean>(false);
     const cropLoading = ref<boolean>(false);
@@ -640,8 +645,11 @@ export default defineComponent({
     const spatial = ref<boolean>(false);
     const tissue_position_list_obj = ref<any>();
     const linear_gradient_description_string = ref<string>('');
+    const tissue_positions_counts_filename = ref<string>('');
+    const count_file_options = ref<string[]>([]);
     const tixel_color_mapping = ref<Record<number, string>>({});
     const prompt_to_use_existing_spatial = ref<boolean>(false);
+    const prompt_to_select_counts_positions = ref<boolean>(false);
     const selecting_counts_pos_file = ref<boolean>(false);
     const updating_existing = ref<boolean>(false);
     const image_processing_begun = ref<boolean>(false);
@@ -679,7 +687,7 @@ export default defineComponent({
       tissue_type: null,
       species: null,
       assay: null,
-      numChannels: '50',
+      numChannels: null,
       organ: null,
       orientation: null,
       crop_area: null,
@@ -804,26 +812,20 @@ export default defineComponent({
       // specify path to images within s3
       const filename = `${root.value}/${run_id.value}/spatial/metadata.json`;
       const scale_filename = `${root.value}/${run_id.value}/spatial/scalefactors_json.json`;
-      // const pos_filename = `${root.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
-      // const pos_filename = `${root.value}/D1118/D01118_tissue_positions_list_counts.csv`;
+      const pos_filename = `${root.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
       const payload = { params: { filename, bucket_name: bucket_name.value } };
       const resp = await client.value.getJsonFile(payload);
-      // const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name.value } };
-      // const resp_pos = await client.value.getCsvFile(pos_payload);
+      const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name.value } };
+      const resp_pos = await client.value.getCsvFile(pos_payload);
       const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name.value } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       // if the json file is retrieved from server use that as metadata
-      // const meta_present = ((('status_code' in resp) && resp.status_code === 200) || !('status_code' in resp));
-      // const pos_present = ((('status_code' in resp_pos) && resp_pos.status_code === 200) || !('status_code' in resp_pos));
-      // const scale_present = ((('status_code' in scale_pos) && scale_pos.status_code === 200) || !('status_code' in scale_pos));
       const meta_present = resp !== 'Not-Found';
-      // const pos_present = resp_pos !== 'Not-Found';
+      const pos_present = resp_pos !== 'Not-Found';
       const scale_present = scale_pos !== 'Not-Found';
-      // if (false) {
-      // if (meta_present && pos_present && scale_present) {
-      if (meta_present && scale_present) {
+      if (meta_present && pos_present && scale_present) {
         scaleFactor_json.value = scale_pos;
-        // tissue_position_list_obj.value = resp_pos;
+        tissue_position_list_obj.value = resp_pos;
         loading.value = false;
         metadata.value = resp;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
@@ -953,8 +955,12 @@ export default defineComponent({
       /**
        * Method to load in a tissue_positions_list file with information on fragment counts.
        */
-      const pl = { params: { bucket_name: 'atx-illumina', filename: 'Images/D1118/D01118_tissue_positions_list_counts.csv' } };
+      const pl = { params: { bucket_name: bucket_name.value, filename: tissue_positions_counts_filename.value } };
       const data = await client.value?.getCsvFile(pl);
+      if (!data || data[0].length !== 8) {
+        snackbar.dispatch({ text: 'Error! File is not proper dimensions!', options: { color: 'red' } });
+        prompt_to_select_counts_positions.value = true;
+      }
       // Sort data based on row and col, as this is not assumed for count files
       data.sort((x: any, y: any) => {
         const row_x = Number.parseInt(x[2], 10);
@@ -1015,6 +1021,7 @@ export default defineComponent({
       const max_num = Math.round(data_copy[data_copy.length - 1][7] * 100) / 100;
       linear_gradient_description_string.value = `linear-gradient(to right, ${min_color}, ${pct_50_color}, ${max_color})`;
       color_gradient_scale_numbers.value = [min_number, pct_50_number, max_num];
+      snackbar.dispatch({ text: 'Successfully Loaded Tissue Position Counts', options: { color: 'green', position: 'center' } });
     }
     function uploadingTixels(ev: any) {
       grid.value = true;
@@ -1437,6 +1444,11 @@ export default defineComponent({
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
+    async function get_count_file_options(current_run_id: string) {
+      const pl = { bucket: bucket_name.value, path: `${root.value}/${current_run_id}/`, filter: ['.csv'] };
+      const options = await client.value?.getFileList(pl);
+      count_file_options.value = options;
+    }
     async function get_image_options(folder_name: string) {
       const pl = { bucket: bucket_name.value, path: `${root.value}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
       file_options.value = await client.value?.getFileList(pl);
@@ -1519,7 +1531,7 @@ export default defineComponent({
       store.commit.setSubmenu(submenu);
       window.addEventListener('resize', handleResize);
       await fetchFileList();
-      load_counts_positions();
+      // load_counts_positions();
     });
     onUnmounted(async () => {
       store.commit.setSubmenu(null);
@@ -1643,6 +1655,11 @@ export default defineComponent({
       selecting_counts_pos_file,
       color_gradient_scale_numbers,
       tixel_color_mapping,
+      prompt_to_select_counts_positions,
+      get_count_file_options,
+      count_file_options,
+      tissue_positions_counts_filename,
+      load_counts_positions,
     };
   },
 });
