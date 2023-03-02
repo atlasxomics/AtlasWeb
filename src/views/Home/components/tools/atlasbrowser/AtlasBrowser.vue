@@ -1132,6 +1132,19 @@ export default defineComponent({
         }
       }
     }
+    function brush_on_points() {
+      /**
+       * Method called when the brush is being used over a set of tixels.
+       * If erasing the value of on_tissue will be set to false and if the count colors are displayed the strokeWidth will be set to 1
+       * Otherwise if the brush is not erasing, the attribute on_tissue will be set to true and if count colors are displayed the stroke width will be set to 1.
+       */
+      const attributes: Record<string, any> = {};
+      if (!show_counts_tixels.value) {
+        attributes.fill = isEraseMode.value ? null : 'red';
+      }
+      attributes.on_tissue = !isEraseMode.value;
+      roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, attributes);
+    }
     function handleMouseMoveStage(ev: any) {
       if (isBrushMode.value || isEraseMode.value) {
         const pos = (ctx as any).refs.konvaStage.getNode().getPointerPosition();
@@ -1139,22 +1152,13 @@ export default defineComponent({
         brushConfig.value.x = x;
         brushConfig.value.y = y;
         if (brushDown.value) {
-          if (isEraseMode.value) {
-            roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', null);
-          } else {
-            roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', 'red');
-          }
+          brush_on_points();
         }
       }
     }
     function handleMouseDownBrush(ev: any) {
       brushDown.value = true;
-      if (isEraseMode.value) {
-        roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', null);
-      }
-      if (isBrushMode.value) {
-        roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', 'red');
-      }
+      brush_on_points();
     }
     function handleMouseUpBrush(ev: any) {
       brushDown.value = false;

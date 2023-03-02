@@ -168,10 +168,14 @@ export class ROI {
     return lineConfig;
   }
 
-  setPolygonsInCircle(x: number, y: number, radius: number, key: string, value: any) {
+  setPolygonsInCircle(x: number, y: number, radius: number, key_value_mapping: Record<string, any>) {
     lodash.each(this.polygons, (v: any, i: number) => {
       const tf = ((v.centerx - x)) ** 2 + ((v.centery - y) ** 2) < (radius ** 2);
-      if (tf) this.polygons[i][key] = value;
+      if (tf) {
+        Object.keys(key_value_mapping).forEach((key: string) => {
+          this.polygons[i][key] = key_value_mapping[key];
+        });
+      }
     });
   }
 
@@ -183,6 +187,9 @@ export class ROI {
     if (Object.keys(tixel_color).length !== this.polygons.length) return;
     for (let i = 0; i < this.polygons.length; i += 1) {
       this.polygons[i].fill = tixel_color[i];
+      // if (this.polygons[i].on_tissue) {
+      //   this.polygons[i].strokeWidth = 1.5;
+      // }
     }
   }
 
@@ -217,7 +224,7 @@ export class ROI {
      * just toggle the visibility of polygons.
      */
     if (this.polygons.length === 0) {
-      this.loadTixels([]);
+      this.loadTixels();
     } else {
       this.toggle_tixel_visibility();
     }
@@ -351,6 +358,7 @@ export class ROI {
           },
           id: ID.toString(),
           fill: (current_fill === '1') ? 'red' : null,
+          on_tissue: (current_fill === '1'),
           visible: true,
           centerx: center[0],
           centery: center[1],
@@ -373,7 +381,7 @@ export class ROI {
   }
 
   generatePolygons() {
-    this.loadTixels([]);
+    this.loadTixels();
     return this.polygons;
   }
 }

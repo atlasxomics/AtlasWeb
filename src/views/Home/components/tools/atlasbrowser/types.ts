@@ -47,6 +47,7 @@ export interface Polygon {
   sceneFunc: Function,
   id: string,
   fill: string | null,
+  on_tissue: boolean,
   centerx: number,
   centery: number,
   visible: boolean,
