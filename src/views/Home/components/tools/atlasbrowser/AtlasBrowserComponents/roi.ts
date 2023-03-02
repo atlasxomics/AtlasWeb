@@ -182,6 +182,16 @@ export class ROI {
     }
   }
 
+  remove_color_counts() {
+    for (let i = 0; i < this.polygons.length; i += 1) {
+      let fill = null;
+      if (this.polygons[i].on_tissue) {
+        fill = 'red';
+      }
+      this.polygons[i].fill = fill;
+    }
+  }
+
   setScaleFactor(scale: number) {
     const prevScalefactor = this.scalefactor;
     this.scalefactor = scale;
@@ -310,6 +320,7 @@ export class ROI {
           },
           id: ID.toString(),
           fill: (current_fill === '1') ? 'red' : null,
+          on_tissue: (current_fill === '1'),
           centerx: center[0],
           centery: center[1],
           radius: slope[0],

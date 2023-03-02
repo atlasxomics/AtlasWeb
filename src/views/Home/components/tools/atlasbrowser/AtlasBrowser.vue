@@ -225,7 +225,8 @@
               <v-list
               v-if="position_counts_present"
               >
-              <div :style="{ 'background-image': `${linear_gradient_description_string}`, 'display': 'flex', 'min-height': '50px' }" >
+              <v-checkbox v-model="show_counts_tixels" @click="toggle_tixel_counts_disp"/>
+              <div :style="{ 'background-image': `${linear_gradient_description_string}`, 'display': 'flex', 'min-height': '50px', 'max-width': '200px' }" >
               </div>
               </v-list>
               <v-list dense class="pt-0 pl-2">
@@ -656,6 +657,7 @@ export default defineComponent({
     const prompt_to_select_counts_positions = ref<boolean>(false);
     const selecting_counts_pos_file = ref<boolean>(false);
     const position_counts_present = ref<boolean>(false);
+    const show_counts_tixels = ref<boolean>(false);
     const updating_existing = ref<boolean>(false);
     const image_processing_begun = ref<boolean>(false);
     const run_id_search_active = ref<boolean>(false);
@@ -930,7 +932,13 @@ export default defineComponent({
       }
       // console.log(current_image.value.original_src);
     }
-
+    function toggle_tixel_counts_disp() {
+      if (show_counts_tixels.value) {
+        roi.value.fill_color_counts(tixel_color_mapping.value);
+      } else {
+        roi.value.remove_color_counts();
+      }
+    }
     async function rotate_image(choice: number) {
       loading.value = true;
       if (choice === 0) {
@@ -1287,7 +1295,6 @@ export default defineComponent({
       });
     }
     function thresh_clicked() {
-      roi.value.fill_color_counts(tixel_color_mapping.value);
       if (!current_image.value) return;
       if (!postB_image_promise.value) return;
       loading.value = true;
@@ -1296,9 +1303,6 @@ export default defineComponent({
         postB_image.value = src;
         threshold_image(postB_image.value);
       });
-    }
-    function show_counts_selected() {
-      roi.value.fill_color_counts(tissue_position_list_obj.value);
     }
     const updateProgress = async (value: number) => {
       if (!client.value) return;
@@ -1671,8 +1675,9 @@ export default defineComponent({
       count_file_options,
       tissue_positions_counts_filename,
       load_counts_positions,
-      show_counts_selected,
       position_counts_present,
+      show_counts_tixels,
+      toggle_tixel_counts_disp,
     };
   },
 });
