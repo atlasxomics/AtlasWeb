@@ -145,8 +145,8 @@
                 outlined
                 color = "primary"
                 x-small
-                @click="generateLattices"
-                :disabled="(!roi_active && !updating_existing)|| roi.polygons.length > 0">
+                @click="show_grid"
+                :disabled="grid_visible">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -155,7 +155,7 @@
                 color = "primary"
                 x-small
                 @click="hide_grid()"
-                :disabled="roi.polygons.length === 0 || !grid">
+                :disabled="!grid_visible">
                   Hide Grid
                 </v-btn>
               </v-list>
@@ -225,8 +225,9 @@
               <v-list
               v-if="position_counts_present"
               >
-              <v-checkbox v-model="show_counts_tixels" @click="toggle_tixel_counts_disp"/>
-              <div :style="{ 'background-image': `${linear_gradient_description_string}`, 'display': 'flex', 'min-height': '50px', 'max-width': '200px' }" >
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;"> Counts Visualization </v-subheader>
+              <v-checkbox v-model="show_counts_tixels" @click="toggle_tixel_counts_disp" :label="show_counts_tixels ? 'Remove Counts' : 'Show Counts'" />
+              <div v-if="show_counts_tixels" :style="{ 'background-image': `${linear_gradient_description_string}`, 'display': 'flex', 'min-height': '50px', 'margin-left': '10px', 'margin-right': '10px' }" >
               </div>
               </v-list>
               <v-list dense class="pt-0 pl-2">
@@ -378,12 +379,6 @@
               <div :style="{ 'position': 'absolute', 'z-index': 999, 'top': '43%', 'left': '47%'}">
                 <v-card-text>
                 </v-card-text>
-                <!-- <v-progress-circular
-                  :size="100"
-                  :width="10"
-                  color="primary"
-                  indeterminate>
-                </v-progress-circular> -->
               <v-dialog
                 value=true
                 hide-overlay
@@ -618,6 +613,10 @@ export default defineComponent({
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
     const roi = ref<ROI>(new ROI([0, 0], 0.15));
+    const grid_visible = computed(() => {
+      if (roi.value.polygons.length === 0) return false;
+      return roi.value.polygons[0].visible;
+    });
     const roi_active = ref<boolean>(false);
     const active_roi_available = ref<boolean>(false);
     const isMouseDown = ref(false);
@@ -1086,7 +1085,9 @@ export default defineComponent({
     }
     // ROI events
     function handleDragStart(ev: any) {
-      // console.log(ev);
+      /**
+       * Starting of move for roi corner resets the polygon list.
+       */
       const { id } = ev.target.attrs;
       roi.value.polygons = [];
     }
@@ -1102,6 +1103,9 @@ export default defineComponent({
       }
     }
     function handleDragCenterStart(ev: any) {
+      /**
+       * Starting of movement of center of roi resets the polygons.
+       */
       roi.value.polygons = [];
     }
     function handleDragCenterMove(ev: any) {
@@ -1165,31 +1169,29 @@ export default defineComponent({
       }
     }
 
-    function generateLattices(ev: any) {
+    function show_grid(ev: any) {
       grid.value = true;
-      roi.value.polygons = roi.value.generatePolygons();
-      if (tixels_filled.value) {
-        load_tixel_state();
-      }
+      roi.value.show_tixels();
     }
     function onLatticeButton(ev: any) {
-      generateLattices(ev);
+      show_grid(ev);
     }
     function hide_grid() {
-      if (tixels_filled.value) {
-        for (let i = 0; i < roi.value.polygons.length; i += 1) {
-          const polygon = roi.value.polygons[i];
-          const ID = polygon.id;
-          if (polygon.fill === 'red') {
-            const assigned = saved_grid_state.value?.set(ID, true);
-          } else {
-            const assigned = saved_grid_state.value?.set(ID, false);
-          }
-        }
-        roi.value.polygons = [];
-      } else {
-        roi.value.polygons = [];
-      }
+      roi.value.toggle_tixel_visibility();
+      // if (tixels_filled.value) {
+      //   for (let i = 0; i < roi.value.polygons.length; i += 1) {
+      //     const polygon = roi.value.polygons[i];
+      //     const ID = polygon.id;
+      //     if (polygon.fill === 'red') {
+      //       const assigned = saved_grid_state.value?.set(ID, true);
+      //     } else {
+      //       const assigned = saved_grid_state.value?.set(ID, false);
+      //     }
+      //   }
+      //   roi.value.polygons = [];
+      // } else {
+      //   roi.value.polygons = [];
+      // }
       grid.value = false;
     }
     async function change_image(img: string) {
@@ -1583,7 +1585,7 @@ export default defineComponent({
       crop,
       roi,
       objectToArray,
-      generateLattices,
+      show_grid,
       current_image,
       loadImage,
       searchRuns,
@@ -1678,6 +1680,7 @@ export default defineComponent({
       position_counts_present,
       show_counts_tixels,
       toggle_tixel_counts_disp,
+      grid_visible,
     };
   },
 });

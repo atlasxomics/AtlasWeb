@@ -176,6 +176,10 @@ export class ROI {
   }
 
   fill_color_counts(tixel_color: Record<number, string>) {
+    /**
+     * Iterate through this.polygons and set color of the polygon
+     * to be the tixel color map passed in.
+     */
     if (Object.keys(tixel_color).length !== this.polygons.length) return;
     for (let i = 0; i < this.polygons.length; i += 1) {
       this.polygons[i].fill = tixel_color[i];
@@ -183,12 +187,39 @@ export class ROI {
   }
 
   remove_color_counts() {
+    /**
+     * Iterate through this.polygons and set color of
+     * shape to be red for on tissue and null for off.
+     */
     for (let i = 0; i < this.polygons.length; i += 1) {
       let fill = null;
       if (this.polygons[i].on_tissue) {
         fill = 'red';
       }
       this.polygons[i].fill = fill;
+    }
+  }
+
+  toggle_tixel_visibility() {
+    /**
+     * Setting all tixels to be invisible.
+     */
+    for (let i = 0; i < this.polygons.length; i += 1) {
+      this.polygons[i].visible = !this.polygons[i].visible;
+    }
+  }
+
+  show_tixels() {
+    /**
+     * General method for displaying tixels.
+     * Will generate the grid from scratch if
+     * polygons are not available or otherwise will
+     * just toggle the visibility of polygons.
+     */
+    if (this.polygons.length === 0) {
+      this.loadTixels([]);
+    } else {
+      this.toggle_tixel_visibility();
     }
   }
 
@@ -251,7 +282,7 @@ export class ROI {
     };
   }
 
-  loadTixels(tixel_array: any[]) {
+  loadTixels(tixel_array: any[] = []) {
     const [p1, p2, p3, p4] = this.getCoordinates();
     const ratioNum = (this.channels * 2) - 1;
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
@@ -320,7 +351,7 @@ export class ROI {
           },
           id: ID.toString(),
           fill: (current_fill === '1') ? 'red' : null,
-          on_tissue: (current_fill === '1'),
+          visible: true,
           centerx: center[0],
           centery: center[1],
           radius: slope[0],
