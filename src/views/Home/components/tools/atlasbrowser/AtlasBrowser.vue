@@ -963,6 +963,56 @@ export default defineComponent({
       }
       run_id_folder_namesHolder.value = updated;
     }
+    function color_tixel_counts_percentile(data: any[], color_gradient: string[]) {
+      /**
+       * Populates variable `tixel_color_mapping` to have each tixel's color derived
+       *  from its percentile in the dataset.
+       * Params: data: tissue_positions list color_gradient: list of hex color codes length: 100
+       */
+      data.sort((ele1: any, ele2: any) => {
+        const counts_ele1 = ele1[7];
+        const counts_ele2 = ele2[7];
+        if (counts_ele1 > counts_ele2) {
+          return 1;
+        }
+        if (counts_ele1 < counts_ele2) {
+          return -1;
+        }
+        return 0;
+      });
+      // Code chunk used to creating a mapping between tixel number and the respective color within a color gradient
+      const number_channels = Math.sqrt(data.length);
+      for (let i = 0; i < data.length; i += 1) {
+        const pct = Math.floor((i / data.length) * 100);
+        const row = Number.parseInt(data[i][2], 10);
+        const col = Number.parseInt(data[i][3], 10);
+        const tixel_num = (row * number_channels) + col;
+        tixel_color_mapping.value[tixel_num] = color_gradient[pct];
+      }
+    }
+    function color_tixel_counts_user_defined(data: any[], color_gradient: string[], min: number, max: number) {
+      /**
+       * Populates `tixel_color_mapping` with colors based on provided min and max.
+       * Values below min are given the minimum color value and values above max are given max value
+       * Values that fall within the provided min and max are given the color in color gradient based on
+       * its linear placement between min and max.
+       * Params:
+       *    data: tissue_positions list containing tixel information for the relevant run
+       *    color_gradient: list containing hex colors defining the color spectrum being used
+       *    min: Lower bound to be included in color dist
+       *    max: Upper bound to be included in color dist
+       */
+      if (!data) return;
+      if (data[0].length !== 8) return;
+      for (let i = 0; i < data.length; i += 1) {
+        const current_count = data[i][7];
+        let pct_inx = Math.round(((current_count - min) / (max - min)) * 100);
+        pct_inx = Math.max(0, pct_inx);
+        pct_inx = Math.min(pct_inx, 99);
+        const color = color_gradient[pct_inx];
+        tixel_color_mapping.value[i] = color;
+      }
+    }
     async function load_counts_positions() {
       /**
        * Method to load in a tissue_positions_list file with information on fragment counts.
@@ -1000,36 +1050,15 @@ export default defineComponent({
       tissue_position_list_obj.value = data;
       // Create copy for assigning color information
       const data_copy = JSON.parse(JSON.stringify(data));
-      // Sort copy array based on the fragment counts it posesses
-      data_copy.sort((ele1: any, ele2: any) => {
-        const counts_ele1 = ele1[7];
-        const counts_ele2 = ele2[7];
-        if (counts_ele1 > counts_ele2) {
-          return 1;
-        }
-        if (counts_ele1 < counts_ele2) {
-          return -1;
-        }
-        return 0;
-      });
       const color_gradient = colormap({ colormap: 'jet', nshades: 100, format: 'hex' });
-      // Code chunk used to creating a mapping between tixel number and the respective color within a color gradient
-      const number_channels = Math.sqrt(data_copy.length);
-      for (let i = 0; i < data_copy.length; i += 1) {
-        const pct = Math.floor((i / data_copy.length) * 100);
-        const row = Number.parseInt(data_copy[i][2], 10);
-        const col = Number.parseInt(data_copy[i][3], 10);
-        const tixel_num = (row * number_channels) + col;
-        tixel_color_mapping.value[tixel_num] = color_gradient[pct];
-      }
+      // Default use of percentiles for coloring grid
+      // color_tixel_counts_percentile(data_copy, color_gradient);
+      color_tixel_counts_user_defined(data_copy, color_gradient, 4, 5);
+      // Populate gradient div
       const min_color = color_gradient[0];
       const min_number = (Math.round(data_copy[0][7] * 100)) / 100;
-      const pct_25_color = color_gradient[24];
-      const pct_25_number = data_copy[Math.round(0.25 * data.length)][7];
       const pct_50_color = color_gradient[49];
       const pct_50_number = Math.round(data_copy[Math.round(0.5 * data.length)][7] * 100) / 100;
-      const pct_75_color = color_gradient[74];
-      const pct_75_number = data_copy[Math.round(0.75 * data.length)][7];
       const max_color = color_gradient[99];
       const max_num = Math.round(data_copy[data_copy.length - 1][7] * 100) / 100;
       linear_gradient_description_string.value = `linear-gradient(to right, ${min_color}, ${pct_50_color}, ${max_color})`;
@@ -1182,20 +1211,6 @@ export default defineComponent({
     }
     function hide_grid() {
       roi.value.toggle_tixel_visibility();
-      // if (tixels_filled.value) {
-      //   for (let i = 0; i < roi.value.polygons.length; i += 1) {
-      //     const polygon = roi.value.polygons[i];
-      //     const ID = polygon.id;
-      //     if (polygon.fill === 'red') {
-      //       const assigned = saved_grid_state.value?.set(ID, true);
-      //     } else {
-      //       const assigned = saved_grid_state.value?.set(ID, false);
-      //     }
-      //   }
-      //   roi.value.polygons = [];
-      // } else {
-      //   roi.value.polygons = [];
-      // }
       grid.value = false;
     }
     async function change_image(img: string) {
