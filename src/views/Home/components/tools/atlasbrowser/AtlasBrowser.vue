@@ -226,8 +226,10 @@
               v-if="position_counts_present"
               >
               <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;"> Counts Visualization </v-subheader>
-              <v-checkbox v-model="show_counts_tixels" @click="toggle_tixel_counts_disp" :label="show_counts_tixels ? 'Remove Counts' : 'Show Counts'" />
-              <div v-if="show_counts_tixels" :style="{ 'background-image': `${linear_gradient_description_string}`, 'display': 'flex', 'min-height': '50px', 'margin-left': '10px', 'margin-right': '10px' }" >
+              <v-checkbox v-model="show_counts_tixels" @click="toggle_tixel_counts_disp" :label="show_counts_tixels ? 'Hide Counts' : 'Show Counts'" />
+              <div v-if="show_counts_tixels" :style="{ 'background-image': `${linear_gradient_description_string}`, 'display': 'flex', 'height': '50px', 'max-width': '250px', 'margin-left': '10px', 'margin-right': '10px' }" >
+                <div style="position: relative; padding-top: 50px; left: 5%"> {{ lower_bound_count }} </div>
+                <div style="position: relative; padding-top: 50px; left: 65%"> {{ upper_bound_count }} </div>
               </div>
               </v-list>
               <v-list dense class="pt-0 pl-2">
@@ -449,7 +451,7 @@
                         v-bind:key="p.id"
                         @transformend="roi.setScaleFactor()"
                         @mousedown="handleMouseDown"
-                        @mouseover="handleMouseOver"/>
+                        />
                         <v-transformer ref="transformer" />
                         <template v-if="!isBrushMode && !isEraseMode && !updating_existing && !tixels_filled">
                           <v-circle
@@ -995,8 +997,8 @@ export default defineComponent({
       }
       const { 7: temp_count_lower } = data[Math.round(data.length * 0.05)];
       const { 7: temp_count_upper } = data[Math.round(data.length * 0.95)];
-      lower_bound_count.value = temp_count_lower;
-      upper_bound_count.value = temp_count_upper;
+      lower_bound_count.value = Math.round(temp_count_lower * 100) / 100;
+      upper_bound_count.value = Math.round(temp_count_upper * 100) / 100;
     }
     function color_tixel_counts_user_defined(data: any[], color_gradient: string[], min: number, max: number) {
       /**
@@ -1062,8 +1064,8 @@ export default defineComponent({
       const data_copy = JSON.parse(JSON.stringify(data));
       const color_gradient = colormap({ colormap: 'jet', nshades: 100, format: 'hex' });
       // Default use of percentiles for coloring grid
-      // color_tixel_counts_percentile(data_copy, color_gradient);
-      color_tixel_counts_user_defined(data_copy, color_gradient, 4, 5);
+      color_tixel_counts_percentile(data_copy, color_gradient);
+      // color_tixel_counts_user_defined(data_copy, color_gradient, 4, 5);
       // Populate gradient div
       const min_color = color_gradient[0];
       const min_number = (Math.round(data_copy[0][7] * 100)) / 100;
@@ -1151,26 +1153,38 @@ export default defineComponent({
       roi.value.moveToNewCenter(ev.target._lastPos);
     }
     function handleMouseDown(ev: any) {
+      if (roi.value.polygons.length === 0) return;
       const { id } = ev.target.attrs;
       const idx = lodash.findIndex(roi.value.polygons, { id });
-      if (roi.value.polygons) {
-        if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
-        else roi.value.polygons[idx].fill = 'red';
+      const kv_map: Record<string, any> = {};
+      const current_on_tissue = roi.value.polygons[idx].on_tissue;
+      kv_map.on_tissue = !current_on_tissue;
+      if (show_counts_tixels.value) {
+        if (current_on_tissue) {
+          kv_map.opacity = 0.5;
+        } else {
+          kv_map.opacity = 1;
+        }
+      } else if (current_on_tissue) {
+        kv_map.fill = null;
+      } else {
+        kv_map.fill = 'red';
       }
+      roi.value.setPolygonState(idx, kv_map);
       isMouseDown.value = true;
     }
     function handleMouseUp(ev: any) {
       isMouseDown.value = false;
     }
-    function handleMouseOver(ev: any) {
-      if (isMouseDown.value) {
-        const { id } = ev.target.attrs;
-        const idx = lodash.findIndex(roi.value.polygons, { id });
-        if (roi.value.polygons) {
-          roi.value.polygons[idx].fill = 'red';
-        }
-      }
-    }
+    // function handleMouseOver(ev: any) {
+    //   if (isMouseDown.value) {
+    //     const { id } = ev.target.attrs;
+    //     const idx = lodash.findIndex(roi.value.polygons, { id });
+    //     if (roi.value.polygons) {
+    //       roi.value.polygons[idx].fill = 'red';
+    //     }
+    //   }
+    // }
     function brush_on_points() {
       /**
        * Method called when the brush is being used over a set of tixels.
@@ -1606,7 +1620,6 @@ export default defineComponent({
       handleDragCenterStart,
       handleDragCenterMove,
       handleMouseDown,
-      handleMouseOver,
       handleMouseMoveStage,
       handleMouseDownBrush,
       handleMouseUpBrush,

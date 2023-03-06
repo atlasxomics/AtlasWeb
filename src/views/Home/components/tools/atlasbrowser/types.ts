@@ -53,6 +53,7 @@ export interface Polygon {
   visible: boolean,
   radius: number,
   stroke: string,
+  opacity: number,
   strokeWidth: number,
   posit: Array<number>,
   scaleX: number,

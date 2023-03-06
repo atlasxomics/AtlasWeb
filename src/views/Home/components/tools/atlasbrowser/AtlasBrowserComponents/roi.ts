@@ -172,10 +172,14 @@ export class ROI {
     lodash.each(this.polygons, (v: any, i: number) => {
       const tf = ((v.centerx - x)) ** 2 + ((v.centery - y) ** 2) < (radius ** 2);
       if (tf) {
-        Object.keys(key_value_mapping).forEach((key: string) => {
-          this.polygons[i][key] = key_value_mapping[key];
-        });
+        this.setPolygonState(i, key_value_mapping);
       }
+    });
+  }
+
+  setPolygonState(tixel_inx: number, key_value_mapping: Record<string, any>) {
+    Object.keys(key_value_mapping).forEach((key: string) => {
+      this.polygons[tixel_inx][key] = key_value_mapping[key];
     });
   }
 
@@ -363,6 +367,7 @@ export class ROI {
           centerx: center[0],
           centery: center[1],
           radius: slope[0],
+          opacity: 1,
           stroke: 'black',
           strokeWidth: 1,
           posit: [j, i],
