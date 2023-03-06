@@ -33,6 +33,13 @@ export class ROI {
     return [txp, typ];
   }
 
+  get_polygon_subset(index: number, total: number) {
+    const lb = Math.floor(this.polygons.length * (index / total));
+    const ub = Math.floor(this.polygons.length * ((index + 1) / total));
+    const slice = this.polygons.slice(lb, ub);
+    return slice;
+  }
+
   initializeROI(width: number, height: number) {
     const rng = [[width * 0.15, height * 0.15], [width - (width * 0.15), height * 0.15], [width - (width * 0.15), height - (height * 0.15)], [width * 0.15, height - (height * 0.15)]];
     rng.forEach((x: number[], idx: number) => {
@@ -120,7 +127,7 @@ export class ROI {
       const position = v.posit;
       const y = v.centery / this.scalefactor;
       const x = v.centerx / this.scalefactor;
-      const value = v.fill != null;
+      const value = v.on_tissue;
       return { position, value, coordinates: { y, x } };
     });
   }
@@ -128,7 +135,7 @@ export class ROI {
   getOnTissue(): number {
     let count = 0;
     this.polygons.forEach((ele: any) => {
-      if (ele.fill != null) {
+      if (ele.on_tissue) {
         count += 1;
       }
     });
@@ -169,6 +176,8 @@ export class ROI {
   }
 
   setPolygonsInCircle(x: number, y: number, radius: number, key_value_mapping: Record<string, any>) {
+    // const rand = Math.floor(Math.random() * 2500);
+    // this.setPolygonState(rand, key_value_mapping);
     lodash.each(this.polygons, (v: any, i: number) => {
       const tf = ((v.centerx - x)) ** 2 + ((v.centery - y) ** 2) < (radius ** 2);
       if (tf) {

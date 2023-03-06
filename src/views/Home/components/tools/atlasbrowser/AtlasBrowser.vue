@@ -146,7 +146,7 @@
                 color = "primary"
                 x-small
                 @click="show_grid"
-                :disabled="grid_visible">
+                :disabled="grid_visible || !grid">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -446,12 +446,6 @@
                         <v-line
                           :config="roi.generateBoundary()"/>
                       </template>
-                      <v-shape v-for="p in roi.polygons"
-                        :config="p"
-                        v-bind:key="p.id"
-                        @transformend="roi.setScaleFactor()"
-                        @mousedown="handleMouseDown"
-                        />
                         <v-transformer ref="transformer" />
                         <template v-if="!isBrushMode && !isEraseMode && !updating_existing && !tixels_filled">
                           <v-circle
@@ -468,6 +462,18 @@
                           :config="roi.getCenterAnchor()"/>
                     </template>
                   </v-layer>
+                  <div
+                  v-if="grid"
+                  >
+                  <v-layer v-for="index in 100" :key="index">
+                  <v-shape v-for="p in roi.get_polygon_subset(index - 1, 100)"
+                    :config="p"
+                    v-bind:key="p.id"
+                    @transformend="roi.setScaleFactor()"
+                    @mousedown="handleMouseDown"
+                    />
+                  </v-layer>
+                  </div>
                     <v-layer
                       v-if="isCropMode && !grid && !cropFlag"
                       ref="cropLayer"
@@ -1237,7 +1243,7 @@ export default defineComponent({
     }
     function hide_grid() {
       roi.value.toggle_tixel_visibility();
-      grid.value = false;
+      // grid.value = false;
     }
     async function change_image(img: string) {
       bsa_image_displayed.value = false;
