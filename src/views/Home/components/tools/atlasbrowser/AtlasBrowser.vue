@@ -647,6 +647,7 @@ export default defineComponent({
     const cropLoading = ref<boolean>(false);
     const threshLoading = ref<boolean>(false);
     const spatial = ref<boolean>(false);
+    // Tissue positions variables
     const tissue_position_list_obj = ref<any>();
     const linear_gradient_description_string = ref<string>('');
     const tissue_positions_counts_filename = ref<string>('');
@@ -657,6 +658,9 @@ export default defineComponent({
     const selecting_counts_pos_file = ref<boolean>(false);
     const position_counts_present = ref<boolean>(false);
     const show_counts_tixels = ref<boolean>(false);
+    const lower_bound_count = ref<number>(0);
+    const upper_bound_count = ref<number>(0);
+    // Flow of process booleans
     const updating_existing = ref<boolean>(false);
     const image_processing_begun = ref<boolean>(false);
     const run_id_search_active = ref<boolean>(false);
@@ -989,6 +993,10 @@ export default defineComponent({
         const tixel_num = (row * number_channels) + col;
         tixel_color_mapping.value[tixel_num] = color_gradient[pct];
       }
+      const { 7: temp_count_lower } = data[Math.round(data.length * 0.05)];
+      const { 7: temp_count_upper } = data[Math.round(data.length * 0.95)];
+      lower_bound_count.value = temp_count_lower;
+      upper_bound_count.value = temp_count_upper;
     }
     function color_tixel_counts_user_defined(data: any[], color_gradient: string[], min: number, max: number) {
       /**
@@ -1004,6 +1012,8 @@ export default defineComponent({
        */
       if (!data) return;
       if (data[0].length !== 8) return;
+      lower_bound_count.value = min;
+      upper_bound_count.value = max;
       for (let i = 0; i < data.length; i += 1) {
         const current_count = data[i][7];
         let pct_inx = Math.round(((current_count - min) / (max - min)) * 100);
@@ -1700,6 +1710,8 @@ export default defineComponent({
       show_counts_tixels,
       toggle_tixel_counts_disp,
       grid_visible,
+      lower_bound_count,
+      upper_bound_count,
     };
   },
 });
