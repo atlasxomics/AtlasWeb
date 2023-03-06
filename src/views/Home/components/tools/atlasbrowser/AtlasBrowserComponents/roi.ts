@@ -191,6 +191,7 @@ export class ROI {
     if (Object.keys(tixel_color).length !== this.polygons.length) return;
     for (let i = 0; i < this.polygons.length; i += 1) {
       this.polygons[i].fill = tixel_color[i];
+      this.polygons[i].opacity = this.polygons[i].on_tissue ? 1 : 0.5;
       // if (this.polygons[i].on_tissue) {
       //   this.polygons[i].strokeWidth = 1.5;
       // }
@@ -208,6 +209,7 @@ export class ROI {
         fill = 'red';
       }
       this.polygons[i].fill = fill;
+      this.polygons[i].opacity = 1;
     }
   }
 

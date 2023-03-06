@@ -1192,7 +1192,9 @@ export default defineComponent({
        * Otherwise if the brush is not erasing, the attribute on_tissue will be set to true and if count colors are displayed the stroke width will be set to 1.
        */
       const attributes: Record<string, any> = {};
-      if (!show_counts_tixels.value) {
+      if (show_counts_tixels.value) {
+        attributes.opacity = isEraseMode.value ? 0.5 : 1;
+      } else {
         attributes.fill = isEraseMode.value ? null : 'red';
       }
       attributes.on_tissue = !isEraseMode.value;
