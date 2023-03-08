@@ -43,12 +43,15 @@
           height="800"
           v-if="image_processing_begun"
           :value="show_metadata"
-          @click:outside="show_metadata = !show_metadata">
+          persistent
+          >
           <metadata-dropdown
           :metadata ="metadata"
           :drop_down_manager="drop_down_manager"
           :run_id="run_id"
           :lims_available="lims_available"
+          :updating_existing="updating_existing"
+          @confirmed="metadata_confirmed"
           > </metadata-dropdown>
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
@@ -857,6 +860,7 @@ export default defineComponent({
         tissue_position_list_obj.value = resp_pos;
         loading.value = false;
         metadata.value = resp;
+        await getMeta();
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         return true;
         // otherwise call getMeta to query the API
@@ -867,6 +871,9 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
       }
       return false;
+    }
+    function metadata_confirmed() {
+      show_metadata.value = false;
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
       if (!client.value) return null;
@@ -1398,8 +1405,8 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        // const queue = 'atxcloud_atlasbrowser';
-        const queue = 'jonah_browser';
+        const queue = 'atxcloud_atlasbrowser';
+        // const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         if (updating_existing.value) {
@@ -1748,6 +1755,7 @@ export default defineComponent({
       grid_visible,
       lower_bound_count,
       upper_bound_count,
+      metadata_confirmed,
     };
   },
 });

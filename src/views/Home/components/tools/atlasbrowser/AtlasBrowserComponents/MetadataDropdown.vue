@@ -135,6 +135,17 @@
         >
         </v-text-field>
     </v-card-text>
+    <v-card-actions
+    class="justify-center"
+    >
+    <v-btn
+    :disabled="!metadata.barcodes"
+    @click="metadata_confirmed"
+    outlined
+    >
+      Confirm
+    </v-btn>
+    </v-card-actions>
     </v-card>
 </template>
 
@@ -151,6 +162,13 @@ export default defineComponent({
     run_id: { type: String, required: true },
     drop_down_manager: { type: Object, required: true },
     lims_available: { type: Boolean, required: true },
+    updating_existing: { type: Boolean, required: true },
+  },
+  setup(props, ctx) {
+    function metadata_confirmed() {
+      ctx.emit('confirmed');
+    }
+    return { metadata_confirmed };
   },
 });
 </script>

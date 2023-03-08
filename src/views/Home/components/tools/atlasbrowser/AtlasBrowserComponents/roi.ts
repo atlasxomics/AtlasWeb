@@ -11,11 +11,11 @@ export class ROI {
 
   channels: number | any;
 
-  constructor(coord: number[], scale: number) {
+  constructor(coord: number[], scale: number, num_channels = 50) {
     this.scalefactor = scale;
     this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
     this.initializeROI(coord[0], coord[1]);
-    this.channels = 50;
+    this.channels = num_channels;
     this.polygons = [];
   }
 
@@ -68,6 +68,7 @@ export class ROI {
 
   setCoordinates(coords: Point[]): any {
     let idx = 0;
+    console.log(this.coordinates);
     lodash.forIn(this.coordinates, (v, k) => {
       this.coordinates[k] = { x: coords[idx].x * this.scalefactor, y: coords[idx].y * this.scalefactor };
       idx += 1;
