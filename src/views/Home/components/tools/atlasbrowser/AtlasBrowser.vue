@@ -222,7 +222,18 @@
                 :disabled="!thresh_image_created || bw_image_displayed || spatial"
                 > BW </v-btn>
               </v-list>
-              <v-list
+            <div
+            v-if="!position_counts_present && updating_existing"
+            style="position: relative; padding-top: 15px; padding-bottom: 15px;"
+            >
+            <v-btn
+            outlined
+            @click="get_count_file_options(run_id); prompt_to_select_counts_positions = true;"
+            >
+              Load Counts File
+            </v-btn>
+            </div>
+            <v-list
               v-if="position_counts_present"
               >
               <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;"> Counts Visualization </v-subheader>
@@ -309,7 +320,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="prompt_to_use_existing_spatial = false; updating_existing=true;tixels_filled=true; prompt_to_select_counts_positions = true; get_count_file_options(run_id); loadImage(); uploadingTixels()"
+                @click="prompt_to_use_existing_spatial = false; updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
                 medium>
                 Update
               </v-btn>
@@ -317,7 +328,6 @@
           </v-card>
           </v-dialog>
           <v-dialog
-          persistent
           :value="prompt_to_select_counts_positions"
           max-width="800px"
           >
@@ -462,18 +472,23 @@
                           :config="roi.getCenterAnchor()"/>
                     </template>
                   </v-layer>
-                  <div
-                  v-if="grid"
-                  >
-                  <v-layer v-for="index in 100" :key="index">
-                  <v-shape v-for="p in roi.get_polygon_subset(index - 1, 100)"
+                  <v-layer>
+                  <v-shape v-for="p in roi.polygons"
                     :config="p"
                     v-bind:key="p.id"
                     @transformend="roi.setScaleFactor()"
                     @mousedown="handleMouseDown"
                     />
                   </v-layer>
-                  </div>
+                  <v-layer
+                    >
+                      <v-circle
+                        v-if="isBrushMode || isEraseMode"
+                        :config="brushConfig"
+                        @mousedown="handleMouseDownBrush"
+                        @mouseup="handleMouseUpBrush"
+                      />
+                    </v-layer>
                     <v-layer
                       v-if="isCropMode && !grid && !cropFlag"
                       ref="cropLayer"
@@ -498,14 +513,7 @@
                             :config="crop.getCenterAnchor()"/>
                       </template>
                     </v-layer>
-                    <v-layer>
-                      <v-circle
-                        v-if="isBrushMode || isEraseMode"
-                        :config="brushConfig"
-                        @mousedown="handleMouseDownBrush"
-                        @mouseup="handleMouseUpBrush"
-                      />
-                    </v-layer>
+
                 </v-stage>
               </v-card>
             </v-row>
@@ -611,7 +619,6 @@ export default defineComponent({
     const full_bsa_filename = ref<string>('');
     const file_options = ref<any[]>([]);
     const konvaConfig = ref<any>({ width_window: window.innerWidth, height_window: window.innerHeight });
-    const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
     const tixels_filled = ref<boolean>(false);
     const isBrushMode = ref(false);
@@ -749,6 +756,10 @@ export default defineComponent({
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       full_bsa_filename.value = '';
       image_processing_begun.value = false;
+      position_counts_present.value = false;
+      show_counts_tixels.value = false;
+      count_file_options.value = [];
+      tissue_positions_counts_filename.value = '';
     }
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
@@ -1035,14 +1046,14 @@ export default defineComponent({
       /**
        * Method to load in a tissue_positions_list file with information on fragment counts.
        */
-      if (tissue_positions_counts_filename.value === 'Not-Available') return;
       const pl = { params: { bucket_name: bucket_name.value, filename: tissue_positions_counts_filename.value } };
       const data = await client.value?.getCsvFile(pl);
       if (data === 'Not-Found' || data[0].length !== 8) {
-        snackbar.dispatch({ text: 'Error! File is not proper dimensions!', options: { color: 'red' } });
-        prompt_to_select_counts_positions.value = true;
+        snackbar.dispatch({ text: 'Error! Incompatible File!', options: { color: 'red' } });
+        tissue_positions_counts_filename.value = '';
+        return;
       }
-      // Sort data based on row and col, as this is not assumed for count files
+      // Sort data based on row and col, as proper ordering is not assumed for count files
       data.sort((x: any, y: any) => {
         const row_x = Number.parseInt(x[2], 10);
         const col_x = Number.parseInt(x[3], 10);
@@ -1158,8 +1169,28 @@ export default defineComponent({
     function handleDragCenterMove(ev: any) {
       roi.value.moveToNewCenter(ev.target._lastPos);
     }
+    function brush_on_points() {
+      /**
+       * Method called when the brush is being used over a set of tixels.
+       * If erasing the value of on_tissue will be set to false and if the count colors are displayed the strokeWidth will be set to 1
+       * Otherwise if the brush is not erasing, the attribute on_tissue will be set to true and if count colors are displayed the stroke width will be set to 1.
+       */
+      const attributes: Record<string, any> = {};
+      if (show_counts_tixels.value) {
+        attributes.opacity = isEraseMode.value ? 0.5 : 1;
+      } else {
+        attributes.fill = isEraseMode.value ? null : 'red';
+      }
+      attributes.on_tissue = !isEraseMode.value;
+      roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, attributes);
+    }
     function handleMouseDown(ev: any) {
       if (roi.value.polygons.length === 0) return;
+      if (isBrushMode.value) {
+        isMouseDown.value = true;
+        brush_on_points();
+        return;
+      }
       const { id } = ev.target.attrs;
       const idx = lodash.findIndex(roi.value.polygons, { id });
       const kv_map: Record<string, any> = {};
@@ -1191,21 +1222,7 @@ export default defineComponent({
     //     }
     //   }
     // }
-    function brush_on_points() {
-      /**
-       * Method called when the brush is being used over a set of tixels.
-       * If erasing the value of on_tissue will be set to false and if the count colors are displayed the strokeWidth will be set to 1
-       * Otherwise if the brush is not erasing, the attribute on_tissue will be set to true and if count colors are displayed the stroke width will be set to 1.
-       */
-      const attributes: Record<string, any> = {};
-      if (show_counts_tixels.value) {
-        attributes.opacity = isEraseMode.value ? 0.5 : 1;
-      } else {
-        attributes.fill = isEraseMode.value ? null : 'red';
-      }
-      attributes.on_tissue = !isEraseMode.value;
-      roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, attributes);
-    }
+
     function handleMouseMoveStage(ev: any) {
       if (isBrushMode.value || isEraseMode.value) {
         const pos = (ctx as any).refs.konvaStage.getNode().getPointerPosition();
@@ -1515,7 +1532,6 @@ export default defineComponent({
       const pl = { bucket: bucket_name.value, path: `${root.value}/${current_run_id}/`, filter: ['.csv'] };
       const options = await client.value?.getFileList(pl);
       count_file_options.value = options;
-      count_file_options.value.push('Not-Available');
     }
     async function get_image_options(folder_name: string) {
       const pl = { bucket: bucket_name.value, path: `${root.value}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
@@ -1617,7 +1633,6 @@ export default defineComponent({
       selectAction,
       search,
       konvaConfig,
-      circleConfig,
       brushConfig,
       handleDragStart_Crop,
       handleDragEnd_Crop,

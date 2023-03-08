@@ -54,6 +54,7 @@ export interface Polygon {
   radius: number,
   stroke: string,
   opacity: number,
+  listening: boolean,
   strokeWidth: number,
   posit: Array<number>,
   scaleX: number,

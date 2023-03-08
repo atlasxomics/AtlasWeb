@@ -381,6 +381,7 @@ export class ROI {
           opacity: 1,
           stroke: 'black',
           strokeWidth: 1,
+          listening: false,
           posit: [j, i],
           scaleX: 1.0,
           scaleY: 1.0,
