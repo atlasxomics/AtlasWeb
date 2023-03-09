@@ -525,8 +525,8 @@
         <v-col cols="12" sm="12">
         <SpatialFolderViewer
         v-if="checkSpatial"
-        :root="root"
-        :bucket_name="bucket_name"
+        :root="root_spatial"
+        :bucket_name="bucket_name_spatial"
         :selectedRunID="run_id"
         :getFiles="checkSpatial"
         >
@@ -605,7 +605,9 @@ export default defineComponent({
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
     const bucket_name = computed(() => config.atlasxbrowser.bucket_name);
+    const bucket_name_spatial = computed(() => config.atlasxbrowser.bucket_name_spatial);
     const root = computed(() => config.atlasxbrowser.root_dir);
+    const root_spatial = computed(() => config.atlasxbrowser.root_dir_spatial);
     const lims_available = computed(() => config.atlasxbrowser.lims_available);
     // root directory of that s3 bucket
     const welcome_screen = ref<boolean>(true);
@@ -828,6 +830,7 @@ export default defineComponent({
         loading.value = true;
         const slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
         // function to assign the local metadata values to the slimsData object fields
+        console.log(slimsData);
         loading.value = false;
         assignMetadata(slimsData);
       } catch (error) {
@@ -842,14 +845,14 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       // specify path to images within s3
-      const filename = `${root.value}/${run_id.value}/spatial/metadata.json`;
-      const scale_filename = `${root.value}/${run_id.value}/spatial/scalefactors_json.json`;
-      const pos_filename = `${root.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
-      const payload = { params: { filename, bucket_name: bucket_name.value } };
+      const filename = `${root_spatial.value}/${run_id.value}/spatial/metadata.json`;
+      const scale_filename = `${root_spatial.value}/${run_id.value}/spatial/scalefactors_json.json`;
+      const pos_filename = `${root_spatial.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
+      const payload = { params: { filename, bucket_name: bucket_name_spatial.value } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name.value } };
+      const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name_spatial.value } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
-      const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name.value } };
+      const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name_spatial.value } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       // if the json file is retrieved from server use that as metadata
       const meta_present = resp !== 'Not-Found';
@@ -860,7 +863,6 @@ export default defineComponent({
         tissue_position_list_obj.value = resp_pos;
         loading.value = false;
         metadata.value = resp;
-        await getMeta();
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         return true;
         // otherwise call getMeta to query the API
@@ -1447,8 +1449,8 @@ export default defineComponent({
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
           barcodes: metadata.value.barcodes,
-          root_dir: root.value,
-          bucket: bucket_name.value,
+          root_dir: root_spatial.value,
+          bucket: bucket_name_spatial.value,
           bsa_filename: full_bsa_filename.value,
           updating_existing: updating_existing.value,
         };
@@ -1756,6 +1758,8 @@ export default defineComponent({
       lower_bound_count,
       upper_bound_count,
       metadata_confirmed,
+      bucket_name_spatial,
+      root_spatial,
     };
   },
 });
