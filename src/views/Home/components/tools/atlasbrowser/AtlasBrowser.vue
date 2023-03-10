@@ -323,7 +323,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="prompt_to_use_existing_spatial = false; updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
+                @click="update_run_function "
                 medium>
                 Update
               </v-btn>
@@ -378,7 +378,7 @@
               :disabled="full_bsa_filename === ''"
               style="position: relative; left: 50%; transform: translateX(-50%);"
               outlined
-              @click="show_metadata = true; loadImage();"
+              @click="show_metadata = true; load_and_begin_image_processing();"
               >
               Submit
               </v-btn>
@@ -591,6 +591,9 @@ const metaHeaders = [
   { text: 'Value', value: 'value' },
 ];
 const assay_dict: Record<string, any> = {
+  /**
+   * Object to convert slims formatted names into better form.
+   */
   cut_n_tag: 'CUT&Tag',
   'wt_dbit-seq': 'Transcriptome',
   'ATAC-seq': 'ATAC-seq',
@@ -922,7 +925,16 @@ export default defineComponent({
       }
       return imgObj;
     }
-    async function loadImage() {
+    // async function get_singular_image(filename: string, bucket_name: string, use_cache: boolean) {
+
+    // }
+    async function load_and_begin_image_processing() {
+      /**
+       * Method called when type of processing (updating or reprocessing) and desired image are selected.
+       * If reprocessing path specified by user or inferred is loaded in.
+       * If updating the postB_BSA image is pulled from the spatial folder of the run and loaded on screen and the postB image is loaded in background.
+       * The files in the directory are loaded as well in `allFiles`
+       */
       if (!client.value) return;
       welcome_screen.value = false;
       image_processing_begun.value = true;
@@ -930,6 +942,7 @@ export default defineComponent({
       loadingMessage.value = false;
       let filename: any;
       let use_cache = false;
+      let local_bucket_name = bucket_name.value;
       // path to images
       if (updating_existing.value) {
         filename = `${root.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
@@ -937,20 +950,21 @@ export default defineComponent({
         postB_image_displayed.value = false;
         bw_image_displayed.value = false;
         use_cache = true;
+        local_bucket_name = bucket_name_spatial.value;
       } else {
         filename = full_bsa_filename.value;
       }
       const filenameList_pl = { path: `${root.value}/${run_id.value}/`, filter: [''], bucket: bucket_name.value, only_files: true };
       try {
-        const pl = { params: { bucket_name: bucket_name.value, filename, rotation: orientation.value.rotation, use_cache } };
+        const pl = { params: { bucket_name: local_bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
         const img = await client.value.getImageAsJPG(pl);
         bsa_blob.value = img;
-        allFiles.value = await client.value.getFileList(filenameList_pl);
         const img_obj = set_current_image(img);
+        allFiles.value = await client.value.getFileList(filenameList_pl);
         bsa_image.value = img_obj.src;
         if (updating_existing.value) {
-          const postB_figure_filename = `${root.value}/${run_id.value}/spatial/figure/postB.tif`;
-          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: 'true', bucket_name: bucket_name.value } };
+          const postB_figure_filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB.tif`;
+          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: true, bucket_name: bucket_name_spatial.value } };
           const pro = load_image_promise_jpg(pl_postB);
           if (pro) postB_image_promise.value = pro;
         }
@@ -1104,7 +1118,7 @@ export default defineComponent({
       snackbar.dispatch({ text: 'Successfully Loaded Tissue Position Counts', options: { color: 'green', position: 'center' } });
       position_counts_present.value = true;
     }
-    function uploadingTixels(ev: any) {
+    function uploadingTixels() {
       grid.value = true;
       cropFlag.value = true;
       const partitioned = splitarray(metadata.value.points, 2);
@@ -1507,6 +1521,13 @@ export default defineComponent({
         generateSpatial();
       }
     }
+    async function update_run_function() {
+      prompt_to_use_existing_spatial.value = false;
+      updating_existing.value = true;
+      tixels_filled.value = true;
+      await load_and_begin_image_processing();
+      uploadingTixels();
+    }
     function autoFill(ev: any) {
       grid.value = true;
       if (roi.value.polygons.length === 0) {
@@ -1538,7 +1559,7 @@ export default defineComponent({
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
     async function get_count_file_options(current_run_id: string) {
-      const pl = { bucket: bucket_name.value, path: `${root.value}/${current_run_id}/`, filter: ['.csv'] };
+      const pl = { bucket: bucket_name_spatial.value, path: `${root_spatial.value}/${current_run_id}/`, filter: ['.csv'] };
       const options = await client.value?.getFileList(pl);
       count_file_options.value = options;
     }
@@ -1548,7 +1569,7 @@ export default defineComponent({
       if (file_options.value.length === 1) {
         [full_bsa_filename.value] = file_options.value;
         show_metadata.value = true;
-        loadImage();
+        load_and_begin_image_processing();
       } else if (file_options.value.length === 0) {
         snackbar.dispatch({ text: 'No images found in folder', options: { right: true, color: 'error' } });
       }
@@ -1661,7 +1682,7 @@ export default defineComponent({
       objectToArray,
       show_grid,
       current_image,
-      loadImage,
+      load_and_begin_image_processing,
       searchRuns,
       stageWidth,
       initialize,
@@ -1760,6 +1781,7 @@ export default defineComponent({
       metadata_confirmed,
       bucket_name_spatial,
       root_spatial,
+      update_run_function,
     };
   },
 });
