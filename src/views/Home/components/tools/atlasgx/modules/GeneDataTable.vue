@@ -26,8 +26,14 @@
     </template>
     <template v-slot:item="row">
       <tr>
-      <td>{{row.item['id']}}</td>
-      <td v-for="num in lengthClust" :key="num.toString()"><v-btn text x-small dense @click="sendGene(row.item['C'+num])">{{row.item['C'+num]}}</v-btn></td>
+      <td v-for="(value, keys) in row.item" :key="keys">
+        <template v-if="typeof value == 'number'">
+          {{value }}
+        </template>
+        <template v-else>
+          <v-btn text x-small dense @click="sendGene(value)">{{value}}</v-btn>
+        </template>
+      </td>
       </tr>
     </template>
   </v-data-table>
