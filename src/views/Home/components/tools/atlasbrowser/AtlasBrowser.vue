@@ -51,7 +51,9 @@
           :run_id="run_id"
           :lims_available="lims_available"
           :updating_existing="updating_existing"
+          :barcode_filename_list="barcode_filename_options"
           @confirmed="metadata_confirmed"
+          @barcode-file-selected="retrieve_barcode_file"
           > </metadata-dropdown>
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
@@ -710,6 +712,8 @@ export default defineComponent({
     const bsa_image = ref<any>();
     const black_white = ref<string>();
     const color_gradient_scale_numbers = ref<number[]>([]);
+    const barcode_filename_options = ref<string[]>([]);
+    const barcodes_in_list = ref<string[]>([]);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -724,7 +728,7 @@ export default defineComponent({
       organ: null,
       orientation: null,
       crop_area: null,
-      barcodes: null,
+      barcode_filename: null,
       chip_resolution: null,
       tissueBlockExperiment: '',
       tissue_source: '',
@@ -813,15 +817,15 @@ export default defineComponent({
         if (slimsData.cntn_cf_fk_workflow) {
           metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
         }
-        if (slimsData.cntn_cf_fk_barcodeOrientation === '1 (normal)') {
-          metadata.value.barcodes = 1;
-        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '2 (reverseB)') {
-          metadata.value.barcodes = 2;
-        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '3 (reverseAB)') {
-          metadata.value.barcodes = 4;
-        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '4 (reverseA)') {
-          metadata.value.barcodes = 3;
-        }
+        // if (slimsData.cntn_cf_fk_barcodeOrientation === '1 (normal)') {
+        //   metadata.value.barcodes = 1;
+        // } else if (slimsData.cntn_cf_fk_barcodeOrientation === '2 (reverseB)') {
+        //   metadata.value.barcodes = 2;
+        // } else if (slimsData.cntn_cf_fk_barcodeOrientation === '3 (reverseAB)') {
+        //   metadata.value.barcodes = 4;
+        // } else if (slimsData.cntn_cf_fk_barcodeOrientation === '4 (reverseA)') {
+        //   metadata.value.barcodes = 3;
+        // }
         metadata.value.comments_flowB = slimsData.comments_flowB;
         metadata.value.crosses_flowB = slimsData.crosses_flowB;
         metadata.value.blocks_flowB = slimsData.blocks_flowB;
@@ -862,7 +866,6 @@ export default defineComponent({
        * If those files are present, the metadata from the metadata.json file is assigned to the local metadata variable, and the
        * user is presented with the option to either load this spatial folder and update tixel designations or reprocess the image.
        * If those files are not present, if slims is available, it is queried for metadata and the user is prompted for metadata run processing.
-       * 
        * Return: boolean: whether or not there is a spatial directory already present.
        */
       if (!client.value) return false;
@@ -899,11 +902,32 @@ export default defineComponent({
       }
       return false;
     }
+    async function retrieve_barcode_file() {
+      if (!metadata.value.barcode_filename) return false;
+      const short_filename = metadata.value.barcode_filename;
+      const path = config.atlasxbrowser.barcode_files_path.concat('/'.concat(short_filename));
+      const pl = { params: { filename: path, bucket_name: bucket_name.value } };
+      const bc_file = await client.value?.getCsvFile(pl);
+      if (!bc_file) return false;
+      const barcodes_file_length = bc_file.length;
+      const num_chan_int = Math.floor(Math.sqrt(barcodes_file_length));
+      if (num_chan_int * num_chan_int !== barcodes_file_length) return false;
+      channels.value = num_chan_int;
+      roi.value.channels = channels.value;
+      barcodes_in_list.value = [];
+      bc_file.forEach((bc: string[]) => barcodes_in_list.value.push(bc[0]));
+      return true;
+    }
     function metadata_confirmed() {
       /**
        * Method called when user confirms current metadata.
        */
-      show_metadata.value = false;
+      const proper_barcode_file = retrieve_barcode_file();
+      if (!proper_barcode_file) {
+        console.log('show error message');
+      } else {
+        show_metadata.value = false;
+      }
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
       /**
@@ -980,7 +1004,7 @@ export default defineComponent({
       let local_bucket_name = bucket_name.value;
       // path to images
       if (updating_existing.value) {
-        filename = `${root.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
+        filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
         bsa_image_displayed.value = true;
         postB_image_displayed.value = false;
         bw_image_displayed.value = false;
@@ -1027,7 +1051,6 @@ export default defineComponent({
       /**
        * Method to rotate BSA image. Image rotation processing done on backend.
        * Call to API is sped up by an indication to use the cache on server.
-       * 
        * Args: choice number: Indication of how manyu
        */
       loading.value = true;
@@ -1053,6 +1076,19 @@ export default defineComponent({
         }
       }
       run_id_folder_namesHolder.value = updated;
+    }
+    async function load_barcode_file_options() {
+      if (!client.value) return;
+      const barcode_path = config.atlasxbrowser.barcode_files_path.concat('/');
+      const pl = { path: barcode_path, bucket: bucket_name.value, filter: '.txt', only_files: true, delimiter: '/' };
+      const res = await client.value.getFileList(pl);
+      res.forEach((filename: string) => {
+        const inx = filename.lastIndexOf('/');
+        if (inx < filename.length - 1) {
+          const short_filename = filename.substring(inx + 1, filename.length);
+          barcode_filename_options.value.push(short_filename);
+        }
+      });
     }
     function color_tixel_counts_percentile(data: any[], color_gradient: string[]) {
       /**
@@ -1454,7 +1490,7 @@ export default defineComponent({
     }
     async function generateSpatial() {
       if (!client.value) return;
-      if (!metadata.value.barcodes) {
+      if (!metadata.value.barcode_filename) {
         snackbar.dispatch({ text: 'Must Select Barcode File Before Generating Spatial Folder', options: { color: 'warning', right: true } });
         return;
       }
@@ -1497,7 +1533,8 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
-          barcodes: metadata.value.barcodes,
+          barcode_filename: metadata.value.barcode_filename,
+          barcode_list: barcodes_in_list.value,
           root_dir: root_spatial.value,
           bucket: bucket_name_spatial.value,
           bsa_filename: full_bsa_filename.value,
@@ -1680,6 +1717,7 @@ export default defineComponent({
       store.commit.setSubmenu(submenu);
       window.addEventListener('resize', handleResize);
       await fetchFileList();
+      load_barcode_file_options();
       // load_counts_positions();
     });
     onUnmounted(async () => {
@@ -1816,7 +1854,10 @@ export default defineComponent({
       metadata_confirmed,
       bucket_name_spatial,
       root_spatial,
+      barcode_filename_options,
       update_run_function,
+      retrieve_barcode_file,
+      barcodes_in_list,
     };
   },
 });

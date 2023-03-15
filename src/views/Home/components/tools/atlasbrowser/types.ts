@@ -26,7 +26,7 @@ export interface Metadata {
   numChannels: string | null;
   orientation: any | null;
   crop_area: any | null;
-  barcodes: number | null;
+  barcode_filename: string | null;
   organ: string | null;
   tissue_source: string | null;
   chip_resolution: number | null;

@@ -7,11 +7,11 @@
     </v-card-title>
     <v-card-text>
         <v-select
-        v-model="metadata.barcodes"
+        v-model="metadata.barcode_filename"
         outlined
         dense
         label="Barcode File"
-        :items="[1, 2, 3, 4]"
+        :items="barcode_filename_list"
         >
         </v-select>
         <selector
@@ -139,7 +139,7 @@
     class="justify-center"
     >
     <v-btn
-    :disabled="!metadata.barcodes"
+    :disabled="!metadata.barcode_filename"
     @click="metadata_confirmed"
     outlined
     >
@@ -163,12 +163,16 @@ export default defineComponent({
     drop_down_manager: { type: Object, required: true },
     lims_available: { type: Boolean, required: true },
     updating_existing: { type: Boolean, required: true },
+    barcode_filename_list: { type: Array, required: true },
   },
   setup(props, ctx) {
     function metadata_confirmed() {
       ctx.emit('confirmed');
     }
-    return { metadata_confirmed };
+    function barcode_file_selected() {
+      ctx.emit('barcode-file-selected');
+    }
+    return { metadata_confirmed, barcode_file_selected };
   },
 });
 </script>
