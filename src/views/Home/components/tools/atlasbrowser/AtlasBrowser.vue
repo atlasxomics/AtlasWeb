@@ -78,7 +78,7 @@
                 color="blue"
                 class="leftRotate"
                 :disabled="!current_image || isCropMode || grid || updating_existing || loading"
-                @click="rotate_image(0)"
+                @click="rotate_bsa_image(0)"
                 small
                 >
                 <img src="@/assets/images/rotate_left.png"
@@ -89,7 +89,7 @@
                 color="blue"
                 class="spaced_btn"
                 :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || updating_existing || loading"
-                @click="rotate_image(1)"
+                @click="rotate_bsa_image(1)"
                 small
                 >
                 <img src="@/assets/images/rotate_right.png"
@@ -741,6 +741,9 @@ export default defineComponent({
       antibody: '',
     });
     function initialize() {
+      /**
+       * Method used to reset relevent variables when run is switched.
+       */
       roi.value = new ROI([0, 0], scaleFactor.value);
       crop.value = new Crop([0, 0], scaleFactor.value);
       roi.value.setScaleFactor(scaleFactor.value);
@@ -795,6 +798,10 @@ export default defineComponent({
       crop.value.setScaleFactor(v);
     }
     function assignMetadata(slimsData: any) {
+      /**
+       * Method used to assign slims api response to local metadata variable.
+       * Args: slimsData: Return object from request to load run_id from slims.
+       */
       try {
         metadata.value.organ = slimsData.cntn_cf_fk_organ;
         metadata.value.species = slimsData.cntn_cf_fk_species;
@@ -829,6 +836,12 @@ export default defineComponent({
       }
     }
     async function getMeta() {
+      /**
+       * Method in which the client method `getMetadataFromRunId` is called.
+       * This async method obtains the result of slims api call.
+       * On Success, this response is assigned to local metadata variable.
+       * On Failure, the user is notified of a failure to populate metadata.
+       */
       try {
         loading.value = true;
         const slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
@@ -843,6 +856,15 @@ export default defineComponent({
     }
     // io
     async function loadMetadata(): Promise<boolean> {
+      /**
+       * Method used to load metadata into browser.
+       * First queries aws S3 to check if the run has the files needed in a spatial folder.
+       * If those files are present, the metadata from the metadata.json file is assigned to the local metadata variable, and the
+       * user is presented with the option to either load this spatial folder and update tixel designations or reprocess the image.
+       * If those files are not present, if slims is available, it is queried for metadata and the user is prompted for metadata run processing.
+       * 
+       * Return: boolean: whether or not there is a spatial directory already present.
+       */
       if (!client.value) return false;
       run_id_search_active.value = false;
       loading.value = true;
@@ -878,16 +900,27 @@ export default defineComponent({
       return false;
     }
     function metadata_confirmed() {
+      /**
+       * Method called when user confirms current metadata.
+       */
       show_metadata.value = false;
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
+      /**
+       * Wrapper method that calls getImageAsJPG from client.
+       */
       if (!client.value) return null;
       const promise = client.value.getImageAsJPG(pl);
       return promise;
     }
     function loadGrayCropped(filename: string): Promise<any> | null {
+      /**
+       * Method returns nonfluorescent postB image cropped to the specifications the user made on the BSA image.
+       * Must be run either following cropping, or when updating a spatial folder.
+       * Utilizes client call to API. Image processing is done on backend.
+       * Returns null if client is not initialized or there was an exception.
+       */
       if (!client.value) return null;
-      // path to image
       try {
         let c = crop.value.getCoordinatesOnImage();
         if (updating_existing.value) {
@@ -906,6 +939,11 @@ export default defineComponent({
       }
     }
     function set_current_image(blob: any) {
+      /**
+       * Method sets the currently displayed image.
+       * Args: blob type: Blob. The image to be set, in blob form.
+       * Returns type: Image. An Image object with the arg set as its source.
+       */
       const imgObj = new window.Image();
       imgObj.src = URL.createObjectURL(blob);
       const scalefactor = 0.1;
@@ -925,9 +963,6 @@ export default defineComponent({
       }
       return imgObj;
     }
-    // async function get_singular_image(filename: string, bucket_name: string, use_cache: boolean) {
-
-    // }
     async function load_and_begin_image_processing() {
       /**
        * Method called when type of processing (updating or reprocessing) and desired image are selected.
@@ -975,16 +1010,26 @@ export default defineComponent({
         loading.value = false;
         snackbar.dispatch({ text: 'Failed to load the image file', options: { color: 'error', right: true } });
       }
-      // console.log(current_image.value.original_src);
     }
     function toggle_tixel_counts_disp() {
+      /**
+       * This method toggles the displaying of count based colors on the tixels.
+       * If show_counts_tixels is true, this means the button was just checked and the tixels should be filled.
+       * If not, box was unchecked and colors should be removed.
+       */
       if (show_counts_tixels.value) {
         roi.value.fill_color_counts(tixel_color_mapping.value);
       } else {
         roi.value.remove_color_counts();
       }
     }
-    async function rotate_image(choice: number) {
+    async function rotate_bsa_image(choice: number) {
+      /**
+       * Method to rotate BSA image. Image rotation processing done on backend.
+       * Call to API is sped up by an indication to use the cache on server.
+       * 
+       * Args: choice number: Indication of how manyu
+       */
       loading.value = true;
       if (choice === 0) {
         const rotationAmount = parseInt(degreeRotation.value, 10);
@@ -1065,11 +1110,11 @@ export default defineComponent({
         tixel_color_mapping.value[i] = color;
       }
     }
-    async function load_counts_positions() {
+    async function load_counts_positions(filename = tissue_positions_counts_filename.value, bucket_name_local = bucket_name_spatial.value) {
       /**
        * Method to load in a tissue_positions_list file with information on fragment counts.
        */
-      const pl = { params: { bucket_name: bucket_name.value, filename: tissue_positions_counts_filename.value } };
+      const pl = { params: { bucket_name: bucket_name_local, filename } };
       const data = await client.value?.getCsvFile(pl);
       if (data === 'Not-Found' || data[0].length !== 8) {
         snackbar.dispatch({ text: 'Error! Incompatible File!', options: { color: 'red' } });
@@ -1442,16 +1487,6 @@ export default defineComponent({
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
-          barcodes: metadata.value.barcodes,
-          tissueBlockExperiment: metadata.value.tissueBlockExperiment,
-          comments_flowB: metadata.value.comments_flowB,
-          crosses_flowB: metadata.value.crosses_flowB,
-          blocks_flowB: metadata.value.blocks_flowB,
-          leaks_flowB: metadata.value.leak_flowB,
-          comments_flowA: metadata.value.comments_flowA,
-          crosses_flowA: metadata.value.crosses_flowA,
-          blocks_flowA: metadata.value.blocks_flowA,
-          leak_flowA: metadata.value.leak_flowA,
           onTissueTixels: roi.value.getOnTissue(),
         });
         const params = {
@@ -1740,7 +1775,7 @@ export default defineComponent({
       bsa_image_displayed,
       change_image,
       handle_spatial_call,
-      rotate_image,
+      rotate_bsa_image,
       saved_grid_state,
       hide_grid,
       load_tixel_state,
