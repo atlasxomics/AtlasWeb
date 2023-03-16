@@ -939,10 +939,13 @@ export default defineComponent({
       const scale_pos = await client.value.getJsonFile(scale_payload);
       // print the result of the last 3 async calls
       // if the json file is retrieved from server use that as metadata
-      const meta_present = ((('status_code' in resp) && resp.status_code === 200) || !('status_code' in resp));
-      const pos_present = ((('status_code' in resp_pos) && resp_pos.status_code === 200) || !('status_code' in resp_pos));
-      const scale_present = ((('status_code' in scale_pos) && scale_pos.status_code === 200) || !('status_code' in scale_pos));
-      if (meta_present && pos_present && scale_present) {
+      console.log(resp);
+      console.log(resp_pos);
+      console.log(scale_pos);
+      // const meta_present = ((('status_code' in resp) && resp.status_code === 200) || !('status_code' in resp));
+      // const pos_present = ((('status_code' in resp_pos) && resp_pos.status_code === 200) || !('status_code' in resp_pos));
+      // const scale_present = ((('status_code' in scale_pos) && scale_pos.status_code === 200) || !('status_code' in scale_pos));
+      if (resp && resp_pos && scale_pos) {
         scaleFactor_json.value = scale_pos;
         tissue_position_list_obj.value = resp_pos;
         loading.value = false;
