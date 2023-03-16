@@ -5,17 +5,6 @@
     </v-col>
     <v-col cols="12" sm="3">
       <v-card flat>
-        <v-card-text>Cell Type</v-card-text>
-        <table style="overflow-y: scroll;display: block;">
-          <tr v-for="(value, index) in celltype_names" v-bind:key="value" :style="{ 'vertical-align': 'middle' }">
-            <td>
-              <v-checkbox @click="updateNetwork(index)" :color="color_map[value]" dense :input-value="(current_selected === index) ? 1 : 0"/>
-            </td>
-            <td style="padding-bottom: 12px;">
-              <span :style="{'font-weight': 'bold'}">{{value}}&ensp;</span>
-            </td>
-          </tr>
-        </table>
         <v-card-text>Layout</v-card-text>
         <v-select
           v-model="default_layout"
@@ -40,13 +29,11 @@ import styles from './styles';
 export default defineComponent({
   name: 'NetworkGraph',
   components: { VueCytoscape },
-  props: ['selected_regulons', 'run_id', 'names', 'color'],
+  props: ['selected_regulons', 'run_id'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const regulons_from_parent = computed(() => props.selected_regulons);
     const runId = computed(() => props.run_id);
-    const celltype_names = computed(() => props.names);
-    const color_map = computed(() => props.color);
     const elements = ref<any>();
     const all_elements = ref<any>();
     const config = ref<any>();
@@ -183,7 +170,7 @@ export default defineComponent({
         update_component.value += 1;
       }
     });
-    return { elements, config, regulons_from_parent, celltype_names, update_component, all_cell_types, current_selected, color_map, default_layout, preConfig, afterCreated, constructGraph, sliceGraph, updateNetwork, updateLayout };
+    return { elements, config, regulons_from_parent, update_component, all_cell_types, current_selected, default_layout, preConfig, afterCreated, constructGraph, sliceGraph, updateLayout };
   },
 });
 

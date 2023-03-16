@@ -174,6 +174,24 @@
           >
           </file-download-page>
       </v-dialog>
+    <div style="width:100%; height:20px"></div>
+    <v-footer padless color="#fff" elevation="2">
+      <v-col
+        class="text-center"
+        cols="10" sm="5">
+        <v-btn
+          text
+          color="primary"
+          rounded
+          class="my-2"
+          role="link"
+          @click="openInNewTab('https://docs.atlasxomics.com/projects/AtlasXplore/en/latest/index.html')">Platform Guide</v-btn>
+      </v-col>
+      <v-col class="text-right" cols="10" sm="5">
+        <p style="font-size:19px;font-family: Poppins;">Copyright &copy; 2023 AtlasXomics Inc.</p>
+      </v-col>
+
+    </v-footer>
   </v-container>
 </template>
 
@@ -241,6 +259,9 @@ export default defineComponent({
     }
     function redirectToLogin() {
       router.push('/login');
+    }
+    function openInNewTab(ev: any) {
+      window.open(ev, '_blank', 'noreferrer');
     }
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
@@ -788,6 +809,7 @@ export default defineComponent({
       group_from_url,
       image_clicked,
       presigned_generated,
+      openInNewTab,
     };
   },
 });
