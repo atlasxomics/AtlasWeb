@@ -317,7 +317,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="get_image_options(run_id);prompt_to_use_existing_spatial = false;"
+                @click="reprocess_image(run_id); "
                 medium>
                 Reprocess
               </v-btn>
@@ -744,6 +744,37 @@ export default defineComponent({
       onTissueTixels: null,
       antibody: '',
     });
+    function reset_metadata() {
+      metadata.value = {
+        points: [],
+        run: null,
+        blockSize: null,
+        cValue: null,
+        threshold: null,
+        tissue_type: null,
+        species: null,
+        assay: null,
+        numChannels: null,
+        organ: null,
+        orientation: null,
+        crop_area: null,
+        barcode_filename: null,
+        chip_resolution: null,
+        tissueBlockExperiment: '',
+        tissue_source: '',
+        comments_flowB: '',
+        crosses_flowB: [],
+        blocks_flowB: [],
+        leak_flowB: '',
+        comments_flowA: '',
+        crosses_flowA: [],
+        blocks_flowA: [],
+        leak_flowA: '',
+        sampleID: '',
+        onTissueTixels: null,
+        antibody: '',
+      };
+    }
     function initialize() {
       /**
        * Method used to reset relevent variables when run is switched.
@@ -846,11 +877,11 @@ export default defineComponent({
        * On Success, this response is assigned to local metadata variable.
        * On Failure, the user is notified of a failure to populate metadata.
        */
+      if (!lims_available.value) return;
       try {
         loading.value = true;
         const slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
         // function to assign the local metadata values to the slimsData object fields
-        console.log(slimsData);
         loading.value = false;
         assignMetadata(slimsData);
       } catch (error) {
@@ -893,8 +924,8 @@ export default defineComponent({
         metadata.value = resp;
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         return true;
-        // otherwise call getMeta to query the API
       }
+      // otherwise call getMeta to query the API
       if (lims_available.value) {
         await getMeta();
         loading.value = false;
@@ -1502,8 +1533,8 @@ export default defineComponent({
         progressMessage.value = null;
         loading.value = true;
         const task = 'atlasbrowser.generate_spatial';
-        const queue = 'atxcloud_atlasbrowser';
-        // const queue = 'jonah_browser';
+        // const queue = 'atxcloud_atlasbrowser';
+        const queue = 'jonah_browser';
         const coords = roi.value.getCoordinatesOnImage();
         let cropCoords = crop.value.getCoordinatesOnImage();
         if (updating_existing.value) {
@@ -1645,6 +1676,13 @@ export default defineComponent({
       } else if (file_options.value.length === 0) {
         snackbar.dispatch({ text: 'No images found in folder', options: { right: true, color: 'error' } });
       }
+    }
+    async function reprocess_image(run_id_param: string) {
+      // initialize();
+      reset_metadata();
+      await getMeta();
+      get_image_options(run_id_param);
+      prompt_to_use_existing_spatial.value = false;
     }
     async function run_folder_selected(folder_name: any) {
       if (!clientReady) {
@@ -1858,6 +1896,7 @@ export default defineComponent({
       update_run_function,
       retrieve_barcode_file,
       barcodes_in_list,
+      reprocess_image,
     };
   },
 });
