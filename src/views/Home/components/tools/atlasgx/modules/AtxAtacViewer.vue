@@ -846,9 +846,9 @@ export default defineComponent({
           const kwargs = {};
           let which_h5ad = 0;
           if (props.query.public) {
-            if (geneMotif.value === 'gene') which_h5ad = 3;
-            if (geneMotif.value === 'motif') which_h5ad = 4;
-            if (geneMotif.value === 'celltype') which_h5ad = 5;
+            if (geneMotif.value === 'gene') which_h5ad = 4;
+            if (geneMotif.value === 'motif') which_h5ad = 5;
+            if (geneMotif.value === 'celltype') which_h5ad = 6;
           }
           const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, which_h5ad) : await client.value.postTask(task, args, kwargs, queue);
           await checkTaskStatus(taskObject._id);
@@ -1013,6 +1013,7 @@ export default defineComponent({
         path.setAttribute('d', strPath);
         globalSvgS.value.appendChild(path);
       } else if (isDrawingRect.value) {
+        console.log(ev);
         lassoSide.value = 'left';
         removeRegions();
         rect.setAttribute('x', `${ev.offsetX}`);
