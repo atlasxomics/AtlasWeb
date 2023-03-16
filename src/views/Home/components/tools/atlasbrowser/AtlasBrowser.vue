@@ -931,20 +931,14 @@ export default defineComponent({
       const filename = `${root}/${run_id.value}/spatial/metadata.json`;
       const scale_filename = `${root}/${run_id.value}/spatial/scalefactors_json.json`;
       const pos_filename = `${root}/${run_id.value}/spatial/tissue_positions_list.csv`;
-      const payload = { params: { filename, bucket_name } };
+      const payload = { params: { filename, bucket_name, no_aws_yes_server: false } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename, bucket_name } };
+      const pos_payload = { params: { filename: pos_filename, bucket_name, no_aws_yes_server: false } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
-      const scale_payload = { params: { filename: scale_filename, bucket_name } };
+      const scale_payload = { params: { filename: scale_filename, bucket_name, no_aws_yes_server: false } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       // print the result of the last 3 async calls
       // if the json file is retrieved from server use that as metadata
-      console.log(resp);
-      console.log(resp_pos);
-      console.log(scale_pos);
-      // const meta_present = ((('status_code' in resp) && resp.status_code === 200) || !('status_code' in resp));
-      // const pos_present = ((('status_code' in resp_pos) && resp_pos.status_code === 200) || !('status_code' in resp_pos));
-      // const scale_present = ((('status_code' in scale_pos) && scale_pos.status_code === 200) || !('status_code' in scale_pos));
       if (resp && resp_pos && scale_pos) {
         scaleFactor_json.value = scale_pos;
         tissue_position_list_obj.value = resp_pos;
