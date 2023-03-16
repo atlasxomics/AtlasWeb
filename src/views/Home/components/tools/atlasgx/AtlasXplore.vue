@@ -31,10 +31,10 @@
                 medium
                 text
                 :disabled="!spatialData || assayFlag"
-                @click="(geneMotif === 'gene') ? (geneMotif = 'motif') :  (geneMotif = 'gene')">{{geneMotif}}
+                @click="clusters_ann_flag = !clusters_ann_flag">{{geneMotif}}
               </v-btn>
             </template>
-            <span>Gene&lt;-&gt;Motif</span>
+            <span>Cluster&lt;-&gt;Annotations</span>
           </v-tooltip>
           <v-tooltip :disabled="backgroundFlag" bottom>
               <template v-slot:activator="{ on, attrs }">
@@ -59,7 +59,7 @@
           :value="backgroundFlag"
           @click:outside="backgroundFlag = !backgroundFlag"
           hide-overlay>
-          <v-card style="width: max-content;position: absolute;z-index: 999;top:40px;left:210px;">
+          <v-card style="width: max-content;position: absolute;z-index: 999;top:47px;left:210px;">
             <v-data-table
               class="thickBorder"
               v-model="selected"
@@ -91,7 +91,7 @@
           :value="metaFlag"
           @click:outside="metaFlag = !metaFlag"
           hide-overlay>
-          <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left: 130px;"
+          <v-card style="width:200px;position: absolute;z-index: 999;top:47px;left: 130px;"
               :disabled="loading">
             <v-card-title>
               {{ runId }}
@@ -138,6 +138,42 @@
               label="NGS ID">
               </v-text-field> -->
             </v-card-text>
+          </v-card>
+        </v-dialog>
+        <v-dialog
+          v-if="clusters_ann_flag"
+          :value="clusters_ann_flag"
+          @click:outside="clusters_ann_flag = !clusters_ann_flag"
+          hide-overlay>
+          <v-card style="width:100px;position: absolute;z-index: 999;top:47px;left:150px;"
+            :disabled="loading">
+            <v-data-table
+            class="thickBorder"
+            v-model="selected"
+            width="20%"
+            dense
+            single-select
+            hide-default-footer
+            hide-default-header
+            :items="clusters_ann_list">
+              <template v-slot:item="row">
+                <template v-if="row.item == 'gene'">
+                  <tr @click="changeClustersAnn(row.item)">
+                    <td>{{row.item}}</td>
+                  </tr>
+                </template>
+                <template v-else-if="row.item == 'motif'">
+                  <tr @click="changeClustersAnn(row.item)">
+                    <td>{{row.item}}</td>
+                  </tr>
+                </template>
+                <template v-else-if="row.item == 'celltype'">
+                  <tr @click="changeClustersAnn(row.item)">
+                    <td>{{row.item}}</td>
+                  </tr>
+                </template>
+              </template>
+            </v-data-table>
           </v-card>
         </v-dialog>
         <v-col cols="2" sm="1">
@@ -205,7 +241,9 @@
                   {{highlightIds}}
                 </v-card-text>
                 <v-card-title>
-                  <span class="text-h5">Top 10 {{(geneMotif === 'gene') ? 'Genes':'Motifs'}}</span>
+                  <template v-if="geneMotif == 'gene'"><span class="text-h5">Top 10 Genes</span></template>
+                  <template v-if="geneMotif == 'motif'"><span class="text-h5">Top 10 Motifs</span></template>
+                  <template v-if="geneMotif == 'celltype'"><span class="text-h5">Top 10 Regulons</span></template>
                 </v-card-title>
                 <v-card-text>
                   {{topSelected}}
@@ -515,7 +553,7 @@
                 <v-icon>mdi-chart-line</v-icon>
               </v-btn>
             </template>
-            <span>Peak/Motif Viewer</span>
+            <span>{{(!regulons_flag) ? 'Peak/Motif Viewer' : 'Peak/Motif/Network Viewer'}}</span>
             </v-tooltip>
             <v-tooltip bottom>
             <template v-slot:activator="{ on, attrs }">
@@ -567,26 +605,18 @@
                 :idOfRun="runId"
                 :userBoundary="userMaxMinValue"
                 :assay_flag="assayFlag"
+                :regulonsFlag="regulons_flag"
                 ref="mainAtxViewer"/>
             </v-col>
             <v-col cols="12" sm="2">
               <table style="margin-bottom: 0; height: 50vh;overflow-y: scroll;display: block;">
-                  <tr v-for="(value, cluster) in cellTypeMap" v-bind:key="cluster" :style="{ 'vertical-align': 'middle' }">
-                    <template>
-                      <td>
-                        <v-checkbox @click="unClickCluster(cluster)" :color="colorMap[cluster]" dense :dark="backgroundColor == 'white' ? false : true" input-value="1"/>
-                      </td>
-                    </template>
-                    <template v-if="value.length > 0">
-                      <td style="padding-bottom: 12px;">
-                        <span :style="{ 'color': (backgroundColor == 'white') ? 'black' : 'white', 'font-weight': 'bold'}">{{value[0]}}&ensp;<span style="font-size:10px"> ({{totalInClust[cluster]}})</span></span>
-                      </td>
-                    </template>
-                    <template v-else>
-                      <td style="padding-bottom: 12px;">
-                        <span :style="{ 'color': (backgroundColor == 'white') ? 'black' : 'white', 'font-weight': 'bold'}">{{cluster}}&ensp;<span style="font-size:10px"> ({{totalInClust[cluster]}})</span></span>
-                      </td>
-                    </template>
+                  <tr v-for="(value, cluster) in colorMapCopy" v-bind:key="cluster" :style="{ 'vertical-align': 'middle' }">
+                    <td>
+                      <v-checkbox @click="unClickCluster(cluster)" :color="value" dense :dark="backgroundColor == 'white' ? false : true" input-value="1"/>
+                    </td>
+                    <td style="padding-bottom: 12px;">
+                      <span :style="{ 'color': (backgroundColor == 'white') ? 'black' : 'white', 'font-weight': 'bold'}">{{cluster}}&ensp;<span style="font-size:10px"> ({{totalInClust[cluster]}})</span></span>
+                    </td>
                   </tr>
               </table>
             </v-col>
@@ -609,6 +639,7 @@
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                 </template>
+                <network-graph v-show="geneMotif == 'celltype'" :selected_regulons="childGenes" :run_id="runId" :names="Object.keys(totalInCellType)" :color="colorMapCopy"></network-graph>
                 <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
               </v-card>
             </div>
@@ -639,6 +670,7 @@ import BarChart from './modules/BarChart.vue';
 import LoadingPage from './modules/LoadingPage.vue';
 import HistogramGraph from './modules/HistogramGraph.vue';
 import Singleview from './modules/Singleview.vue';
+import NetworkGraph from './modules/NetworkGraph.vue';
 /* eslint-disable no-unused-expressions */
 
 const clientReady = new Promise((resolve) => {
@@ -683,7 +715,7 @@ interface Metadata {
 
 export default defineComponent({
   name: 'AtlasXplore',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph, Singleview },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph, Singleview, NetworkGraph },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -709,8 +741,6 @@ export default defineComponent({
     const clusterItems = ref<any[]>([]);
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const konvaConfigLeft = ref<any>({ x: 0, y: 0, width, height, draggable: true });
-    const konvaConfigRight = ref<any>({ x: 0, y: 0, width, height, draggable: true });
     const scale = ref<number>(0.75);
     const scaleUMAP = ref<number>(0.75);
     const isClusterView = ref(true);
@@ -780,6 +810,7 @@ export default defineComponent({
     const collabData = ref<any[]>([]);
     const collabName = ref<string>('');
     const totalInClust = ref<any>({});
+    const totalInCellType = ref<any>({});
     const selectedClusters = ref<any[]>([]);
     const spatialCircleData = ref<any>({});
     const colorBarFromSibling = ref<any>();
@@ -788,6 +819,7 @@ export default defineComponent({
     const topTenIds = ref<any>({});
     const tableKey = ref<number>(1);
     const assayFlag = ref<boolean>(false);
+    const regulons_flag = ref<boolean>(false);
     const scaleFlag = ref<boolean>(false);
     const userMaxValue = ref<string>('');
     const userMinValue = ref<string>('');
@@ -795,8 +827,10 @@ export default defineComponent({
     const peakViewLoad = ref<boolean>(false);
     const geneMotifLoad = ref<boolean>(false);
     const lassoLoad = ref<boolean>(false);
-    const heatMap = ref<any>({ C1: '#D51F26', C2: '#272E6A', C3: '#208A42', C4: '#89288F', C5: '#F47D2B', C6: '#FEE500', C7: '#8A9FD1', C8: '#C06CAB', C9: '#D8A767', C10: '#90D5E4', C11: '#89C75F', C12: '#F37B7D', C13: '#9983BD', C14: '#D24B27', C15: '#3BBCA8', C16: '#6E4B9E', C17: '#0C727C', C18: '#7E1416', C19: '#E6C2DC', C20: '#3D3D3D' });
+    const heatMap = ref<string[]>(['#D51F26', '#272E6A', '#208A42', '#89288F', '#F47D2B', '#FEE500', '#8A9FD1', '#C06CAB', '#D8A767', '#90D5E4', '#89C75F', '#F37B7D', '#9983BD', '#D24B27', '#3BBCA8', '#6E4B9E', '#0C727C', '#7E1416', '#E6C2DC', '#3D3D3D']);
     const oneTime = ref<boolean>(true);
+    const clusters_ann_flag = ref<boolean>(false);
+    const clusters_ann_list = ref<string[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -812,31 +846,6 @@ export default defineComponent({
         router.go(-1);
       } else router.push('/');
     }
-    async function updateOneTime(ev: any) {
-      oneTime.value = ev;
-    }
-    async function updateVar(ev: any) {
-      oneTime.value = ev;
-    }
-    function delay() {
-      /* eslint-disable no-useless-return */
-      /* eslint-disable consistent-return */
-      /* eslint-disable no-await-in-loop */
-      console.log(oneTime.value);
-      if (!oneTime.value) {
-        window.setTimeout(delay, 500);
-        return;
-      }
-    }
-    async function waitForSingleView(ev: any) {
-      /* eslint-disable no-await-in-loop */
-      if (childGenes.value.length === 0) return;
-      const gene = childGenes.value[ev];
-      const [vueComponent] = (ctx as any).refs[gene];
-      vueComponent.startView(gene);
-      // delay();
-      oneTime.value = false;
-    }
     function cleanRunId(rid: string) {
       return rid.match('[A-Z]+[0-9]+')![0];
     }
@@ -847,10 +856,6 @@ export default defineComponent({
       const go = rid.replace(/D0+/i, 'D');
       return go;
     }
-    function setDraggable(flag: boolean) {
-      konvaConfigLeft.value.draggable = flag;
-      konvaConfigRight.value.draggable = flag;
-    }
     function updateLoading(ev: any) {
       peakViewLoad.value = ev;
     }
@@ -860,6 +865,11 @@ export default defineComponent({
     }
     function updateHistogram(ev: any) {
       spatialCircleData.value = ev;
+    }
+    // Functions that handle Clusters and Annotations
+    async function changeClustersAnn(ev: any) {
+      clusters_ann_flag.value = false;
+      geneMotif.value = ev;
     }
     function dataToSingle(ev: any) {
       singleData.value = ev;
@@ -876,6 +886,7 @@ export default defineComponent({
     function updateClusterLabel(ev: any) {
       clickedCluster.value = ev;
     }
+    // Functions to update the color map
     function checkFieldColor(ev: any) {
       if (ev.indexOf('#') !== -1) {
         const cluster = ev.split('#')[0];
@@ -887,6 +898,34 @@ export default defineComponent({
         }
       }
     }
+    function changeClusterColor() {
+      clusterColorFlag.value = false;
+      if (colorMap.value !== colorMapCopy.value) {
+        manualClusterFlag.value = true;
+        const cmap: any = {};
+        const heatcmap: any[] = [];
+        lodash.each(colorMapCopy.value, (value: any, key: any) => {
+          cmap[key] = value;
+          heatcmap.push(value);
+        });
+        heatMap.value = heatcmap;
+        colorMap.value = cmap;
+        if (geneMotif.value === 'gene' && isClusterView.value && !assayFlag.value) {
+          peakViewLoad.value = true;
+          (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
+          peakViewLoad.value = false;
+        }
+      }
+    }
+    function clearClusterColor() {
+      clusterColorFlag.value = false;
+      const defaultCmap: any = {};
+      lodash.each(colorMap.value, (value: any, key: any) => {
+        defaultCmap[key] = value;
+      });
+      colorMapCopy.value = defaultCmap;
+    }
+    // Functions to update the Cell Type
     function checkFieldCell(cluster: any, ev: any) {
       const name = typeof ev.srcElement._value !== 'string' ? '' : ev.srcElement._value;
       cellTypeMapCopy.value[cluster] = [name];
@@ -907,6 +946,7 @@ export default defineComponent({
       });
       cellTypeMap.value = cell;
     }
+    // Checkbox selection of clusteres
     function unClickCluster(ev: any) {
       if (!selectedClusters.value.includes(ev)) {
         selectedClusters.value.push(ev);
@@ -915,33 +955,7 @@ export default defineComponent({
         if (index > -1) selectedClusters.value.splice(index, 1);
       }
     }
-    function changeClusterColor() {
-      clusterColorFlag.value = false;
-      if (colorMap.value !== colorMapCopy.value) {
-        manualClusterFlag.value = true;
-        const cmap: any = {};
-        const heatcmap: any = {};
-        lodash.each(colorMapCopy.value, (value: any, key: any) => {
-          cmap[key] = value;
-          heatcmap[key] = value;
-        });
-        heatMap.value = heatcmap;
-        colorMap.value = cmap;
-        if (geneMotif.value === 'gene' && isClusterView.value && !assayFlag.value) {
-          peakViewLoad.value = true;
-          (ctx as any).refs.trackbrowser.reload(runId.value, colorMap.value);
-          peakViewLoad.value = false;
-        }
-      }
-    }
-    function clearClusterColor() {
-      clusterColorFlag.value = false;
-      const defaultCmap: any = {};
-      lodash.each(colorMap.value, (value: any, key: any) => {
-        defaultCmap[key] = value;
-      });
-      colorMapCopy.value = defaultCmap;
-    }
+    // Updating Max and Min boundray for summations
     function applyBoundary() {
       if (userMaxValue.value.match(/\d+/) && userMinValue.value.match(/\d+/)) {
         userMaxMinValue.value = [userMaxValue.value, userMinValue.value];
@@ -958,6 +972,7 @@ export default defineComponent({
       userMaxValue.value = max;
       userMinValue.value = min;
     }
+    // Saving TopTen from lasso and Tixel ID's
     function saveTxt() {
       listId.value = false;
       const ids = highlightIds.value.join();
@@ -970,6 +985,7 @@ export default defineComponent({
       pom.setAttribute('download', `${runId.value}/Selection.txt`);
       pom.click();
     }
+    // Functions to caprture images and save them
     function captureScreen(background: string) {
       displayFlag.value = false;
       if (!averageInd.value) {
@@ -1033,7 +1049,6 @@ export default defineComponent({
         let yValueCount = -1;
         const go = (can: any, x: any, y: any) => {
           count += 1;
-          console.log(can, x, y);
           context2?.drawImage(can, x, y);
           if (count === childGenes.value.length) {
             const base64image = canvas2.toDataURL('image/png');
@@ -1128,6 +1143,7 @@ export default defineComponent({
       };
       image.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL)}`;
     }
+    // Data being passed from TopTen Table to main component
     function sendGene(ev: any) {
       if (!selectedGenes.value.includes(ev) && genes.value.length > 0) {
         geneButton.value = [ev];
@@ -1143,14 +1159,11 @@ export default defineComponent({
       genes.value = ev.map((v: string) => ({ name: v }));
       loading.value = false;
     }
-    function remove(item: any) {
-      const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
-      selectedGenes.value = newArr;
-    }
     function chooseBackground(ev: any) {
       backgroundColor.value = ev.background;
       backgroundFlag.value = false;
     }
+    // These functions are called once all the necessary files are loaded in to AtxAtacViewer (data.csv.gz)
     async function updateCircles() {
       if (!spatialData.value) return;
       isHighlighted.value = false;
@@ -1168,8 +1181,8 @@ export default defineComponent({
         // });
         for (let i = 0; i < clustKeys.length; i += 1) {
           const cidx = clustKeys[i];
-          cmap[cidx] = heatMap.value[cidx];
-          cmapCopy[cidx] = heatMap.value[cidx];
+          cmap[cidx] = heatMap.value[i];
+          cmapCopy[cidx] = heatMap.value[i];
           cellmap[cidx] = '';
           cellmapCopy[cidx] = '';
         }
@@ -1213,18 +1226,17 @@ export default defineComponent({
       lengthClust.value = clusterItems.value.length;
     }
     async function updateSpatial() {
-      if (!spatialData.value) {
-        loading.value = true;
-        spatialData.value = true;
-        updateTable();
-        await updateCircles();
-        onResize();
-        loading.value = false;
-      }
+      loading.value = true;
+      spatialData.value = true;
+      await updateTable();
+      await updateCircles();
+      onResize();
+      loading.value = false;
     }
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
       selectedClusters.value = Object.keys(totalInClust.value).map((v: any) => v);
+      if (geneMotif.value === 'celltype') totalInCellType.value = ev;
       if (Object.keys(topTenIds.value).length > 0) {
         updateSpatial();
       }
@@ -1238,25 +1250,15 @@ export default defineComponent({
         const topTen_motif_json = await client.value?.getJsonFile(fileNameMotif);
         topTenIds.value.motif = topTen_motif_json;
       }
+      if (regulons_flag.value) {
+        const fileNameRegulon = { params: { filename: `data/${runId.value}/h5/topTen_eRegulons.json` } };
+        const topTen_regulon_json = await client.value?.getJsonFile(fileNameRegulon);
+        topTenIds.value.celltype = topTen_regulon_json;
+      }
       spatialData.value = false;
       if (Object.keys(totalInClust.value).length > 1) {
         updateSpatial();
       }
-    }
-    function chooseHeatmap(ev: any) {
-      heatMap.value = ev;
-      heatmapFlag.value = false;
-      manualClusterFlag.value = false;
-      if (ev === 'picnic') {
-        colorbarText.value = 'black';
-      } else if (ev === 'jet' || ev === 'inferno') {
-        colorbarText.value = 'white';
-      } else if (ev === 'hot') {
-        colorbarText.value = 'grey';
-      } else {
-        colorbarText.value = 'brown';
-      }
-      updateCircles();
     }
     const checkTaskStatus = async (task_id: string) => {
       if (!client.value) return;
@@ -1269,17 +1271,20 @@ export default defineComponent({
         if (!props.query.public) {
           if (geneMotif.value === 'motif') {
             const hold = filename.value;
-            filename.value = hold!.replace(/genes/i, 'motifs');
-          } else {
+            filename.value = hold!.replace(/eRegulons|genes/i, 'motifs');
+          } else if (geneMotif.value === 'gene') {
             const hold = filename.value;
-            filename.value = hold!.replace(/motifs/i, 'genes');
+            filename.value = hold!.replace(/eRegulons|motifs/i, 'genes');
+          } else if (geneMotif.value === 'celltype') {
+            const hold = filename.value;
+            filename.value = hold!.replace(/motifs|genes/i, 'eRegulons');
           }
         }
       } catch (error) {
         console.log(error);
       }
     }
-    async function runSpatial(rid = runId.value) {
+    async function generatePublicLink(rid = runId.value) {
       if (!client.value) return;
       if (!filename.value) return;
       try {
@@ -1398,25 +1403,42 @@ export default defineComponent({
       metadata.value.runid = globalXploreData.value.run_id;
       // metadata.value.ngsid = rid;
       // collabName.value = (Object.keys(data).includes('tissue_source')) ? data.tissue_source : data.group_name;
+      const addCellType = ['gene'];
       if (globalXploreData.value.assay === 'Transcriptome') assayFlag.value = true;
+      else addCellType.push('motif');
+      if (globalXploreData.value.regulons_flag) {
+        regulons_flag.value = true;
+        addCellType.push('celltype');
+      }
+      clusters_ann_list.value = addCellType;
     }
     async function selectAction(ev: any) {
       const root = 'data';
       if (!props.query.public) {
-        const fn = (geneMotif.value === 'gene') ? `${root}/${ev.id}/h5/obj/genes.h5ad` : `${root}/${ev.id}/h5/obj/motifs.h5ad`;
+        let fn = '';
+        if (geneMotif.value === 'gene') fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
+        if (geneMotif.value === 'motif') fn = `${root}/${ev.id}/h5/obj/motifs.h5ad`;
+        if (geneMotif.value === 'celltype') fn = `${root}/${ev.id}/h5/obj/eRegulons.h5ad`;
         filename.value = fn;
         holdMotif.value = '';
         runId.value = ev.id;
         metadata.value.species = '';
       }
-      runSpatial(runId.value);
+      generatePublicLink(runId.value);
       getMeta(runId.value);
       updateTen();
     }
     async function getPublicId(ev: any) {
       runId.value = ev.run_id;
       metadata.value.organ = ev.tissue;
+      const addCellType = ['gene'];
       if (ev.assay === 'Transcriptome') assayFlag.value = true;
+      else addCellType.push('motif');
+      if (ev.regulons_flag) {
+        regulons_flag.value = true;
+        addCellType.push('celltype');
+      }
+      clusters_ann_list.value = addCellType;
       metadata.value.species = ev.species;
       metadata.value.type = ev.assay;
       updateTen();
@@ -1444,7 +1466,7 @@ export default defineComponent({
           ev.forEach((v: string, i: number) => {
             childGenes.value.push(v);
           });
-          if (ev.length === 1) {
+          if (ev.length === 1 && geneMotif.value !== 'celltype') {
             ev.forEach((v: string, i: number) => {
               trackBrowserGenes.value.push(v);
             });
@@ -1468,11 +1490,9 @@ export default defineComponent({
         if (!props.query.public) {
           const btn = document.getElementById('geneMotifButton')!;
           const span = btn.childNodes[0] as HTMLElement;
-          if (v === 'gene') {
-            span.innerText = 'GENE';
-          } else if (v === 'motif') {
-            span.innerText = 'MOTIF';
-          }
+          if (v === 'gene') span.innerText = 'GENE';
+          else if (v === 'motif') span.innerText = 'MOTIF';
+          else if (v === 'celltype') span.innerText = 'CELLTYPE';
         }
         userMaxValue.value = '';
         userMinValue.value = '';
@@ -1487,7 +1507,7 @@ export default defineComponent({
         geneButton.value = [];
         trackBrowserGenes.value = [];
         updateFilename();
-        updateTable();
+        // updateTable();
       }
       geneMotifLoad.value = false;
     });
@@ -1504,7 +1524,6 @@ export default defineComponent({
       updateTable();
     });
     watch(isDrawing, (v: boolean) => {
-      setDraggable(!v);
       if (!isDrawing.value) {
         colorOnOff.value = 'black';
       } else {
@@ -1512,7 +1531,6 @@ export default defineComponent({
       }
     });
     watch(isDrawingRect, (v: boolean) => {
-      setDraggable(!v);
       if (!isDrawingRect.value) {
         colorOnOffRect.value = 'black';
       } else {
@@ -1591,12 +1609,12 @@ export default defineComponent({
     const gene_motif_button = {
       text: geneMotif.value,
       icon: null,
-      tooltip: 'Gene<->Motif',
+      tooltip: 'Cluster<->Annotations',
       disabled: loading.value,
       ref: 'geneMotifButton',
       enabled: true,
       click: () => {
-        if (!assayFlag.value) (geneMotif.value === 'gene') ? geneMotif.value = 'motif' : geneMotif.value = 'gene';
+        clusters_ann_flag.value = !clusters_ann_flag.value;
       },
     };
     const bg_color_button = {
@@ -1667,11 +1685,8 @@ export default defineComponent({
       backgroundHeader,
       genes,
       selectedGenes,
-      remove,
-      runSpatial,
+      generatePublicLink,
       spatialData,
-      konvaConfigLeft,
-      konvaConfigRight,
       isHighlighted,
       onResize,
       isClusterView,
@@ -1699,7 +1714,6 @@ export default defineComponent({
       showFlag,
       backgroundFlag,
       chooseBackground,
-      chooseHeatmap,
       heatmapFlag,
       lassoSide,
       colorOnOff,
@@ -1766,6 +1780,7 @@ export default defineComponent({
       collabName,
       updateClustTotal,
       totalInClust,
+      totalInCellType,
       unClickCluster,
       selectedClusters,
       updateHistogram,
@@ -1791,6 +1806,7 @@ export default defineComponent({
       updateTen,
       redirectToVisual,
       assayFlag,
+      regulons_flag,
       updateTable,
       logout,
       scaleFlag,
@@ -1803,12 +1819,12 @@ export default defineComponent({
       updateMaxMin,
       peakViewLoad,
       geneMotifLoad,
-      waitForSingleView,
       oneTime,
-      updateOneTime,
-      updateVar,
       saveImageTable,
       generateFrontPage,
+      clusters_ann_flag,
+      clusters_ann_list,
+      changeClustersAnn,
     };
   },
 });

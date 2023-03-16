@@ -428,17 +428,25 @@ export default defineComponent({
       pageIteration.value = ev;
       // kmdnkasndk
     }
-    async function runSpatial(runObject: any) {
+    async function runSpatial(ev: any) {
+      /* eslint-disable no-unneeded-ternary */
+      const runObject = ev;
       const matchPath = runObject.results_folder_path.match(/(data\/)(.+)(\/)/);
       const xploreId = matchPath[2];
+      const payload = { path: `data/${xploreId}/h5/obj`, bucket: '', filter: ['h5ad'] };
+      const important_objects = await client.value?.getFileList(payload);
+      const regulons_flag = (important_objects.join().includes('eRegulons')) ? true : false;
+      runObject.regulons_flag = regulons_flag;
       if (client.value!.user === null) {
         const geneFileName = `data/${xploreId}/h5/geneNames.txt.gz`;
         const motifFileName = `data/${xploreId}/h5/motifNames.txt.gz`;
+        const regulonFileName = `data/${xploreId}/h5/eRegulonNames.txt.gz`;
         const tixelFileName = `data/${xploreId}/h5/data.csv.gz`;
         const motifH5ad = `data/${xploreId}/h5/obj/motifs.h5ad`;
         const geneH5ad = `data/${xploreId}/h5/obj/genes.h5ad`;
+        const regulonH5ad = `data/${xploreId}/h5/obj/eRegulons.h5ad`;
         const motifCsv = `data/${xploreId}/h5/obj/motifs.csv`;
-        const { encoded: filenameToken } = await client!.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: xploreId, species: runObject.species, tissue: runObject.organ, assay: runObject.assay } });
+        const { encoded: filenameToken } = await client!.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, regulonFileName, geneH5ad, motifH5ad, regulonH5ad, motifCsv], meta: { run_id: xploreId, species: runObject.species, tissue: runObject.organ, assay: runObject.assay, regulons_flag } });
         store.commit.setXploreData(runObject);
         router.push({ path: `/public?component=PublicGeneViewer&run_id=${filenameToken.trim()}&public=true&token=${jwtToken.value.trim()}`, replace: true });
         // pushByQuery({ component: 'PublicGeneViewer', run_id: filenameToken, public: 'true', token: `JWT ${jwtToken.value}` });
