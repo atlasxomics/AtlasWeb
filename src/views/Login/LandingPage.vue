@@ -99,7 +99,7 @@
               <v-row>
                 <v-col cols="12" sm="8">
                   <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
-                  <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
+                  <v-card-subtitle>{{data.date}}<v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">{{data.journal}}</a></v-card-subtitle>
                   <v-card-text>{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
                   <v-card-actions
                   style="position: relative; margin-top: 40px; margin-left: 10px;"
@@ -174,6 +174,24 @@
           >
           </file-download-page>
       </v-dialog>
+    <div style="width:100%; height:20px"></div>
+    <v-footer padless color="#fff" elevation="2">
+      <v-col
+        class="text-center"
+        cols="10" sm="5">
+        <v-btn
+          text
+          color="primary"
+          rounded
+          class="my-2"
+          role="link"
+          @click="openInNewTab('https://docs.atlasxomics.com/projects/AtlasXplore/en/latest/index.html')">Platform Guide</v-btn>
+      </v-col>
+      <v-col class="text-right" cols="10" sm="5">
+        <p style="font-size:19px;font-family: Poppins;">Copyright &copy; 2023 AtlasXomics Inc.</p>
+      </v-col>
+
+    </v-footer>
   </v-container>
 </template>
 
@@ -241,6 +259,9 @@ export default defineComponent({
     }
     function redirectToLogin() {
       router.push('/login');
+    }
+    function openInNewTab(ev: any) {
+      window.open(ev, '_blank', 'noreferrer');
     }
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
@@ -428,17 +449,25 @@ export default defineComponent({
       pageIteration.value = ev;
       // kmdnkasndk
     }
-    async function runSpatial(runObject: any) {
+    async function runSpatial(ev: any) {
+      /* eslint-disable no-unneeded-ternary */
+      const runObject = ev;
       const matchPath = runObject.results_folder_path.match(/(data\/)(.+)(\/)/);
       const xploreId = matchPath[2];
+      const payload = { path: `data/${xploreId}/h5/obj`, bucket: '', filter: ['h5ad'] };
+      const important_objects = await client.value?.getFileList(payload);
+      const regulons_flag = (important_objects.join().includes('eRegulons')) ? true : false;
+      runObject.regulons_flag = regulons_flag;
       if (client.value!.user === null) {
         const geneFileName = `data/${xploreId}/h5/geneNames.txt.gz`;
         const motifFileName = `data/${xploreId}/h5/motifNames.txt.gz`;
+        const regulonFileName = `data/${xploreId}/h5/eRegulonNames.txt.gz`;
         const tixelFileName = `data/${xploreId}/h5/data.csv.gz`;
         const motifH5ad = `data/${xploreId}/h5/obj/motifs.h5ad`;
         const geneH5ad = `data/${xploreId}/h5/obj/genes.h5ad`;
+        const regulonH5ad = `data/${xploreId}/h5/obj/eRegulons.h5ad`;
         const motifCsv = `data/${xploreId}/h5/obj/motifs.csv`;
-        const { encoded: filenameToken } = await client!.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, geneH5ad, motifH5ad, motifCsv], meta: { run_id: xploreId, species: runObject.species, tissue: runObject.organ, assay: runObject.assay } });
+        const { encoded: filenameToken } = await client!.value!.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, regulonFileName, geneH5ad, motifH5ad, regulonH5ad, motifCsv], meta: { run_id: xploreId, species: runObject.species, tissue: runObject.organ, assay: runObject.assay, regulons_flag } });
         store.commit.setXploreData(runObject);
         router.push({ path: `/public?component=PublicGeneViewer&run_id=${filenameToken.trim()}&public=true&token=${jwtToken.value.trim()}`, replace: true });
         // pushByQuery({ component: 'PublicGeneViewer', run_id: filenameToken, public: 'true', token: `JWT ${jwtToken.value}` });
@@ -780,6 +809,7 @@ export default defineComponent({
       group_from_url,
       image_clicked,
       presigned_generated,
+      openInNewTab,
     };
   },
 });

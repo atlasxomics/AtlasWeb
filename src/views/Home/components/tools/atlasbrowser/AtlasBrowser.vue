@@ -907,17 +907,14 @@ export default defineComponent({
       const filename = `${root_spatial.value}/${run_id.value}/spatial/metadata.json`;
       const scale_filename = `${root_spatial.value}/${run_id.value}/spatial/scalefactors_json.json`;
       const pos_filename = `${root_spatial.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
-      const payload = { params: { filename, bucket_name: bucket_name_spatial.value } };
+      const payload = { params: { filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name_spatial.value } };
+      const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
-      const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name_spatial.value } };
+      const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       // if the json file is retrieved from server use that as metadata
-      const meta_present = resp !== 'Not-Found';
-      const pos_present = resp_pos !== 'Not-Found';
-      const scale_present = scale_pos !== 'Not-Found';
-      if (meta_present && pos_present && scale_present) {
+      if (resp && resp_pos && scale_pos) {
         scaleFactor_json.value = scale_pos;
         tissue_position_list_obj.value = resp_pos;
         loading.value = false;

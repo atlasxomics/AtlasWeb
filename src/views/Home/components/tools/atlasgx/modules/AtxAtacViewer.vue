@@ -186,7 +186,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary', 'assay_flag'],
+  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary', 'assay_flag', 'regulonsFlag'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -240,6 +240,7 @@ export default defineComponent({
     const highlightCount = ref<number>(0);
     const spatialRun = ref<boolean>(false);
     const totalInClust = ref<any>({});
+    const totalInCellType = ref<any>({});
     const clickedClusterFromParent = computed(() => (props.clickedCluster));
     const checkedClusterFromParent = computed(() => (props.checkBoxCluster));
     const tableKeyFromParent = computed(() => (props.antiKey));
@@ -289,8 +290,11 @@ export default defineComponent({
     const TTposition = ref<string[]>(['0', '0']);
     const TTpositionUmap = ref<string[]>(['0', '0']);
     const assayFlag = computed(() => (props.assay_flag));
+    const regulons_flag = computed(() => (props.regulonsFlag));
     const current_tixel_colors = ref<string[]>([]);
     const multi_sample_flag = ref<boolean>(false);
+    const clusters_ann_flag = ref<boolean>(false);
+    let position_of_celltype = 0;
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParentDualAtac');
       if (!parent) return;
@@ -309,19 +313,36 @@ export default defineComponent({
     }
     function unHighlightCluster() {
       const colors: any[] = [];
-      lodash.each(heatMap.value, (value: any, key: any) => {
-        colors.push(value);
-      });
+      const celltype: any = {};
+      if (!clusters_ann_flag.value) {
+        lodash.each(heatMap.value, (value: any, key: any) => {
+          colors.push(value);
+        });
+      } else {
+        const celltype_list = Object.keys(totalInCellType.value);
+        const heatMapValues = heatMap.value;
+        celltype_list.forEach((v: any, i: any) => {
+          celltype[v] = heatMapValues[i];
+        });
+      }
       for (let i = 0; i < spatialData.value.spatial.length; i += 1) {
         const tixel = document.getElementById(`tixel${i}`);
         const tixelUmap = document.getElementById(`tixelUmap${i}`);
         const regex = /\d+/g;
-        const string = (tixel) ? tixel.getAttribute('cluster') : '';
-        const match = Number(string!.match(regex)![0]) - 1;
-        const color = colors[match];
+        let string;
+        if (!clusters_ann_flag.value) string = (tixel) ? tixel.getAttribute('cluster') : '';
+        else string = (tixel) ? tixel.getAttribute('celltype') : '';
         if (isClusterView.value || averageInd.value) {
-          tixel?.setAttribute('fill', `${color}`);
-          tixelUmap?.setAttribute('fill', `${color}`);
+          if (!clusters_ann_flag.value) {
+            const match = Number(string!.match(regex)![0]) - 1;
+            const color = colors[match];
+            tixel?.setAttribute('fill', `${color}`);
+            tixelUmap?.setAttribute('fill', `${color}`);
+          } else {
+            const type = (tixel) ? tixel.getAttribute('celltype') : '';
+            tixel?.setAttribute('fill', `${celltype[type!]}`);
+            tixelUmap?.setAttribute('fill', `${celltype[type!]}`);
+          }
         } else {
           tixel?.setAttribute('fill', `${current_tixel_colors.value[i]}`);
           tixelUmap?.setAttribute('fill', `${current_tixel_colors.value[i]}`);
@@ -415,9 +436,18 @@ export default defineComponent({
     }
     function highlightCluster(clusterName: string[]) {
       const colors: any[] = [];
-      lodash.each(heatMap.value, (value: any, key: any) => {
-        colors.push(value);
-      });
+      const celltype: any = {};
+      if (!clusters_ann_flag.value) {
+        lodash.each(heatMap.value, (value: any, key: any) => {
+          colors.push(value);
+        });
+      } else {
+        const celltype_list = Object.keys(totalInCellType.value);
+        const heatMapValues = heatMap.value;
+        celltype_list.forEach((v: any, i: any) => {
+          celltype[v] = heatMapValues[i];
+        });
+      }
       if (backgroundColor.value === 'darkgrey') {
         inactiveColor.value = 'white';
       } else {
@@ -427,13 +457,21 @@ export default defineComponent({
         const tixel = document.getElementById(`tixel${i}`);
         const tixelUmap = document.getElementById(`tixelUmap${i}`);
         const regex = /\d+/g;
-        const string = (tixel) ? tixel.getAttribute('cluster') : '';
-        const match = Number(string!.match(regex)![0]) - 1;
-        const color = colors[match];
+        let string;
+        if (!clusters_ann_flag.value) string = (tixel) ? tixel.getAttribute('cluster') : '';
+        else string = (tixel) ? tixel.getAttribute('celltype') : '';
         if (clusterName.includes(string!)) {
           if (isClusterView.value || averageInd.value) {
-            tixel?.setAttribute('fill', `${color}`);
-            tixelUmap?.setAttribute('fill', `${color}`);
+            if (!clusters_ann_flag.value) {
+              const match = Number(string!.match(regex)![0]) - 1;
+              const color = colors[match];
+              tixel?.setAttribute('fill', `${color}`);
+              tixelUmap?.setAttribute('fill', `${color}`);
+            } else {
+              const type = (tixel) ? tixel.getAttribute('celltype') : '';
+              tixel?.setAttribute('fill', `${celltype[type!]}`);
+              tixelUmap?.setAttribute('fill', `${celltype[type!]}`);
+            }
           } else {
             tixel?.setAttribute('fill', `${current_tixel_colors.value[i]}`);
             tixelUmap?.setAttribute('fill', `${current_tixel_colors.value[i]}`);
@@ -549,6 +587,10 @@ export default defineComponent({
         circleUmap.setAttribute('id', `tixelUmap${i}`);
         circleUmap.setAttribute('cluster', `${v[0]}`);
         circleUmap.setAttribute('opacity', '1.0');
+        if (position_of_celltype !== 0) {
+          circle.setAttribute('celltype', `${v[position_of_celltype]}`);
+          circleUmap.setAttribute('celltype', `${v[position_of_celltype]}`);
+        }
         if (multi_sample_flag.value) {
           circle.setAttribute('sample', `${v[7]}`);
           circle.setAttribute('treatment', `${v[8]}`);
@@ -569,9 +611,18 @@ export default defineComponent({
       const colors: any[] = [];
       let colors_intensity: any[] = [];
       const geneSum: number[] = [];
-      lodash.each(heatMap.value, (value: any, key: any) => {
-        colors.push(value);
-      });
+      const celltype: any = {};
+      if (!clusters_ann_flag.value) {
+        lodash.each(heatMap.value, (value: any, key: any) => {
+          colors.push(value);
+        });
+      } else {
+        const celltype_list = Object.keys(totalInCellType.value);
+        const heatMapValues = heatMap.value;
+        celltype_list.forEach((v: any, i: any) => {
+          celltype[v] = heatMapValues[i];
+        });
+      }
       colors_intensity = colormap({ colormap: 'jet', nshades: 64, format: 'hex', alpha: 1 });
       colorBarmap.value = `linear-gradient(to right, ${colors_intensity[0]}, ${colors_intensity[16]}, ${colors_intensity[32]} , ${colors_intensity[48]}, ${colors_intensity[63]})`;
       clusterColors.value = colors;
@@ -601,8 +652,13 @@ export default defineComponent({
           };
           const tixel = document.getElementById(`tixel${i}`);
           const tixelUmap = document.getElementById(`tixelUmap${i}`);
-          tixel?.setAttribute('fill', `${colors[match]}`);
-          tixelUmap?.setAttribute('fill', `${colors[match]}`);
+          if (!clusters_ann_flag.value) {
+            tixel?.setAttribute('fill', `${colors[match]}`);
+            tixelUmap?.setAttribute('fill', `${colors[match]}`);
+          } else {
+            tixel?.setAttribute('fill', `${celltype[v[position_of_celltype]]}`);
+            tixelUmap?.setAttribute('fill', `${celltype[v[position_of_celltype]]}`);
+          }
           selectedGenes.value.forEach((id: any, index: any) => {
             summer += parseFloat(geneSummation.value[index][i]);
             (c.genes as any)[id] = parseFloat(geneSummation.value[index][i]);
@@ -684,12 +740,23 @@ export default defineComponent({
             const motif = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 2);
             spatialData.value.motif = motif;
           }
+          if (regulons_flag) {
+            const regulon = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 3);
+            spatialData.value.regulon = regulon;
+          }
         }
         const spatialX: number[] = [];
         const spatialY: number[] = [];
         const umapX: number[] = [];
         const umapY: number[] = [];
         const totalHold: any = {};
+        const cellTypeHold: any = {};
+        if (spatialData.value.spatial[0].length === 8) position_of_celltype = 7;
+        else if (spatialData.value.spatial[0].length === 9) multi_sample_flag.value = true;
+        else if (spatialData.value.spatial[0].length === 10) {
+          multi_sample_flag.value = true;
+          position_of_celltype = 9;
+        }
         spatialData.value.spatial.forEach((list: string[], index: any) => {
           if (list[0].includes('C')) {
             spatialX.push(parseFloat(list[1]));
@@ -698,10 +765,14 @@ export default defineComponent({
             umapY.push(parseFloat(list[4]));
             if (!Object.keys(totalHold).includes(list[0])) totalHold[list[0]] = 1;
             else totalHold[list[0]] += 1;
+            if (position_of_celltype !== 0) {
+              if (!Object.keys(cellTypeHold).includes(list[position_of_celltype])) cellTypeHold[list[position_of_celltype]] = 1;
+              else cellTypeHold[list[position_of_celltype]] += 1;
+            }
           }
         });
         const sorter = Object.keys(totalHold);
-        if (spatialData.value.spatial[0].length > 7) multi_sample_flag.value = true;
+        const sorterCellType = Object.keys(cellTypeHold);
         sorter.sort((a: any, b: any) => {
           if (a.match(/C\d+/) === null || b.match(/C\d+/) === null) return 0;
           const xCsplit = a.match(/C\d+/)[0];
@@ -712,8 +783,12 @@ export default defineComponent({
           if (x > y) return 1;
           return 0;
         });
+        sorterCellType.sort();
         sorter.forEach((v: any, index: any) => {
           totalInClust.value[v] = totalHold[v];
+        });
+        sorterCellType.forEach((v: any, index: any) => {
+          totalInCellType.value[v] = cellTypeHold[v];
         });
         minX.value = Math.min(...spatialX);
         minY.value = Math.min(...spatialY);
@@ -723,7 +798,6 @@ export default defineComponent({
         minY_UMAP.value = Math.min(...umapY);
         maxX_UMAP.value = Math.max(...umapX);
         maxY_UMAP.value = Math.max(...umapY);
-        ctx.emit('totalClust', totalInClust.value);
         initializePlots();
       }
       if (!props.query.public && (spatialData.value.gene === null || spatialData.value.gene === undefined)) {
@@ -735,12 +809,27 @@ export default defineComponent({
           const motif = await client.value!.getGeneMotifNames(motifFileName);
           spatialData.value.motif = motif;
         }
+        if (position_of_celltype !== 0) {
+          const regulonFileName = `data/${runId.value}/h5/eRegulonNames.txt.gz`;
+          const regulon = await client.value!.getGeneMotifNames(regulonFileName);
+          regulon.sort();
+          spatialData.value.regulon = regulon;
+        }
       }
       loading.value = false;
       if (geneMotif.value === 'gene') {
+        ctx.emit('totalClust', totalInClust.value);
+        clusters_ann_flag.value = false;
         ctx.emit('totalGM', spatialData.value.gene);
-      } else {
+      } else if (geneMotif.value === 'motif') {
+        ctx.emit('totalClust', totalInClust.value);
+        clusters_ann_flag.value = false;
         ctx.emit('totalGM', spatialData.value.motif);
+      } else if (geneMotif.value === 'celltype') {
+        ctx.emit('totalClust', totalInCellType.value);
+        ctx.emit('totalGM', spatialData.value.regulon);
+        clusters_ann_flag.value = true;
+        updateCircles();
       }
     }
     async function runSpatial() {
@@ -755,7 +844,13 @@ export default defineComponent({
           const queue = currentQueue.value;
           const args = [filenameGene.value, highlightIds.value, tableKeyFromParent.value];
           const kwargs = {};
-          const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, (geneMotif.value === 'gene') ? 3 : 4) : await client.value.postTask(task, args, kwargs, queue);
+          let which_h5ad = 0;
+          if (props.query.public) {
+            if (geneMotif.value === 'gene') which_h5ad = 4;
+            if (geneMotif.value === 'motif') which_h5ad = 5;
+            if (geneMotif.value === 'celltype') which_h5ad = 6;
+          }
+          const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, which_h5ad) : await client.value.postTask(task, args, kwargs, queue);
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */
           while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -789,9 +884,19 @@ export default defineComponent({
       spatialRun.value = false;
     }
     async function obtainSummations() {
-      const tixelDataFilename = (geneMotif.value === 'gene') ? `data/${runId.value}/h5/summations/geneSummation` : `data/${runId.value}/h5/summations/motifSummation`;
-      const array = (geneMotif.value === 'gene') ? spatialData.value.gene : spatialData.value.motif;
-      const rows = selectedGenes.value.map((v: any) => array.indexOf(v));
+      let tixelDataFilename = '';
+      let array: string[];
+      if (geneMotif.value === 'gene') {
+        tixelDataFilename = `data/${runId.value}/h5/summations/geneSummation`;
+        array = spatialData.value.gene;
+      } else if (geneMotif.value === 'motif') {
+        tixelDataFilename = `data/${runId.value}/h5/summations/motifSummation`;
+        array = spatialData.value.motif;
+      } else if (geneMotif.value === 'celltype') {
+        tixelDataFilename = `data/${runId.value}/h5/summations/eRegulonSummation`;
+        array = spatialData.value.regulon;
+      }
+      const rows = selectedGenes.value.map((v: string) => array.indexOf(v));
       const preSplit = await client.value?.getSummation(tixelDataFilename, rows);
       const emptyArrayHolder: any[] = [];
       preSplit.forEach((value: string, index: any) => {
@@ -868,12 +973,12 @@ export default defineComponent({
       }
       if (!multi_sample_flag.value) {
         const paragraph = document.createElement('p');
-        paragraph.innerText = `Cluster: ${clust}`;
+        paragraph.innerText = (!clusters_ann_flag.value) ? `Cluster: ${clust}` : `CellType: ${clust}`;
         paragraph.setAttribute('style', 'margin: 0; padding: 0');
         toolTipDiv?.appendChild(paragraph);
       } else {
         const values = [clust, sample, treat];
-        const key = ['Cluster', 'Run_ID', 'Condition'];
+        const key = [(!clusters_ann_flag.value) ? 'Cluster' : 'CellType', 'Run_ID', 'Condition'];
         values.forEach((v: string, i: any) => {
           const paragraph = document.createElement('p');
           paragraph.innerText = `${key[i]}: ${values[i]}`;
@@ -883,8 +988,8 @@ export default defineComponent({
       }
       visibility.value = 'visible';
     }
-    function showToolTipUmap(ev: any) {
-      toolTipTextUmap.value = `Cluster: ${ev}`;
+    function showToolTipUmap(clust: any) {
+      toolTipTextUmap.value = (!clusters_ann_flag.value) ? `Cluster: ${clust}` : `CellType: ${clust}`;
       visibilityUmap.value = 'visible';
     }
     function hideToolTipS() {
@@ -908,6 +1013,7 @@ export default defineComponent({
         path.setAttribute('d', strPath);
         globalSvgS.value.appendChild(path);
       } else if (isDrawingRect.value) {
+        console.log(ev);
         lassoSide.value = 'left';
         removeRegions();
         rect.setAttribute('x', `${ev.offsetX}`);
@@ -961,8 +1067,10 @@ export default defineComponent({
     function mouseMoveOnStageLeft(ev: any) {
       if (!isClicked.value) {
         if (ev.target.nodeName === 'circle') {
-          if (!multi_sample_flag.value) showToolTipSpatial(ev.target.attributes[5].value, '', '');
-          else showToolTipSpatial(ev.target.attributes[5].value, ev.target.attributes[7].value, ev.target.attributes[8].value);
+          const clust_cell = (!clusters_ann_flag.value) ? 5 : 7;
+          const add_one = (!clusters_ann_flag.value) ? 0 : 1;
+          if (!multi_sample_flag.value) showToolTipSpatial(ev.target.attributes[clust_cell].value, '', '');
+          else showToolTipSpatial(ev.target.attributes[clust_cell].value, ev.target.attributes[7 + add_one].value, ev.target.attributes[8 + add_one].value);
           const post = [`${ev.offsetX + 10}px`, `${ev.offsetY - 13}px`];
           TTposition.value = post;
         } else if (ev.target.id !== 'spatialGroup' && ev.target.nodeName !== 'circle') visibility.value = 'hidden';
@@ -992,7 +1100,7 @@ export default defineComponent({
     function mouseMoveOnStageRight(ev: any) {
       if (!isClickedU.value) {
         if (ev.target.nodeName === 'circle') {
-          showToolTipUmap(ev.target.attributes[5].value);
+          showToolTipUmap(ev.target.attributes[(!clusters_ann_flag.value) ? 5 : 7].value);
           const post = [`${ev.offsetX + 10}px`, `${ev.offsetY - 13}px`];
           TTpositionUmap.value = post;
         } else if (ev.target.id !== 'umapGroup' && ev.target.nodeName !== 'circle') visibilityUmap.value = 'hidden';
@@ -1138,7 +1246,6 @@ export default defineComponent({
     watch(runId, async (v: any) => {
       if (v !== null && !props.query.public) {
         spatialData.value = null;
-        totalInClust.value = {};
         loading.value = true;
         retrieveData();
       }
@@ -1160,6 +1267,7 @@ export default defineComponent({
         geneSummation.value = [];
         updateCircles();
       } else {
+        current_tixel_colors.value = [];
         loading.value = true;
         isClusterView.value = false;
         await obtainSummations();
@@ -1244,6 +1352,7 @@ export default defineComponent({
       colorFromParent,
       clickedClusterFromParent,
       totalInClust,
+      totalInCellType,
       averageInd,
       retrieveData,
       geneObject,
@@ -1266,6 +1375,7 @@ export default defineComponent({
       checkBoundaryColor,
       currentClickedCluster,
       assayFlag,
+      regulons_flag,
       originalClickedPoint,
       originalClickedPointU,
       globalSpatialGroup,
@@ -1289,6 +1399,7 @@ export default defineComponent({
       hideToolTipU,
       current_tixel_colors,
       multi_sample_flag,
+      clusters_ann_flag,
     };
   },
 });
