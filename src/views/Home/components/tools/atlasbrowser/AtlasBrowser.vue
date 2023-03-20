@@ -228,7 +228,7 @@
                 > BW </v-btn>
               </v-list>
             <div
-            v-if="!position_counts_present && updating_existing"
+            v-if="false && !position_counts_present && updating_existing"
             style="position: relative; padding-top: 15px; padding-bottom: 15px;"
             >
             <v-btn
@@ -714,6 +714,7 @@ export default defineComponent({
     const color_gradient_scale_numbers = ref<number[]>([]);
     const barcode_filename_options = ref<string[]>([]);
     const barcodes_in_list = ref<string[]>([]);
+    const barcode_mapping = computed(() => config.atlasxbrowser.barcode_mapping);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -832,6 +833,12 @@ export default defineComponent({
       roi.value.setScaleFactor(v);
       crop.value.setScaleFactor(v);
     }
+    function load_barcode_file_using_mapping(from_variable: string) {
+      const barcode_filename: string = barcode_mapping.value[from_variable as keyof typeof barcode_mapping.value];
+      if (barcode_filename) {
+        metadata.value.barcode_filename = barcode_filename;
+      }
+    }
     function assignMetadata(slimsData: any) {
       /**
        * Method used to assign slims api response to local metadata variable.
@@ -848,15 +855,6 @@ export default defineComponent({
         if (slimsData.cntn_cf_fk_workflow) {
           metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
         }
-        // if (slimsData.cntn_cf_fk_barcodeOrientation === '1 (normal)') {
-        //   metadata.value.barcodes = 1;
-        // } else if (slimsData.cntn_cf_fk_barcodeOrientation === '2 (reverseB)') {
-        //   metadata.value.barcodes = 2;
-        // } else if (slimsData.cntn_cf_fk_barcodeOrientation === '3 (reverseAB)') {
-        //   metadata.value.barcodes = 4;
-        // } else if (slimsData.cntn_cf_fk_barcodeOrientation === '4 (reverseA)') {
-        //   metadata.value.barcodes = 3;
-        // }
         metadata.value.comments_flowB = slimsData.comments_flowB;
         metadata.value.crosses_flowB = slimsData.crosses_flowB;
         metadata.value.blocks_flowB = slimsData.blocks_flowB;
@@ -866,6 +864,7 @@ export default defineComponent({
         metadata.value.blocks_flowA = slimsData.blocks_flowA;
         metadata.value.leak_flowA = slimsData.leak_flowA;
         metadata.value.tissue_type = slimsData.cntn_cf_fk_tissueType;
+        load_barcode_file_using_mapping(slimsData.cntn_cf_fk_barcodeOrientation);
       } catch (error) {
         console.log(error);
       }
@@ -886,7 +885,7 @@ export default defineComponent({
         assignMetadata(slimsData);
       } catch (error) {
         loading.value = false;
-        snackbar.dispatch({ text: 'Failed to create metadata', options: { color: 'error', right: true } });
+        snackbar.dispatch({ text: 'Failed to pull metadata from SLIMS.', options: { color: 'error', right: true } });
       }
     }
     // io
@@ -919,6 +918,10 @@ export default defineComponent({
         tissue_position_list_obj.value = resp_pos;
         loading.value = false;
         metadata.value = resp;
+        // Converting old format of {1,2,3,4} to new format of using barcode filename
+        if (resp.barcodes) {
+          load_barcode_file_using_mapping(resp.barcodes);
+        }
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         return true;
       }
@@ -1692,6 +1695,8 @@ export default defineComponent({
       prompt_to_use_existing_spatial.value = await loadMetadata();
       if (!prompt_to_use_existing_spatial.value) {
         get_image_options(folder_name.id);
+      } else {
+        show_metadata.value = true;
       }
     }
     watch(brushSize, (v) => {
