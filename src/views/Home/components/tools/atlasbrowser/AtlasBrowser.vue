@@ -478,12 +478,15 @@
                     </template>
                   </v-layer>
                   <v-layer>
-                  <v-shape v-for="p in roi.polygons"
+                  <v-group v-for="index in 50" :key="index">
+                    <v-shape v-for="p in roi.get_polygon_subset(index - 1, 50)"
                     :config="p"
                     v-bind:key="p.id"
                     @transformend="roi.setScaleFactor()"
                     @mousedown="handleMouseDown"
-                    />
+                    >
+                    </v-shape>
+                  </v-group>
                   </v-layer>
                   <v-layer
                     >
@@ -637,7 +640,7 @@ export default defineComponent({
     const brushSize = ref(20);
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
-    const roi = ref<ROI>(new ROI([0, 0], 0.15));
+    const roi = ref<ROI>(new ROI([0, 0], 0.15, null));
     const grid_visible = computed(() => {
       if (roi.value.polygons.length === 0) return false;
       return roi.value.polygons[0].visible;
@@ -780,7 +783,7 @@ export default defineComponent({
       /**
        * Method used to reset relevent variables when run is switched.
        */
-      roi.value = new ROI([0, 0], scaleFactor.value);
+      roi.value = new ROI([0, 0], scaleFactor.value, null);
       crop.value = new Crop([0, 0], scaleFactor.value);
       roi.value.setScaleFactor(scaleFactor.value);
       crop.value.setScaleFactor(scaleFactor.value);
@@ -934,6 +937,10 @@ export default defineComponent({
       return false;
     }
     async function retrieve_barcode_file() {
+      /**
+       * Method for loading barcode file into the browser, once has been selected by user.
+       * Return boolean: Whether or not the barcode file loaded in is valid. Validity based on the number of rows being a square.
+       */
       if (!metadata.value.barcode_filename) return false;
       const short_filename = metadata.value.barcode_filename;
       const path = config.atlasxbrowser.barcode_files_path.concat('/'.concat(short_filename));
@@ -1449,7 +1456,7 @@ export default defineComponent({
             cropLoading.value = false;
           });
         };
-        roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
+        roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value, channels.value);
       }
     }
     function finding_roi() {
