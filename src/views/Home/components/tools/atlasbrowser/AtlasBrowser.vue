@@ -947,6 +947,7 @@ export default defineComponent({
       roi.value.channels = channels.value;
       barcodes_in_list.value = [];
       bc_file.forEach((bc: string[]) => barcodes_in_list.value.push(bc[0]));
+      roi.value.channels = channels.value;
       return true;
     }
     function metadata_confirmed() {
