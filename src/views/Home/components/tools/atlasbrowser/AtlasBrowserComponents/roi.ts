@@ -160,7 +160,9 @@ export class ROI {
         }
       }
       pixval /= (2 * r) ** 2;
-      this.polygons[i].fill = pixval < threshold ? 'red' : null;
+      const on_tissue_local = pixval < threshold;
+      this.polygons[i].fill = on_tissue_local ? 'red' : null;
+      this.polygons[i].on_tissue = on_tissue_local;
     });
     return this.polygons;
   }

@@ -77,7 +77,7 @@ export default defineComponent({
       }
       // availableFiles.value = run_files;
       if (availableFiles.value.length === 0) {
-        availableFiles.value.push({ id: 0, file: 'Run '.concat(props.selectedRunID).concat(' has no associated files.') });
+        availableFiles.value.push({ id: 0, file: 'Run '.concat(props.selectedRunID).concat(' has no spatial folder.') });
       }
     }
     async function loadDisplayImage(filename: string) {

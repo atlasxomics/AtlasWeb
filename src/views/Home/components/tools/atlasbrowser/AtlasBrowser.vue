@@ -1563,8 +1563,10 @@ export default defineComponent({
           orientation: orientation.value,
           barcode_filename: metadata.value.barcode_filename,
           barcode_list: barcodes_in_list.value,
-          root_dir: root_spatial.value,
-          bucket: bucket_name_spatial.value,
+          bucket_name_bsa: bucket_name.value,
+          bucket_name_spatial: bucket_name_spatial.value,
+          root_dir_spatial: root_spatial.value,
+          root_dir_bsa: root.value,
           bsa_filename: full_bsa_filename.value,
           updating_existing: updating_existing.value,
         };
