@@ -63,9 +63,9 @@ export default defineComponent({
       let format_data: any = {};
       data.forEach((value: any, index: any) => {
         if (Object.keys(value).includes('position')) {
-          format_data = { data: { id: value.data.name, label: value.data.name, color: value.data.color_rgb, size: value.data.size, color_alpha: 1 - (value.data.color_alpha / 255) } };
+          format_data = { data: { id: value.data.name, label: value.data.name, color: value.data.color_rgb, size: value.data.size } };
         } else {
-          format_data = { data: { id: index, source: value.data.source, color: value.data.color_rgb, target: value.data.target, width: value.data.width, color_alpha: 1 - (value.data.color_alpha / 255) } };
+          format_data = { data: { id: index, source: value.data.source, color: value.data.color_rgb, target: value.data.target, width: value.data.width } };
         }
         holder_elements.push(format_data);
       });
