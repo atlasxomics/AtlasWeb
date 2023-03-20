@@ -99,7 +99,7 @@
               <v-row>
                 <v-col cols="12" sm="8">
                   <v-card-title style="cursor: pointer;" @click="runSpatial(data)">{{data.result_title}}</v-card-title>
-                  <v-card-subtitle>{{data.date}} <v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">Publication </a><b v-if="data.link !== null">({{data.journal}})</b> </v-card-subtitle>
+                  <v-card-subtitle>{{data.date}}<v-icon v-if="data.link !== null" small color="blue">mdi-paperclip</v-icon><a v-if="data.link !== null" style="color:#2196f3;text-decoration: none;" target="_blank" :href="data.link">{{data.journal}}</a></v-card-subtitle>
                   <v-card-text>{{`${data.result_description}, Experimental Condition: ${data.experimental_condition}${(data.epitope !== null) ? `; Antibody: ${data.epitope}` : ''}`}}</v-card-text>
                   <v-card-actions
                   style="position: relative; margin-top: 40px; margin-left: 10px;"
