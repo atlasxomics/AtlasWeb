@@ -64,74 +64,10 @@
         >
         </v-text-field>
         <v-text-field
-        v-if="lims_available"
-        outlined
-        dense
-        label="Sample Id"
-        v-model="metadata.sampleID"
-        >
-        </v-text-field>
-        <v-text-field
         v-model="metadata.chip_resolution"
         outlined
         dense
         label="Chip Resolution"
-        >
-        </v-text-field>
-        <v-text-field
-        v-if="lims_available"
-        v-model="metadata.comments_flowB"
-        outlined
-        dense
-        label="Comments Flow B"
-        >
-        </v-text-field>
-        <v-text-field
-        v-if="lims_available"
-        v-model="metadata.crosses_flowB"
-        outlined
-        dense
-        label="B Flow Crosses"
-        >
-        </v-text-field>
-        <v-text-field
-        v-if="lims_available"
-        v-model="metadata.leak_flowB"
-        outlined
-        dense
-        label="B Flow Leaks"
-        >
-        </v-text-field>
-        <v-text-field
-        v-if="lims_available"
-        v-model="metadata.comments_flowA"
-        outlined
-        dense
-        label="Flow A Comments"
-        >
-        </v-text-field>
-        <v-text-field
-        v-if="lims_available"
-        v-model="metadata.crosses_flowA"
-        outlined
-        dense
-        label="A Flow Crosses"
-        >
-        </v-text-field>
-        <v-text-field
-        v-if="lims_available"
-        v-model="metadata.blocks_flowA"
-        outlined
-        dense
-        label="A Flow Blocks"
-        >
-        </v-text-field>
-        <v-text-field
-        v-if="lims_available"
-        v-model="metadata.leak_flowA"
-        outlined
-        dense
-        label="A Flow Leak"
         >
         </v-text-field>
     </v-card-text>
