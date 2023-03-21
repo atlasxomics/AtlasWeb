@@ -814,6 +814,8 @@ export default defineComponent({
       show_counts_tixels.value = false;
       count_file_options.value = [];
       tissue_positions_counts_filename.value = '';
+      metadata_confirmed_bool.value = false;
+      original_barcode_filename.value = '';
     }
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
@@ -941,24 +943,51 @@ export default defineComponent({
       }
       return false;
     }
+    async function load_barcode_file_short_name(short_filename: string) {
+      /**
+       * Method for loading a barcode file from the atlasxbrowser.barcode_files_path directory.
+       * Return: string[]: list of barcodes in the barcode file.
+       */
+      const path = config.atlasxbrowser.barcode_files_path.concat('/'.concat(short_filename));
+      const pl = { params: { filename: path, bucket_name: bucket_name.value } };
+      const bc_file = await client.value?.getCsvFile(pl);
+      const barcode_list: string[] = [];
+      bc_file.forEach((row: string[]) => {
+        barcode_list.push(row[0]);
+      });
+      return barcode_list;
+    }
+    function get_num_channels_loaded_barcode_file(barcode_file: string[]) {
+      /**
+       * Method for determining the number of channels in the barcode file.
+       * Return: number: number of channels in the barcode file. -1 if the number of rows is not a square.
+       */
+      const num_chan_int = Math.floor(Math.sqrt(barcode_file.length));
+      if (num_chan_int * num_chan_int !== barcode_file.length) return -1;
+      return num_chan_int;
+    }
+    async function get_number_channels_barcode_filename(barcode_filename: string) {
+      /**
+       * Method for determining the number of channels in the barcode file.
+       * Return: number: number of channels in the barcode file. -1 if the number of rows is not a square.
+       */
+      const bc_file = await load_barcode_file_short_name(barcode_filename);
+      const num_chan_int = get_num_channels_loaded_barcode_file(bc_file);
+      return num_chan_int;
+    }
     async function retrieve_barcode_file() {
       /**
        * Method for loading barcode file into the browser, once has been selected by user.
        * Return boolean: Whether or not the barcode file loaded in is valid. Validity based on the number of rows being a square.
        */
       if (!metadata.value.barcode_filename) return false;
-      const short_filename = metadata.value.barcode_filename;
-      const path = config.atlasxbrowser.barcode_files_path.concat('/'.concat(short_filename));
-      const pl = { params: { filename: path, bucket_name: bucket_name.value } };
-      const bc_file = await client.value?.getCsvFile(pl);
+      const bc_file = await load_barcode_file_short_name(metadata.value.barcode_filename);
       if (!bc_file) return false;
-      const barcodes_file_length = bc_file.length;
-      const num_chan_int = Math.floor(Math.sqrt(barcodes_file_length));
-      if (num_chan_int * num_chan_int !== barcodes_file_length) return false;
+      const num_chan_int = get_num_channels_loaded_barcode_file(bc_file);
+      if (num_chan_int === -1) return false;
       channels.value = num_chan_int;
       roi.value.channels = channels.value;
-      barcodes_in_list.value = [];
-      bc_file.forEach((bc: string[]) => barcodes_in_list.value.push(bc[0]));
+      barcodes_in_list.value = bc_file;
       return true;
     }
     function uploadingTixels() {
