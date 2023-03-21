@@ -480,8 +480,8 @@
                     </template>
                   </v-layer>
                   <v-layer>
-                  <v-group v-for="index in 50" :key="index">
-                    <v-shape v-for="p in roi.get_polygon_subset(index - 1, 50)"
+                  <v-group v-for="index in 100" :key="index">
+                    <v-shape v-for="p in roi.get_polygon_subset(index - 1, 100)"
                     :config="p"
                     v-bind:key="p.id"
                     @transformend="roi.setScaleFactor()"
@@ -753,6 +753,9 @@ export default defineComponent({
       antibody: '',
     });
     function reset_metadata() {
+      /**
+       * Method used to reset metadata when run is switched.
+       */
       metadata.value = {
         points: [],
         run: null,
@@ -833,6 +836,9 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
     function onChangeScale(ev: any) {
+      /**
+       * Method used to update scale factor when slider is changed.
+       */
       const v = scaleFactor.value;
       current_image.value.scale = { x: v, y: v };
       konvaConfig.value.width = v * current_image.value.image.width;
@@ -842,7 +848,10 @@ export default defineComponent({
       roi.value.setScaleFactor(v);
       crop.value.setScaleFactor(v);
     }
-    function load_barcode_file_using_mapping(from_variable: string) {
+    function map_barcode_filename_config(from_variable: string) {
+      /**
+       * Method used to load barcode file using mapping from config.
+       */
       const barcode_filename: string = barcode_mapping.value[from_variable as keyof typeof barcode_mapping.value];
       if (barcode_filename) {
         metadata.value.barcode_filename = barcode_filename;
@@ -873,7 +882,7 @@ export default defineComponent({
         metadata.value.blocks_flowA = slimsData.blocks_flowA;
         metadata.value.leak_flowA = slimsData.leak_flowA;
         metadata.value.tissue_type = slimsData.cntn_cf_fk_tissueType;
-        load_barcode_file_using_mapping(slimsData.cntn_cf_fk_barcodeOrientation);
+        map_barcode_filename_config(slimsData.cntn_cf_fk_barcodeOrientation);
       } catch (error) {
         console.log(error);
       }
@@ -928,7 +937,7 @@ export default defineComponent({
         loading.value = false;
         metadata.value = resp;
         if (resp.barcodes) {
-          load_barcode_file_using_mapping(resp.barcodes);
+          map_barcode_filename_config(resp.barcodes);
         }
         original_barcode_filename.value = metadata.value.barcode_filename;
         // Converting old format of {1,2,3,4} to new format of using barcode filename
@@ -992,11 +1001,13 @@ export default defineComponent({
       return true;
     }
     function uploadingTixels(use_existing_pos_file = true) {
+      /**
+       * Method for converting data in metadata.json into tixel grid of the app.
+       * Args: use_existing_pos_file: whether or not to use the existing tissue_positions_list.csv when making a tixel grid.
+       */
       grid.value = true;
       cropFlag.value = true;
       const partitioned = splitarray(metadata.value.points, 2);
-      // conversion of the x and y coordinates designated in the tissue_positions_list file
-      // to being in memory of the app
       const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
@@ -1169,6 +1180,9 @@ export default defineComponent({
       loading.value = false;
     }
     function searchRuns(ev: any) {
+      /**
+       * Method to search run ids in the `run_id_folder_names` list based on the input string.
+       */
       const stringforRegex = ev;
       const updated = [];
       const regex = new RegExp(`${stringforRegex}[a-zA-z]*[0-9]*`);
@@ -1180,6 +1194,11 @@ export default defineComponent({
       run_id_folder_namesHolder.value = updated;
     }
     async function load_barcode_file_options() {
+      /**
+       * Method to load the barcode files in the `barcode_files_path` folder of the atlasxbrowser config.
+       * The files are loaded in the `barcode_filename_options` variable.
+       * Note: Ensure barcode_files_path is properly set in the config.
+       */
       if (!client.value) return;
       const barcode_path = config.atlasxbrowser.barcode_files_path.concat('/');
       const pl = { path: barcode_path, bucket: bucket_name.value, filter: '.txt', only_files: true, delimiter: '/' };
@@ -1302,6 +1321,9 @@ export default defineComponent({
       position_counts_present.value = true;
     }
     function handleResize(ev: any) {
+      /**
+       * Method to handle resizing of the window.
+       */
       const v = scaleFactor.value;
       if (current_image.value !== null) {
         current_image.value.scale = { x: v, y: v };
@@ -1345,6 +1367,9 @@ export default defineComponent({
       roi.value.polygons = [];
     }
     function handleDragMove(ev: any) {
+      /**
+       * Method to handle movement of roi corner.
+       */
       const { id } = ev.target.attrs;
       const pos = ev.target._lastPos;
       if (pos.x > 5 && pos.y > 5 && pos.x < stageWidth.value && pos.y < stageHeight.value) {
@@ -1380,6 +1405,10 @@ export default defineComponent({
       roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, attributes);
     }
     function handleMouseDown(ev: any) {
+      /**
+       * Method to handle mouse click.
+       * If the brush is being used, the brush_on_points method is called.
+       */
       if (roi.value.polygons.length === 0) return;
       if (isBrushMode.value) {
         isMouseDown.value = true;
@@ -1408,17 +1437,12 @@ export default defineComponent({
     function handleMouseUp(ev: any) {
       isMouseDown.value = false;
     }
-    // function handleMouseOver(ev: any) {
-    //   if (isMouseDown.value) {
-    //     const { id } = ev.target.attrs;
-    //     const idx = lodash.findIndex(roi.value.polygons, { id });
-    //     if (roi.value.polygons) {
-    //       roi.value.polygons[idx].fill = 'red';
-    //     }
-    //   }
-    // }
 
     function handleMouseMoveStage(ev: any) {
+      /**
+       * Method to handle mouse movement over the stage.
+       * If the brush is being used and mouse is being held down the brush_on_points method is called.
+       */
       if (isBrushMode.value || isEraseMode.value) {
         const pos = (ctx as any).refs.konvaStage.getNode().getPointerPosition();
         const { x, y } = pos;
@@ -1439,25 +1463,25 @@ export default defineComponent({
     function setBrushMode(tf: boolean) {
       isBrushMode.value = tf;
     }
-    function load_tixel_state() {
-      for (let i = 0; i < roi.value.polygons.length; i += 1) {
-        const ID = roi.value.polygons[i].id;
-        roi.value.polygons[i].fill = saved_grid_state.value?.get(ID) ? 'red' : null;
-      }
-    }
 
     function show_grid(ev: any) {
+      /**
+       * Method to show the grid.
+       */
       grid.value = true;
       roi.value.show_tixels();
-    }
-    function onLatticeButton(ev: any) {
-      show_grid(ev);
     }
     function hide_grid() {
       roi.value.toggle_tixel_visibility();
       // grid.value = false;
     }
     async function change_image(img: string) {
+      /**
+       * Method to change the image being displayed.
+       * If the image is postB and the postB image has not been loaded yet, the function waits for it to load.
+       * The specified image is set to current_image and the corresponding image_displayed value is set to true.
+       * @img: string, the image to be displayed. Can be 'postB', 'BSA', or 'BW'
+       */
       bsa_image_displayed.value = false;
       postB_image_displayed.value = false;
       bw_image_displayed.value = false;
@@ -1480,6 +1504,10 @@ export default defineComponent({
       current_image.value.image.src = new_img;
     }
     function onCropButton(ev: any) {
+      /**
+       * Method to handle the crop button being clicked.
+       * Based on the locations of corners of the crop box, the image is cropped on the canvas and the new image is set to current_image.
+       */
       const coords = crop.value.getCoordinatesOnImage();
       const { width, height } = current_image.value.image;
       const [x1, y1, x2, y2] = coords;
@@ -1512,19 +1540,19 @@ export default defineComponent({
       }
     }
     function finding_roi() {
+      /**
+       * Method called when `activate` roi finding is selected.
+       */
       grid.value = true;
       active_roi_available.value = false;
       roi_active.value = true;
     }
 
-    function clear_filled_tixels() {
-      for (let i = 0; i < roi.value.polygons.length; i += 1) {
-        roi.value.polygons[i].fill = null;
-        const cleared = saved_grid_state.value?.clear();
-      }
-    }
-
     function threshold_image(img_src: any) {
+      /**
+       * Method to threshold the image using the parameters specified for c and neighborhood size.
+       * Thresholding is done on canvas.
+       */
       threshLoading.value = true;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
@@ -1560,6 +1588,10 @@ export default defineComponent({
       });
     }
     function thresh_clicked() {
+      /**
+       * Method directly called when the threshold button is clicked.
+       * Utilizes the postB image to threshold and calls threshold_image.
+       */
       if (!current_image.value) return;
       if (!postB_image_promise.value) return;
       loading.value = true;
@@ -1577,9 +1609,18 @@ export default defineComponent({
       one.value = value;
     };
     async function showSpatialFolder() {
+      /**
+       * Method called when `Show Spatial Folder` button is clicked.
+       * Sets the `show_spatial_folder` value to true.
+       */
       checkSpatial.value = true;
     }
     async function generateSpatial() {
+      /**
+       * Generates the spatial folder.
+       * Calls the `atlasbrowser.generate_spatial` task to generate the spatial folder.
+       * Passes metadata, crop area, roi coordinates, and relevant filenames.
+       */
       if (!client.value) return;
       if (!metadata.value.barcode_filename) {
         snackbar.dispatch({ text: 'Must Select Barcode File Before Generating Spatial Folder', options: { color: 'warning', right: true } });
@@ -1678,6 +1719,11 @@ export default defineComponent({
       }
     }
     function handle_spatial_call() {
+      /**
+       * Method called when `Generate Spatial Folder` button is clicked.
+       * Checks if client is initialized and image processing is complete.
+       * If so, calls `generateSpatial` method.
+       */
       if (!client.value) {
         snackbar.dispatch({ text: 'Client is not initialized', options: { right: true, color: 'error' } });
       } else if (!tixels_filled.value) {
@@ -1687,11 +1733,21 @@ export default defineComponent({
       }
     }
     async function update_run_function() {
+      /**
+       * Method called when `Update Run` button is clicked.
+       * Sets proper boolean values before following the same process as `load_and_begin_image_processing`.
+       */
       prompt_to_use_existing_spatial.value = false;
       updating_existing.value = true;
       await load_and_begin_image_processing();
     }
     function autoFill(ev: any) {
+      /**
+       * Method called when `Auto Fill` button is clicked.
+       * If the tixels are not already placed they are loaded onto the image.
+       * The `autoMask` method is called to fill the tixels.
+       * This method then sets the `tixels_filled` boolean to true, which is used to determine if the image processing is complete.
+       */
       grid.value = true;
       if (roi.value.polygons.length === 0) {
         roi.value.generatePolygons();
@@ -1700,6 +1756,10 @@ export default defineComponent({
       tixels_filled.value = true;
     }
     async function fetchFileList() {
+      /**
+       * Method that gets all of the files in the specific directory where the BSA files are stored.
+       * The results of this are passed to the worker when generating spatial folder to move non bsa images to figure folder.
+       */
       if (!client.value) {
         return;
       }
@@ -1722,11 +1782,20 @@ export default defineComponent({
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
     async function get_count_file_options(current_run_id: string) {
+      /**
+       * Method that gets all of the csv files in the root directory where the bsa files are stored.
+       */
       const pl = { bucket: bucket_name_spatial.value, path: `${root_spatial.value}/${current_run_id}/`, filter: ['.csv'] };
       const options = await client.value?.getFileList(pl);
       count_file_options.value = options;
     }
     async function get_image_options(folder_name: string) {
+      /**
+       * Method that gets all of the images in the directory selected by the user.
+       * If there is only one image in the directory, it is automatically selected.
+       * If there are no images in the directory, an error message is displayed.
+       * If there are multiple images in the directory, the user is prompted to select one.
+       */
       const pl = { bucket: bucket_name.value, path: `${root.value}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
       file_options.value = await client.value?.getFileList(pl);
       if (file_options.value.length === 1) {
@@ -1738,13 +1807,20 @@ export default defineComponent({
       }
     }
     async function reprocess_image(run_id_param: string) {
-      // initialize();
+      /**
+       * Method called when the user decides to `Reprocess` the run when there is already a spatial folder.
+       */
       reset_metadata();
       await getMeta();
       get_image_options(run_id_param);
       prompt_to_use_existing_spatial.value = false;
     }
     async function run_folder_selected(folder_name: any) {
+      /**
+       * Method called when the user selects a run id from the dropdown selector.
+       * This leads to various options of whether to reprocess/update or the selection of specific images.
+       * If client is not initialized, the method returns early.
+       */
       if (!clientReady) {
         return;
       }
@@ -1876,7 +1952,6 @@ export default defineComponent({
       threshLoading,
       orientation,
       drop_down_manager,
-      onLatticeButton,
       onCropButton,
       one,
       two,
@@ -1916,8 +1991,6 @@ export default defineComponent({
       rotate_bsa_image,
       saved_grid_state,
       hide_grid,
-      load_tixel_state,
-      clear_filled_tixels,
       degreeRotation,
       assignMetadata,
       checkSpatial,
