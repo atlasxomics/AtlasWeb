@@ -1020,23 +1020,25 @@ export default defineComponent({
        * Method called when user confirms current metadata.
        */
       show_metadata.value = false;
-      loading.value = true;
-      const proper_barcode_file = await retrieve_barcode_file();
-      if (!proper_barcode_file) {
-        console.log('show error message');
-      } else {
-        let tixels_filled_local = true;
-        let use_existing_pos_file = true;
-        if (updating_existing.value) {
-          if (metadata.value.barcode_filename !== original_barcode_filename.value) {
-            const num_channel_old = await get_number_channels_barcode_filename(original_barcode_filename.value);
-            if (num_channel_old !== channels.value) {
-              tixels_filled_local = false;
-              use_existing_pos_file = false;
+      if (!metadata_confirmed_bool.value) {
+        loading.value = true;
+        const proper_barcode_file = await retrieve_barcode_file();
+        if (!proper_barcode_file) {
+          console.log('show error message');
+        } else {
+          let tixels_filled_local = true;
+          let use_existing_pos_file = true;
+          if (updating_existing.value) {
+            if (metadata.value.barcode_filename !== original_barcode_filename.value) {
+              const num_channel_old = await get_number_channels_barcode_filename(original_barcode_filename.value);
+              if (num_channel_old !== channels.value) {
+                tixels_filled_local = false;
+                use_existing_pos_file = false;
+              }
             }
+            uploadingTixels(use_existing_pos_file);
+            tixels_filled.value = tixels_filled_local;
           }
-          uploadingTixels(use_existing_pos_file);
-          tixels_filled.value = tixels_filled_local;
         }
       }
       metadata_confirmed_bool.value = true;
