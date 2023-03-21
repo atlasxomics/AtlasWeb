@@ -1015,6 +1015,13 @@ export default defineComponent({
         roi.value.loadTixels(tissue_position_list_obj.value);
       }
     }
+    function show_grid() {
+      /**
+       * Method to show the grid.
+       */
+      grid.value = true;
+      roi.value.show_tixels();
+    }
     async function metadata_confirmed() {
       /**
        * Method called when user confirms current metadata.
@@ -1038,6 +1045,9 @@ export default defineComponent({
             }
             uploadingTixels(use_existing_pos_file);
             tixels_filled.value = tixels_filled_local;
+            if (!tixels_filled_local) {
+              show_grid();
+            }
           }
         }
       }
@@ -1464,14 +1474,6 @@ export default defineComponent({
     }
     function setBrushMode(tf: boolean) {
       isBrushMode.value = tf;
-    }
-
-    function show_grid(ev: any) {
-      /**
-       * Method to show the grid.
-       */
-      grid.value = true;
-      roi.value.show_tixels();
     }
     function hide_grid() {
       roi.value.toggle_tixel_visibility();
