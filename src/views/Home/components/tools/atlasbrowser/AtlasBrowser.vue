@@ -276,7 +276,7 @@
                 />
                 <template>
                   <v-btn
-                  :disabled="(!tixels_filled && !updating_existing)"
+                  :disabled="!tixels_filled"
                   outlined
                   x-small
                   dense
@@ -720,7 +720,7 @@ export default defineComponent({
     const barcode_filename_options = ref<string[]>([]);
     const barcodes_in_list = ref<string[]>([]);
     const barcode_mapping = computed(() => config.atlasxbrowser.barcode_mapping);
-    const original_barcode_filename = ref<string>('');
+    const original_barcode_filename = ref<string|null>('');
     const metadata_confirmed_bool = ref<boolean>(false);
     // Metadata
     const metadata = ref<Metadata>({
@@ -927,11 +927,11 @@ export default defineComponent({
         tissue_position_list_obj.value = resp_pos;
         loading.value = false;
         metadata.value = resp;
-        original_barcode_filename.value = resp.barcode_filename;
-        // Converting old format of {1,2,3,4} to new format of using barcode filename
         if (resp.barcodes) {
           load_barcode_file_using_mapping(resp.barcodes);
         }
+        original_barcode_filename.value = metadata.value.barcode_filename;
+        // Converting old format of {1,2,3,4} to new format of using barcode filename
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         return true;
       }
@@ -966,11 +966,12 @@ export default defineComponent({
       if (num_chan_int * num_chan_int !== barcode_file.length) return -1;
       return num_chan_int;
     }
-    async function get_number_channels_barcode_filename(barcode_filename: string) {
+    async function get_number_channels_barcode_filename(barcode_filename: string | null) {
       /**
        * Method for determining the number of channels in the barcode file.
        * Return: number: number of channels in the barcode file. -1 if the number of rows is not a square.
        */
+      if (!barcode_filename) return -1;
       const bc_file = await load_barcode_file_short_name(barcode_filename);
       const num_chan_int = get_num_channels_loaded_barcode_file(bc_file);
       return num_chan_int;
@@ -990,7 +991,7 @@ export default defineComponent({
       barcodes_in_list.value = bc_file;
       return true;
     }
-    function uploadingTixels() {
+    function uploadingTixels(use_existing_pos_file = true) {
       grid.value = true;
       cropFlag.value = true;
       const partitioned = splitarray(metadata.value.points, 2);
@@ -999,23 +1000,36 @@ export default defineComponent({
       const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
       roi.value.setCoordinates(roi_coords);
       orientation.value = metadata.value.orientation;
-      roi.value.loadTixels(tissue_position_list_obj.value);
+      if (use_existing_pos_file) {
+        roi.value.loadTixels(tissue_position_list_obj.value);
+      }
     }
-    function metadata_confirmed() {
+    async function metadata_confirmed() {
       /**
        * Method called when user confirms current metadata.
        */
-      const proper_barcode_file = retrieve_barcode_file();
+      show_metadata.value = false;
+      loading.value = true;
+      const proper_barcode_file = await retrieve_barcode_file();
       if (!proper_barcode_file) {
         console.log('show error message');
       } else {
+        let tixels_filled_local = true;
+        let use_existing_pos_file = true;
         if (updating_existing.value) {
-          uploadingTixels();
-          tixels_filled.value = true;
+          if (metadata.value.barcode_filename !== original_barcode_filename.value) {
+            const num_channel_old = await get_number_channels_barcode_filename(original_barcode_filename.value);
+            if (num_channel_old !== channels.value) {
+              tixels_filled_local = false;
+              use_existing_pos_file = false;
+            }
+          }
+          uploadingTixels(use_existing_pos_file);
+          tixels_filled.value = tixels_filled_local;
         }
-        show_metadata.value = false;
       }
       metadata_confirmed_bool.value = true;
+      loading.value = false;
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
       /**
@@ -1946,6 +1960,7 @@ export default defineComponent({
       barcodes_in_list,
       reprocess_image,
       metadata_confirmed_bool,
+      original_barcode_filename,
     };
   },
 });
