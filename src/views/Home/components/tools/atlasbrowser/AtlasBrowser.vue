@@ -38,12 +38,13 @@
         </v-dialog>
         <!-- metdata panel -->
         <!-- to display must select icon and have either be tissue_position_list_obj be empty and a runID selected or image_processing_begun be true. -->
+        <!-- Make this v-dialog persistent only on the condition that the variable metadata_confirmed_bool is true -->
         <v-dialog
           width="600"
           height="800"
           v-if="image_processing_begun"
           :value="show_metadata"
-          persistent
+          :persistent="!metadata_confirmed_bool"
           >
           <metadata-dropdown
           :metadata ="metadata"
@@ -52,6 +53,7 @@
           :lims_available="lims_available"
           :updating_existing="updating_existing"
           :barcode_filename_list="barcode_filename_options"
+          :metadata_confirmed_bool="metadata_confirmed_bool"
           @confirmed="metadata_confirmed"
           @barcode-file-selected="retrieve_barcode_file"
           > </metadata-dropdown>
@@ -718,6 +720,8 @@ export default defineComponent({
     const barcode_filename_options = ref<string[]>([]);
     const barcodes_in_list = ref<string[]>([]);
     const barcode_mapping = computed(() => config.atlasxbrowser.barcode_mapping);
+    const original_barcode_filename = ref<string>('');
+    const metadata_confirmed_bool = ref<boolean>(false);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -921,6 +925,7 @@ export default defineComponent({
         tissue_position_list_obj.value = resp_pos;
         loading.value = false;
         metadata.value = resp;
+        original_barcode_filename.value = resp.barcode_filename;
         // Converting old format of {1,2,3,4} to new format of using barcode filename
         if (resp.barcodes) {
           load_barcode_file_using_mapping(resp.barcodes);
@@ -954,8 +959,18 @@ export default defineComponent({
       roi.value.channels = channels.value;
       barcodes_in_list.value = [];
       bc_file.forEach((bc: string[]) => barcodes_in_list.value.push(bc[0]));
-      roi.value.channels = channels.value;
       return true;
+    }
+    function uploadingTixels() {
+      grid.value = true;
+      cropFlag.value = true;
+      const partitioned = splitarray(metadata.value.points, 2);
+      // conversion of the x and y coordinates designated in the tissue_positions_list file
+      // to being in memory of the app
+      const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
+      roi.value.setCoordinates(roi_coords);
+      orientation.value = metadata.value.orientation;
+      roi.value.loadTixels(tissue_position_list_obj.value);
     }
     function metadata_confirmed() {
       /**
@@ -965,8 +980,13 @@ export default defineComponent({
       if (!proper_barcode_file) {
         console.log('show error message');
       } else {
+        if (updating_existing.value) {
+          uploadingTixels();
+          tixels_filled.value = true;
+        }
         show_metadata.value = false;
       }
+      metadata_confirmed_bool.value = true;
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
       /**
@@ -1237,17 +1257,6 @@ export default defineComponent({
       color_gradient_scale_numbers.value = [min_number, pct_50_number, max_num];
       snackbar.dispatch({ text: 'Successfully Loaded Tissue Position Counts', options: { color: 'green', position: 'center' } });
       position_counts_present.value = true;
-    }
-    function uploadingTixels() {
-      grid.value = true;
-      cropFlag.value = true;
-      const partitioned = splitarray(metadata.value.points, 2);
-      // conversion of the x and y coordinates designated in the tissue_positions_list file
-      // to being in memory of the app
-      const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
-      roi.value.setCoordinates(roi_coords);
-      orientation.value = metadata.value.orientation;
-      roi.value.loadTixels(tissue_position_list_obj.value);
     }
     function handleResize(ev: any) {
       const v = scaleFactor.value;
@@ -1637,9 +1646,7 @@ export default defineComponent({
     async function update_run_function() {
       prompt_to_use_existing_spatial.value = false;
       updating_existing.value = true;
-      tixels_filled.value = true;
       await load_and_begin_image_processing();
-      uploadingTixels();
     }
     function autoFill(ev: any) {
       grid.value = true;
@@ -1909,6 +1916,7 @@ export default defineComponent({
       retrieve_barcode_file,
       barcodes_in_list,
       reprocess_image,
+      metadata_confirmed_bool,
     };
   },
 });

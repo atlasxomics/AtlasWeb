@@ -12,6 +12,7 @@
         dense
         label="Barcode File"
         :items="barcode_filename_list"
+        :disabled="metadata_confirmed_bool"
         >
         </v-select>
         <selector
@@ -100,6 +101,7 @@ export default defineComponent({
     lims_available: { type: Boolean, required: true },
     updating_existing: { type: Boolean, required: true },
     barcode_filename_list: { type: Array, required: true },
+    metadata_confirmed_bool: { type: Boolean, required: true },
   },
   setup(props, ctx) {
     function metadata_confirmed() {
