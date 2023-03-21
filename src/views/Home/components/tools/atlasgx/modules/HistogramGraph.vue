@@ -88,7 +88,11 @@ export default defineComponent({
             type: 'histogram',
           };
           const titleArray = [(!assayFromParent.value) ? 'TSS Enrichment' : 'Gene Count', (!assayFromParent.value) ? 'Log10 Unique Fragments' : 'UMI Count'];
-          multGenes[i] = { id: i, data: [trace], layout: { title: titleArray[i], traceorder: 'normal' } };
+          multGenes[i] = {
+            id: i,
+            data: [trace],
+            layout: { title: titleArray[i], traceorder: 'normal', xaxis: { title: 'Count' }, yaxis: { title: 'Amount of Tixels' } },
+          };
         }
         data.value = multGenes;
       }

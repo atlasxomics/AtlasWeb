@@ -224,9 +224,13 @@ export default defineComponent({
         await timer(30);
       };
       for (let i = 0; i < selectedGenesFromParent.value.length; i += 1) {
-        if (!document.getElementById(`svg${selectedGenesFromParent.value[i]}`)) await repeat(selectedGenesFromParent.value[i], i);
+        await repeat(selectedGenesFromParent.value[i], i);
       }
       initialized.value = true;
+    }
+    async function removeOld() {
+      const container = document.getElementById('viewContainer')!;
+      container.replaceChildren();
     }
     async function updateCircles() {
       if (coordinates.value === undefined) return;
@@ -288,7 +292,7 @@ export default defineComponent({
       }
       updateCircles();
     });
-    watch([coordGene, selectedGenesFromParent, colorsValues, maxMinBoundaryFromParents], ([v, x, y, z], [prevv, prevx, prevy, prevz]) => {
+    watch([coordGene, selectedGenesFromParent, colorsValues, maxMinBoundaryFromParents], async ([v, x, y, z], [prevv, prevx, prevy, prevz]) => {
       if (v !== undefined && x !== undefined && y !== undefined && v !== prevv) {
         coordinates.value = v.coords;
         colors_intensity.value = v.intense;
@@ -296,6 +300,7 @@ export default defineComponent({
         maxMin.value = y.maxMin;
         if (z[0] === '' && z[1] === '') maxMinBoundary.value = [];
         else maxMinBoundary.value = z;
+        await removeOld();
         initializePlots();
       }
     }, { deep: true });
@@ -341,6 +346,7 @@ export default defineComponent({
       resizeCircles,
       initialized,
       initializePlots,
+      removeOld,
     };
   },
 });

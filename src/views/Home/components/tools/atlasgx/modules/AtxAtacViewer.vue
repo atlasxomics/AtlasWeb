@@ -55,8 +55,8 @@
         @mouseup="mouseUpOnStageLeft"
         @mouseleave="hideToolTipS">
         <div id="toolTipSpatial" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}"></div>
-        <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`">
-          <svg id="spatialGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
+        <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height">
+          <svg id="spatialGroup" x="30" y="30" style="pointer-events:bounding-box" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -125,8 +125,8 @@
         @mouseup="mouseUpOnStageRight"
         @mouseleave="hideToolTipU">
         <div id="toolTipUmap" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}">{{toolTipTextUmap}}</div>
-        <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`" >
-          <svg id="umapGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
+        <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height">
+          <svg id="umapGroup" x="30" y="30" style="pointer-events:bounding-box" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -1013,7 +1013,6 @@ export default defineComponent({
         path.setAttribute('d', strPath);
         globalSvgS.value.appendChild(path);
       } else if (isDrawingRect.value) {
-        console.log(ev);
         lassoSide.value = 'left';
         removeRegions();
         rect.setAttribute('x', `${ev.offsetX}`);

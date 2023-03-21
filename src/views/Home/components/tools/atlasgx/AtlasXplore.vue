@@ -639,7 +639,7 @@
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                 </template>
-                <network-graph v-show="geneMotif == 'celltype'" :selected_regulons="childGenes" :run_id="runId" ></network-graph>
+                <template v-if="clusters_ann_list.length > 2"><network-graph v-show="geneMotif == 'celltype'" :selected_regulons="childGenes" :run_id="runId" ></network-graph></template>
                 <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
               </v-card>
             </div>
@@ -988,35 +988,19 @@ export default defineComponent({
     // Functions to caprture images and save them
     function captureScreen(background: string) {
       displayFlag.value = false;
-      if (!averageInd.value) {
-        const canvas = document.createElement('canvas');
+      if (isClusterView.value || (!isClusterView.value && !averageInd.value)) {
         const canvas2 = document.createElement('canvas');
-        const canvas3 = document.createElement('canvas');
-        const context = canvas.getContext('2d')!;
         const context2 = canvas2.getContext('2d')!;
-        const el = document.getElementById('spatialGroup')!;
-        const el2 = document.getElementById('umapGroup')!;
-        const widthS = el.getBoundingClientRect().width + 12;
-        const heightS = el.getBoundingClientRect().height + 12;
-        const widthS2 = el2.getBoundingClientRect().width + 12;
-        const heightS2 = el2.getBoundingClientRect().height + 12;
-        canvas.width = widthS;
-        canvas.height = heightS;
-        canvas2.width = widthS2;
-        canvas2.height = heightS2;
-        const svgURL = new XMLSerializer().serializeToString(el);
-        const svgURL2 = new XMLSerializer().serializeToString(el2);
-        const image = new window.Image();
-        const image2 = new window.Image();
+        const plot_ids = ['spatialGroup', 'umapGroup'];
+        let widthS = 0;
+        let heightS = 0;
         let count = 0;
-        const go = () => {
+        let xValues: any[];
+        const go = (can: any, x: any, y: any) => {
+          count += 1;
+          context2?.drawImage(can, x, y);
           if (count === 2) {
-            canvas3.width = (widthS > widthS2) ? widthS * 2 : widthS2 * 2;
-            canvas3.height = (heightS > heightS2) ? heightS : heightS2;
-            const context3 = canvas3.getContext('2d')!;
-            context3.drawImage(canvas, 0, 0);
-            context3.drawImage(canvas2, widthS + 30, 0);
-            const base64image = canvas3.toDataURL('image/png');
+            const base64image = canvas2.toDataURL('image/png');
             const pom = document.createElement('a');
             pom.id = `${runId.value}link`;
             pom.href = base64image;
@@ -1025,18 +1009,30 @@ export default defineComponent({
             pom.click();
           }
         };
-        image.onload = () => {
-          context.drawImage(image, 0, 0, widthS, heightS);
-          count += 1;
-          if (count === 2) go();
-        };
-        image2.onload = () => {
-          context2.drawImage(image2, 0, 0, widthS2, heightS2);
-          count += 1;
-          if (count === 2) go();
-        };
-        image.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL)}`;
-        image2.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL2)}`;
+        plot_ids.forEach((gene: any, i: any) => {
+          const tag = `${gene}`;
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          const el = document.getElementById(`${tag}`)!;
+          widthS = el.getBoundingClientRect().width + 8;
+          heightS = el.getBoundingClientRect().height + 8;
+          if (i === 0) {
+            canvas2.width = widthS * 2;
+            canvas2.height = heightS;
+            xValues = [0, widthS * 1];
+          }
+          canvas.width = widthS;
+          canvas.height = heightS;
+          const svgURL = new XMLSerializer().serializeToString(el);
+          const image = new window.Image();
+          const x = xValues[i % 2];
+          const y = 0;
+          image.onload = () => {
+            context?.drawImage(image, 0, 0, widthS, heightS);
+            go(canvas, x, y);
+          };
+          image.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL)}`;
+        });
       } else {
         const arrayOfCanvas: any = [];
         const canvas2 = document.createElement('canvas');
@@ -1084,7 +1080,6 @@ export default defineComponent({
             go(canvas, x, y);
           };
           image.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL)}`;
-          arrayOfCanvas.push(canvas);
         });
         // arrayOfCanvas.forEach((v: any, i: any) => {
         //   const x = widthS * i;
