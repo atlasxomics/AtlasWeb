@@ -229,8 +229,10 @@ export default defineComponent({
       initialized.value = true;
     }
     async function removeOld() {
-      const container = document.getElementById('viewContainer')!;
-      container.replaceChildren();
+      const parent = document.getElementById('viewContainer')!;
+      while (parent.firstChild) {
+        parent.firstChild.remove();
+      }
     }
     async function updateCircles() {
       if (coordinates.value === undefined) return;
