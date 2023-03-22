@@ -266,7 +266,8 @@ export class ROI {
       elm.radius = v.radius * ratio;
       elm.centerx = v.centerx * ratio;
       elm.centery = v.centery * ratio;
-      elm.strokeWidth = this.scalefactor < 0.11 ? 0 : Math.min(ratio, 1.0);
+      elm.strokeWidth = Math.max(1 - this.scalefactor, 0.1) * 0.8;
+      // elm.strokeWidth = this.scalefactor < 0.11 ? 0 : Math.min(ratio, 1.0);
       newPolygons.push(elm);
     });
     // this.generatePolygons();
@@ -383,7 +384,7 @@ export class ROI {
           radius: slope[0],
           opacity: 1,
           stroke: 'black',
-          strokeWidth: 1,
+          strokeWidth: 0.5,
           listening: true,
           posit: [j, i],
           scaleX: 1.0,
