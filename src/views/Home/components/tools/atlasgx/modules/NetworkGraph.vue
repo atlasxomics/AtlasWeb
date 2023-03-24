@@ -1,5 +1,5 @@
 <template>
-  <v-row>
+  <v-row v-if="go">
     <v-col cols="12" sm="9">
       <template v-if="elements"><VueCytoscape :key="update_component" ref="cyRef" :config="config" :preConfig="preConfig" :afterCreated="afterCreated" /></template>
     </v-col>
@@ -29,11 +29,12 @@ import styles from './styles';
 export default defineComponent({
   name: 'NetworkGraph',
   components: { VueCytoscape },
-  props: ['selected_regulons', 'run_id'],
+  props: ['selected_regulons', 'run_id', 'flag'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const regulons_from_parent = computed(() => props.selected_regulons);
     const runId = computed(() => props.run_id);
+    const go = computed(() => props.flag);
     const elements = ref<any>();
     const all_elements = ref<any>();
     const config = ref<any>();
@@ -137,7 +138,7 @@ export default defineComponent({
     });
     watch(runId, async (v: any) => {
       /* eslint-disable no-await-in-loop */
-      if (typeof v === 'string') {
+      if (typeof v === 'string' && go.value) {
         const payload = { path: `data/${runId.value}/h5/networks`, bucket: '', filter: ['json'] };
         const important_objects = await client.value?.getFileList(payload);
         important_objects.sort();
@@ -170,7 +171,7 @@ export default defineComponent({
         update_component.value += 1;
       }
     });
-    return { elements, config, regulons_from_parent, update_component, all_cell_types, current_selected, default_layout, preConfig, afterCreated, constructGraph, sliceGraph, updateLayout };
+    return { elements, config, regulons_from_parent, update_component, all_cell_types, current_selected, default_layout, go, preConfig, afterCreated, constructGraph, sliceGraph, updateLayout };
   },
 });
 
