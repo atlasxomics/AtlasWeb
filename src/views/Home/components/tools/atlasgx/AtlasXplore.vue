@@ -169,7 +169,7 @@
                 </template>
                 <template v-else-if="row.item == 'regulon'">
                   <tr @click="changeClustersAnn(row.item)">
-                    <td>{{row.item}}</td>
+                    <td>e{{row.item}}</td>
                   </tr>
                 </template>
               </template>
@@ -1488,7 +1488,7 @@ export default defineComponent({
           const span = btn.childNodes[0] as HTMLElement;
           if (v === 'gene') span.innerText = 'GENE';
           else if (v === 'motif') span.innerText = 'MOTIF';
-          else if (v === 'regulon') span.innerText = 'REGULON';
+          else if (v === 'regulon') span.innerText = 'EREGULON';
         }
         userMaxValue.value = '';
         userMinValue.value = '';
