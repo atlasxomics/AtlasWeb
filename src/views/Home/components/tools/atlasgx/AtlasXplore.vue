@@ -1404,7 +1404,7 @@ export default defineComponent({
       else addCellType.push('motif');
       if (globalXploreData.value.regulons_flag) {
         regulons_flag.value = true;
-        addCellType.push('regulon');
+        addCellType.push('eRegulon');
       }
       clusters_ann_list.value = addCellType;
     }
@@ -1432,7 +1432,7 @@ export default defineComponent({
       else addCellType.push('motif');
       if (ev.regulons_flag) {
         regulons_flag.value = true;
-        addCellType.push('regulon');
+        addCellType.push('eRegulon');
       }
       clusters_ann_list.value = addCellType;
       metadata.value.species = ev.species;
