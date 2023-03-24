@@ -1031,7 +1031,9 @@ export default defineComponent({
         loading.value = true;
         const proper_barcode_file = await retrieve_barcode_file();
         if (!proper_barcode_file) {
-          console.log('show error message');
+          show_metadata.value = true;
+          metadata_confirmed_bool.value = false;
+          snackbar.dispatch({ text: 'Invalid barcode file.', options: { color: 'error' } });
         } else {
           let tixels_filled_local = true;
           let use_existing_pos_file = true;
@@ -1049,9 +1051,9 @@ export default defineComponent({
               show_grid();
             }
           }
+          metadata_confirmed_bool.value = true;
         }
       }
-      metadata_confirmed_bool.value = true;
       loading.value = false;
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
