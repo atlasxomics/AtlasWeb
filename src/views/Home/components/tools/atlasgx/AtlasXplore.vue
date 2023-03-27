@@ -168,8 +168,8 @@
                   </tr>
                 </template>
                 <template v-else-if="row.item == 'eRegulon'">
-                  <tr @click="changeClustersAnn(row.item)">
-                    <td>e{{row.item}}</td>
+                  <tr @click="changeClustersAnn('regulon')">
+                    <td>{{row.item}}</td>
                   </tr>
                 </template>
               </template>
