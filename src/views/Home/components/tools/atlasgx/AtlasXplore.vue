@@ -167,9 +167,9 @@
                     <td>{{row.item}}</td>
                   </tr>
                 </template>
-                <template v-else-if="row.item == 'celltype'">
+                <template v-else-if="row.item == 'eRegulon'">
                   <tr @click="changeClustersAnn(row.item)">
-                    <td>{{row.item}}</td>
+                    <td>e{{row.item}}</td>
                   </tr>
                 </template>
               </template>
@@ -243,7 +243,7 @@
                 <v-card-title>
                   <template v-if="geneMotif == 'gene'"><span class="text-h5">Top 10 Genes</span></template>
                   <template v-if="geneMotif == 'motif'"><span class="text-h5">Top 10 Motifs</span></template>
-                  <template v-if="geneMotif == 'celltype'"><span class="text-h5">Top 10 Regulons</span></template>
+                  <template v-if="geneMotif == 'regulon'"><span class="text-h5">Top 10 Regulons</span></template>
                 </v-card-title>
                 <v-card-text>
                   {{topSelected}}
@@ -639,7 +639,7 @@
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                 </template>
-                <network-graph v-show="geneMotif == 'celltype'" :selected_regulons="childGenes" :run_id="runId" ></network-graph>
+                <network-graph v-show="geneMotif == 'regulon'" :selected_regulons="childGenes" :run_id="runId" :flag="regulons_flag"></network-graph>
                 <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
               </v-card>
             </div>
@@ -992,10 +992,17 @@ export default defineComponent({
         const canvas2 = document.createElement('canvas');
         const context2 = canvas2.getContext('2d')!;
         const plot_ids = ['spatialGroup', 'umapGroup'];
-        let widthS = 0;
-        let heightS = 0;
+        const el = document.getElementById('spatialGroup')!;
+        const el2 = document.getElementById('umapGroup')!;
+        console.log(el2.getAttribute('width'));
+        let widthS = (parseFloat(el.getAttribute('width')!) > parseFloat(el2.getAttribute('width')!)) ? parseFloat(el.getAttribute('width')!) : parseFloat(el2.getAttribute('width')!);
+        let heightS = (parseFloat(el.getAttribute('height')!) > parseFloat(el2.getAttribute('height')!)) ? parseFloat(el.getAttribute('height')!) : parseFloat(el2.getAttribute('height')!);
+        widthS += 12;
+        heightS += 12;
+        canvas2.width = widthS * 2;
+        canvas2.height = heightS;
         let count = 0;
-        let xValues: any[];
+        const xValues = [0, widthS];
         const go = (can: any, x: any, y: any) => {
           count += 1;
           context2?.drawImage(can, x, y);
@@ -1013,28 +1020,22 @@ export default defineComponent({
           const tag = `${gene}`;
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
-          const el = document.getElementById(`${tag}`)!;
-          widthS = el.getBoundingClientRect().width + 8;
-          heightS = el.getBoundingClientRect().height + 8;
-          if (i === 0) {
-            canvas2.width = widthS * 2;
-            canvas2.height = heightS;
-            xValues = [0, widthS * 1];
-          }
-          canvas.width = widthS;
-          canvas.height = heightS;
-          const svgURL = new XMLSerializer().serializeToString(el);
+          const ele = document.getElementById(`${tag}`)!;
+          const widtH = parseFloat(ele.getAttribute('width')!);
+          const heighT = parseFloat(ele.getAttribute('height')!);
+          canvas.width = widtH + 8;
+          canvas.height = heighT + 8;
+          const svgURL = new XMLSerializer().serializeToString(ele);
           const image = new window.Image();
-          const x = xValues[i % 2];
+          const x = xValues[i];
           const y = 0;
           image.onload = () => {
-            context?.drawImage(image, 0, 0, widthS, heightS);
+            context?.drawImage(image, 0, 0, widtH, heighT);
             go(canvas, x, y);
           };
           image.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL)}`;
         });
       } else {
-        const arrayOfCanvas: any = [];
         const canvas2 = document.createElement('canvas');
         const context2 = canvas2.getContext('2d');
         let widthS = 0;
@@ -1066,7 +1067,7 @@ export default defineComponent({
           if (i === 0) {
             canvas2.width = widthS * 3;
             canvas2.height = (numOfLines >= 1) ? heightS * numOfLines + (8 * numOfLines) : heightS;
-            xValues = [0, widthS * 1, widthS * 2];
+            xValues = [0, widthS, widthS * 2];
           }
           canvas.width = widthS;
           canvas.height = heightS;
@@ -1116,8 +1117,8 @@ export default defineComponent({
     async function generateFrontPage() {
       displayFlag.value = false;
       const el = document.getElementById('spatialGroup')!;
-      const widthS = el.getBoundingClientRect().width;
-      const heightS = el.getBoundingClientRect().height;
+      const widthS = parseFloat(el.getAttribute('width')!);
+      const heightS = parseFloat(el.getAttribute('height')!);
       el.cloneNode(true);
       const svgURL = new XMLSerializer().serializeToString(el);
       const image = new window.Image();
@@ -1231,7 +1232,7 @@ export default defineComponent({
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
       selectedClusters.value = Object.keys(totalInClust.value).map((v: any) => v);
-      if (geneMotif.value === 'celltype') totalInCellType.value = ev;
+      if (geneMotif.value === 'regulon') totalInCellType.value = ev;
       if (Object.keys(topTenIds.value).length > 0) {
         updateSpatial();
       }
@@ -1248,7 +1249,7 @@ export default defineComponent({
       if (regulons_flag.value) {
         const fileNameRegulon = { params: { filename: `data/${runId.value}/h5/topTen_eRegulons.json` } };
         const topTen_regulon_json = await client.value?.getJsonFile(fileNameRegulon);
-        topTenIds.value.celltype = topTen_regulon_json;
+        topTenIds.value.regulon = topTen_regulon_json;
       }
       spatialData.value = false;
       if (Object.keys(totalInClust.value).length > 1) {
@@ -1270,7 +1271,7 @@ export default defineComponent({
           } else if (geneMotif.value === 'gene') {
             const hold = filename.value;
             filename.value = hold!.replace(/eRegulons|motifs/i, 'genes');
-          } else if (geneMotif.value === 'celltype') {
+          } else if (geneMotif.value === 'regulon') {
             const hold = filename.value;
             filename.value = hold!.replace(/motifs|genes/i, 'eRegulons');
           }
@@ -1403,7 +1404,7 @@ export default defineComponent({
       else addCellType.push('motif');
       if (globalXploreData.value.regulons_flag) {
         regulons_flag.value = true;
-        addCellType.push('celltype');
+        addCellType.push('eRegulon');
       }
       clusters_ann_list.value = addCellType;
     }
@@ -1413,7 +1414,7 @@ export default defineComponent({
         let fn = '';
         if (geneMotif.value === 'gene') fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
         if (geneMotif.value === 'motif') fn = `${root}/${ev.id}/h5/obj/motifs.h5ad`;
-        if (geneMotif.value === 'celltype') fn = `${root}/${ev.id}/h5/obj/eRegulons.h5ad`;
+        if (geneMotif.value === 'regulon') fn = `${root}/${ev.id}/h5/obj/eRegulons.h5ad`;
         filename.value = fn;
         holdMotif.value = '';
         runId.value = ev.id;
@@ -1431,7 +1432,7 @@ export default defineComponent({
       else addCellType.push('motif');
       if (ev.regulons_flag) {
         regulons_flag.value = true;
-        addCellType.push('celltype');
+        addCellType.push('eRegulon');
       }
       clusters_ann_list.value = addCellType;
       metadata.value.species = ev.species;
@@ -1461,7 +1462,7 @@ export default defineComponent({
           ev.forEach((v: string, i: number) => {
             childGenes.value.push(v);
           });
-          if (ev.length === 1 && geneMotif.value !== 'celltype') {
+          if (ev.length === 1 && geneMotif.value !== 'regulon') {
             ev.forEach((v: string, i: number) => {
               trackBrowserGenes.value.push(v);
             });
@@ -1487,7 +1488,7 @@ export default defineComponent({
           const span = btn.childNodes[0] as HTMLElement;
           if (v === 'gene') span.innerText = 'GENE';
           else if (v === 'motif') span.innerText = 'MOTIF';
-          else if (v === 'celltype') span.innerText = 'CELLTYPE';
+          else if (v === 'regulon') span.innerText = 'EREGULON';
         }
         userMaxValue.value = '';
         userMinValue.value = '';

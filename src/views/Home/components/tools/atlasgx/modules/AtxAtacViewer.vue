@@ -55,8 +55,8 @@
         @mouseup="mouseUpOnStageLeft"
         @mouseleave="hideToolTipS">
         <div id="toolTipSpatial" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}"></div>
-        <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height">
-          <svg id="spatialGroup" x="30" y="30" style="pointer-events:bounding-box" :viewBox="`0 0 ${viewBoxSpatial[0]} ${viewBoxSpatial[1]}`"></svg>
+        <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${svg_spatial_wh[0]} ${svg_spatial_wh[1]}`">
+          <svg id="spatialGroup" :width="spatial_wh[0]" :height="spatial_wh[1]" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -125,8 +125,8 @@
         @mouseup="mouseUpOnStageRight"
         @mouseleave="hideToolTipU">
         <div id="toolTipUmap" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}">{{toolTipTextUmap}}</div>
-        <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height">
-          <svg id="umapGroup" x="30" y="30" style="pointer-events:bounding-box" :viewBox="`0 0 ${viewBoxUmap[0]} ${viewBoxUmap[1]}`"></svg>
+        <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${svg_umap_wh[0]} ${svg_umap_wh[1]}`">
+          <svg id="umapGroup" :width="umap_wh[0]" :height="umap_wh[1]" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -269,8 +269,10 @@ export default defineComponent({
     const globalSvgU = ref<any>();
     const translatePoint = ref<number[]>([]);
     const translatePointU = ref<number[]>([]);
-    const viewBoxSpatial = ref<number[]>([width, height]);
-    const viewBoxUmap = ref<number[]>([width, height]);
+    const svg_spatial_wh = ref<number[]>([0, 0]);
+    const svg_umap_wh = ref<number[]>([0, 0]);
+    const spatial_wh = ref<number[]>([0, 0]);
+    const umap_wh = ref<number[]>([0, 0]);
     const bufferSize = 1;
     const buffer: any = [];
     let strPath = '';
@@ -294,6 +296,8 @@ export default defineComponent({
     const current_tixel_colors = ref<string[]>([]);
     const multi_sample_flag = ref<boolean>(false);
     const clusters_ann_flag = ref<boolean>(false);
+    let scale_spatial = [1, 1];
+    let scale_umap = [1, 1];
     let position_of_celltype = 0;
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParentDualAtac');
@@ -304,8 +308,12 @@ export default defineComponent({
       konvaConfigLeft.value.height = parentHeight;
       konvaConfigRight.value.width = parentWidth;
       konvaConfigRight.value.height = parentHeight;
-      viewBoxSpatial.value = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
-      viewBoxUmap.value = [konvaConfigRight.value.width, konvaConfigRight.value.height];
+      svg_spatial_wh.value = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
+      svg_umap_wh.value = [konvaConfigRight.value.width, konvaConfigRight.value.height];
+      const el = document.getElementById('spatialGroup')!;
+      const el2 = document.getElementById('umapGroup')!;
+      spatial_wh.value = [el.getBoundingClientRect().width, el.getBoundingClientRect().height];
+      umap_wh.value = [el2.getBoundingClientRect().width, el2.getBoundingClientRect().height];
     }
     function remove(item: any) {
       const newArr = selectedGenes.value.filter((x: any) => x !== item.name);
@@ -600,6 +608,8 @@ export default defineComponent({
         globalSpatialGroup.value.appendChild(circle);
         globalUmapGroup.value.appendChild(circleUmap);
       });
+      spatial_wh.value = [globalSpatialGroup.value.getBoundingClientRect().width, globalSpatialGroup.value.getBoundingClientRect().height];
+      umap_wh.value = [globalUmapGroup.value.getBoundingClientRect().width, globalUmapGroup.value.getBoundingClientRect().height];
       initialized.value = true;
       ctx.emit('spatialCircleData', [TSS, nFrags]);
     }
@@ -740,7 +750,7 @@ export default defineComponent({
             const motif = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 2);
             spatialData.value.motif = motif;
           }
-          if (regulons_flag) {
+          if (regulons_flag.value) {
             const regulon = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 3);
             spatialData.value.regulon = regulon;
           }
@@ -809,7 +819,7 @@ export default defineComponent({
           const motif = await client.value!.getGeneMotifNames(motifFileName);
           spatialData.value.motif = motif;
         }
-        if (position_of_celltype !== 0) {
+        if (regulons_flag.value) {
           const regulonFileName = `data/${runId.value}/h5/eRegulonNames.txt.gz`;
           const regulon = await client.value!.getGeneMotifNames(regulonFileName);
           regulon.sort();
@@ -825,11 +835,13 @@ export default defineComponent({
         ctx.emit('totalClust', totalInClust.value);
         clusters_ann_flag.value = false;
         ctx.emit('totalGM', spatialData.value.motif);
-      } else if (geneMotif.value === 'celltype') {
+      } else if (geneMotif.value === 'regulon') {
         ctx.emit('totalClust', totalInCellType.value);
         ctx.emit('totalGM', spatialData.value.regulon);
-        clusters_ann_flag.value = true;
-        updateCircles();
+        if (position_of_celltype !== 0) {
+          clusters_ann_flag.value = true;
+          updateCircles();
+        } else clusters_ann_flag.value = false;
       }
     }
     async function runSpatial() {
@@ -848,7 +860,7 @@ export default defineComponent({
           if (props.query.public) {
             if (geneMotif.value === 'gene') which_h5ad = 4;
             if (geneMotif.value === 'motif') which_h5ad = 5;
-            if (geneMotif.value === 'celltype') which_h5ad = 6;
+            if (geneMotif.value === 'regulon') which_h5ad = 6;
           }
           const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, which_h5ad) : await client.value.postTask(task, args, kwargs, queue);
           await checkTaskStatus(taskObject._id);
@@ -892,7 +904,7 @@ export default defineComponent({
       } else if (geneMotif.value === 'motif') {
         tixelDataFilename = `data/${runId.value}/h5/summations/motifSummation`;
         array = spatialData.value.motif;
-      } else if (geneMotif.value === 'celltype') {
+      } else if (geneMotif.value === 'regulon') {
         tixelDataFilename = `data/${runId.value}/h5/summations/eRegulonSummation`;
         array = spatialData.value.regulon;
       }
@@ -1008,21 +1020,21 @@ export default defineComponent({
         path.setAttribute('stroke', '#6ffc03');
         path.setAttribute('stroke-width', '1');
         if (!path.getAttribute('id')) path.setAttribute('id', 'spa');
-        appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
-        strPath += `M${ev.offsetX} ${ev.offsetY}`;
+        appendToBuffer({ x: ev.offsetX * scale_spatial[0], y: ev.offsetY * scale_spatial[1] });
+        strPath += `M${ev.offsetX * scale_spatial[0]} ${ev.offsetY * scale_spatial[1]}`;
         path.setAttribute('d', strPath);
         globalSvgS.value.appendChild(path);
       } else if (isDrawingRect.value) {
         lassoSide.value = 'left';
         removeRegions();
-        rect.setAttribute('x', `${ev.offsetX}`);
-        rect.setAttribute('y', `${ev.offsetY}`);
+        rect.setAttribute('x', `${ev.offsetX * scale_spatial[0]}`);
+        rect.setAttribute('y', `${ev.offsetY * scale_spatial[1]}`);
         rect.setAttribute('fill', 'none');
         rect.setAttribute('stroke', '#6ffc03');
         rect.setAttribute('width', '0');
         rect.setAttribute('height', '0');
         globalSvgS.value.appendChild(rect);
-        startRectCoords = [ev.offsetX, ev.offsetY];
+        startRectCoords = [ev.offsetX * scale_spatial[0], ev.offsetY * scale_spatial[1]];
       } else {
         originalClickedPoint.value = [ev.offsetX, ev.offsetY];
         const moveXvalue = globalSpatialGroup.value.getAttribute('x');
@@ -1040,22 +1052,22 @@ export default defineComponent({
         pathUmap.setAttribute('stroke', '#6ffc03');
         pathUmap.setAttribute('stroke-width', '1');
         if (!pathUmap.getAttribute('id')) pathUmap.setAttribute('id', 'uma');
-        appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
-        strPathUmap += `M${ev.offsetX} ${ev.offsetY}`;
+        appendToBuffer({ x: ev.offsetX * scale_umap[0], y: ev.offsetY * scale_umap[1] });
+        strPathUmap += `M${ev.offsetX * scale_umap[0]} ${ev.offsetY * scale_umap[1]}`;
         pathUmap.setAttribute('d', strPathUmap);
         globalSvgU.value.appendChild(pathUmap);
         polygonUMAP.value = [];
       } else if (isDrawingRect.value) {
         lassoSide.value = 'right';
         removeRegions();
-        rectUmap.setAttribute('x', `${ev.offsetX}`);
-        rectUmap.setAttribute('y', `${ev.offsetY}`);
+        rectUmap.setAttribute('x', `${ev.offsetX * scale_umap[0]}`);
+        rectUmap.setAttribute('y', `${ev.offsetY * scale_umap[1]}`);
         rectUmap.setAttribute('fill', 'none');
         rectUmap.setAttribute('stroke', '#6ffc03');
         rectUmap.setAttribute('width', '0');
         rectUmap.setAttribute('height', '0');
         globalSvgU.value.appendChild(rectUmap);
-        startRectUmapCoords = [ev.offsetX, ev.offsetY];
+        startRectUmapCoords = [ev.offsetX * scale_umap[0], ev.offsetY * scale_umap[1]];
       } else {
         originalClickedPointU.value = [ev.offsetX, ev.offsetY];
         const moveXvalue = globalUmapGroup.value.getAttribute('x');
@@ -1075,15 +1087,15 @@ export default defineComponent({
         } else if (ev.target.id !== 'spatialGroup' && ev.target.nodeName !== 'circle') visibility.value = 'hidden';
       } else {
         if (isDrawing.value) {
-          appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
+          appendToBuffer({ x: ev.offsetX * scale_spatial[0], y: ev.offsetY * scale_spatial[1] });
           updateSvgPath();
-          polygon.value.push(ev.offsetX);
-          polygon.value.push(ev.offsetY);
+          polygon.value.push(ev.offsetX * scale_spatial[0]);
+          polygon.value.push(ev.offsetY * scale_spatial[1]);
         } else if (isDrawingRect.value) {
-          const xdiff = Math.abs(ev.offsetX - startRectCoords[0]);
-          const ydiff = Math.abs(ev.offsetY - startRectCoords[1]);
-          if (ev.offsetX < startRectCoords[0]) rect.setAttribute('x', `${ev.offsetX}`);
-          if (ev.offsetY < startRectCoords[1]) rect.setAttribute('y', `${ev.offsetY}`);
+          const xdiff = Math.abs((ev.offsetX * scale_spatial[0]) - startRectCoords[0]);
+          const ydiff = Math.abs((ev.offsetY * scale_spatial[1]) - startRectCoords[1]);
+          if ((ev.offsetX * scale_spatial[0]) < startRectCoords[0]) rect.setAttribute('x', `${ev.offsetX * scale_spatial[0]}`);
+          if ((ev.offsetY * scale_spatial[1]) < startRectCoords[1]) rect.setAttribute('y', `${ev.offsetY * scale_spatial[1]}`);
           rect.setAttribute('width', `${xdiff}`);
           rect.setAttribute('height', `${ydiff}`);
         } else {
@@ -1105,15 +1117,15 @@ export default defineComponent({
         } else if (ev.target.id !== 'umapGroup' && ev.target.nodeName !== 'circle') visibilityUmap.value = 'hidden';
       } else {
         if (isDrawing.value) {
-          appendToBuffer({ x: ev.offsetX, y: ev.offsetY });
+          appendToBuffer({ x: ev.offsetX * scale_umap[0], y: ev.offsetY * scale_umap[1] });
           updateSvgPath();
-          polygonUMAP.value.push(ev.offsetX);
-          polygonUMAP.value.push(ev.offsetY);
+          polygonUMAP.value.push(ev.offsetX * scale_umap[0]);
+          polygonUMAP.value.push(ev.offsetY * scale_umap[1]);
         } else if (isDrawingRect.value) {
-          const xdiff = Math.abs(ev.offsetX - startRectUmapCoords[0]);
-          const ydiff = Math.abs(ev.offsetY - startRectUmapCoords[1]);
-          if (ev.offsetX < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${ev.offsetX}`);
-          if (ev.offsetY < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${ev.offsetY}`);
+          const xdiff = Math.abs((ev.offsetX * scale_umap[0]) - startRectUmapCoords[0]);
+          const ydiff = Math.abs((ev.offsetY * scale_umap[1]) - startRectUmapCoords[1]);
+          if ((ev.offsetX * scale_umap[0]) < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${ev.offsetX * scale_umap[0]}`);
+          if ((ev.offsetY * scale_umap[1]) < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${ev.offsetY * scale_umap[1]}`);
           rectUmap.setAttribute('width', `${xdiff}`);
           rectUmap.setAttribute('height', `${ydiff}`);
         } else {
@@ -1171,23 +1183,25 @@ export default defineComponent({
     }
     function reScale(scalar: string) {
       let scaled: any = [];
-      if (scalar === 'plus') scaled = [viewBoxSpatial.value[0] - 20, viewBoxSpatial.value[1] - 20];
-      else scaled = [viewBoxSpatial.value[0] + 20, viewBoxSpatial.value[0] + 20];
-      viewBoxSpatial.value = scaled;
+      if (scalar === 'plus') scaled = [svg_spatial_wh.value[0] - 20, svg_spatial_wh.value[1] - 20];
+      else scaled = [svg_spatial_wh.value[0] + 20, svg_spatial_wh.value[0] + 20];
+      svg_spatial_wh.value = scaled;
+      scale_spatial = [svg_spatial_wh.value[0] / konvaConfigLeft.value.width, svg_spatial_wh.value[1] / konvaConfigLeft.value.height];
     }
     function reScaleUMAP(scalar: string) {
       let scaled: any = [];
-      if (scalar === 'plus') scaled = [viewBoxUmap.value[0] - 20, viewBoxUmap.value[1] - 20];
-      else scaled = [viewBoxUmap.value[0] + 20, viewBoxUmap.value[0] + 20];
-      viewBoxUmap.value = scaled;
+      if (scalar === 'plus') scaled = [svg_umap_wh.value[0] - 20, svg_umap_wh.value[1] - 20];
+      else scaled = [svg_umap_wh.value[0] + 20, svg_umap_wh.value[0] + 20];
+      svg_umap_wh.value = scaled;
+      scale_umap = [svg_umap_wh.value[0] / konvaConfigRight.value.width, svg_umap_wh.value[1] / konvaConfigRight.value.height];
     }
     function resetScaleAndPos(ev: any) {
       const reset = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
-      viewBoxSpatial.value = reset;
+      svg_spatial_wh.value = reset;
     }
     function resetScaleAndPosUMAP(ev: any) {
       const reset = [konvaConfigRight.value.width, konvaConfigRight.value.height];
-      viewBoxUmap.value = reset;
+      svg_umap_wh.value = reset;
     }
     async function onResize() {
       await fitStageToParent();
@@ -1384,8 +1398,8 @@ export default defineComponent({
       initializePlots,
       translatePoint,
       translatePointU,
-      viewBoxSpatial,
-      viewBoxUmap,
+      svg_spatial_wh,
+      svg_umap_wh,
       initialized,
       visibility,
       visibilityUmap,
@@ -1399,6 +1413,8 @@ export default defineComponent({
       current_tixel_colors,
       multi_sample_flag,
       clusters_ann_flag,
+      spatial_wh,
+      umap_wh,
     };
   },
 });

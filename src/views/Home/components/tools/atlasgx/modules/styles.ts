@@ -11,7 +11,6 @@ export default {
         'text-wrap': 'wrap',
         'text-max-width': 140,
         'background-color': 'data(color)',
-        'background-opacity': 'data(color_alpha)',
         color: '#000000ff',
       },
     },
@@ -20,7 +19,6 @@ export default {
       style: {
         'curve-style': 'bezier',
         width: 'mapData(width, 1, 1.5, 1, 10)',
-        'background-opacity': 'edge(color_alpha)',
         'target-arrow-shape': 'triangle',
         'line-color': 'data(color)',
         'target-arrow-color': 'data(color)',
