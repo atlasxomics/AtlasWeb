@@ -869,7 +869,8 @@ export default defineComponent({
     // Functions that handle Clusters and Annotations
     async function changeClustersAnn(ev: any) {
       clusters_ann_flag.value = false;
-      geneMotif.value = ev;
+      if (ev === 'regulon') geneMotif.value = 'eRegulon';
+      else geneMotif.value = ev;
     }
     function dataToSingle(ev: any) {
       singleData.value = ev;
