@@ -10,7 +10,8 @@
           @click:outside="run_id_search_active = !run_id_search_active"
           hide-overlay>
           <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
-              :disabled="loading">
+          :disabled="loading"
+          >
               <!-- Searching in text field -->
             <v-card-title>
               <v-text-field
@@ -28,7 +29,7 @@
               dense
               single-select
               :loading="loading"
-              :items="itemsHolder"
+              :items="run_id_folder_namesHolder"
               :headers="headers"
               hide-default-footer
               @click:row="run_folder_selected"
@@ -37,140 +38,25 @@
         </v-dialog>
         <!-- metdata panel -->
         <!-- to display must select icon and have either be tissue_position_list_obj be empty and a runID selected or image_processing_begun be true. -->
+        <!-- Make this v-dialog persistent only on the condition that the variable metadata_confirmed_bool is true -->
         <v-dialog
           width="600"
           height="800"
           v-if="image_processing_begun"
           :value="show_metadata"
-          @click:outside="show_metadata = !show_metadata">
-          <v-card  :disabled="loading"
+          :persistent="!metadata_confirmed_bool"
           >
-            <v-card-title
-            class="justify-center">
-              Run ID: {{run_id}}
-            </v-card-title>
-            <v-card-text>
-              <selector
-                v-model="metadata.species"
-                display_label="Species"
-                :display_options="drop_down_manager.species_list"
-                @option-added="drop_down_manager.species_list.push($event)"
-                >
-              </selector>
-              <selector
-              v-model="metadata.organ"
-              display_label="Organ"
-              :display_options="drop_down_manager.organ_list"
-              @option-added="drop_down_manager.organ_list.push($event)"
-              >
-              </selector>
-              <selector
-              v-model="metadata.tissue_source"
-              display_label="Tissue Source"
-              :display_options="drop_down_manager.tissue_source_list"
-              @option-added="drop_down_manager.tissue_source_list.push($event)"
-              >
-              </selector>
-              <selector
-                v-model="metadata.tissue_type"
-                display_label="Tissue Type"
-                :display_options="drop_down_manager.tissue_type_list"
-                @option-added="drop_down_manager.tissue_type_list.push($event)">
-              </selector>
-              <v-select
-              :items="drop_down_manager.assay_list"
-              v-model="metadata.assay"
-              label="Assay"
-              >
-              </v-select>
-              <selector
-                v-show="metadata.assay === 'CUT&Tag'"
-                v-model="metadata.antibody"
-                display_label="Epitope Name"
-                :display_options="drop_down_manager.epitope_list"
-                @option-added="drop_down_manager.epitope_list.push($event)"
-              >
-              </selector>
-              <v-text-field
-              outlined
-              dense
-              label="Tissue Experimental Condition"
-              v-model="metadata.tissueBlockExperiment"
-              >
-              </v-text-field>
-              <v-text-field
-              outlined
-              dense
-              label="Sample Id"
-              v-model="metadata.sampleID"
-              >
-              </v-text-field>
-              <v-select
-              v-model="metadata.barcodes"
-              outlined
-              dense
-              label="Barcode File"
-              :items="[1, 2, 3, 4]"
-              >
-              </v-select>
-              <v-text-field
-              v-model="metadata.chip_resolution"
-              outlined
-              dense
-              label="Chip Resolution"
-              >
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.comments_flowB"
-              outlined
-              dense
-              label="Comments Flow B"
-              >
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.crosses_flowB"
-              outlined
-              dense
-              label="B Flow Crosses"
-              >
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.leak_flowB"
-              outlined
-              dense
-              label="B Flow Leaks"
-              >
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.comments_flowA"
-              outlined
-              dense
-              label="Flow A Comments"
-              >
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.crosses_flowA"
-              outlined
-              dense
-              label="A Flow Crosses"
-              >
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.blocks_flowA"
-              outlined
-              dense
-              label="A Flow Blocks"
-              >
-              </v-text-field>
-              <v-text-field
-              v-model="metadata.leak_flowA"
-              outlined
-              dense
-              label="A Flow Leak"
-              >
-              </v-text-field>
-            </v-card-text>
-          </v-card>
+          <metadata-dropdown
+          :metadata ="metadata"
+          :drop_down_manager="drop_down_manager"
+          :run_id="run_id"
+          :lims_available="lims_available"
+          :updating_existing="updating_existing"
+          :barcode_filename_list="barcode_filename_options"
+          :metadata_confirmed_bool="metadata_confirmed_bool"
+          @confirmed="metadata_confirmed"
+          @barcode-file-selected="retrieve_barcode_file"
+          > </metadata-dropdown>
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
           <!-- workflow menu -->
@@ -196,7 +82,7 @@
                 color="blue"
                 class="leftRotate"
                 :disabled="!current_image || isCropMode || grid || updating_existing || loading"
-                @click="rotate_image(0)"
+                @click="rotate_bsa_image(0)"
                 small
                 >
                 <img src="@/assets/images/rotate_left.png"
@@ -207,7 +93,7 @@
                 color="blue"
                 class="spaced_btn"
                 :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || updating_existing || loading"
-                @click="rotate_image(1)"
+                @click="rotate_bsa_image(1)"
                 small
                 >
                 <img src="@/assets/images/rotate_right.png"
@@ -249,7 +135,7 @@
               </v-list>
               <!-- ROI Location functionality -->
               <!-- <v-list dense class="mt-n1 pt-0 pl-2"> -->
-                <v-list dense class="mt-n1 pt-0 pl-2">
+              <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">ROI</v-subheader>
                 <v-btn
                   outlined
@@ -266,8 +152,8 @@
                 outlined
                 color = "primary"
                 x-small
-                @click="generateLattices"
-                :disabled="(!roi_active && !updating_existing)|| roi.polygons.length > 0">
+                @click="show_grid"
+                :disabled="grid_visible || !grid">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -276,11 +162,11 @@
                 color = "primary"
                 x-small
                 @click="hide_grid()"
-                :disabled="roi.polygons.length === 0 || !grid">
+                :disabled="!grid_visible">
                   Hide Grid
                 </v-btn>
               </v-list>
-                <v-list dense>
+              <v-list dense>
                   <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
                   C value: {{ c_val }}
                    <v-slider
@@ -314,7 +200,7 @@
                   Threshold
                   </v-btn>
                 </v-list>
-              <v-list dense class="mt-n1 pt-0 pl-2">
+            <v-list dense class="mt-n1 pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Background Image</v-subheader>
                 <v-btn
                 id="postB_button"
@@ -343,6 +229,27 @@
                 :disabled="!thresh_image_created || bw_image_displayed || spatial"
                 > BW </v-btn>
               </v-list>
+            <div
+            v-if="false && !position_counts_present && updating_existing"
+            style="position: relative; padding-top: 15px; padding-bottom: 15px;"
+            >
+            <v-btn
+            outlined
+            @click="get_count_file_options(run_id); prompt_to_select_counts_positions = true;"
+            >
+              Load Counts File
+            </v-btn>
+            </div>
+            <v-list
+              v-if="position_counts_present"
+              >
+              <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;"> Counts Visualization </v-subheader>
+              <v-checkbox v-model="show_counts_tixels" @click="toggle_tixel_counts_disp" :label="show_counts_tixels ? 'Hide Counts' : 'Show Counts'" />
+              <div v-if="show_counts_tixels" :style="{ 'background-image': `${linear_gradient_description_string}`, 'display': 'flex', 'height': '50px', 'max-width': '250px', 'margin-left': '10px', 'margin-right': '10px' }" >
+                <div style="position: relative; padding-top: 50px; left: 5%"> {{ lower_bound_count }} </div>
+                <div style="position: relative; padding-top: 50px; left: 65%"> {{ upper_bound_count }} </div>
+              </div>
+              </v-list>
               <v-list dense class="pt-0 pl-2">
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">On/Off</v-subheader>
                 <v-btn
@@ -369,7 +276,7 @@
                 />
                 <template>
                   <v-btn
-                  :disabled="(!tixels_filled && !updating_existing)"
+                  :disabled="!tixels_filled"
                   outlined
                   x-small
                   dense
@@ -412,7 +319,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="get_image_options(run_id);prompt_to_use_existing_spatial = false;"
+                @click="reprocess_image(run_id); "
                 medium>
                 Reprocess
               </v-btn>
@@ -420,12 +327,31 @@
                 outlined
                 dense
                 color="primary"
-                @click="prompt_to_use_existing_spatial = false; updating_existing=true;tixels_filled=true; loadImage(); uploadingTixels()"
+                @click="update_run_function "
                 medium>
                 Update
               </v-btn>
             </v-card-actions>
           </v-card>
+          </v-dialog>
+          <v-dialog
+          :value="prompt_to_select_counts_positions"
+          max-width="800px"
+          >
+            <v-card>
+              <v-card-title
+              class="justify-center"
+              >
+              Select tissue positions file with counts if available.
+              </v-card-title>
+              <v-card-actions>
+                <v-select
+                :items="count_file_options"
+                v-model="tissue_positions_counts_filename"
+                > </v-select>
+                <v-btn @click="prompt_to_select_counts_positions = false; load_counts_positions()"> Confirm </v-btn>
+              </v-card-actions>
+            </v-card>
           </v-dialog>
           <v-dialog
           persistent
@@ -456,7 +382,7 @@
               :disabled="full_bsa_filename === ''"
               style="position: relative; left: 50%; transform: translateX(-50%);"
               outlined
-              @click="loadImage();"
+              @click="show_metadata = true; load_and_begin_image_processing();"
               >
               Submit
               </v-btn>
@@ -472,12 +398,6 @@
               <div :style="{ 'position': 'absolute', 'z-index': 999, 'top': '43%', 'left': '47%'}">
                 <v-card-text>
                 </v-card-text>
-                <!-- <v-progress-circular
-                  :size="100"
-                  :width="10"
-                  color="primary"
-                  indeterminate>
-                </v-progress-circular> -->
               <v-dialog
                 value=true
                 hide-overlay
@@ -543,12 +463,6 @@
                         <v-line
                           :config="roi.generateBoundary()"/>
                       </template>
-                      <v-shape v-for="p in roi.polygons"
-                        :config="p"
-                        v-bind:key="p.id"
-                        @transformend="roi.setScaleFactor()"
-                        @mousedown="handleMouseDown"
-                        @mouseover="handleMouseOver"/>
                         <v-transformer ref="transformer" />
                         <template v-if="!isBrushMode && !isEraseMode && !updating_existing && !tixels_filled">
                           <v-circle
@@ -565,6 +479,26 @@
                           :config="roi.getCenterAnchor()"/>
                     </template>
                   </v-layer>
+                  <v-layer>
+                  <v-group v-for="index in 100" :key="index">
+                    <v-shape v-for="p in roi.get_polygon_subset(index - 1, 100)"
+                    :config="p"
+                    v-bind:key="p.id"
+                    @transformend="roi.setScaleFactor()"
+                    @mousedown="handleMouseDown"
+                    >
+                    </v-shape>
+                  </v-group>
+                  </v-layer>
+                  <v-layer
+                    >
+                      <v-circle
+                        v-if="isBrushMode || isEraseMode"
+                        :config="brushConfig"
+                        @mousedown="handleMouseDownBrush"
+                        @mouseup="handleMouseUpBrush"
+                      />
+                    </v-layer>
                     <v-layer
                       v-if="isCropMode && !grid && !cropFlag"
                       ref="cropLayer"
@@ -589,14 +523,7 @@
                             :config="crop.getCenterAnchor()"/>
                       </template>
                     </v-layer>
-                    <v-layer>
-                      <v-circle
-                        v-if="isBrushMode || isEraseMode"
-                        :config="brushConfig"
-                        @mousedown="handleMouseDownBrush"
-                        @mouseup="handleMouseUpBrush"
-                      />
-                    </v-layer>
+
                 </v-stage>
               </v-card>
             </v-row>
@@ -605,8 +532,8 @@
         <v-col cols="12" sm="12">
         <SpatialFolderViewer
         v-if="checkSpatial"
-        :root="root"
-        :bucket_name="bucket_name"
+        :root="root_spatial"
+        :bucket_name="bucket_name_spatial"
         :selectedRunID="run_id"
         :getFiles="checkSpatial"
         >
@@ -640,15 +567,19 @@ import savePixels from 'save-pixels';
 import blobStream from 'blob-stream';
 import adaptiveThreshold from 'adaptive-threshold';
 import store from '@/store';
+import config from '@/config';
+import colormap from 'colormap';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
 import { resolveAuthGroup } from '@/utils/auth';
 import Selector from '@/views/Home/components/settings/admin/modules/submodules/Selector.vue';
 import { DropDownFieldManager } from '@/views/Home/components/settings/admin/modules/submodules/DropDownFieldManager';
-import { ROI } from './roi';
-import { Crop } from './crop';
-import { Circle, Point } from './types';
-import SpatialFolderViewer from './SpatialFolderViewer.vue';
+import { FileRequest } from '@/types';
+import { ROI } from './AtlasBrowserComponents/roi';
+import { Crop } from './AtlasBrowserComponents/crop';
+import { Circle, Point, Metadata, tissue_position_list_ele_counts } from './types';
+import SpatialFolderViewer from './AtlasBrowserComponents/SpatialFolderViewer.vue';
+import MetadataDropdown from './AtlasBrowserComponents/MetadataDropdown.vue';
 // import { resolve } from 'dns';
 
 const clientReady = new Promise((resolve) => {
@@ -667,66 +598,42 @@ const metaHeaders = [
   { text: 'Value', value: 'value' },
 ];
 const assay_dict: Record<string, any> = {
+  /**
+   * Object to convert slims formatted names into better form.
+   */
   cut_n_tag: 'CUT&Tag',
   'wt_dbit-seq': 'Transcriptome',
   'ATAC-seq': 'ATAC-seq',
   'atac-seq': 'ATAC-seq',
 };
-interface Metadata {
-  points: number[] | any;
-  run: string | null;
-  blockSize: number | null;
-  cValue: number | null;
-  threshold: number | null;
-  tissue_type: string | null;
-  species: string | null;
-  assay: string | null;
-  antibody: string | null;
-  numChannels: string | null;
-  orientation: any | null;
-  crop_area: any | null;
-  barcodes: number | null;
-  organ: string | null;
-  tissue_source: string | null;
-  chip_resolution: number | null;
-  tissueBlockExperiment: string | null;
-  comments_flowB: string | null;
-  crosses_flowB: Array<number> | null;
-  blocks_flowB: Array<number> | null;
-  leak_flowB: string | null;
-  comments_flowA: string | null;
-  crosses_flowA: Array<number> | null;
-  blocks_flowA: Array<number> | null;
-  leak_flowA: string | null;
-  sampleID: string | null;
-  onTissueTixels: number | null;
-}
 
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  components: { SpatialFolderViewer, Selector },
+  components: { SpatialFolderViewer, Selector, MetadataDropdown },
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
-    const bucket_name = 'atx-illumina';
+    const bucket_name = computed(() => config.atlasxbrowser.bucket_name);
+    const bucket_name_spatial = computed(() => config.atlasxbrowser.bucket_name_spatial);
+    const root = computed(() => config.atlasxbrowser.root_dir);
+    const root_spatial = computed(() => config.atlasxbrowser.root_dir_spatial);
+    const lims_available = computed(() => config.atlasxbrowser.lims_available);
     // root directory of that s3 bucket
-    const root = 'Images';
     const welcome_screen = ref<boolean>(true);
     const drop_down_manager = new DropDownFieldManager();
     const router = ctx.root.$router;
     const client = computed(() => store.state.client);
     const allFiles = ref<any[]>([]);
     const currentRoute = computed(() => ctx.root.$route);
-    const items = ref<any[]>([]);
-    const itemsHolder = ref<any[]>([]);
+    const run_id_folder_names = ref<any[]>([]);
+    const run_id_folder_namesHolder = ref<any[]>([]);
     const searchInput = ref<any[]>([]);
     const search = ref<string | null>();
     const run_id = ref<string>('');
     const full_bsa_filename = ref<string>('');
     const file_options = ref<any[]>([]);
     const konvaConfig = ref<any>({ width_window: window.innerWidth, height_window: window.innerHeight });
-    const circleConfig = ref<any>({ x: 120, y: 120, radius: 5, fill: 'green', draggable: true });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
     const tixels_filled = ref<boolean>(false);
     const isBrushMode = ref(false);
@@ -735,7 +642,11 @@ export default defineComponent({
     const brushSize = ref(20);
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
-    const roi = ref<ROI>(new ROI([0, 0], 0.15));
+    const roi = ref<ROI>(new ROI([0, 0], 0.15, null));
+    const grid_visible = computed(() => {
+      if (roi.value.polygons.length === 0) return false;
+      return roi.value.polygons[0].visible;
+    });
     const roi_active = ref<boolean>(false);
     const active_roi_available = ref<boolean>(false);
     const isMouseDown = ref(false);
@@ -760,14 +671,26 @@ export default defineComponent({
     const progressMessage = ref<string | null>(null);
     const taskTimeout = ref<number | null>(null);
     const orientation = ref<any>({ horizontal_flip: false, vertical_flip: false, rotation: 0 });
-    const channels = ref(50);
+    const channels = ref<number | null>(null);
     const grid = ref<boolean>(false);
     const cropFlag = ref<boolean>(false);
     const cropLoading = ref<boolean>(false);
     const threshLoading = ref<boolean>(false);
     const spatial = ref<boolean>(false);
+    // Tissue positions variables
     const tissue_position_list_obj = ref<any>();
+    const linear_gradient_description_string = ref<string>('');
+    const tissue_positions_counts_filename = ref<string>('');
+    const count_file_options = ref<string[]>([]);
+    const tixel_color_mapping = ref<Record<number, string>>({});
     const prompt_to_use_existing_spatial = ref<boolean>(false);
+    const prompt_to_select_counts_positions = ref<boolean>(false);
+    const selecting_counts_pos_file = ref<boolean>(false);
+    const position_counts_present = ref<boolean>(false);
+    const show_counts_tixels = ref<boolean>(false);
+    const lower_bound_count = ref<number>(0);
+    const upper_bound_count = ref<number>(0);
+    // Flow of process booleans
     const updating_existing = ref<boolean>(false);
     const image_processing_begun = ref<boolean>(false);
     const run_id_search_active = ref<boolean>(false);
@@ -793,6 +716,12 @@ export default defineComponent({
     const availableFiles = ref<any[]>([]);
     const bsa_image = ref<any>();
     const black_white = ref<string>();
+    const color_gradient_scale_numbers = ref<number[]>([]);
+    const barcode_filename_options = ref<string[]>([]);
+    const barcodes_in_list = ref<string[]>([]);
+    const barcode_mapping = computed(() => config.atlasxbrowser.barcode_mapping);
+    const original_barcode_filename = ref<string|null>('');
+    const metadata_confirmed_bool = ref<boolean>(false);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -803,11 +732,11 @@ export default defineComponent({
       tissue_type: null,
       species: null,
       assay: null,
-      numChannels: '50',
+      numChannels: null,
       organ: null,
       orientation: null,
       crop_area: null,
-      barcodes: null,
+      barcode_filename: null,
       chip_resolution: null,
       tissueBlockExperiment: '',
       tissue_source: '',
@@ -823,8 +752,45 @@ export default defineComponent({
       onTissueTixels: null,
       antibody: '',
     });
+    function reset_metadata() {
+      /**
+       * Method used to reset metadata when run is switched.
+       */
+      metadata.value = {
+        points: [],
+        run: null,
+        blockSize: null,
+        cValue: null,
+        threshold: null,
+        tissue_type: null,
+        species: null,
+        assay: null,
+        numChannels: null,
+        organ: null,
+        orientation: null,
+        crop_area: null,
+        barcode_filename: null,
+        chip_resolution: null,
+        tissueBlockExperiment: '',
+        tissue_source: '',
+        comments_flowB: '',
+        crosses_flowB: [],
+        blocks_flowB: [],
+        leak_flowB: '',
+        comments_flowA: '',
+        crosses_flowA: [],
+        blocks_flowA: [],
+        leak_flowA: '',
+        sampleID: '',
+        onTissueTixels: null,
+        antibody: '',
+      };
+    }
     function initialize() {
-      roi.value = new ROI([0, 0], scaleFactor.value);
+      /**
+       * Method used to reset relevent variables when run is switched.
+       */
+      roi.value = new ROI([0, 0], scaleFactor.value, null);
       crop.value = new Crop([0, 0], scaleFactor.value);
       roi.value.setScaleFactor(scaleFactor.value);
       crop.value.setScaleFactor(scaleFactor.value);
@@ -847,7 +813,12 @@ export default defineComponent({
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       full_bsa_filename.value = '';
       image_processing_begun.value = false;
-      // show_metadata.value = false;
+      position_counts_present.value = false;
+      show_counts_tixels.value = false;
+      count_file_options.value = [];
+      tissue_positions_counts_filename.value = '';
+      metadata_confirmed_bool.value = false;
+      original_barcode_filename.value = '';
     }
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
@@ -865,6 +836,9 @@ export default defineComponent({
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
     function onChangeScale(ev: any) {
+      /**
+       * Method used to update scale factor when slider is changed.
+       */
       const v = scaleFactor.value;
       current_image.value.scale = { x: v, y: v };
       konvaConfig.value.width = v * current_image.value.image.width;
@@ -874,7 +848,20 @@ export default defineComponent({
       roi.value.setScaleFactor(v);
       crop.value.setScaleFactor(v);
     }
+    function map_barcode_filename_config(from_variable: string) {
+      /**
+       * Method used to load barcode file using mapping from config.
+       */
+      const barcode_filename: string = barcode_mapping.value[from_variable as keyof typeof barcode_mapping.value];
+      if (barcode_filename) {
+        metadata.value.barcode_filename = barcode_filename;
+      }
+    }
     function assignMetadata(slimsData: any) {
+      /**
+       * Method used to assign slims api response to local metadata variable.
+       * Args: slimsData: Return object from request to load run_id from slims.
+       */
       try {
         metadata.value.organ = slimsData.cntn_cf_fk_organ;
         metadata.value.species = slimsData.cntn_cf_fk_species;
@@ -884,17 +871,7 @@ export default defineComponent({
         metadata.value.sampleID = slimsData.cntn_cf_sampleId;
         metadata.value.antibody = slimsData.cntn_cf_fk_epitope;
         if (slimsData.cntn_cf_fk_workflow) {
-          console.log(slimsData.cntn_cf_fk_workflow);
           metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
-        }
-        if (slimsData.cntn_cf_fk_barcodeOrientation === '1 (normal)') {
-          metadata.value.barcodes = 1;
-        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '2 (reverseB)') {
-          metadata.value.barcodes = 2;
-        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '3 (reverseAB)') {
-          metadata.value.barcodes = 4;
-        } else if (slimsData.cntn_cf_fk_barcodeOrientation === '4 (reverseA)') {
-          metadata.value.barcodes = 3;
         }
         metadata.value.comments_flowB = slimsData.comments_flowB;
         metadata.value.crosses_flowB = slimsData.crosses_flowB;
@@ -905,11 +882,19 @@ export default defineComponent({
         metadata.value.blocks_flowA = slimsData.blocks_flowA;
         metadata.value.leak_flowA = slimsData.leak_flowA;
         metadata.value.tissue_type = slimsData.cntn_cf_fk_tissueType;
+        map_barcode_filename_config(slimsData.cntn_cf_fk_barcodeOrientation);
       } catch (error) {
         console.log(error);
       }
     }
     async function getMeta() {
+      /**
+       * Method in which the client method `getMetadataFromRunId` is called.
+       * This async method obtains the result of slims api call.
+       * On Success, this response is assigned to local metadata variable.
+       * On Failure, the user is notified of a failure to populate metadata.
+       */
+      if (!lims_available.value) return;
       try {
         loading.value = true;
         const slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
@@ -918,49 +903,175 @@ export default defineComponent({
         assignMetadata(slimsData);
       } catch (error) {
         loading.value = false;
-        snackbar.dispatch({ text: 'Failed to create metadata', options: { color: 'error', right: true } });
+        snackbar.dispatch({ text: 'Failed to pull metadata from SLIMS.', options: { color: 'error', right: true } });
       }
     }
     // io
     async function loadMetadata(): Promise<boolean> {
+      /**
+       * Method used to load metadata into browser.
+       * First queries aws S3 to check if the run has the files needed in a spatial folder.
+       * If those files are present, the metadata from the metadata.json file is assigned to the local metadata variable, and the
+       * user is presented with the option to either load this spatial folder and update tixel designations or reprocess the image.
+       * If those files are not present, if slims is available, it is queried for metadata and the user is prompted for metadata run processing.
+       * Return: boolean: whether or not there is a spatial directory already present.
+       */
       if (!client.value) return false;
       run_id_search_active.value = false;
       loading.value = true;
       loadingMessage.value = false;
       // specify path to images within s3
-      const filename = `${root}/${run_id.value}/spatial/metadata.json`;
-      const scale_filename = `${root}/${run_id.value}/spatial/scalefactors_json.json`;
-      const pos_filename = `${root}/${run_id.value}/spatial/tissue_positions_list.csv`;
-      const payload = { params: { filename, bucket_name, no_aws_yes_server: false } };
+      const filename = `${root_spatial.value}/${run_id.value}/spatial/metadata.json`;
+      const scale_filename = `${root_spatial.value}/${run_id.value}/spatial/scalefactors_json.json`;
+      const pos_filename = `${root_spatial.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
+      const payload = { params: { filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename, bucket_name, no_aws_yes_server: false } };
+      const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
-      const scale_payload = { params: { filename: scale_filename, bucket_name, no_aws_yes_server: false } };
+      const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
-      // print the result of the last 3 async calls
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         scaleFactor_json.value = scale_pos;
         tissue_position_list_obj.value = resp_pos;
         loading.value = false;
         metadata.value = resp;
+        if (resp.barcodes) {
+          map_barcode_filename_config(resp.barcodes);
+        }
+        original_barcode_filename.value = metadata.value.barcode_filename;
+        // Converting old format of {1,2,3,4} to new format of using barcode filename
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         return true;
-        // otherwise call getMeta to query the API
       }
-      await getMeta();
-      loading.value = false;
-      snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
+      // otherwise call getMeta to query the API
+      if (lims_available.value) {
+        await getMeta();
+        loading.value = false;
+        snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
+      }
       return false;
     }
+    async function load_barcode_file_short_name(short_filename: string) {
+      /**
+       * Method for loading a barcode file from the atlasxbrowser.barcode_files_path directory.
+       * Return: string[]: list of barcodes in the barcode file.
+       */
+      const path = config.atlasxbrowser.barcode_files_path.concat('/'.concat(short_filename));
+      const pl = { params: { filename: path, bucket_name: bucket_name.value } };
+      const bc_file = await client.value?.getCsvFile(pl);
+      const barcode_list: string[] = [];
+      bc_file.forEach((row: string[]) => {
+        barcode_list.push(row[0]);
+      });
+      return barcode_list;
+    }
+    function get_num_channels_loaded_barcode_file(barcode_file: string[]) {
+      /**
+       * Method for determining the number of channels in the barcode file.
+       * Return: number: number of channels in the barcode file. -1 if the number of rows is not a square.
+       */
+      const num_chan_int = Math.floor(Math.sqrt(barcode_file.length));
+      if (num_chan_int * num_chan_int !== barcode_file.length) return -1;
+      return num_chan_int;
+    }
+    async function get_number_channels_barcode_filename(barcode_filename: string | null) {
+      /**
+       * Method for determining the number of channels in the barcode file.
+       * Return: number: number of channels in the barcode file. -1 if the number of rows is not a square.
+       */
+      if (!barcode_filename) return -1;
+      const bc_file = await load_barcode_file_short_name(barcode_filename);
+      const num_chan_int = get_num_channels_loaded_barcode_file(bc_file);
+      return num_chan_int;
+    }
+    async function retrieve_barcode_file() {
+      /**
+       * Method for loading barcode file into the browser, once has been selected by user.
+       * Return boolean: Whether or not the barcode file loaded in is valid. Validity based on the number of rows being a square.
+       */
+      if (!metadata.value.barcode_filename) return false;
+      const bc_file = await load_barcode_file_short_name(metadata.value.barcode_filename);
+      if (!bc_file) return false;
+      const num_chan_int = get_num_channels_loaded_barcode_file(bc_file);
+      if (num_chan_int === -1) return false;
+      channels.value = num_chan_int;
+      roi.value.channels = channels.value;
+      barcodes_in_list.value = bc_file;
+      return true;
+    }
+    function uploadingTixels(use_existing_pos_file = true) {
+      /**
+       * Method for converting data in metadata.json into tixel grid of the app.
+       * Args: use_existing_pos_file: whether or not to use the existing tissue_positions_list.csv when making a tixel grid.
+       */
+      grid.value = true;
+      cropFlag.value = true;
+      const partitioned = splitarray(metadata.value.points, 2);
+      const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
+      roi.value.setCoordinates(roi_coords);
+      orientation.value = metadata.value.orientation;
+      if (use_existing_pos_file) {
+        roi.value.loadTixels(tissue_position_list_obj.value);
+      }
+    }
+    function show_grid() {
+      /**
+       * Method to show the grid.
+       */
+      grid.value = true;
+      roi.value.show_tixels();
+    }
+    async function metadata_confirmed() {
+      /**
+       * Method called when user confirms current metadata.
+       */
+      show_metadata.value = false;
+      if (!metadata_confirmed_bool.value) {
+        loading.value = true;
+        const proper_barcode_file = await retrieve_barcode_file();
+        if (!proper_barcode_file) {
+          show_metadata.value = true;
+          metadata_confirmed_bool.value = false;
+          snackbar.dispatch({ text: 'Invalid barcode file.', options: { color: 'error' } });
+        } else {
+          let tixels_filled_local = true;
+          let use_existing_pos_file = true;
+          if (updating_existing.value) {
+            if (metadata.value.barcode_filename !== original_barcode_filename.value) {
+              const num_channel_old = await get_number_channels_barcode_filename(original_barcode_filename.value);
+              if (num_channel_old !== channels.value) {
+                tixels_filled_local = false;
+                use_existing_pos_file = false;
+              }
+            }
+            uploadingTixels(use_existing_pos_file);
+            tixels_filled.value = tixels_filled_local;
+            if (!tixels_filled_local) {
+              show_grid();
+            }
+          }
+          metadata_confirmed_bool.value = true;
+        }
+      }
+      loading.value = false;
+    }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
+      /**
+       * Wrapper method that calls getImageAsJPG from client.
+       */
       if (!client.value) return null;
       const promise = client.value.getImageAsJPG(pl);
       return promise;
     }
     function loadGrayCropped(filename: string): Promise<any> | null {
+      /**
+       * Method returns nonfluorescent postB image cropped to the specifications the user made on the BSA image.
+       * Must be run either following cropping, or when updating a spatial folder.
+       * Utilizes client call to API. Image processing is done on backend.
+       * Returns null if client is not initialized or there was an exception.
+       */
       if (!client.value) return null;
-      // path to image
       try {
         let c = crop.value.getCoordinatesOnImage();
         if (updating_existing.value) {
@@ -970,7 +1081,7 @@ export default defineComponent({
         const y1 = c[1];
         const x2 = c[2];
         const y2 = c[3];
-        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
+        const pl = { params: { bucket_name: bucket_name.value, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
         const promise = client.value.getGrayImageAsCroppedJPG(pl);
         return promise;
       } catch (error) {
@@ -979,6 +1090,11 @@ export default defineComponent({
       }
     }
     function set_current_image(blob: any) {
+      /**
+       * Method sets the currently displayed image.
+       * Args: blob type: Blob. The image to be set, in blob form.
+       * Returns type: Image. An Image object with the arg set as its source.
+       */
       const imgObj = new window.Image();
       imgObj.src = URL.createObjectURL(blob);
       const scalefactor = 0.1;
@@ -998,7 +1114,13 @@ export default defineComponent({
       }
       return imgObj;
     }
-    async function loadImage() {
+    async function load_and_begin_image_processing() {
+      /**
+       * Method called when type of processing (updating or reprocessing) and desired image are selected.
+       * If reprocessing path specified by user or inferred is loaded in.
+       * If updating the postB_BSA image is pulled from the spatial folder of the run and loaded on screen and the postB image is loaded in background.
+       * The files in the directory are loaded as well in `allFiles`
+       */
       if (!client.value) return;
       welcome_screen.value = false;
       image_processing_begun.value = true;
@@ -1006,27 +1128,29 @@ export default defineComponent({
       loadingMessage.value = false;
       let filename: any;
       let use_cache = false;
+      let local_bucket_name = bucket_name.value;
       // path to images
       if (updating_existing.value) {
-        filename = `${root}/${run_id.value}/spatial/figure/postB_BSA.tif`;
+        filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
         bsa_image_displayed.value = true;
         postB_image_displayed.value = false;
         bw_image_displayed.value = false;
         use_cache = true;
+        local_bucket_name = bucket_name_spatial.value;
       } else {
         filename = full_bsa_filename.value;
       }
-      const filenameList = { path: root, filter: [`${run_id.value}`], bucket: bucket_name };
+      const filenameList_pl = { path: `${root.value}/${run_id.value}/`, filter: [''], bucket: bucket_name.value, only_files: true };
       try {
-        const pl = { params: { bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
+        const pl = { params: { bucket_name: local_bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
         const img = await client.value.getImageAsJPG(pl);
         bsa_blob.value = img;
-        allFiles.value = await client.value.getFileList(filenameList);
         const img_obj = set_current_image(img);
+        allFiles.value = await client.value.getFileList(filenameList_pl);
         bsa_image.value = img_obj.src;
         if (updating_existing.value) {
-          const postB_figure_filename = `${root}/${run_id.value}/spatial/figure/postB.tif`;
-          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: 'true', bucket_name } };
+          const postB_figure_filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB.tif`;
+          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: true, bucket_name: bucket_name_spatial.value } };
           const pro = load_image_promise_jpg(pl_postB);
           if (pro) postB_image_promise.value = pro;
         }
@@ -1037,10 +1161,25 @@ export default defineComponent({
         loading.value = false;
         snackbar.dispatch({ text: 'Failed to load the image file', options: { color: 'error', right: true } });
       }
-      // console.log(current_image.value.original_src);
     }
-
-    async function rotate_image(choice: number) {
+    function toggle_tixel_counts_disp() {
+      /**
+       * This method toggles the displaying of count based colors on the tixels.
+       * If show_counts_tixels is true, this means the button was just checked and the tixels should be filled.
+       * If not, box was unchecked and colors should be removed.
+       */
+      if (show_counts_tixels.value) {
+        roi.value.fill_color_counts(tixel_color_mapping.value);
+      } else {
+        roi.value.remove_color_counts();
+      }
+    }
+    async function rotate_bsa_image(choice: number) {
+      /**
+       * Method to rotate BSA image. Image rotation processing done on backend.
+       * Call to API is sped up by an indication to use the cache on server.
+       * Args: choice number: Indication of how manyu
+       */
       loading.value = true;
       if (choice === 0) {
         const rotationAmount = parseInt(degreeRotation.value, 10);
@@ -1048,35 +1187,157 @@ export default defineComponent({
       } else {
         orientation.value.rotation += 270;
       }
-      const pl = { params: { filename: full_bsa_filename.value, bucket_name, use_cache: 'true', rotation: orientation.value.rotation } };
+      const pl = { params: { filename: full_bsa_filename.value, bucket_name: bucket_name.value, use_cache: 'true', rotation: orientation.value.rotation } };
       const img = await client.value?.getImageAsJPG(pl);
       bsa_blob.value = img;
       set_current_image(img);
       loading.value = false;
     }
     function searchRuns(ev: any) {
+      /**
+       * Method to search run ids in the `run_id_folder_names` list based on the input string.
+       */
       const stringforRegex = ev;
       const updated = [];
       const regex = new RegExp(`${stringforRegex}[a-zA-z]*[0-9]*`);
-      for (let i = 0; i < items.value.length; i += 1) {
-        if (regex.test(items.value[i].id)) {
-          updated.push(items.value[i]);
+      for (let i = 0; i < run_id_folder_names.value.length; i += 1) {
+        if (regex.test(run_id_folder_names.value[i].id)) {
+          updated.push(run_id_folder_names.value[i]);
         }
       }
-      itemsHolder.value = updated;
+      run_id_folder_namesHolder.value = updated;
     }
-    function uploadingTixels(ev: any) {
-      grid.value = true;
-      cropFlag.value = true;
-      const partitioned = splitarray(metadata.value.points, 2);
-      // conversion of the x and y coordinates designated in the tissue_positions_list file
-      // to being in memory of the app
-      const roi_coords: Point[] = partitioned.map((v: number[]) => ({ x: v[0], y: v[1] }));
-      roi.value.setCoordinates(roi_coords);
-      orientation.value = metadata.value.orientation;
-      roi.value.loadTixels(tissue_position_list_obj.value);
+    async function load_barcode_file_options() {
+      /**
+       * Method to load the barcode files in the `barcode_files_path` folder of the atlasxbrowser config.
+       * The files are loaded in the `barcode_filename_options` variable.
+       * Note: Ensure barcode_files_path is properly set in the config.
+       */
+      if (!client.value) return;
+      const barcode_path = config.atlasxbrowser.barcode_files_path.concat('/');
+      const pl = { path: barcode_path, bucket: bucket_name.value, filter: '.txt', only_files: true, delimiter: '/' };
+      const res = await client.value.getFileList(pl);
+      res.forEach((filename: string) => {
+        const inx = filename.lastIndexOf('/');
+        if (inx < filename.length - 1) {
+          const short_filename = filename.substring(inx + 1, filename.length);
+          barcode_filename_options.value.push(short_filename);
+        }
+      });
+    }
+    function color_tixel_counts_percentile(data: any[], color_gradient: string[]) {
+      /**
+       * Populates variable `tixel_color_mapping` to have each tixel's color derived
+       *  from its percentile in the dataset.
+       * Params: data: tissue_positions list color_gradient: list of hex color codes length: 100
+       */
+      data.sort((ele1: any, ele2: any) => {
+        const counts_ele1 = ele1[7];
+        const counts_ele2 = ele2[7];
+        if (counts_ele1 > counts_ele2) {
+          return 1;
+        }
+        if (counts_ele1 < counts_ele2) {
+          return -1;
+        }
+        return 0;
+      });
+      // Code chunk used to creating a mapping between tixel number and the respective color within a color gradient
+      const number_channels = Math.sqrt(data.length);
+      for (let i = 0; i < data.length; i += 1) {
+        const pct = Math.floor((i / data.length) * 100);
+        const row = Number.parseInt(data[i][2], 10);
+        const col = Number.parseInt(data[i][3], 10);
+        const tixel_num = (row * number_channels) + col;
+        tixel_color_mapping.value[tixel_num] = color_gradient[pct];
+      }
+      const { 7: temp_count_lower } = data[Math.round(data.length * 0.05)];
+      const { 7: temp_count_upper } = data[Math.round(data.length * 0.95)];
+      lower_bound_count.value = Math.round(temp_count_lower * 100) / 100;
+      upper_bound_count.value = Math.round(temp_count_upper * 100) / 100;
+    }
+    function color_tixel_counts_user_defined(data: any[], color_gradient: string[], min: number, max: number) {
+      /**
+       * Populates `tixel_color_mapping` with colors based on provided min and max.
+       * Values below min are given the minimum color value and values above max are given max value
+       * Values that fall within the provided min and max are given the color in color gradient based on
+       * its linear placement between min and max.
+       * Params:
+       *    data: tissue_positions list containing tixel information for the relevant run
+       *    color_gradient: list containing hex colors defining the color spectrum being used
+       *    min: Lower bound to be included in color dist
+       *    max: Upper bound to be included in color dist
+       */
+      if (!data) return;
+      if (data[0].length !== 8) return;
+      lower_bound_count.value = min;
+      upper_bound_count.value = max;
+      for (let i = 0; i < data.length; i += 1) {
+        const current_count = data[i][7];
+        let pct_inx = Math.round(((current_count - min) / (max - min)) * 100);
+        pct_inx = Math.max(0, pct_inx);
+        pct_inx = Math.min(pct_inx, 99);
+        const color = color_gradient[pct_inx];
+        tixel_color_mapping.value[i] = color;
+      }
+    }
+    async function load_counts_positions(filename = tissue_positions_counts_filename.value, bucket_name_local = bucket_name_spatial.value) {
+      /**
+       * Method to load in a tissue_positions_list file with information on fragment counts.
+       */
+      const pl = { params: { bucket_name: bucket_name_local, filename } };
+      const data = await client.value?.getCsvFile(pl);
+      if (data === 'Not-Found' || data[0].length !== 8) {
+        snackbar.dispatch({ text: 'Error! Incompatible File!', options: { color: 'red' } });
+        tissue_positions_counts_filename.value = '';
+        return;
+      }
+      // Sort data based on row and col, as proper ordering is not assumed for count files
+      data.sort((x: any, y: any) => {
+        const row_x = Number.parseInt(x[2], 10);
+        const col_x = Number.parseInt(x[3], 10);
+        const row_y = Number.parseInt(y[2], 10);
+        const col_y = Number.parseInt(y[3], 10);
+        // decided based on row:
+        // x is less than y
+        if (row_x > row_y) {
+          return 1;
+        }
+        // x is greater than y
+        if (row_x < row_y) {
+          return -1;
+        }
+        // decided based on col:
+        // x is less than y
+        if (col_x > col_y) {
+          return 1;
+        }
+        // x is greater than y
+        return -1;
+      });
+      tissue_position_list_obj.value = data;
+      // Create copy for assigning color information
+      const data_copy = JSON.parse(JSON.stringify(data));
+      const color_gradient = colormap({ colormap: 'jet', nshades: 100, format: 'hex' });
+      // Default use of percentiles for coloring grid
+      color_tixel_counts_percentile(data_copy, color_gradient);
+      // color_tixel_counts_user_defined(data_copy, color_gradient, 4, 5);
+      // Populate gradient div
+      const min_color = color_gradient[0];
+      const min_number = (Math.round(data_copy[0][7] * 100)) / 100;
+      const pct_50_color = color_gradient[49];
+      const pct_50_number = Math.round(data_copy[Math.round(0.5 * data.length)][7] * 100) / 100;
+      const max_color = color_gradient[99];
+      const max_num = Math.round(data_copy[data_copy.length - 1][7] * 100) / 100;
+      linear_gradient_description_string.value = `linear-gradient(to right, ${min_color}, ${pct_50_color}, ${max_color})`;
+      color_gradient_scale_numbers.value = [min_number, pct_50_number, max_num];
+      snackbar.dispatch({ text: 'Successfully Loaded Tissue Position Counts', options: { color: 'green', position: 'center' } });
+      position_counts_present.value = true;
     }
     function handleResize(ev: any) {
+      /**
+       * Method to handle resizing of the window.
+       */
       const v = scaleFactor.value;
       if (current_image.value !== null) {
         current_image.value.scale = { x: v, y: v };
@@ -1113,11 +1374,16 @@ export default defineComponent({
     }
     // ROI events
     function handleDragStart(ev: any) {
-      // console.log(ev);
+      /**
+       * Starting of move for roi corner resets the polygon list.
+       */
       const { id } = ev.target.attrs;
       roi.value.polygons = [];
     }
     function handleDragMove(ev: any) {
+      /**
+       * Method to handle movement of roi corner.
+       */
       const { id } = ev.target.attrs;
       const pos = ev.target._lastPos;
       if (pos.x > 5 && pos.y > 5 && pos.x < stageWidth.value && pos.y < stageHeight.value) {
@@ -1129,55 +1395,81 @@ export default defineComponent({
       }
     }
     function handleDragCenterStart(ev: any) {
+      /**
+       * Starting of movement of center of roi resets the polygons.
+       */
       roi.value.polygons = [];
     }
     function handleDragCenterMove(ev: any) {
       roi.value.moveToNewCenter(ev.target._lastPos);
     }
+    function brush_on_points() {
+      /**
+       * Method called when the brush is being used over a set of tixels.
+       * If erasing the value of on_tissue will be set to false and if the count colors are displayed the strokeWidth will be set to 1
+       * Otherwise if the brush is not erasing, the attribute on_tissue will be set to true and if count colors are displayed the stroke width will be set to 1.
+       */
+      const attributes: Record<string, any> = {};
+      if (show_counts_tixels.value) {
+        attributes.opacity = isEraseMode.value ? 0.5 : 1;
+      } else {
+        attributes.fill = isEraseMode.value ? null : 'red';
+      }
+      attributes.on_tissue = !isEraseMode.value;
+      roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, attributes);
+    }
     function handleMouseDown(ev: any) {
+      /**
+       * Method to handle mouse click.
+       * If the brush is being used, the brush_on_points method is called.
+       */
+      if (roi.value.polygons.length === 0) return;
+      if (isBrushMode.value) {
+        isMouseDown.value = true;
+        brush_on_points();
+        return;
+      }
       const { id } = ev.target.attrs;
       const idx = lodash.findIndex(roi.value.polygons, { id });
-      if (roi.value.polygons) {
-        if (roi.value.polygons[idx].fill === 'red') roi.value.polygons[idx].fill = null;
-        else roi.value.polygons[idx].fill = 'red';
+      const kv_map: Record<string, any> = {};
+      const current_on_tissue = roi.value.polygons[idx].on_tissue;
+      kv_map.on_tissue = !current_on_tissue;
+      if (show_counts_tixels.value) {
+        if (current_on_tissue) {
+          kv_map.opacity = 0.5;
+        } else {
+          kv_map.opacity = 1;
+        }
+      } else if (current_on_tissue) {
+        kv_map.fill = null;
+      } else {
+        kv_map.fill = 'red';
       }
+      roi.value.setPolygonState(idx, kv_map);
       isMouseDown.value = true;
     }
     function handleMouseUp(ev: any) {
       isMouseDown.value = false;
     }
-    function handleMouseOver(ev: any) {
-      if (isMouseDown.value) {
-        const { id } = ev.target.attrs;
-        const idx = lodash.findIndex(roi.value.polygons, { id });
-        if (roi.value.polygons) {
-          roi.value.polygons[idx].fill = 'red';
-        }
-      }
-    }
+
     function handleMouseMoveStage(ev: any) {
+      /**
+       * Method to handle mouse movement over the stage.
+       * If the brush is being used and mouse is being held down the brush_on_points method is called.
+       */
       if (isBrushMode.value || isEraseMode.value) {
         const pos = (ctx as any).refs.konvaStage.getNode().getPointerPosition();
         const { x, y } = pos;
         brushConfig.value.x = x;
         brushConfig.value.y = y;
         if (brushDown.value) {
-          if (isEraseMode.value) {
-            roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', null);
-          } else {
-            roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', 'red');
-          }
+          brush_on_points();
         }
       }
     }
     function handleMouseDownBrush(ev: any) {
       brushDown.value = true;
-      if (isEraseMode.value) {
-        roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', null);
-      }
-      if (isBrushMode.value) {
-        roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, 'fill', 'red');
-      }
+      brush_on_points();
     }
     function handleMouseUpBrush(ev: any) {
       brushDown.value = false;
@@ -1185,41 +1477,17 @@ export default defineComponent({
     function setBrushMode(tf: boolean) {
       isBrushMode.value = tf;
     }
-    function load_tixel_state() {
-      for (let i = 0; i < roi.value.polygons.length; i += 1) {
-        const ID = roi.value.polygons[i].id;
-        roi.value.polygons[i].fill = saved_grid_state.value?.get(ID) ? 'red' : null;
-      }
-    }
-
-    function generateLattices(ev: any) {
-      grid.value = true;
-      roi.value.polygons = roi.value.generatePolygons();
-      if (tixels_filled.value) {
-        load_tixel_state();
-      }
-    }
-    function onLatticeButton(ev: any) {
-      generateLattices(ev);
-    }
     function hide_grid() {
-      if (tixels_filled.value) {
-        for (let i = 0; i < roi.value.polygons.length; i += 1) {
-          const polygon = roi.value.polygons[i];
-          const ID = polygon.id;
-          if (polygon.fill === 'red') {
-            const assigned = saved_grid_state.value?.set(ID, true);
-          } else {
-            const assigned = saved_grid_state.value?.set(ID, false);
-          }
-        }
-        roi.value.polygons = [];
-      } else {
-        roi.value.polygons = [];
-      }
-      grid.value = false;
+      roi.value.toggle_tixel_visibility();
+      // grid.value = false;
     }
     async function change_image(img: string) {
+      /**
+       * Method to change the image being displayed.
+       * If the image is postB and the postB image has not been loaded yet, the function waits for it to load.
+       * The specified image is set to current_image and the corresponding image_displayed value is set to true.
+       * @img: string, the image to be displayed. Can be 'postB', 'BSA', or 'BW'
+       */
       bsa_image_displayed.value = false;
       postB_image_displayed.value = false;
       bw_image_displayed.value = false;
@@ -1242,6 +1510,10 @@ export default defineComponent({
       current_image.value.image.src = new_img;
     }
     function onCropButton(ev: any) {
+      /**
+       * Method to handle the crop button being clicked.
+       * Based on the locations of corners of the crop box, the image is cropped on the canvas and the new image is set to current_image.
+       */
       const coords = crop.value.getCoordinatesOnImage();
       const { width, height } = current_image.value.image;
       const [x1, y1, x2, y2] = coords;
@@ -1270,23 +1542,23 @@ export default defineComponent({
             cropLoading.value = false;
           });
         };
-        roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value);
+        roi.value = new ROI([(coords[2] - coords[0]) * scaleFactor.value, (coords[3] - coords[1]) * scaleFactor.value], scaleFactor.value, channels.value);
       }
     }
     function finding_roi() {
+      /**
+       * Method called when `activate` roi finding is selected.
+       */
       grid.value = true;
       active_roi_available.value = false;
       roi_active.value = true;
     }
 
-    function clear_filled_tixels() {
-      for (let i = 0; i < roi.value.polygons.length; i += 1) {
-        roi.value.polygons[i].fill = null;
-        const cleared = saved_grid_state.value?.clear();
-      }
-    }
-
     function threshold_image(img_src: any) {
+      /**
+       * Method to threshold the image using the parameters specified for c and neighborhood size.
+       * Thresholding is done on canvas.
+       */
       threshLoading.value = true;
       thresh_image_created.value = true;
       const sv = scaleFactor.value;
@@ -1322,6 +1594,10 @@ export default defineComponent({
       });
     }
     function thresh_clicked() {
+      /**
+       * Method directly called when the threshold button is clicked.
+       * Utilizes the postB image to threshold and calls threshold_image.
+       */
       if (!current_image.value) return;
       if (!postB_image_promise.value) return;
       loading.value = true;
@@ -1339,10 +1615,23 @@ export default defineComponent({
       one.value = value;
     };
     async function showSpatialFolder() {
+      /**
+       * Method called when `Show Spatial Folder` button is clicked.
+       * Sets the `show_spatial_folder` value to true.
+       */
       checkSpatial.value = true;
     }
     async function generateSpatial() {
+      /**
+       * Generates the spatial folder.
+       * Calls the `atlasbrowser.generate_spatial` task to generate the spatial folder.
+       * Passes metadata, crop area, roi coordinates, and relevant filenames.
+       */
       if (!client.value) return;
+      if (!metadata.value.barcode_filename) {
+        snackbar.dispatch({ text: 'Must Select Barcode File Before Generating Spatial Folder', options: { color: 'warning', right: true } });
+        return;
+      }
       try {
         one.value = 0;
         two.value = 0;
@@ -1371,16 +1660,6 @@ export default defineComponent({
           numChannels: channels.value,
           orientation: orientation.value,
           crop_area: cropCoords,
-          barcodes: metadata.value.barcodes,
-          tissueBlockExperiment: metadata.value.tissueBlockExperiment,
-          comments_flowB: metadata.value.comments_flowB,
-          crosses_flowB: metadata.value.crosses_flowB,
-          blocks_flowB: metadata.value.blocks_flowB,
-          leaks_flowB: metadata.value.leak_flowB,
-          comments_flowA: metadata.value.comments_flowA,
-          crosses_flowA: metadata.value.crosses_flowA,
-          blocks_flowA: metadata.value.blocks_flowA,
-          leak_flowA: metadata.value.leak_flowA,
           onTissueTixels: roi.value.getOnTissue(),
         });
         const params = {
@@ -1391,9 +1670,12 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
-          barcodes: metadata.value.barcodes,
-          root_dir: root,
-          bucket: bucket_name,
+          barcode_filename: metadata.value.barcode_filename,
+          barcode_list: barcodes_in_list.value,
+          bucket_name_bsa: bucket_name.value,
+          bucket_name_spatial: bucket_name_spatial.value,
+          root_dir_spatial: root_spatial.value,
+          root_dir_bsa: root.value,
           bsa_filename: full_bsa_filename.value,
           updating_existing: updating_existing.value,
         };
@@ -1442,6 +1724,11 @@ export default defineComponent({
       }
     }
     function handle_spatial_call() {
+      /**
+       * Method called when `Generate Spatial Folder` button is clicked.
+       * Checks if client is initialized and image processing is complete.
+       * If so, calls `generateSpatial` method.
+       */
       if (!client.value) {
         snackbar.dispatch({ text: 'Client is not initialized', options: { right: true, color: 'error' } });
       } else if (!tixels_filled.value) {
@@ -1450,7 +1737,22 @@ export default defineComponent({
         generateSpatial();
       }
     }
+    async function update_run_function() {
+      /**
+       * Method called when `Update Run` button is clicked.
+       * Sets proper boolean values before following the same process as `load_and_begin_image_processing`.
+       */
+      prompt_to_use_existing_spatial.value = false;
+      updating_existing.value = true;
+      await load_and_begin_image_processing();
+    }
     function autoFill(ev: any) {
+      /**
+       * Method called when `Auto Fill` button is clicked.
+       * If the tixels are not already placed they are loaded onto the image.
+       * The `autoMask` method is called to fill the tixels.
+       * This method then sets the `tixels_filled` boolean to true, which is used to determine if the image processing is complete.
+       */
       grid.value = true;
       if (roi.value.polygons.length === 0) {
         roi.value.generatePolygons();
@@ -1459,20 +1761,24 @@ export default defineComponent({
       tixels_filled.value = true;
     }
     async function fetchFileList() {
+      /**
+       * Method that gets all of the files in the specific directory where the BSA files are stored.
+       * The results of this are passed to the worker when generating spatial folder to move non bsa images to figure folder.
+       */
       if (!client.value) {
         return;
       }
-      items.value = [];
-      itemsHolder.value = [];
+      run_id_folder_names.value = [];
+      run_id_folder_namesHolder.value = [];
       search.value = '';
       loading.value = true;
-      const folder_pl = { bucket_name, prefix: 'Images/', delimiter: '/' };
+      const folder_pl = { bucket_name: bucket_name.value, prefix: `${root.value}/`, delimiter: '/' };
       const sub_folders = await client.value.getSubFolders(folder_pl);
       if (sub_folders) {
         const obj_data = sub_folders.map((sub_folder_name: string) => ({ id: sub_folder_name }));
-        items.value = obj_data;
+        run_id_folder_names.value = obj_data;
       }
-      itemsHolder.value = items.value;
+      run_id_folder_namesHolder.value = run_id_folder_names.value;
       loading.value = false;
     }
     async function selectAction(ev: any) {
@@ -1480,17 +1786,46 @@ export default defineComponent({
       run_id.value = ev.id;
       pushByQuery({ component: 'AtlasBrowser', run_id: run_id.value });
     }
+    async function get_count_file_options(current_run_id: string) {
+      /**
+       * Method that gets all of the csv files in the root directory where the bsa files are stored.
+       */
+      const pl = { bucket: bucket_name_spatial.value, path: `${root_spatial.value}/${current_run_id}/`, filter: ['.csv'] };
+      const options = await client.value?.getFileList(pl);
+      count_file_options.value = options;
+    }
     async function get_image_options(folder_name: string) {
-      const pl = { bucket: bucket_name, path: `${root}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
+      /**
+       * Method that gets all of the images in the directory selected by the user.
+       * If there is only one image in the directory, it is automatically selected.
+       * If there are no images in the directory, an error message is displayed.
+       * If there are multiple images in the directory, the user is prompted to select one.
+       */
+      const pl = { bucket: bucket_name.value, path: `${root.value}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
       file_options.value = await client.value?.getFileList(pl);
       if (file_options.value.length === 1) {
         [full_bsa_filename.value] = file_options.value;
-        loadImage();
+        show_metadata.value = true;
+        load_and_begin_image_processing();
       } else if (file_options.value.length === 0) {
         snackbar.dispatch({ text: 'No images found in folder', options: { right: true, color: 'error' } });
       }
     }
+    async function reprocess_image(run_id_param: string) {
+      /**
+       * Method called when the user decides to `Reprocess` the run when there is already a spatial folder.
+       */
+      reset_metadata();
+      await getMeta();
+      get_image_options(run_id_param);
+      prompt_to_use_existing_spatial.value = false;
+    }
     async function run_folder_selected(folder_name: any) {
+      /**
+       * Method called when the user selects a run id from the dropdown selector.
+       * This leads to various options of whether to reprocess/update or the selection of specific images.
+       * If client is not initialized, the method returns early.
+       */
       if (!clientReady) {
         return;
       }
@@ -1499,6 +1834,8 @@ export default defineComponent({
       prompt_to_use_existing_spatial.value = await loadMetadata();
       if (!prompt_to_use_existing_spatial.value) {
         get_image_options(folder_name.id);
+      } else {
+        show_metadata.value = true;
       }
     }
     watch(brushSize, (v) => {
@@ -1561,6 +1898,8 @@ export default defineComponent({
       store.commit.setSubmenu(submenu);
       window.addEventListener('resize', handleResize);
       await fetchFileList();
+      load_barcode_file_options();
+      // load_counts_positions();
     });
     onUnmounted(async () => {
       store.commit.setSubmenu(null);
@@ -1571,14 +1910,13 @@ export default defineComponent({
       run_id,
       full_bsa_filename,
       metadata,
-      items,
-      itemsHolder,
+      run_id_folder_names,
+      run_id_folder_namesHolder,
       searchInput,
       headers,
       selectAction,
       search,
       konvaConfig,
-      circleConfig,
       brushConfig,
       handleDragStart_Crop,
       handleDragEnd_Crop,
@@ -1589,7 +1927,6 @@ export default defineComponent({
       handleDragCenterStart,
       handleDragCenterMove,
       handleMouseDown,
-      handleMouseOver,
       handleMouseMoveStage,
       handleMouseDownBrush,
       handleMouseUpBrush,
@@ -1597,9 +1934,9 @@ export default defineComponent({
       crop,
       roi,
       objectToArray,
-      generateLattices,
+      show_grid,
       current_image,
-      loadImage,
+      load_and_begin_image_processing,
       searchRuns,
       stageWidth,
       initialize,
@@ -1620,7 +1957,6 @@ export default defineComponent({
       threshLoading,
       orientation,
       drop_down_manager,
-      onLatticeButton,
       onCropButton,
       one,
       two,
@@ -1651,16 +1987,15 @@ export default defineComponent({
       finding_roi,
       thresh_image_created,
       bw_image,
+      linear_gradient_description_string,
       thresh_same,
       tixels_filled,
       bsa_image_displayed,
       change_image,
       handle_spatial_call,
-      rotate_image,
+      rotate_bsa_image,
       saved_grid_state,
       hide_grid,
-      load_tixel_state,
-      clear_filled_tixels,
       degreeRotation,
       assignMetadata,
       checkSpatial,
@@ -1679,6 +2014,31 @@ export default defineComponent({
       run_folder_selected,
       get_image_options,
       file_options,
+      lims_available,
+      selecting_counts_pos_file,
+      color_gradient_scale_numbers,
+      tixel_color_mapping,
+      prompt_to_select_counts_positions,
+      get_count_file_options,
+      count_file_options,
+      tissue_positions_counts_filename,
+      load_counts_positions,
+      position_counts_present,
+      show_counts_tixels,
+      toggle_tixel_counts_disp,
+      grid_visible,
+      lower_bound_count,
+      upper_bound_count,
+      metadata_confirmed,
+      bucket_name_spatial,
+      root_spatial,
+      barcode_filename_options,
+      update_run_function,
+      retrieve_barcode_file,
+      barcodes_in_list,
+      reprocess_image,
+      metadata_confirmed_bool,
+      original_barcode_filename,
     };
   },
 });

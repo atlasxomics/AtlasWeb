@@ -67,7 +67,7 @@ export default defineComponent({
         return;
       }
       const folder_path = props.root.concat('/').concat(props.selectedRunID).concat('/');
-      const file_payload = { bucket: props.bucket_name, path: folder_path, filter: [''] };
+      const file_payload = { bucket: props.bucket_name, path: folder_path, filter: [''], only_files: true };
       const run_files = await client.value.getFileList(file_payload);
       for (let i = 0; i < run_files.length; i += 1) {
         if (run_files[i] !== folder_path) {
@@ -77,7 +77,7 @@ export default defineComponent({
       }
       // availableFiles.value = run_files;
       if (availableFiles.value.length === 0) {
-        availableFiles.value.push({ id: 0, file: 'Run '.concat(props.selectedRunID).concat(' has no associated files.') });
+        availableFiles.value.push({ id: 0, file: 'Run '.concat(props.selectedRunID).concat(' has no spatial folder.') });
       }
     }
     async function loadDisplayImage(filename: string) {
