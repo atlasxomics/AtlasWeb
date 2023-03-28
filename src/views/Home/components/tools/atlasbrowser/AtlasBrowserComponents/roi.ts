@@ -68,7 +68,6 @@ export class ROI {
 
   setCoordinates(coords: Point[]): any {
     let idx = 0;
-    console.log(this.coordinates);
     lodash.forIn(this.coordinates, (v, k) => {
       this.coordinates[k] = { x: coords[idx].x * this.scalefactor, y: coords[idx].y * this.scalefactor };
       idx += 1;
