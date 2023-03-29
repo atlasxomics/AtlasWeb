@@ -296,8 +296,6 @@ export default defineComponent({
     const current_tixel_colors = ref<string[]>([]);
     const multi_sample_flag = ref<boolean>(false);
     const clusters_ann_flag = ref<boolean>(false);
-    let scale_spatial = [1, 1];
-    let scale_umap = [1, 1];
     let position_of_celltype = 0;
     async function fitStageToParent() {
       const parent = document.querySelector('#stageParentDualAtac');
@@ -1013,6 +1011,11 @@ export default defineComponent({
     function mouseDownOnStageLeft(ev: any) {
       isClicked.value = true;
       visibility.value = 'hidden';
+      const point = globalSvgS.value.createSVGPoint();
+      point.x = ev.clientX;
+      point.y = ev.clientY;
+      const ctm = globalSvgS.value.getScreenCTM();
+      const normalize_pointer = point.matrixTransform(ctm.inverse());
       if (isDrawing.value) {
         lassoSide.value = 'left';
         removeRegions();
@@ -1020,23 +1023,23 @@ export default defineComponent({
         path.setAttribute('stroke', '#6ffc03');
         path.setAttribute('stroke-width', '1');
         if (!path.getAttribute('id')) path.setAttribute('id', 'spa');
-        appendToBuffer({ x: ev.offsetX * scale_spatial[0], y: ev.offsetY * scale_spatial[1] });
-        strPath += `M${ev.offsetX * scale_spatial[0]} ${ev.offsetY * scale_spatial[1]}`;
+        appendToBuffer({ x: normalize_pointer.x, y: normalize_pointer.y });
+        strPath += `M${normalize_pointer.x} ${normalize_pointer.y}`;
         path.setAttribute('d', strPath);
         globalSvgS.value.appendChild(path);
       } else if (isDrawingRect.value) {
         lassoSide.value = 'left';
         removeRegions();
-        rect.setAttribute('x', `${ev.offsetX * scale_spatial[0]}`);
-        rect.setAttribute('y', `${ev.offsetY * scale_spatial[1]}`);
+        rect.setAttribute('x', `${normalize_pointer.x}`);
+        rect.setAttribute('y', `${normalize_pointer.y}`);
         rect.setAttribute('fill', 'none');
         rect.setAttribute('stroke', '#6ffc03');
         rect.setAttribute('width', '0');
         rect.setAttribute('height', '0');
         globalSvgS.value.appendChild(rect);
-        startRectCoords = [ev.offsetX * scale_spatial[0], ev.offsetY * scale_spatial[1]];
+        startRectCoords = [normalize_pointer.x, normalize_pointer.y];
       } else {
-        originalClickedPoint.value = [ev.offsetX, ev.offsetY];
+        originalClickedPoint.value = [normalize_pointer.x, normalize_pointer.y];
         const moveXvalue = globalSpatialGroup.value.getAttribute('x');
         const moveYvalue = globalSpatialGroup.value.getAttribute('y');
         translatePoint.value = [parseFloat(moveXvalue), parseFloat(moveYvalue)];
@@ -1045,6 +1048,11 @@ export default defineComponent({
     function mouseDownOnStageRight(ev: any) {
       isClickedU.value = true;
       visibilityUmap.value = 'hidden';
+      const point = globalSvgU.value.createSVGPoint();
+      point.x = ev.clientX;
+      point.y = ev.clientY;
+      const ctm = globalSvgU.value.getScreenCTM();
+      const normalize_pointer = point.matrixTransform(ctm.inverse());
       if (isDrawing.value) {
         lassoSide.value = 'right';
         removeRegions();
@@ -1052,24 +1060,24 @@ export default defineComponent({
         pathUmap.setAttribute('stroke', '#6ffc03');
         pathUmap.setAttribute('stroke-width', '1');
         if (!pathUmap.getAttribute('id')) pathUmap.setAttribute('id', 'uma');
-        appendToBuffer({ x: ev.offsetX * scale_umap[0], y: ev.offsetY * scale_umap[1] });
-        strPathUmap += `M${ev.offsetX * scale_umap[0]} ${ev.offsetY * scale_umap[1]}`;
+        appendToBuffer({ x: normalize_pointer.x, y: normalize_pointer.y });
+        strPathUmap += `M${normalize_pointer.x} ${normalize_pointer.y}`;
         pathUmap.setAttribute('d', strPathUmap);
         globalSvgU.value.appendChild(pathUmap);
         polygonUMAP.value = [];
       } else if (isDrawingRect.value) {
         lassoSide.value = 'right';
         removeRegions();
-        rectUmap.setAttribute('x', `${ev.offsetX * scale_umap[0]}`);
-        rectUmap.setAttribute('y', `${ev.offsetY * scale_umap[1]}`);
+        rectUmap.setAttribute('x', `${normalize_pointer.x}`);
+        rectUmap.setAttribute('y', `${normalize_pointer.y}`);
         rectUmap.setAttribute('fill', 'none');
         rectUmap.setAttribute('stroke', '#6ffc03');
         rectUmap.setAttribute('width', '0');
         rectUmap.setAttribute('height', '0');
         globalSvgU.value.appendChild(rectUmap);
-        startRectUmapCoords = [ev.offsetX * scale_umap[0], ev.offsetY * scale_umap[1]];
+        startRectUmapCoords = [normalize_pointer.x, normalize_pointer.y];
       } else {
-        originalClickedPointU.value = [ev.offsetX, ev.offsetY];
+        originalClickedPointU.value = [normalize_pointer.x, normalize_pointer.y];
         const moveXvalue = globalUmapGroup.value.getAttribute('x');
         const moveYvalue = globalUmapGroup.value.getAttribute('y');
         translatePointU.value = [parseFloat(moveXvalue), parseFloat(moveYvalue)];
@@ -1086,23 +1094,28 @@ export default defineComponent({
           TTposition.value = post;
         } else if (ev.target.id !== 'spatialGroup' && ev.target.nodeName !== 'circle') visibility.value = 'hidden';
       } else {
+        const point = globalSvgS.value.createSVGPoint();
+        point.x = ev.clientX;
+        point.y = ev.clientY;
+        const ctm = globalSvgS.value.getScreenCTM();
+        const normalize_pointer = point.matrixTransform(ctm.inverse());
         if (isDrawing.value) {
-          appendToBuffer({ x: ev.offsetX * scale_spatial[0], y: ev.offsetY * scale_spatial[1] });
+          appendToBuffer({ x: normalize_pointer.x, y: normalize_pointer.y });
           updateSvgPath();
-          polygon.value.push(ev.offsetX * scale_spatial[0]);
-          polygon.value.push(ev.offsetY * scale_spatial[1]);
+          polygon.value.push(normalize_pointer.x);
+          polygon.value.push(normalize_pointer.y);
         } else if (isDrawingRect.value) {
-          const xdiff = Math.abs((ev.offsetX * scale_spatial[0]) - startRectCoords[0]);
-          const ydiff = Math.abs((ev.offsetY * scale_spatial[1]) - startRectCoords[1]);
-          if ((ev.offsetX * scale_spatial[0]) < startRectCoords[0]) rect.setAttribute('x', `${ev.offsetX * scale_spatial[0]}`);
-          if ((ev.offsetY * scale_spatial[1]) < startRectCoords[1]) rect.setAttribute('y', `${ev.offsetY * scale_spatial[1]}`);
+          const xdiff = Math.abs((normalize_pointer.x) - startRectCoords[0]);
+          const ydiff = Math.abs((normalize_pointer.y) - startRectCoords[1]);
+          if ((normalize_pointer.x) < startRectCoords[0]) rect.setAttribute('x', `${normalize_pointer.x}`);
+          if ((normalize_pointer.y) < startRectCoords[1]) rect.setAttribute('y', `${normalize_pointer.y}`);
           rect.setAttribute('width', `${xdiff}`);
           rect.setAttribute('height', `${ydiff}`);
         } else {
-          const diffX = Math.abs(originalClickedPoint.value[0] - ev.offsetX);
-          const diffY = Math.abs(originalClickedPoint.value[1] - ev.offsetY);
-          const x = (originalClickedPoint.value[0] < ev.offsetX) ? 1 : -1;
-          const y = (originalClickedPoint.value[1] < ev.offsetY) ? 1 : -1;
+          const diffX = Math.abs(originalClickedPoint.value[0] - normalize_pointer.x);
+          const diffY = Math.abs(originalClickedPoint.value[1] - normalize_pointer.y);
+          const x = (originalClickedPoint.value[0] < normalize_pointer.x) ? 1 : -1;
+          const y = (originalClickedPoint.value[1] < normalize_pointer.y) ? 1 : -1;
           globalSpatialGroup.value.setAttribute('x', `${translatePoint.value[0] + diffX * x}`);
           globalSpatialGroup.value.setAttribute('y', `${translatePoint.value[1] + diffY * y}`);
         }
@@ -1116,23 +1129,28 @@ export default defineComponent({
           TTpositionUmap.value = post;
         } else if (ev.target.id !== 'umapGroup' && ev.target.nodeName !== 'circle') visibilityUmap.value = 'hidden';
       } else {
+        const point = globalSvgU.value.createSVGPoint();
+        point.x = ev.clientX;
+        point.y = ev.clientY;
+        const ctm = globalSvgU.value.getScreenCTM();
+        const normalize_pointer = point.matrixTransform(ctm.inverse());
         if (isDrawing.value) {
-          appendToBuffer({ x: ev.offsetX * scale_umap[0], y: ev.offsetY * scale_umap[1] });
+          appendToBuffer({ x: normalize_pointer.x, y: normalize_pointer.y });
           updateSvgPath();
-          polygonUMAP.value.push(ev.offsetX * scale_umap[0]);
-          polygonUMAP.value.push(ev.offsetY * scale_umap[1]);
+          polygonUMAP.value.push(normalize_pointer.x);
+          polygonUMAP.value.push(normalize_pointer.y);
         } else if (isDrawingRect.value) {
-          const xdiff = Math.abs((ev.offsetX * scale_umap[0]) - startRectUmapCoords[0]);
-          const ydiff = Math.abs((ev.offsetY * scale_umap[1]) - startRectUmapCoords[1]);
-          if ((ev.offsetX * scale_umap[0]) < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${ev.offsetX * scale_umap[0]}`);
-          if ((ev.offsetY * scale_umap[1]) < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${ev.offsetY * scale_umap[1]}`);
+          const xdiff = Math.abs((normalize_pointer.x) - startRectUmapCoords[0]);
+          const ydiff = Math.abs((normalize_pointer.y) - startRectUmapCoords[1]);
+          if ((normalize_pointer.x) < startRectUmapCoords[0]) rectUmap.setAttribute('x', `${normalize_pointer.x}`);
+          if ((normalize_pointer.y) < startRectUmapCoords[1]) rectUmap.setAttribute('y', `${normalize_pointer.y}`);
           rectUmap.setAttribute('width', `${xdiff}`);
           rectUmap.setAttribute('height', `${ydiff}`);
         } else {
-          const diffX = Math.abs(originalClickedPointU.value[0] - ev.offsetX);
-          const diffY = Math.abs(originalClickedPointU.value[1] - ev.offsetY);
-          const x = (originalClickedPointU.value[0] < ev.offsetX) ? 1 : -1;
-          const y = (originalClickedPointU.value[1] < ev.offsetY) ? 1 : -1;
+          const diffX = Math.abs(originalClickedPointU.value[0] - normalize_pointer.x);
+          const diffY = Math.abs(originalClickedPointU.value[1] - normalize_pointer.y);
+          const x = (originalClickedPointU.value[0] < normalize_pointer.x) ? 1 : -1;
+          const y = (originalClickedPointU.value[1] < normalize_pointer.y) ? 1 : -1;
           globalUmapGroup.value.setAttribute('x', `${translatePointU.value[0] + diffX * x}`);
           globalUmapGroup.value.setAttribute('y', `${translatePointU.value[1] + diffY * y}`);
         }
@@ -1186,14 +1204,12 @@ export default defineComponent({
       if (scalar === 'plus') scaled = [svg_spatial_wh.value[0] - 20, svg_spatial_wh.value[1] - 20];
       else scaled = [svg_spatial_wh.value[0] + 20, svg_spatial_wh.value[0] + 20];
       svg_spatial_wh.value = scaled;
-      scale_spatial = [svg_spatial_wh.value[0] / konvaConfigLeft.value.width, svg_spatial_wh.value[1] / konvaConfigLeft.value.height];
     }
     function reScaleUMAP(scalar: string) {
       let scaled: any = [];
       if (scalar === 'plus') scaled = [svg_umap_wh.value[0] - 20, svg_umap_wh.value[1] - 20];
       else scaled = [svg_umap_wh.value[0] + 20, svg_umap_wh.value[0] + 20];
       svg_umap_wh.value = scaled;
-      scale_umap = [svg_umap_wh.value[0] / konvaConfigRight.value.width, svg_umap_wh.value[1] / konvaConfigRight.value.height];
     }
     function resetScaleAndPos(ev: any) {
       const reset = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
