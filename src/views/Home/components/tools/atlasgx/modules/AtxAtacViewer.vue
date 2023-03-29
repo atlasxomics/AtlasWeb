@@ -1048,10 +1048,10 @@ export default defineComponent({
     function mouseDownOnStageRight(ev: any) {
       isClickedU.value = true;
       visibilityUmap.value = 'hidden';
-      const point = globalSvgS.value.createSVGPoint();
+      const point = globalSvgU.value.createSVGPoint();
       point.x = ev.clientX;
       point.y = ev.clientY;
-      const ctm = globalSvgS.value.getScreenCTM();
+      const ctm = globalSvgU.value.getScreenCTM();
       const normalize_pointer = point.matrixTransform(ctm.inverse());
       if (isDrawing.value) {
         lassoSide.value = 'right';
@@ -1129,10 +1129,10 @@ export default defineComponent({
           TTpositionUmap.value = post;
         } else if (ev.target.id !== 'umapGroup' && ev.target.nodeName !== 'circle') visibilityUmap.value = 'hidden';
       } else {
-        const point = globalSvgS.value.createSVGPoint();
+        const point = globalSvgU.value.createSVGPoint();
         point.x = ev.clientX;
         point.y = ev.clientY;
-        const ctm = globalSvgS.value.getScreenCTM();
+        const ctm = globalSvgU.value.getScreenCTM();
         const normalize_pointer = point.matrixTransform(ctm.inverse());
         if (isDrawing.value) {
           appendToBuffer({ x: normalize_pointer.x, y: normalize_pointer.y });
