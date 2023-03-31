@@ -208,6 +208,7 @@ export default defineComponent({
     });
     watch(regulons_from_parent, (v: any) => {
       if (v.length > 0) {
+        mapped_width.value = [0];
         slider.value = 4;
         sliceGraph(v, 0, true);
       } else if (v.length === 0 && all_elements.value) {
