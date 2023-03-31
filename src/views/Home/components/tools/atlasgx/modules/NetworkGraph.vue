@@ -3,7 +3,7 @@
     <v-col cols="12" sm="9">
       <template v-if="elements"><VueCytoscape :key="update_component" ref="cyRef" :config="config" :preConfig="preConfig" :afterCreated="afterCreated" /></template>
     </v-col>
-    <v-col cols="12" sm="3">
+    <v-col cols="12" sm="3" class="pr-22">
       <v-card flat>
         <v-card-text>Layout</v-card-text>
         <v-select
@@ -12,17 +12,19 @@
           @input="updateLayout"
         ></v-select>
         <v-card-text>Connection Strength</v-card-text>
+        <div style="width:100%; height:20px"></div>
         <v-slider
             :disabled="regulons_from_parent.length == 0"
             v-model="slider"
-            thumb-label
             :min="min_width"
             :max="max_width"
             ticks="always"
             tick-size="7"
-            :tick-labels="['10%', '25%', '50%', '75%', '100%']"
-            @end="sliceGraph(regulons_from_parent, slider, false)"
-          ></v-slider>
+            thumb-label="always"
+            @end="sliceGraph(regulons_from_parent, slider, false)">
+            <template v-slot:thumb-label="{ value }">
+              {{ slider_labels[value] }}
+            </template></v-slider>
       </v-card>
     </v-col>
   </v-row>
@@ -60,7 +62,8 @@ export default defineComponent({
     const min_width = ref<number>(0);
     const max_width = ref<number>(4);
     const index_edges = ref<any>();
-    const mapped_width = ref<any[]>([0]);
+    const truncate_value = ref<any[]>([0.15, 0.25, 0.5, 0.75, 1]);
+    const slider_labels = ref<any[]>(['15%', '25%', '50%', '75%', '100%']);
     function preConfig(Cytoscape: any) {
       if (default_layout.value === 'Forced-Algorithm') Cytoscape.use(cola);
     }
@@ -75,19 +78,6 @@ export default defineComponent({
         // d qwdnkasmn
       });
     }
-    function makearray(stopValue: number, startValue: number): any[] {
-      const arr = [];
-      const steps = 4;
-      const ten_percent = stopValue - (stopValue * 0.10);
-      const step = (ten_percent - startValue) / (steps - 1);
-      for (let i = 0; i < steps; i += 1) {
-        arr.push(parseFloat((startValue + (step * i)).toFixed(4)));
-      }
-      arr.reverse();
-      arr.push(0);
-      return arr;
-    }
-
     function constructGraph(data: any) {
       const holder_elements: any = [];
       let format_data: any = {};
@@ -109,7 +99,6 @@ export default defineComponent({
     }
 
     function sliceGraph(select: any, greater: number, start: boolean) {
-      const width_check = mapped_width.value[greater];
       const holder_elements: any = [];
       const holder_indexes: any = [];
       const all_values: any = [];
@@ -122,39 +111,23 @@ export default defineComponent({
         const all_keys = Object.keys(node_edge_index.value);
         list.forEach((value: any, i: any) => {
           if (all_keys.includes(value)) {
-            const element_array = node_edge_index.value[value].index;
-            const connect_array = node_edge_index.value[value].connect;
-            if (width_check !== 0) {
-              if (node_edge_index.value[value].group === 'TF') {
-                for (let j = 1; j < element_array.length; j += 1) {
-                  const val = element_array[j];
-                  if (index_edges.value[val].data.width >= width_check) {
-                    index.push(val);
-                    index.push(node_edge_index.value[index_edges.value[val].data.target].index[0]);
-                    if (!found.includes(index_edges.value[val].data.target)) element.push(index_edges.value[val].data.target);
-                  }
-                }
-              }
-            } else {
-              index.push(...element_array);
-              connect_array.forEach((v2: any) => {
-                if (!found.includes(v2)) element.push(v2);
-              });
+            let element_array = node_edge_index.value[value].index;
+            const cut_off = Math.ceil((element_array.length - 1) * truncate_value.value[greater]);
+            if (node_edge_index.value[value].group === 'TF') {
+              element_array = element_array.slice(0, cut_off);
             }
+            const connect_array = element_array.map((v: any) => all_elements.value[v].data.target);
+            index.push(...element_array);
+            connect_array.forEach((v2: any) => {
+              if (!found.includes(v2)) element.push(v2);
+            });
           }
         });
         return [index, element];
       };
       let initial = iterate(select, found_elements);
       found_elements.push(...select);
-      select.forEach((value: any) => {
-        holder_indexes.push(node_edge_index.value[value].index[0]);
-      });
       holder_indexes.push(...initial[0]);
-      holder_indexes.forEach((value: any, index: any) => {
-        if (index_edges.value[value]) all_width.push(index_edges.value[value].data.width);
-      });
-      if (start) mapped_width.value = makearray(Math.max(...all_width), Math.min(...all_width));
       while (!goodie) {
         if (initial[1].length === 0) goodie = true;
         initial = iterate(initial[1], found_elements);
@@ -208,9 +181,8 @@ export default defineComponent({
     });
     watch(regulons_from_parent, (v: any) => {
       if (v.length > 0) {
-        mapped_width.value = [0];
         slider.value = 4;
-        sliceGraph(v, 0, true);
+        sliceGraph(v, 4, true);
       } else if (v.length === 0 && all_elements.value) {
         const holder_elements: any = [];
         all_elements.value.forEach((value: any, index: any) => {
@@ -220,7 +192,7 @@ export default defineComponent({
         update_component.value += 1;
       }
     });
-    return { elements, config, regulons_from_parent, update_component, all_cell_types, current_selected, default_layout, go, slider, min_width, max_width, index_edges, mapped_width, preConfig, afterCreated, constructGraph, sliceGraph, updateLayout };
+    return { elements, config, regulons_from_parent, update_component, all_cell_types, current_selected, default_layout, go, slider, min_width, max_width, index_edges, truncate_value, slider_labels, preConfig, afterCreated, constructGraph, sliceGraph, updateLayout };
   },
 });
 
