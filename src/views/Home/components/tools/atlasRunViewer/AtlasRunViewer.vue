@@ -72,7 +72,7 @@ export default defineComponent({
         availableFiles.value.push(tempObj);
       }
       if (availableFiles.value.length === 0) {
-        availableFiles.value.push({ id: 0, file: 'Run '.concat(runID).concat(' has no associated files.') });
+        availableFiles.value.push({ id: 0, file: 'Run '.concat(runID).concat(' has no spatial folder.') });
       }
     }
     function handleRunSelection(runID: string) {

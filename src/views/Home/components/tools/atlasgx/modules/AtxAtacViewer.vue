@@ -750,7 +750,7 @@ export default defineComponent({
           }
           if (regulons_flag.value) {
             const regulon = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 3);
-            spatialData.value.regulon = regulon;
+            spatialData.value.eRegulon = regulon;
           }
         }
         const spatialX: number[] = [];
@@ -821,7 +821,7 @@ export default defineComponent({
           const regulonFileName = `data/${runId.value}/h5/eRegulonNames.txt.gz`;
           const regulon = await client.value!.getGeneMotifNames(regulonFileName);
           regulon.sort();
-          spatialData.value.regulon = regulon;
+          spatialData.value.eRegulon = regulon;
         }
       }
       loading.value = false;
@@ -833,9 +833,9 @@ export default defineComponent({
         ctx.emit('totalClust', totalInClust.value);
         clusters_ann_flag.value = false;
         ctx.emit('totalGM', spatialData.value.motif);
-      } else if (geneMotif.value === 'regulon') {
+      } else if (geneMotif.value === 'eRegulon') {
         ctx.emit('totalClust', totalInCellType.value);
-        ctx.emit('totalGM', spatialData.value.regulon);
+        ctx.emit('totalGM', spatialData.value.eRegulon);
         if (position_of_celltype !== 0) {
           clusters_ann_flag.value = true;
           updateCircles();
@@ -858,7 +858,7 @@ export default defineComponent({
           if (props.query.public) {
             if (geneMotif.value === 'gene') which_h5ad = 4;
             if (geneMotif.value === 'motif') which_h5ad = 5;
-            if (geneMotif.value === 'regulon') which_h5ad = 6;
+            if (geneMotif.value === 'eRegulon') which_h5ad = 6;
           }
           const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, which_h5ad) : await client.value.postTask(task, args, kwargs, queue);
           await checkTaskStatus(taskObject._id);
@@ -902,9 +902,9 @@ export default defineComponent({
       } else if (geneMotif.value === 'motif') {
         tixelDataFilename = `data/${runId.value}/h5/summations/motifSummation`;
         array = spatialData.value.motif;
-      } else if (geneMotif.value === 'regulon') {
+      } else if (geneMotif.value === 'eRegulon') {
         tixelDataFilename = `data/${runId.value}/h5/summations/eRegulonSummation`;
-        array = spatialData.value.regulon;
+        array = spatialData.value.eRegulon;
       }
       const rows = selectedGenes.value.map((v: string) => array.indexOf(v));
       const preSplit = await client.value?.getSummation(tixelDataFilename, rows);

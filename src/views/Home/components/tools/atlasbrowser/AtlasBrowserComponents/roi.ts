@@ -1,6 +1,6 @@
 import lodash from 'lodash';
 import { get_uuid, generateRouteByQuery, objectToArray } from '@/utils';
-import { Point, Circle } from './types';
+import { Point, Circle, Polygon } from '../types';
 
 export class ROI {
   coordinates: any | null;
@@ -11,11 +11,11 @@ export class ROI {
 
   channels: number | any;
 
-  constructor(coord: number[], scale: number) {
+  constructor(coord: number[], scale: number, num_channels: number|null) {
     this.scalefactor = scale;
     this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
     this.initializeROI(coord[0], coord[1]);
-    this.channels = 50;
+    this.channels = num_channels;
     this.polygons = [];
   }
 
@@ -31,6 +31,13 @@ export class ROI {
     const txp = xc + (1 / (num)) * (xr - xc);
     const typ = yc + (1 / (num)) * (yr - yc);
     return [txp, typ];
+  }
+
+  get_polygon_subset(index: number, total: number) {
+    const lb = Math.floor(this.polygons.length * (index / total));
+    const ub = Math.floor(this.polygons.length * ((index + 1) / total));
+    const slice = this.polygons.slice(lb, ub);
+    return slice;
   }
 
   initializeROI(width: number, height: number) {
@@ -120,7 +127,7 @@ export class ROI {
       const position = v.posit;
       const y = v.centery / this.scalefactor;
       const x = v.centerx / this.scalefactor;
-      const value = v.fill != null;
+      const value = v.on_tissue;
       return { position, value, coordinates: { y, x } };
     });
   }
@@ -128,7 +135,7 @@ export class ROI {
   getOnTissue(): number {
     let count = 0;
     this.polygons.forEach((ele: any) => {
-      if (ele.fill != null) {
+      if (ele.on_tissue) {
         count += 1;
       }
     });
@@ -152,7 +159,9 @@ export class ROI {
         }
       }
       pixval /= (2 * r) ** 2;
-      this.polygons[i].fill = pixval < threshold ? 'red' : null;
+      const on_tissue_local = pixval < threshold;
+      this.polygons[i].fill = on_tissue_local ? 'red' : null;
+      this.polygons[i].on_tissue = on_tissue_local;
     });
     return this.polygons;
   }
@@ -168,11 +177,74 @@ export class ROI {
     return lineConfig;
   }
 
-  setPolygonsInCircle(x: number, y: number, radius: number, key: string, value: any) {
+  setPolygonsInCircle(x: number, y: number, radius: number, key_value_mapping: Record<string, any>) {
+    // const rand = Math.floor(Math.random() * 2500);
+    // this.setPolygonState(rand, key_value_mapping);
     lodash.each(this.polygons, (v: any, i: number) => {
       const tf = ((v.centerx - x)) ** 2 + ((v.centery - y) ** 2) < (radius ** 2);
-      if (tf) this.polygons[i][key] = value;
+      if (tf) {
+        this.setPolygonState(i, key_value_mapping);
+      }
     });
+  }
+
+  setPolygonState(tixel_inx: number, key_value_mapping: Record<string, any>) {
+    Object.keys(key_value_mapping).forEach((key: string) => {
+      this.polygons[tixel_inx][key] = key_value_mapping[key];
+    });
+  }
+
+  fill_color_counts(tixel_color: Record<number, string>) {
+    /**
+     * Iterate through this.polygons and set color of the polygon
+     * to be the tixel color map passed in.
+     */
+    if (Object.keys(tixel_color).length !== this.polygons.length) return;
+    for (let i = 0; i < this.polygons.length; i += 1) {
+      this.polygons[i].fill = tixel_color[i];
+      this.polygons[i].opacity = this.polygons[i].on_tissue ? 1 : 0.5;
+      // if (this.polygons[i].on_tissue) {
+      //   this.polygons[i].strokeWidth = 1.5;
+      // }
+    }
+  }
+
+  remove_color_counts() {
+    /**
+     * Iterate through this.polygons and set color of
+     * shape to be red for on tissue and null for off.
+     */
+    for (let i = 0; i < this.polygons.length; i += 1) {
+      let fill = null;
+      if (this.polygons[i].on_tissue) {
+        fill = 'red';
+      }
+      this.polygons[i].fill = fill;
+      this.polygons[i].opacity = 1;
+    }
+  }
+
+  toggle_tixel_visibility() {
+    /**
+     * Setting all tixels to be invisible.
+     */
+    for (let i = 0; i < this.polygons.length; i += 1) {
+      this.polygons[i].visible = !this.polygons[i].visible;
+    }
+  }
+
+  show_tixels() {
+    /**
+     * General method for displaying tixels.
+     * Will generate the grid from scratch if
+     * polygons are not available or otherwise will
+     * just toggle the visibility of polygons.
+     */
+    if (this.polygons.length === 0) {
+      this.loadTixels();
+    } else {
+      this.toggle_tixel_visibility();
+    }
   }
 
   setScaleFactor(scale: number) {
@@ -193,7 +265,8 @@ export class ROI {
       elm.radius = v.radius * ratio;
       elm.centerx = v.centerx * ratio;
       elm.centery = v.centery * ratio;
-      elm.strokeWidth = this.scalefactor < 0.11 ? 0 : Math.min(ratio, 1.0);
+      elm.strokeWidth = Math.max(1 - this.scalefactor, 0.1) * 0.8;
+      // elm.strokeWidth = this.scalefactor < 0.11 ? 0 : Math.min(ratio, 1.0);
       newPolygons.push(elm);
     });
     // this.generatePolygons();
@@ -234,7 +307,7 @@ export class ROI {
     };
   }
 
-  loadTixels(tixel_array: any[]) {
+  loadTixels(tixel_array: any[] = []) {
     const [p1, p2, p3, p4] = this.getCoordinates();
     const ratioNum = (this.channels * 2) - 1;
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
@@ -289,7 +362,7 @@ export class ROI {
           const { 1: fill } = value;
           current_fill = fill;
         }
-        const polyConfig = {
+        const polyConfig: Polygon = {
           sceneFunc: (context: any, shape: any) => {
             context.beginPath();
             context.moveTo(topLC[0], topLC[1]);
@@ -303,15 +376,20 @@ export class ROI {
           },
           id: ID.toString(),
           fill: (current_fill === '1') ? 'red' : null,
+          on_tissue: (current_fill === '1'),
+          visible: true,
           centerx: center[0],
           centery: center[1],
           radius: slope[0],
+          opacity: 1,
           stroke: 'black',
-          strokeWidth: 1,
-          // postit: [row, col]
+          strokeWidth: 0.5,
+          listening: true,
           posit: [j, i],
           scaleX: 1.0,
           scaleY: 1.0,
+          raw_fragments: null,
+          log_fragments: null,
         };
         this.polygons.push(polyConfig);
         top[0] += slopeO[1];
@@ -323,7 +401,7 @@ export class ROI {
   }
 
   generatePolygons() {
-    this.loadTixels([]);
+    this.loadTixels();
     return this.polygons;
   }
 }

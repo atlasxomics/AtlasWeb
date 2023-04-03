@@ -168,7 +168,7 @@
                   </tr>
                 </template>
                 <template v-else-if="row.item == 'eRegulon'">
-                  <tr @click="changeClustersAnn('regulon')">
+                  <tr @click="changeClustersAnn('eRegulon')">
                     <td>{{row.item}}</td>
                   </tr>
                 </template>
@@ -243,7 +243,7 @@
                 <v-card-title>
                   <template v-if="geneMotif == 'gene'"><span class="text-h5">Top 10 Genes</span></template>
                   <template v-if="geneMotif == 'motif'"><span class="text-h5">Top 10 Motifs</span></template>
-                  <template v-if="geneMotif == 'regulon'"><span class="text-h5">Top 10 Regulons</span></template>
+                  <template v-if="geneMotif == 'eRegulon'"><span class="text-h5">Top 10 Regulons</span></template>
                 </v-card-title>
                 <v-card-text>
                   {{topSelected}}
@@ -639,7 +639,7 @@
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                 </template>
-                <network-graph v-show="geneMotif == 'regulon'" :selected_regulons="childGenes" :run_id="runId" :flag="regulons_flag"></network-graph>
+                <network-graph v-show="geneMotif == 'eRegulon'" :selected_regulons="childGenes" :run_id="runId" :flag="regulons_flag"></network-graph>
                 <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
               </v-card>
             </div>
@@ -869,8 +869,7 @@ export default defineComponent({
     // Functions that handle Clusters and Annotations
     async function changeClustersAnn(ev: any) {
       clusters_ann_flag.value = false;
-      if (ev === 'regulon') geneMotif.value = 'eRegulon';
-      else geneMotif.value = ev;
+      geneMotif.value = ev;
     }
     function dataToSingle(ev: any) {
       singleData.value = ev;
@@ -995,7 +994,6 @@ export default defineComponent({
         const plot_ids = ['spatialGroup', 'umapGroup'];
         const el = document.getElementById('spatialGroup')!;
         const el2 = document.getElementById('umapGroup')!;
-        console.log(el2.getAttribute('width'));
         let widthS = (parseFloat(el.getAttribute('width')!) > parseFloat(el2.getAttribute('width')!)) ? parseFloat(el.getAttribute('width')!) : parseFloat(el2.getAttribute('width')!);
         let heightS = (parseFloat(el.getAttribute('height')!) > parseFloat(el2.getAttribute('height')!)) ? parseFloat(el.getAttribute('height')!) : parseFloat(el2.getAttribute('height')!);
         widthS += 12;
@@ -1233,7 +1231,7 @@ export default defineComponent({
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
       selectedClusters.value = Object.keys(totalInClust.value).map((v: any) => v);
-      if (geneMotif.value === 'regulon') totalInCellType.value = ev;
+      if (geneMotif.value === 'eRegulon') totalInCellType.value = ev;
       if (Object.keys(topTenIds.value).length > 0) {
         updateSpatial();
       }
@@ -1250,7 +1248,7 @@ export default defineComponent({
       if (regulons_flag.value) {
         const fileNameRegulon = { params: { filename: `data/${runId.value}/h5/topTen_eRegulons.json` } };
         const topTen_regulon_json = await client.value?.getJsonFile(fileNameRegulon);
-        topTenIds.value.regulon = topTen_regulon_json;
+        topTenIds.value.eRegulon = topTen_regulon_json;
       }
       spatialData.value = false;
       if (Object.keys(totalInClust.value).length > 1) {
@@ -1272,7 +1270,7 @@ export default defineComponent({
           } else if (geneMotif.value === 'gene') {
             const hold = filename.value;
             filename.value = hold!.replace(/eRegulons|motifs/i, 'genes');
-          } else if (geneMotif.value === 'regulon') {
+          } else if (geneMotif.value === 'eRegulon') {
             const hold = filename.value;
             filename.value = hold!.replace(/motifs|genes/i, 'eRegulons');
           }
@@ -1415,7 +1413,7 @@ export default defineComponent({
         let fn = '';
         if (geneMotif.value === 'gene') fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
         if (geneMotif.value === 'motif') fn = `${root}/${ev.id}/h5/obj/motifs.h5ad`;
-        if (geneMotif.value === 'regulon') fn = `${root}/${ev.id}/h5/obj/eRegulons.h5ad`;
+        if (geneMotif.value === 'eRegulon') fn = `${root}/${ev.id}/h5/obj/eRegulons.h5ad`;
         filename.value = fn;
         holdMotif.value = '';
         runId.value = ev.id;
@@ -1463,7 +1461,7 @@ export default defineComponent({
           ev.forEach((v: string, i: number) => {
             childGenes.value.push(v);
           });
-          if (ev.length === 1 && geneMotif.value !== 'regulon') {
+          if (ev.length === 1 && geneMotif.value !== 'eRegulon') {
             ev.forEach((v: string, i: number) => {
               trackBrowserGenes.value.push(v);
             });
@@ -1489,7 +1487,7 @@ export default defineComponent({
           const span = btn.childNodes[0] as HTMLElement;
           if (v === 'gene') span.innerText = 'GENE';
           else if (v === 'motif') span.innerText = 'MOTIF';
-          else if (v === 'regulon') span.innerText = 'EREGULON';
+          else if (v === 'eRegulon') span.innerText = 'EREGULON';
         }
         userMaxValue.value = '';
         userMinValue.value = '';

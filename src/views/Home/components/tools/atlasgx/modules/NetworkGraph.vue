@@ -3,7 +3,7 @@
     <v-col cols="12" sm="9">
       <template v-if="elements"><VueCytoscape :key="update_component" ref="cyRef" :config="config" :preConfig="preConfig" :afterCreated="afterCreated" /></template>
     </v-col>
-    <v-col cols="12" sm="3">
+    <v-col cols="12" sm="3" class="pr-22">
       <v-card flat>
         <v-card-text>Layout</v-card-text>
         <v-select
@@ -11,6 +11,20 @@
           :items="['Forced-Algorithm', 'Concentric', 'Circle', 'Grid']"
           @input="updateLayout"
         ></v-select>
+        <v-card-text>Connection Strength</v-card-text>
+        <div style="width:100%; height:20px"></div>
+        <v-slider
+            :disabled="regulons_from_parent.length == 0"
+            v-model="slider"
+            :min="min_width"
+            :max="max_width"
+            ticks="always"
+            tick-size="7"
+            thumb-label="always"
+            @end="sliceGraph(regulons_from_parent, slider, false)">
+            <template v-slot:thumb-label="{ value }">
+              {{ slider_labels[value] }}
+            </template></v-slider>
       </v-card>
     </v-col>
   </v-row>
@@ -44,6 +58,12 @@ export default defineComponent({
     const current_selected = ref<number>(0);
     const layout_value: any = { Concentric: 'concentric', 'Forced-Algorithm': 'cola', Circle: 'circle', Grid: 'grid' };
     const default_layout = ref<string>('Forced-Algorithm');
+    const slider = ref<number>(4);
+    const min_width = ref<number>(0);
+    const max_width = ref<number>(4);
+    const index_edges = ref<any>();
+    const truncate_value = ref<any[]>([0.15, 0.25, 0.5, 0.75, 1]);
+    const slider_labels = ref<any[]>(['15%', '25%', '50%', '75%', '100%']);
     function preConfig(Cytoscape: any) {
       if (default_layout.value === 'Forced-Algorithm') Cytoscape.use(cola);
     }
@@ -58,38 +78,45 @@ export default defineComponent({
         // d qwdnkasmn
       });
     }
-
     function constructGraph(data: any) {
       const holder_elements: any = [];
       let format_data: any = {};
+      const index_hold: any = {};
       data.forEach((value: any, index: any) => {
         if (Object.keys(value).includes('position')) {
           format_data = { data: { id: value.data.name, label: value.data.name, color: value.data.color_rgb, size: value.data.size } };
         } else {
           format_data = { data: { id: index, source: value.data.source, color: value.data.color_rgb, target: value.data.target, width: value.data.width } };
+          index_hold[index] = format_data;
         }
         holder_elements.push(format_data);
       });
+      index_edges.value = index_hold;
       all_elements.value = holder_elements;
       elements.value = holder_elements;
       config.value = styles;
       update_component.value += 1;
     }
 
-    function sliceGraph(select: any) {
+    function sliceGraph(select: any, greater: number, start: boolean) {
       const holder_elements: any = [];
       const holder_indexes: any = [];
       const all_values: any = [];
       const found_elements: any = [];
       let goodie = false;
+      const all_width: any = [];
       const iterate = (list: any, found: any) => {
         const index: any = [];
         const element: any = [];
         const all_keys = Object.keys(node_edge_index.value);
         list.forEach((value: any, i: any) => {
           if (all_keys.includes(value)) {
-            const element_array = node_edge_index.value[value].index;
-            const connect_array = node_edge_index.value[value].connect;
+            let element_array = node_edge_index.value[value].index;
+            const cut_off = Math.ceil((element_array.length - 1) * truncate_value.value[greater]);
+            if (node_edge_index.value[value].group === 'TF') {
+              element_array = element_array.slice(0, cut_off);
+            }
+            const connect_array = element_array.map((v: any) => all_elements.value[v].data.target);
             index.push(...element_array);
             connect_array.forEach((v2: any) => {
               if (!found.includes(v2)) element.push(v2);
@@ -116,15 +143,9 @@ export default defineComponent({
         holder_elements.push(element);
       });
       elements.value = holder_elements;
-    }
-
-    function updateNetwork(ev: any) {
-      current_selected.value = ev;
-      node_edge_index.value = all_cell_types.value[ev][1];
-      constructGraph(all_cell_types.value[ev][0]);
-      if (regulons_from_parent.value.length > 0) sliceGraph(regulons_from_parent.value);
       update_component.value += 1;
     }
+
     function updateLayout(ev: any) {
       update_component.value += 1;
     }
@@ -160,8 +181,8 @@ export default defineComponent({
     });
     watch(regulons_from_parent, (v: any) => {
       if (v.length > 0) {
-        sliceGraph(v);
-        update_component.value += 1;
+        slider.value = 4;
+        sliceGraph(v, 4, true);
       } else if (v.length === 0 && all_elements.value) {
         const holder_elements: any = [];
         all_elements.value.forEach((value: any, index: any) => {
@@ -171,7 +192,7 @@ export default defineComponent({
         update_component.value += 1;
       }
     });
-    return { elements, config, regulons_from_parent, update_component, all_cell_types, current_selected, default_layout, go, preConfig, afterCreated, constructGraph, sliceGraph, updateLayout };
+    return { elements, config, regulons_from_parent, update_component, all_cell_types, current_selected, default_layout, go, slider, min_width, max_width, index_edges, truncate_value, slider_labels, preConfig, afterCreated, constructGraph, sliceGraph, updateLayout };
   },
 });
 

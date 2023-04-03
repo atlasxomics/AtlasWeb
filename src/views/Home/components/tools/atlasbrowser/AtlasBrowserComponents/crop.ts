@@ -1,6 +1,6 @@
 import lodash from 'lodash';
 import { get_uuid, generateRouteByQuery, objectToArray } from '@/utils';
-import { Point, Circle } from './types';
+import { Point, Circle } from '../types';
 
 export class Crop {
   coordinates: any | null;

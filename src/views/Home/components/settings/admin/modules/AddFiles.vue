@@ -101,7 +101,7 @@
         </v-row>
         <v-row class="d-flex justify-center">
             <v-icon
-            :disabled="currently_editing"
+            :disabled="currently_editing || !tissue_id"
             large
             color="green"
             @click="add_file"
@@ -111,7 +111,7 @@
         </v-row>
         <v-row class="d-flex justify-center">
             <v-btn
-            :disabled="currently_editing || !action_made"
+            :disabled="currently_editing || !action_made || !tissue_id"
             color="primary"
             @click="submit_file_changes"
             style="margin-bottom: 15px;"

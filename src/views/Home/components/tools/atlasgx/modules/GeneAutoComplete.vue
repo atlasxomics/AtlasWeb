@@ -256,8 +256,8 @@ export default defineComponent({
         selectedGenes.value.forEach((q: string, i: number) => {
           if (!autoGenes.value.includes(q)) {
             (ctx as any).refs[q].toggle();
+            autoGenes.value.push(q);
           }
-          autoGenes.value.push(q);
         });
       } else {
         selectedGenes.value.forEach((q: string, i: number) => {

@@ -22,6 +22,7 @@ pnpm-debug.log*
 *.sw?
 
 /src/**/*.js
+!/src/**/config.js
 /src/**/*.js.map
 yarn.lock
 /src/environment.ts
