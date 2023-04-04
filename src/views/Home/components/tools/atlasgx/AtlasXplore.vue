@@ -1307,7 +1307,7 @@ export default defineComponent({
         const queue = 'atxcloud_gene';
         const args = [props.query.public ? filename.value : `${root}/${runId.value}/h5/obj/motifs.csv`, trackBrowserGenes.value[0]];
         const kwargs: any = {};
-        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue, 5) : await client.value!.postTask(task, args, kwargs, queue);
+        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue, 7) : await client.value!.postTask(task, args, kwargs, queue);
 
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
