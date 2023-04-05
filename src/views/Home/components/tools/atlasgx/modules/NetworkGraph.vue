@@ -128,6 +128,15 @@ export default defineComponent({
       let initial = iterate(select, found_elements);
       found_elements.push(...select);
       holder_indexes.push(...initial[0]);
+      select.forEach((value: any) => {
+        const edges = node_edge_index.value[value].control.map((v: any) => v);
+        edges.forEach((source: any) => {
+          const src = node_edge_index.value[index_edges.value[source].data.source].index[0];
+          edges.push(src);
+        });
+        const ee = edges.map((v: any) => all_elements.value[v]);
+        holder_elements.push(...ee);
+      });
       while (!goodie) {
         if (initial[1].length === 0) goodie = true;
         initial = iterate(initial[1], found_elements);
