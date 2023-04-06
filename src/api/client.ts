@@ -699,10 +699,6 @@ export default class Client {
     const resp = await this.axios.post('/api/v1/run_db/check_spatial_folder_exists', pl);
     return resp.data;
   }
-  async get_job_status_runid_job_name(pl: any) {
-    const resp = await this.axios.post('/api/v1/run_db/get_job_runid_jobname', pl);
-    return resp.data;
-  }
   async getJobs(pl: any) {
     const resp = await this.axios.post('/api/v1/run_db/get_jobs', pl);
     return resp.data;
@@ -732,7 +728,7 @@ export default class Client {
   }
   async get_downloadable_files_for_run(tissue_id: string): Promise<Array<any>> {
     const pl = { tissue_id };
-    const resp = await this.axios.post('/api/v1/run_db/get_file_paths_for_run', pl);
+    const resp = await this.axios.post('/api/v1/run_db/load_run_files_info', pl);
     return resp.data;
   }
   async get_file_type_options(): Promise<Array<any>> {

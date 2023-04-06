@@ -1027,8 +1027,12 @@ export default defineComponent({
        * Method called when user confirms current metadata.
        */
       show_metadata.value = false;
-      if (!metadata_confirmed_bool.value) {
+      let prior_loading = true;
+      if (!loading.value) {
         loading.value = true;
+        prior_loading = false;
+      }
+      if (!metadata_confirmed_bool.value) {
         const proper_barcode_file = await retrieve_barcode_file();
         if (!proper_barcode_file) {
           show_metadata.value = true;
@@ -1054,7 +1058,9 @@ export default defineComponent({
           metadata_confirmed_bool.value = true;
         }
       }
-      loading.value = false;
+      if (!prior_loading) {
+        loading.value = false;
+      }
     }
     function load_image_promise_jpg(pl: any): Promise<any> | null {
       /**
