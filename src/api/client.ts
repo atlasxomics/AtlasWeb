@@ -732,7 +732,7 @@ export default class Client {
   }
   async get_downloadable_files_for_run(tissue_id: string): Promise<Array<any>> {
     const pl = { tissue_id };
-    const resp = await this.axios.post('/api/v1/run_db/get_file_paths_for_run', pl);
+    const resp = await this.axios.post('/api/v1/run_db/load_run_files_info', pl);
     return resp.data;
   }
   async get_file_type_options(): Promise<Array<any>> {
