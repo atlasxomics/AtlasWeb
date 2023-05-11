@@ -57,14 +57,6 @@
         >
         </selector>
         <v-text-field
-        v-if="lims_available"
-        outlined
-        dense
-        label="Tissue Experimental Condition"
-        v-model="metadata.tissueBlockExperiment"
-        >
-        </v-text-field>
-        <v-text-field
         v-model="metadata.chip_resolution"
         outlined
         dense
@@ -98,7 +90,6 @@ export default defineComponent({
     metadata: { type: Object, required: true },
     run_id: { type: String, required: true },
     drop_down_manager: { type: Object, required: true },
-    lims_available: { type: Boolean, required: true },
     updating_existing: { type: Boolean, required: true },
     barcode_filename_list: { type: Array, required: true },
     metadata_confirmed_bool: { type: Boolean, required: true },
@@ -107,10 +98,10 @@ export default defineComponent({
     function metadata_confirmed() {
       ctx.emit('confirmed');
     }
-    function barcode_file_selected() {
-      ctx.emit('barcode-file-selected');
-    }
-    return { metadata_confirmed, barcode_file_selected };
+    // function barcode_file_selected() {
+    //   ctx.emit('barcode-file-selected');
+    // }
+    return { metadata_confirmed };
   },
 });
 </script>

@@ -1,10 +1,7 @@
 const config = {
   atlasxbrowser: {
     root_dir: 'Images',
-    root_dir_spatial: 'Images_spatial',
     barcode_files_path: 'BarcodeFiles',
-    bucket_name: 'atx-illumina',
-    bucket_name_spatial: 'atx-illumina',
     lims_available: true,
     barcode_mapping: {
       1: 'bc50v1-24.txt',

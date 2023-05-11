@@ -51,7 +51,6 @@ export default class Client {
   urlPostfix: string;
   workers: any[] | null;
   user: User | null;
-  authorizationToken: string;
   refreshTimeoutId?: number;
 
   /**
@@ -61,40 +60,22 @@ export default class Client {
    * @param token The access token (JWT) to use for each request
    * @returns The instantiated client.
    */
-  static async Create(serverURL: string, token: string): Promise<Client> {
-    const client = new Client(serverURL, token);
-    await client.initAsync();
-
+  static async Create(serverURL: string): Promise<Client> {
+    const client = new Client(serverURL);
     return client;
   }
 
-  static async CreatePublic(serverURL: string, token: string): Promise<Client> {
-    const client = new Client(serverURL, token);
-
-    return client;
-  }
-
-  constructor(serverURL: string, token: string) {
+  constructor(serverURL: string) {
     this.axios = axios.create({
       baseURL: serverURL,
-      headers: { common: { Authorization: token } },
+      // headers: { 'Access-Control-Allow-Origin': true },
+      // withCredentials: false,
     });
-
     this.serverURL = serverURL;
     this.urlPostfix = this.getUrlPostfix();
-    this.authorizationToken = token;
     this.user = null;
     this.workers = null;
-  }
-
-  async initAsync() {
-    try {
-      await this.fetchUser();
-      this.refreshTimeoutId = window.setTimeout(this.refreshToken.bind(this), getTimeout(this.authorizationToken));
-      // this.workers = await this.getWorkerSummary();
-    } catch (e) {
-      console.log(e);
-    }
+    axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*';
   }
 
   getUrlPostfix(): string {
@@ -114,19 +95,6 @@ export default class Client {
     } catch (error) {
       return null;
     }
-  }
-  private async refreshToken() {
-    const resp = await this.axios.post('/api/v1/auth/refreshtoken');
-    const { access_token: accessToken } = resp.data;
-
-    this.authorizationToken = `JWT ${accessToken}`;
-    this.refreshTimeoutId = window.setTimeout(this.refreshToken.bind(this), getTimeout(accessToken));
-  }
-
-  private async fetchUser() {
-    const { data } = await this.axios.get('/api/v1/auth/whoami');
-    const userdata = { username: data.Username, user_level: 0, name: 'None', email: '', groups: data.groups };
-    this.user = userdata;
   }
 
   async downloadByLink(filename: string, expiry: number) {

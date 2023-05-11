@@ -1,7 +1,8 @@
 <template>
 <!--     <v-card ref="mainCard"> -->
-  <v-app class="main">
-    <v-container v-if="resolveAuthGroup(['admin','user'])" fluid>
+  <v-main>
+    <appbar :submenu="submenu" class="appbar"/>
+    <v-container fluid>
       <v-row>
         <!-- search funtionality on press of magnifying glass -->
         <v-dialog
@@ -50,12 +51,10 @@
           :metadata ="metadata"
           :drop_down_manager="drop_down_manager"
           :run_id="run_id"
-          :lims_available="lims_available"
           :updating_existing="updating_existing"
           :barcode_filename_list="barcode_filename_options"
           :metadata_confirmed_bool="metadata_confirmed_bool"
           @confirmed="metadata_confirmed"
-          @barcode-file-selected="retrieve_barcode_file"
           > </metadata-dropdown>
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
@@ -80,7 +79,6 @@
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Rotation</v-subheader>
                 <v-btn
                 color="blue"
-                class="leftRotate"
                 :disabled="!current_image || isCropMode || grid || updating_existing || loading"
                 @click="rotate_bsa_image(0)"
                 small
@@ -100,14 +98,10 @@
                 width="24"
                 height="24"/>
                 </v-btn>
-                <!-- <v-switch class="toggle_switch"
-                label="45°"
-                v-model = "degreeBoolean45"
-                :disabled="!current_image || isCropMode || grid"
-                >
-                </v-switch> -->
-                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || updating_existing || loading">90</label>
-                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || updating_existing || loading">45</label>
+                <div style="display:grid;margin-top: 10px;">
+                  <label><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || updating_existing || loading">90</label>
+                  <label><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || updating_existing || loading">45</label>
+                </div>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -284,15 +278,6 @@
                   @click="handle_spatial_call()">
                   Generate Spatial Folder
                   </v-btn>
-                  <v-btn
-                  class="vert-spaced-btn"
-                  outlined
-                  x-small
-                  dense
-                  color="red"
-                  @click="showSpatialFolder">
-                  Check Spatial Folder
-                  </v-btn>
                 </template>
               </v-list>
             </v-card>
@@ -327,7 +312,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="update_run_function "
+                @click="update_run_function"
                 medium>
                 Update
               </v-btn>
@@ -529,16 +514,6 @@
             </v-row>
           </v-container>
         </v-col>
-        <v-col cols="12" sm="12">
-        <SpatialFolderViewer
-        v-if="checkSpatial"
-        :root="root_spatial"
-        :bucket_name="bucket_name_spatial"
-        :selectedRunID="run_id"
-        :getFiles="checkSpatial"
-        >
-        </SpatialFolderViewer>
-        </v-col>
         <v-col cols="12" sm="12"
         justify="center"
         v-if="welcome_screen"
@@ -553,7 +528,7 @@
         </v-col>
       </v-row>
     </v-container>
-  </v-app>
+  </v-main>
 <!--     </v-card> -->
 </template>
 
@@ -561,7 +536,8 @@
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import lodash, { pad, toInteger, trim } from 'lodash';
-import Konva from 'konva';
+import { isClient, Client } from '@/api';
+import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
 import blobStream from 'blob-stream';
@@ -571,14 +547,13 @@ import config from '@/config';
 import colormap from 'colormap';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
-import { resolveAuthGroup } from '@/utils/auth';
+import { user, saveCookie, readCookie, logout } from '@/utils/auth';
+import Appbar from '@/components/Appbar/Appbar.vue';
 import Selector from '@/views/Home/components/settings/admin/modules/submodules/Selector.vue';
 import { DropDownFieldManager } from '@/views/Home/components/settings/admin/modules/submodules/DropDownFieldManager';
-import { FileRequest } from '@/types';
 import { ROI } from './AtlasBrowserComponents/roi';
 import { Crop } from './AtlasBrowserComponents/crop';
 import { Circle, Point, Metadata, tissue_position_list_ele_counts } from './types';
-import SpatialFolderViewer from './AtlasBrowserComponents/SpatialFolderViewer.vue';
 import MetadataDropdown from './AtlasBrowserComponents/MetadataDropdown.vue';
 // import { resolve } from 'dns';
 
@@ -610,15 +585,12 @@ const assay_dict: Record<string, any> = {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  components: { SpatialFolderViewer, Selector, MetadataDropdown },
+  components: { Selector, MetadataDropdown, Appbar },
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
-    const bucket_name = computed(() => config.atlasxbrowser.bucket_name);
-    const bucket_name_spatial = computed(() => config.atlasxbrowser.bucket_name_spatial);
     const root = computed(() => config.atlasxbrowser.root_dir);
-    const root_spatial = computed(() => config.atlasxbrowser.root_dir_spatial);
-    const lims_available = computed(() => config.atlasxbrowser.lims_available);
+    const root_barcode = computed(() => config.atlasxbrowser.barcode_files_path);
     // root directory of that s3 bucket
     const welcome_screen = ref<boolean>(true);
     const drop_down_manager = new DropDownFieldManager();
@@ -632,6 +604,7 @@ export default defineComponent({
     const search = ref<string | null>();
     const run_id = ref<string>('');
     const full_bsa_filename = ref<string>('');
+    const full_postb_filename = ref<string>('');
     const file_options = ref<any[]>([]);
     const konvaConfig = ref<any>({ width_window: window.innerWidth, height_window: window.innerHeight });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
@@ -722,6 +695,7 @@ export default defineComponent({
     const barcode_mapping = computed(() => config.atlasxbrowser.barcode_mapping);
     const original_barcode_filename = ref<string|null>('');
     const metadata_confirmed_bool = ref<boolean>(false);
+    const postB_flag = ref<boolean>(false);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -752,6 +726,32 @@ export default defineComponent({
       onTissueTixels: null,
       antibody: '',
     });
+    const submenu = ref<any[]>([
+      {
+        text: 'Run ID\'s',
+        icon: 'mdi-magnify',
+        tooltip: 'Run ID\'s',
+        enabled: true,
+        disabled: loading.value,
+        click: () => {
+          run_id_search_active.value = !run_id_search_active.value;
+        },
+      },
+      {
+        text: 'Metadata',
+        icon: 'mdi-filter-variant',
+        tooltip: 'Metadata',
+        enabled: true,
+        disabled: loading.value,
+        click: () => {
+          show_metadata.value = !show_metadata.value;
+          if (!run_id.value) {
+            console.log('error message');
+            snackbar.dispatch({ text: 'Must select a Run ID', options: { right: true, color: 'error' } });
+          }
+        },
+      },
+    ]);
     function reset_metadata() {
       /**
        * Method used to reset metadata when run is switched.
@@ -857,36 +857,6 @@ export default defineComponent({
         metadata.value.barcode_filename = barcode_filename;
       }
     }
-    function assignMetadata(slimsData: any) {
-      /**
-       * Method used to assign slims api response to local metadata variable.
-       * Args: slimsData: Return object from request to load run_id from slims.
-       */
-      try {
-        metadata.value.organ = slimsData.cntn_cf_fk_organ;
-        metadata.value.species = slimsData.cntn_cf_fk_species;
-        metadata.value.chip_resolution = slimsData.Resolution;
-        metadata.value.tissue_source = slimsData.cntn_cf_source;
-        metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
-        metadata.value.sampleID = slimsData.cntn_cf_sampleId;
-        metadata.value.antibody = slimsData.cntn_cf_fk_epitope;
-        if (slimsData.cntn_cf_fk_workflow) {
-          metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
-        }
-        metadata.value.comments_flowB = slimsData.comments_flowB;
-        metadata.value.crosses_flowB = slimsData.crosses_flowB;
-        metadata.value.blocks_flowB = slimsData.blocks_flowB;
-        metadata.value.leak_flowB = slimsData.leak_flowB;
-        metadata.value.comments_flowA = slimsData.comments_flowA;
-        metadata.value.crosses_flowA = slimsData.crosses_flowA;
-        metadata.value.blocks_flowA = slimsData.blocks_flowA;
-        metadata.value.leak_flowA = slimsData.leak_flowA;
-        metadata.value.tissue_type = slimsData.cntn_cf_fk_tissueType;
-        map_barcode_filename_config(slimsData.cntn_cf_fk_barcodeOrientation);
-      } catch (error) {
-        console.log(error);
-      }
-    }
     async function getMeta() {
       /**
        * Method in which the client method `getMetadataFromRunId` is called.
@@ -894,17 +864,6 @@ export default defineComponent({
        * On Success, this response is assigned to local metadata variable.
        * On Failure, the user is notified of a failure to populate metadata.
        */
-      if (!lims_available.value) return;
-      try {
-        loading.value = true;
-        const slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
-        // function to assign the local metadata values to the slimsData object fields
-        loading.value = false;
-        assignMetadata(slimsData);
-      } catch (error) {
-        loading.value = false;
-        snackbar.dispatch({ text: 'Failed to pull metadata from SLIMS.', options: { color: 'error', right: true } });
-      }
     }
     // io
     async function loadMetadata(): Promise<boolean> {
@@ -921,14 +880,14 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       // specify path to images within s3
-      const filename = `${root_spatial.value}/${run_id.value}/spatial/metadata.json`;
-      const scale_filename = `${root_spatial.value}/${run_id.value}/spatial/scalefactors_json.json`;
-      const pos_filename = `${root_spatial.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
-      const payload = { params: { filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
+      const filename = `${root.value}/${run_id.value}/spatial/metadata.json`;
+      const scale_filename = `${root.value}/${run_id.value}/spatial/scalefactors_json.json`;
+      const pos_filename = `${root.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
+      const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
+      const pos_payload = { params: { filename: pos_filename } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
-      const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
+      const scale_payload = { params: { filename: scale_filename } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
@@ -944,12 +903,6 @@ export default defineComponent({
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         return true;
       }
-      // otherwise call getMeta to query the API
-      if (lims_available.value) {
-        await getMeta();
-        loading.value = false;
-        snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
-      }
       return false;
     }
     async function load_barcode_file_short_name(short_filename: string) {
@@ -957,8 +910,8 @@ export default defineComponent({
        * Method for loading a barcode file from the atlasxbrowser.barcode_files_path directory.
        * Return: string[]: list of barcodes in the barcode file.
        */
-      const path = config.atlasxbrowser.barcode_files_path.concat('/'.concat(short_filename));
-      const pl = { params: { filename: path, bucket_name: bucket_name.value } };
+      const path = root_barcode.value.concat('/'.concat(short_filename));
+      const pl = { params: { filename: path } };
       const bc_file = await client.value?.getCsvFile(pl);
       const barcode_list: string[] = [];
       bc_file.forEach((row: string[]) => {
@@ -1087,7 +1040,7 @@ export default defineComponent({
         const y1 = c[1];
         const x2 = c[2];
         const y2 = c[3];
-        const pl = { params: { bucket_name: bucket_name.value, filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
+        const pl = { params: { filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
         const promise = client.value.getGrayImageAsCroppedJPG(pl);
         return promise;
       } catch (error) {
@@ -1133,30 +1086,31 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       let filename: any;
-      let use_cache = false;
-      let local_bucket_name = bucket_name.value;
       // path to images
       if (updating_existing.value) {
-        filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
+        filename = `${root.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
         bsa_image_displayed.value = true;
         postB_image_displayed.value = false;
         bw_image_displayed.value = false;
-        use_cache = true;
-        local_bucket_name = bucket_name_spatial.value;
       } else {
-        filename = full_bsa_filename.value;
+        filename = `${root.value}/${run_id.value}/${full_bsa_filename.value}`;
       }
-      const filenameList_pl = { path: `${root.value}/${run_id.value}/`, filter: [''], bucket: bucket_name.value, only_files: true };
+      const filenameList_pl = { path: `${root.value}/${run_id.value}/`, filter: [''], only_files: true };
       try {
-        const pl = { params: { bucket_name: local_bucket_name, filename, rotation: orientation.value.rotation, use_cache } };
+        const pl = { params: { filename, rotation: orientation.value.rotation } };
         const img = await client.value.getImageAsJPG(pl);
         bsa_blob.value = img;
         const img_obj = set_current_image(img);
         allFiles.value = await client.value.getFileList(filenameList_pl);
         bsa_image.value = img_obj.src;
         if (updating_existing.value) {
-          const postB_figure_filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB.tif`;
-          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: true, bucket_name: bucket_name_spatial.value } };
+          const postB_figure_filename = `${root.value}/${run_id.value}/spatial/figure/postB.tif`;
+          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename } };
+          const pro = load_image_promise_jpg(pl_postB);
+          if (pro) postB_image_promise.value = pro;
+        }
+        if (postB_flag.value) {
+          const pl_postB = { params: { rotation: 0, filename: `${root.value}/${run_id.value}/${full_postb_filename.value}` } };
           const pro = load_image_promise_jpg(pl_postB);
           if (pro) postB_image_promise.value = pro;
         }
@@ -1193,7 +1147,7 @@ export default defineComponent({
       } else {
         orientation.value.rotation += 270;
       }
-      const pl = { params: { filename: full_bsa_filename.value, bucket_name: bucket_name.value, use_cache: 'true', rotation: orientation.value.rotation } };
+      const pl = { params: { filename: `${root.value}/${run_id.value}/${full_bsa_filename.value}`, rotation: orientation.value.rotation } };
       const img = await client.value?.getImageAsJPG(pl);
       bsa_blob.value = img;
       set_current_image(img);
@@ -1220,16 +1174,10 @@ export default defineComponent({
        * Note: Ensure barcode_files_path is properly set in the config.
        */
       if (!client.value) return;
-      const barcode_path = config.atlasxbrowser.barcode_files_path.concat('/');
-      const pl = { path: barcode_path, bucket: bucket_name.value, filter: '.txt', only_files: true, delimiter: '/' };
+      const barcode_path = root_barcode.value;
+      const pl = { path: barcode_path, filter: ['.txt'], only_files: true };
       const res = await client.value.getFileList(pl);
-      res.forEach((filename: string) => {
-        const inx = filename.lastIndexOf('/');
-        if (inx < filename.length - 1) {
-          const short_filename = filename.substring(inx + 1, filename.length);
-          barcode_filename_options.value.push(short_filename);
-        }
-      });
+      barcode_filename_options.value = res;
     }
     function color_tixel_counts_percentile(data: any[], color_gradient: string[]) {
       /**
@@ -1287,11 +1235,11 @@ export default defineComponent({
         tixel_color_mapping.value[i] = color;
       }
     }
-    async function load_counts_positions(filename = tissue_positions_counts_filename.value, bucket_name_local = bucket_name_spatial.value) {
+    async function load_counts_positions(filename = tissue_positions_counts_filename.value) {
       /**
        * Method to load in a tissue_positions_list file with information on fragment counts.
        */
-      const pl = { params: { bucket_name: bucket_name_local, filename } };
+      const pl = { params: { filename } };
       const data = await client.value?.getCsvFile(pl);
       if (data === 'Not-Found' || data[0].length !== 8) {
         snackbar.dispatch({ text: 'Error! Incompatible File!', options: { color: 'red' } });
@@ -1499,7 +1447,7 @@ export default defineComponent({
       bw_image_displayed.value = false;
       let new_img = null;
       if (img === 'postB') {
-        if (!postB_image.value && updating_existing.value && postB_image_promise.value != null) {
+        if ((!postB_image.value && updating_existing.value && postB_image_promise.value != null) || (postB_flag.value && postB_image_promise.value != null)) {
           await postB_image_promise.value.then((gray: any) => {
             postB_image.value = URL.createObjectURL(gray);
           });
@@ -1526,7 +1474,7 @@ export default defineComponent({
       if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
         snackbar.dispatch({ text: 'Keeping Cropping on Image', options: { color: 'warning', right: true } });
       } else {
-        const promise = loadGrayCropped(full_bsa_filename.value);
+        const promise = loadGrayCropped(`${root.value}/${run_id.value}/${full_bsa_filename.value}`);
         if (promise) postB_image_promise.value = promise;
         cropLoading.value = true;
         cropFlag.value = true;
@@ -1620,13 +1568,6 @@ export default defineComponent({
       let valuethree: any;
       one.value = value;
     };
-    async function showSpatialFolder() {
-      /**
-       * Method called when `Show Spatial Folder` button is clicked.
-       * Sets the `show_spatial_folder` value to true.
-       */
-      checkSpatial.value = true;
-    }
     async function generateSpatial() {
       /**
        * Generates the spatial folder.
@@ -1676,14 +1617,12 @@ export default defineComponent({
           metadata: metadata.value,
           scalefactors: roi.value.getQCScaleFactors(current_image.value, cropCoords),
           orientation: orientation.value,
-          barcode_filename: metadata.value.barcode_filename,
-          barcode_list: barcodes_in_list.value,
-          bucket_name_bsa: bucket_name.value,
-          bucket_name_spatial: bucket_name_spatial.value,
-          root_dir_spatial: root_spatial.value,
-          root_dir_bsa: root.value,
-          bsa_filename: full_bsa_filename.value,
+          barcode_path: `${root_barcode.value}/${metadata.value.barcode_filename}`,
+          root_dir: root.value,
+          barcode_dir: root_barcode,
+          bsa_path: `${root.value}/${run_id.value}/${full_bsa_filename.value}`,
           updating_existing: updating_existing.value,
+          postB_flag,
         };
         const args: any[] = [params];
         const kwargs: any = {};
@@ -1778,7 +1717,7 @@ export default defineComponent({
       run_id_folder_namesHolder.value = [];
       search.value = '';
       loading.value = true;
-      const folder_pl = { bucket_name: bucket_name.value, prefix: `${root.value}/`, delimiter: '/' };
+      const folder_pl = { prefix: `${root.value}/`, delimiter: '/' };
       const sub_folders = await client.value.getSubFolders(folder_pl);
       if (sub_folders) {
         const obj_data = sub_folders.map((sub_folder_name: string) => ({ id: sub_folder_name }));
@@ -1796,7 +1735,7 @@ export default defineComponent({
       /**
        * Method that gets all of the csv files in the root directory where the bsa files are stored.
        */
-      const pl = { bucket: bucket_name_spatial.value, path: `${root_spatial.value}/${current_run_id}/`, filter: ['.csv'] };
+      const pl = { path: `${root.value}/${current_run_id}/`, filter: ['.csv'] };
       const options = await client.value?.getFileList(pl);
       count_file_options.value = options;
     }
@@ -1807,12 +1746,20 @@ export default defineComponent({
        * If there are no images in the directory, an error message is displayed.
        * If there are multiple images in the directory, the user is prompted to select one.
        */
-      const pl = { bucket: bucket_name.value, path: `${root.value}/${folder_name}/`, delimiter: '/', filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
+      const pl = { path: `${root.value}/${folder_name}/`, filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
       file_options.value = await client.value?.getFileList(pl);
       if (file_options.value.length === 1) {
         [full_bsa_filename.value] = file_options.value;
-        show_metadata.value = true;
         load_and_begin_image_processing();
+      } else if (file_options.value.length > 1) {
+        file_options.value.forEach((name: any) => {
+          if (name.toLowerCase().includes('bsa')) full_bsa_filename.value = name;
+          if (name.toLowerCase().includes('postb.tif')) {
+            postB_flag.value = true;
+            full_postb_filename.value = name;
+          }
+        });
+        show_metadata.value = true;
       } else if (file_options.value.length === 0) {
         snackbar.dispatch({ text: 'No images found in folder', options: { right: true, color: 'error' } });
       }
@@ -1838,6 +1785,7 @@ export default defineComponent({
       run_id.value = folder_name.id;
       initialize();
       prompt_to_use_existing_spatial.value = await loadMetadata();
+      console.log(prompt_to_use_existing_spatial.value);
       if (!prompt_to_use_existing_spatial.value) {
         get_image_options(folder_name.id);
       } else {
@@ -1873,35 +1821,20 @@ export default defineComponent({
         thresh_same.value = false;
       }
     });
-    const submenu = [
-      {
-        text: 'Run ID\'s',
-        icon: 'mdi-magnify',
-        tooltip: 'Run ID\'s',
-        enabled: true,
-        disabled: loading.value,
-        click: () => {
-          run_id_search_active.value = !run_id_search_active.value;
-        },
-      },
-      {
-        text: 'Metadata',
-        icon: 'mdi-filter-variant',
-        tooltip: 'Metadata',
-        enabled: true,
-        disabled: loading.value,
-        click: () => {
-          show_metadata.value = !show_metadata.value;
-          if (!run_id.value) {
-            console.log('error message');
-            snackbar.dispatch({ text: 'Must select a Run ID', options: { right: true, color: 'error' } });
-          }
-        },
-      },
-    ];
     onMounted(async () => {
+      const serverUrl = PROD_SERVER_URL;
+      store.commit.setClient(await Client.Create(serverUrl));
+      // const resp = await login(serverUrl, 'admin', 'Hello123!');
+      // if (isClient(resp)) {
+      //   const existingCookie = readCookie();
+      //   if (existingCookie) {
+      //     logout();
+      //   }
+      //   saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
+      //
+      // }
+      store.commit.setComponent({ component: 'AtlasXBrowser' });
       await clientReady;
-      store.commit.setSubmenu(submenu);
       window.addEventListener('resize', handleResize);
       await fetchFileList();
       load_barcode_file_options();
@@ -1915,6 +1848,7 @@ export default defineComponent({
       allFiles,
       run_id,
       full_bsa_filename,
+      full_postb_filename,
       metadata,
       run_id_folder_names,
       run_id_folder_namesHolder,
@@ -1982,7 +1916,6 @@ export default defineComponent({
       show_metadata,
       bsa_blob,
       getMeta,
-      resolveAuthGroup,
       welcome_screen,
       company_image,
       thresh_clicked,
@@ -2003,13 +1936,10 @@ export default defineComponent({
       saved_grid_state,
       hide_grid,
       degreeRotation,
-      assignMetadata,
       checkSpatial,
-      showSpatialFolder,
       availableFiles,
       imageClick,
       root,
-      bucket_name,
       bsa_image,
       black_white,
       loadGrayCropped,
@@ -2020,7 +1950,6 @@ export default defineComponent({
       run_folder_selected,
       get_image_options,
       file_options,
-      lims_available,
       selecting_counts_pos_file,
       color_gradient_scale_numbers,
       tixel_color_mapping,
@@ -2036,8 +1965,6 @@ export default defineComponent({
       lower_bound_count,
       upper_bound_count,
       metadata_confirmed,
-      bucket_name_spatial,
-      root_spatial,
       barcode_filename_options,
       update_run_function,
       retrieve_barcode_file,
@@ -2045,18 +1972,15 @@ export default defineComponent({
       reprocess_image,
       metadata_confirmed_bool,
       original_barcode_filename,
+      submenu,
     };
   },
 });
 
 </script>
 <style scoped>
-.leftRotate {
-  margin-bottom: 50px;
-}
 .spaced_btn {
   margin-left: 10px;
-  margin-bottom: 50px;
 }
 .radio1 {
   position: relative;

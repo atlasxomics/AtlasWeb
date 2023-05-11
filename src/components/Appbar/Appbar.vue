@@ -3,10 +3,6 @@
     app
     dense
   >
-      <div style="cursor: pointer;">
-      <v-img @click="redirectToVisual" width="40px" src="favicon-nobg.png"></v-img>
-      </div>
-      <v-app-bar-nav-icon v-if="resolveAuthGroup(['admin', 'user'])" @click="$emit('openDrawer')"></v-app-bar-nav-icon>
       <v-tooltip
         v-for="menu in subMenu"
         v-bind:key="menu.text"
@@ -41,59 +37,11 @@
         <span v-bind:key="`${menu.text}-span`">{{ menu.tooltip }}</span>
       </v-tooltip>
       <v-spacer />
-      <template v-if="loggedIn">
+      <template>
         <v-menu
           v-model="userMenu"
           offset-y
         >
-          <template v-slot:activator="{ on }">
-            <v-btn
-              text
-              v-on="on"
-            >
-              {{ user }}  <span v-if="urlPostfix !== 'production'">({{ urlPostfix }})</span>
-            </v-btn>
-          </template>
-          <v-list>
-            <v-list-item
-              v-if="resolveAuthGroup(['admin'])"
-              >
-              <v-btn
-              text
-              block
-              @click="redirectToRunAdding"
-              >
-                Add a Run
-              </v-btn>
-            </v-list-item>
-            <v-list-item>
-              <v-dialog
-                v-model="changePasswordMenu"
-                width="40vw"
-              >
-                <template v-slot:activator="{ on }">
-                  <v-btn
-                    text
-                    block
-                    v-on="on"
-                  >
-                    Change Password
-                  </v-btn>
-                </template>
-                <change-password-menu @close="changePasswordMenu = false; userMenu = false;" />
-              </v-dialog>
-            </v-list-item>
-            <v-list-item>
-              <v-btn
-                text
-                block
-                color="error"
-                @click="logout"
-              >
-                Logout
-              </v-btn>
-            </v-list-item>
-          </v-list>
         </v-menu>
       </template>
   </v-app-bar>
@@ -106,9 +54,7 @@ import colors from 'vuetify/lib/util/colors';
 
 import store from '@/store';
 import { loggedIn, logout, resolveAuthGroup } from '@/utils/auth';
-import { filemenu, components } from '@/filemenu';
 import { generateRouteByQuery } from '@/utils';
-import ChangePasswordMenu from './ChangePasswordMenu.vue';
 
 const filemenuStyleLight = {
   '--bar-button-hover-bkg': colors.grey.lighten2,
@@ -119,39 +65,22 @@ const filemenuStyleLight = {
 
 export default defineComponent({
   name: 'Appbar',
-  components: { VueFileToolbarMenu, ...components, ChangePasswordMenu },
+  props: ['submenu'],
+  components: { VueFileToolbarMenu },
   setup(props, ctx) {
     const router = ctx.root.$router;
-    const user = computed(() => store.state.client?.user?.username);
-    const urlPostfix = computed(() => store.state.client?.urlPostfix);
     const filemenuStyle = computed(() => (filemenuStyleLight));
-    const currentRoute = computed(() => ctx.root.$route);
     const component = computed(() => store.state.currentComponent);
     const userMenu = ref(false);
     const changePasswordMenu = ref(false);
-    const subMenu = computed(() => store.state.subMenu);
-    function redirectToRunAdding() {
-      const query = { component: 'AdminPanel', params: { action: 'new_run', results_id: null } };
-      const newRoute = generateRouteByQuery(currentRoute.value, query);
-      router.push(newRoute);
-    }
-    function redirectToVisual() {
-      if (currentRoute.value.fullPath !== '/') router.push('/');
-    }
+    const subMenu = computed(() => props.submenu);
     return {
-      filemenu,
       filemenuStyle,
-      components,
-      redirectToRunAdding,
       loggedIn,
       logout,
-      user,
-      currentRoute,
       userMenu,
       changePasswordMenu,
       subMenu,
-      urlPostfix,
-      redirectToVisual,
       component,
       resolveAuthGroup,
     };
