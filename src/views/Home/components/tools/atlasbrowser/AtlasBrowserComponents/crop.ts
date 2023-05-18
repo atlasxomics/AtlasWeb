@@ -37,7 +37,7 @@ export class Crop {
 
   getCoordinates(): Point[] {
     const out: Point[] = [];
-    lodash.forIn(this.coordinates, (v, k) => {
+    lodash.forEach(this.coordinates, (v: any, k: any) => {
       const p = { x: v.x, y: v.y, id: k };
       out.push(p);
     });
@@ -47,7 +47,7 @@ export class Crop {
   getAnchors(): any[] {
     const points = this.getCoordinates();
     const real = this.realCoords();
-    const anchors = points.map((v, idx) => {
+    const anchors = points.map((v: any, idx: any) => {
       const circle = {
         draggable: true,
         id: v.id,
@@ -65,7 +65,7 @@ export class Crop {
     const currentCenter = this.getCenterAnchor();
     const diffX = center.x - currentCenter.x;
     const diffY = center.y - currentCenter.y;
-    lodash.forIn(this.coordinates, (v, k) => {
+    lodash.forEach(this.coordinates, (v: any, k: any) => {
       this.coordinates[k].x += diffX;
       this.coordinates[k].y += diffY;
     });
@@ -76,8 +76,8 @@ export class Crop {
     const circle = {
       draggable: true,
       id: 'center-anchor',
-      x: (anchors.map((val) => val.x).reduce((a, b) => a + b, 0)) / 2,
-      y: (anchors.map((val) => val.y).reduce((a, b) => a + b, 0)) / 2,
+      x: (anchors.map((val: any) => val.x).reduce((a, b) => a + b, 0)) / 2,
+      y: (anchors.map((val: any) => val.y).reduce((a, b) => a + b, 0)) / 2,
       stroke: 'red',
       radius: 10,
     };
@@ -86,7 +86,7 @@ export class Crop {
 
   getCoordinatesOnImage(): number[] {
     const out: number[] = [];
-    lodash.forIn(this.coordinates, (v, k) => {
+    lodash.forEach(this.coordinates, (v: any, k: any) => {
       out.push(Math.round(v.x / this.scalefactor));
       out.push(Math.round(v.y / this.scalefactor));
     });
@@ -105,7 +105,7 @@ export class Crop {
 
   setCoordinates(crop_area: Point[]): any {
     let idx = 0;
-    lodash.forIn(this.coordinates, (v, k) => {
+    lodash.forEach(this.coordinates, (v: any, k: any) => {
       this.coordinates[k] = { x: crop_area[idx].x * this.scalefactor, y: crop_area[idx].y * this.scalefactor };
       idx += 1;
     });
@@ -157,7 +157,7 @@ export class Crop {
     // adjust positions
     const ratio = this.scalefactor / prevScalefactor;
     const newCoords: any = {};
-    lodash.forIn(this.coordinates, (v: Point, k: string) => {
+    lodash.forEach(this.coordinates, (v: Point, k: string) => {
       newCoords[k] = { x: v.x * ratio, y: v.y * ratio };
     });
     this.coordinates = newCoords;

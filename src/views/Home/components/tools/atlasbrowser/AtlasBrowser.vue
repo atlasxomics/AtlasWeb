@@ -83,7 +83,7 @@
                 @click="rotate_bsa_image(0)"
                 small
                 >
-                <img src="@/assets/images/rotate_left.png"
+                <img src="../static/img/rotate_left.png"
                 width="24"
                 height="24"/>
                 </v-btn>
@@ -94,7 +94,7 @@
                 @click="rotate_bsa_image(1)"
                 small
                 >
-                <img src="@/assets/images/rotate_right.png"
+                <img src="../static/img/rotate_right.png"
                 width="24"
                 height="24"/>
                 </v-btn>
@@ -520,7 +520,7 @@
         >
         <v-img
         class="center"
-        src="@/assets/images/atlasbg.png"
+        src="../static/img/atlasbg.png"
         width="width"
         height="height"
         >

@@ -18,7 +18,7 @@ export function get_uuid() {
 
 export function objectToArray(obj: any) {
   const outArray: any[] = [];
-  _.forIn(obj, (v, k) => {
+  _.forEach(obj, (v: any, k: any) => {
     const s = {
       key: k,
       value: v,

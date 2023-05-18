@@ -59,7 +59,7 @@ export class ROI {
 
   getCoordinates(): Point[] {
     const out: Point[] = [];
-    lodash.forIn(this.coordinates, (v, k) => {
+    lodash.forEach(this.coordinates, (v: any, k: any) => {
       const p = { x: v.x, y: v.y, id: k };
       out.push(p);
     });
@@ -68,7 +68,7 @@ export class ROI {
 
   setCoordinates(coords: Point[]): any {
     let idx = 0;
-    lodash.forIn(this.coordinates, (v, k) => {
+    lodash.forEach(this.coordinates, (v: any, k: any) => {
       this.coordinates[k] = { x: coords[idx].x * this.scalefactor, y: coords[idx].y * this.scalefactor };
       idx += 1;
     });
@@ -76,7 +76,7 @@ export class ROI {
 
   getAnchors(): any[] {
     const points = this.getCoordinates();
-    const anchors = points.map((v) => {
+    const anchors = points.map((v: any) => {
       const circle = {
         draggable: true,
         id: v.id,
@@ -94,7 +94,7 @@ export class ROI {
     const currentCenter = this.getCenterAnchor();
     const diffX = center.x - currentCenter.x;
     const diffY = center.y - currentCenter.y;
-    lodash.forIn(this.coordinates, (v, k) => {
+    lodash.forEach(this.coordinates, (v: any, k: any) => {
       this.coordinates[k].x += diffX;
       this.coordinates[k].y += diffY;
     });
@@ -105,8 +105,8 @@ export class ROI {
     const circle = {
       draggable: true,
       id: 'center-anchor',
-      x: (anchors.map((val) => val.x).reduce((a, b) => a + b, 0)) / 4,
-      y: (anchors.map((val) => val.y).reduce((a, b) => a + b, 0)) / 4,
+      x: (anchors.map((val: any) => val.x).reduce((a, b) => a + b, 0)) / 4,
+      y: (anchors.map((val: any) => val.y).reduce((a, b) => a + b, 0)) / 4,
       stroke: 'green',
       radius: 10,
     };
@@ -115,7 +115,7 @@ export class ROI {
 
   getCoordinatesOnImage(): Point[] {
     const out: Point[] = [];
-    lodash.forIn(this.coordinates, (v, k) => {
+    lodash.forEach(this.coordinates, (v: any) => {
       const p = { x: v.x / this.scalefactor, y: v.y / this.scalefactor };
       out.push(p);
     });
@@ -145,7 +145,7 @@ export class ROI {
   autoMask(pixels: any, threshold: number): any[] {
     const [height, width] = pixels.shape;
     let count = 0;
-    lodash.each(this.polygons, (v, i) => {
+    lodash.each(this.polygons, (v: any, i: any) => {
       if (count === 0) {
         count += 1;
       }
@@ -169,7 +169,7 @@ export class ROI {
   generateBoundary() {
     const coords: Point[] = this.getCoordinates();
     const points: number[] = [];
-    lodash.each(coords, (v: Point, k) => {
+    lodash.each(coords, (v: Point, k: any) => {
       points.push(v.x);
       points.push(v.y);
     });
@@ -253,12 +253,12 @@ export class ROI {
     // adjust positions
     const ratio = this.scalefactor / prevScalefactor;
     const newCoords: any = {};
-    lodash.forIn(this.coordinates, (v: Point, k: string) => {
+    lodash.forEach(this.coordinates, (v: Point, k: string) => {
       newCoords[k] = { x: v.x * ratio, y: v.y * ratio };
     });
     this.coordinates = newCoords;
     const newPolygons: any[] = [];
-    lodash.each(this.polygons, (v: any, idx) => {
+    lodash.each(this.polygons, (v: any, idx: any) => {
       const elm = v;
       elm.scaleX = v.scaleX * ratio;
       elm.scaleY = v.scaleY * ratio;
