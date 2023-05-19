@@ -1033,7 +1033,7 @@ export default defineComponent({
         prior_loading = false;
       }
       if (!metadata_confirmed_bool.value) {
-        const proper_barcode_file = await retrieve_barcode_file();
+        const proper_barcode_file = await  ();
         if (!proper_barcode_file) {
           show_metadata.value = true;
           metadata_confirmed_bool.value = false;

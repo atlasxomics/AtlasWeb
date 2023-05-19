@@ -11,6 +11,7 @@ const config = {
       2: 'bc50v2-24.txt',
       3: 'bc50v3-24.txt',
       4: 'bc50v4-24.txt',
+      5: 'bc96v2-24.txt',
       '1 (normal)': 'bc50v1-24.txt',
       '2 (reverseB)': 'bc50v2-24.txt',
       '3 (reverseA)': 'bc50v3-24.txt',
