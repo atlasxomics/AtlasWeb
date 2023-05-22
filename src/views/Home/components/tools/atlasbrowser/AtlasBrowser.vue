@@ -83,7 +83,7 @@
                 @click="rotate_bsa_image(0)"
                 small
                 >
-                <img src="../static/img/rotate_left.png"
+                <img src="/static/img/rotate_left.png"
                 width="24"
                 height="24"/>
                 </v-btn>
@@ -94,7 +94,7 @@
                 @click="rotate_bsa_image(1)"
                 small
                 >
-                <img src="../static/img/rotate_right.png"
+                <img src="/static/img/rotate_right.png"
                 width="24"
                 height="24"/>
                 </v-btn>
@@ -520,7 +520,7 @@
         >
         <v-img
         class="center"
-        src="../static/img/atlasbg.png"
+        src="/static/img/atlasbg.png"
         width="width"
         height="height"
         >
@@ -537,7 +537,7 @@
 import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import lodash, { pad, toInteger, trim } from 'lodash';
 import { isClient, Client } from '@/api';
-import { SERVER_URL, TEST_SERVER_URL, PROD_SERVER_URL } from '@/environment';
+import { SERVER_URL, PROD_SERVER_URL } from '@/environment';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
 import blobStream from 'blob-stream';
