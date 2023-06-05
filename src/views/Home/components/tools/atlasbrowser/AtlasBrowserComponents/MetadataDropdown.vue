@@ -30,13 +30,6 @@
         >
         </selector>
         <selector
-        v-model="metadata.tissue_source"
-        display_label="Tissue Source"
-        :display_options="drop_down_manager.tissue_source_list"
-        @option-added="drop_down_manager.tissue_source_list.push($event)"
-        >
-        </selector>
-        <selector
         v-model="metadata.tissue_type"
         display_label="Tissue Type"
         :display_options="drop_down_manager.tissue_type_list"
@@ -56,13 +49,12 @@
         @option-added="drop_down_manager.epitope_list.push($event)"
         >
         </selector>
-        <v-text-field
+        <selector
         v-model="metadata.chip_resolution"
-        outlined
-        dense
-        label="Chip Resolution"
-        >
-        </v-text-field>
+        display_label="Chip Resolution"
+        :display_options="drop_down_manager.chip_resolution_list"
+        @option-added="drop_down_manager.chip_resolution_list.push($event)">
+        </selector>
     </v-card-text>
     <v-card-actions
     class="justify-center"

@@ -20,6 +20,8 @@ export class DropDownFieldManager {
 
   tissue_type_list: string[];
 
+  chip_resolution_list: string[];
+
   constructor() {
     this.client = store.state.client;
     this.species_list = ['mus_musculus', 'homo_sapiens', 'rattus_norvegicus', 'danio_rerio_(zebrafish)', 'gallus_domesticus_(chicken)', 'pdx', 'Mouse'];
@@ -28,12 +30,8 @@ export class DropDownFieldManager {
     this.group_list = [];
     this.tissue_source_list = [];
     this.pmid_list = [];
-    this.tissue_type_list = ['fresh_frozen', 'ffpe', 'efpe', 'fixed_frozen'];
+    this.tissue_type_list = ['fresh_frozen', 'ffpe'];
     this.assay_list = ['ATAC-seq', 'Transcriptome', 'CUT&Tag'];
+    this.chip_resolution_list = ['25um'];
   }
 }
-
-
-
-
-
