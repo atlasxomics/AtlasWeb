@@ -700,6 +700,7 @@ export default defineComponent({
     const original_barcode_filename = ref<string|null>('');
     const metadata_confirmed_bool = ref<boolean>(false);
     const postB_flag = ref<boolean>(false);
+    let latch_flag = false;
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -730,6 +731,9 @@ export default defineComponent({
       onTissueTixels: null,
       antibody: '',
     });
+    function pageRefresh() {
+      window.location.reload();
+    }
     const submenu = ref<any[]>([
       {
         text: 'Run ID\'s',
@@ -832,9 +836,7 @@ export default defineComponent({
       metadata_confirmed_bool.value = false;
       original_barcode_filename.value = '';
     }
-    function pageRefresh() {
-      window.location.reload();
-    }
+
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
       // console.log('y: '.concat((ev.evt.layerY / scaleFactor.value).toString()));
@@ -1635,9 +1637,10 @@ export default defineComponent({
           barcode_path: `${root_barcode.value}/${metadata.value.barcode_filename}`,
           root_dir: root.value,
           barcode_dir: root_barcode,
-          bsa_path: `${root.value}/${run_id.value}/${full_bsa_filename.value}`,
+          bsa_path: (latch_flag) ? `ldata/${run_id.value}/${full_bsa_filename.value}` : `${root.value}/${run_id.value}/${full_bsa_filename.value}`,
           updating_existing: updating_existing.value,
           postB_flag,
+          latch_flag,
         };
         const args: any[] = [params];
         const kwargs: any = {};
@@ -1733,12 +1736,32 @@ export default defineComponent({
       search.value = '';
       loading.value = true;
       const folder_pl = { prefix: `${root.value}/`, delimiter: '/' };
-      const ldata_folder_pl = { prefix: '/ldata/spatials/', delimiter: '/' };
+      const ldata_folder_pl = { prefix: '/ldata/', delimiter: '/' };
       const sub_local_folders = await client.value.getSubFolders(folder_pl);
       const ldata_folders = await client.value.getSubFolders(ldata_folder_pl);
       const sub_folders = sub_local_folders + ldata_folders;
+      let duplicates: string[];
+
+      if (sub_local_folders.length > ldata_folders.length) {
+        ldata_folders.forEach((val: any) => {
+          if (sub_local_folders.includes(val)) duplicates.push(val);
+        });
+      } else {
+        sub_local_folders.forEach((val: any) => {
+          if (ldata_folders.includes(val)) duplicates.push(val);
+        });
+      }
+
       if (sub_folders) {
-        const obj_data = sub_folders.map((sub_folder_name: string) => ({ id: sub_folder_name }));
+        const obj_data: any[] = [];
+        const watcher: any[] = [];
+        sub_folders.forEach((val: any) => {
+          if (duplicates.includes(val) && !watcher.includes(val)) {
+            obj_data.push({ id: val, from: ['p', 'l'] });
+            watcher.push(val);
+          } else if (sub_local_folders.includes(val) && !watcher.includes(val)) obj_data.push({ id: val, from: ['p'] });
+          else if (ldata_folders.includes(val) && !watcher.includes(val)) obj_data.push({ id: val, from: ['l'] });
+        });
         run_id_folder_names.value = obj_data;
       }
       run_id_folder_namesHolder.value = run_id_folder_names.value;
@@ -1801,9 +1824,9 @@ export default defineComponent({
         return;
       }
       run_id.value = folder_name.id;
+      if (folder_name.from.length === 1 && folder_name.from[0] === 'l') latch_flag = true;
       initialize();
       prompt_to_use_existing_spatial.value = await loadMetadata();
-      console.log(prompt_to_use_existing_spatial.value);
       if (!prompt_to_use_existing_spatial.value) {
         get_image_options(folder_name.id);
       } else {
