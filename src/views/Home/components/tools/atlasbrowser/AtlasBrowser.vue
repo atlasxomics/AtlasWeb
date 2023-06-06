@@ -303,6 +303,10 @@
           max-width="800px"
           >
           <v-card>
+            <v-system-bar class="pt-4" color="white">
+              <v-spacer></v-spacer>
+              <v-btn @click="pageRefresh()" icon><v-icon color="primary">mdi-close</v-icon></v-btn>
+            </v-system-bar>
             <v-card-title
             class="justify-center"
             >
@@ -819,6 +823,9 @@ export default defineComponent({
       tissue_positions_counts_filename.value = '';
       metadata_confirmed_bool.value = false;
       original_barcode_filename.value = '';
+    }
+    function pageRefresh() {
+      window.location.reload();
     }
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
@@ -1898,6 +1905,14 @@ export default defineComponent({
           }
         },
       },
+      {
+        text: 'Restart',
+        icon: false,
+        tooltip: 'Restart Whole Process',
+        enabled: true,
+        disabled: loading.value || welcome_screen.value,
+        click: () => { pageRefresh(); },
+      },
     ];
     onMounted(async () => {
       await clientReady;
@@ -2045,6 +2060,7 @@ export default defineComponent({
       reprocess_image,
       metadata_confirmed_bool,
       original_barcode_filename,
+      pageRefresh,
     };
   },
 });
