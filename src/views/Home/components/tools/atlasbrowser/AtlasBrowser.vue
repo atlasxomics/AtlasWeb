@@ -288,6 +288,10 @@
           max-width="800px"
           >
           <v-card>
+            <v-system-bar class="pt-4" color="white">
+              <v-spacer></v-spacer>
+              <v-btn @click="pageRefresh()" icon><v-icon color="primary">mdi-close</v-icon></v-btn>
+            </v-system-bar>
             <v-card-title
             class="justify-center"
             >
@@ -751,6 +755,14 @@ export default defineComponent({
           }
         },
       },
+      {
+        text: 'Restart',
+        icon: false,
+        tooltip: 'Restart Whole Process',
+        enabled: true,
+        disabled: loading.value || welcome_screen.value,
+        click: () => { pageRefresh(); },
+      },
     ]);
     function reset_metadata() {
       /**
@@ -819,6 +831,9 @@ export default defineComponent({
       tissue_positions_counts_filename.value = '';
       metadata_confirmed_bool.value = false;
       original_barcode_filename.value = '';
+    }
+    function pageRefresh() {
+      window.location.reload();
     }
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
@@ -1718,7 +1733,10 @@ export default defineComponent({
       search.value = '';
       loading.value = true;
       const folder_pl = { prefix: `${root.value}/`, delimiter: '/' };
-      const sub_folders = await client.value.getSubFolders(folder_pl);
+      const ldata_folder_pl = { prefix: '/ldata/spatials/', delimiter: '/' };
+      const sub_local_folders = await client.value.getSubFolders(folder_pl);
+      const ldata_folders = await client.value.getSubFolders(ldata_folder_pl);
+      const sub_folders = sub_local_folders + ldata_folders;
       if (sub_folders) {
         const obj_data = sub_folders.map((sub_folder_name: string) => ({ id: sub_folder_name }));
         run_id_folder_names.value = obj_data;
@@ -1973,6 +1991,7 @@ export default defineComponent({
       metadata_confirmed_bool,
       original_barcode_filename,
       submenu,
+      pageRefresh,
     };
   },
 });
