@@ -56,6 +56,7 @@
           :metadata_confirmed_bool="metadata_confirmed_bool"
           @confirmed="metadata_confirmed"
           @barcode-file-selected="retrieve_barcode_file"
+          @refresh="pageRefresh"
           > </metadata-dropdown>
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">

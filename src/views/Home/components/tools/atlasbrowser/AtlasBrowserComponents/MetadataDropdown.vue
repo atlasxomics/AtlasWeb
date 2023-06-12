@@ -1,6 +1,10 @@
 <template>
     <v-card
     >
+    <v-system-bar flat class="pt-4" color="white">
+      <v-spacer></v-spacer>
+      <v-btn @click="pageRefresh()" icon><v-icon color="primary">mdi-close</v-icon></v-btn>
+    </v-system-bar>
     <v-card-title
     class="justify-center">
         Run ID: {{run_id}}
@@ -110,7 +114,10 @@ export default defineComponent({
     function barcode_file_selected() {
       ctx.emit('barcode-file-selected');
     }
-    return { metadata_confirmed, barcode_file_selected };
+    function pageRefresh() {
+      ctx.emit('refresh');
+    }
+    return { metadata_confirmed, barcode_file_selected, pageRefresh };
   },
 });
 </script>
