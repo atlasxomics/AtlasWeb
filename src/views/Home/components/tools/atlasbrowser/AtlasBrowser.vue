@@ -363,6 +363,10 @@
           max-width="800px"
           >
           <v-card>
+            <v-system-bar class="pt-4" color="white">
+              <v-spacer></v-spacer>
+              <v-btn @click="pageRefresh()" icon><v-icon color="primary">mdi-close</v-icon></v-btn>
+            </v-system-bar>
             <v-card-title
             class="justify-center"
             > Multiple Images Found.  </v-card-title>
