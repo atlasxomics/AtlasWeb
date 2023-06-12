@@ -55,6 +55,7 @@
           :barcode_filename_list="barcode_filename_options"
           :metadata_confirmed_bool="metadata_confirmed_bool"
           @confirmed="metadata_confirmed"
+          @refresh="pageRefresh"
           > </metadata-dropdown>
         </v-dialog>
         <v-col cols="12" sm="2" class="pl-6 pt-3" v-if="!checkSpatial">
@@ -348,6 +349,10 @@
           max-width="800px"
           >
           <v-card>
+            <v-system-bar class="pt-4" color="white">
+              <v-spacer></v-spacer>
+              <v-btn @click="pageRefresh()" icon><v-icon color="primary">mdi-close</v-icon></v-btn>
+            </v-system-bar>
             <v-card-title
             class="justify-center"
             > Multiple Images Found.  </v-card-title>
