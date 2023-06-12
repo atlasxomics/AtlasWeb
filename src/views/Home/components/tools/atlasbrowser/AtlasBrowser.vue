@@ -698,7 +698,7 @@ export default defineComponent({
     const bsa_image = ref<any>();
     const black_white = ref<string>();
     const color_gradient_scale_numbers = ref<number[]>([]);
-    const barcode_filename_options = ref<string[]>([]);
+    const barcode_filename_options = ref<any[]>([]);
     const barcodes_in_list = ref<string[]>([]);
     const barcode_mapping = computed(() => config.atlasxbrowser.barcode_mapping);
     const original_barcode_filename = ref<string|null>('');
@@ -1197,9 +1197,12 @@ export default defineComponent({
        */
       if (!client.value) return;
       const barcode_path = root_barcode.value;
-      const pl = { path: barcode_path, filter: ['.txt'], only_files: true };
+      const pl = { path: barcode_path, filter: ['.txt'], flag: false };
+      const latch_pl = { path: barcode_path, filter: ['.txt'], flag: true };
       const res = await client.value.getFileList(pl);
-      barcode_filename_options.value = res;
+      const latch_res = await client.value.getFileList(latch_pl);
+      const combine = res + latch_res;
+      barcode_filename_options.value = [...new Set(combine)];
     }
     function color_tixel_counts_percentile(data: any[], color_gradient: string[]) {
       /**
