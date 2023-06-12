@@ -9,7 +9,7 @@
           :value="run_id_search_active"
           @click:outside="run_id_search_active = !run_id_search_active"
           hide-overlay>
-          <v-card style="width:200px;position: absolute;z-index: 999;top:40px;left:85px;"
+          <v-card style="width:220px;position: absolute;z-index: 999;top:40px;left:85px;"
           :disabled="loading"
           >
               <!-- Searching in text field -->
@@ -31,7 +31,6 @@
               :loading="loading"
               :items="run_id_folder_namesHolder"
               :headers="headers"
-              hide-default-footer
               @click:row="run_folder_selected"
             />
           </v-card>
