@@ -23,21 +23,21 @@
         v-model="metadata.species"
         display_label="Species"
         :display_options="drop_down_manager.species_list"
-        @option-added="drop_down_manager.species_list.push($event)"
+        @option-added="updateList('species_list', $event)"
         >
         </selector>
         <selector
         v-model="metadata.organ"
         display_label="Organ"
         :display_options="drop_down_manager.organ_list"
-        @option-added="drop_down_manager.organ_list.push($event)"
+        @option-added="updateList('organ_list', $event)"
         >
         </selector>
         <selector
         v-model="metadata.tissue_type"
         display_label="Tissue Type"
         :display_options="drop_down_manager.tissue_type_list"
-        @option-added="drop_down_manager.tissue_type_list.push($event)">
+        @option-added="updateList('tissue_type_list', $event)">
         </selector>
         <v-select
         :items="drop_down_manager.assay_list"
@@ -50,14 +50,14 @@
         v-model="metadata.antibody"
         display_label="Epitope Name"
         :display_options="drop_down_manager.epitope_list"
-        @option-added="drop_down_manager.epitope_list.push($event)"
+        @option-added="updateList('epitope_list', $event)"
         >
         </selector>
         <selector
         v-model="metadata.chip_resolution"
         display_label="Chip Resolution"
         :display_options="drop_down_manager.chip_resolution_list"
-        @option-added="drop_down_manager.chip_resolution_list.push($event)">
+        @option-added="updateList('chip_resolution_list', $event)">
         </selector>
     </v-card-text>
     <v-card-actions
@@ -74,9 +74,9 @@
     </v-card>
 </template>
 
-<script>
+<script lang="ts">
 
-import { defineComponent, ref } from '@vue/composition-api';
+import { defineComponent, ref, computed } from '@vue/composition-api';
 import Selector from '@/views/Home/components/settings/admin/modules/submodules/Selector.vue';
 
 export default defineComponent({
@@ -91,6 +91,7 @@ export default defineComponent({
     metadata_confirmed_bool: { type: Boolean, required: true },
   },
   setup(props, ctx) {
+    const drop = computed(() => props.drop_down_manager);
     function metadata_confirmed() {
       ctx.emit('confirmed');
     }
@@ -100,7 +101,12 @@ export default defineComponent({
     function pageRefresh() {
       ctx.emit('refresh');
     }
-    return { metadata_confirmed, pageRefresh };
+    function updateList(list: any, value: any) {
+      const holder = drop.value[list].map((v: any) => v);
+      holder.push(value);
+      drop.value[list] = holder;
+    }
+    return { metadata_confirmed, pageRefresh, updateList };
   },
 });
 </script>
