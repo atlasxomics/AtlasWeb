@@ -839,7 +839,6 @@ export default defineComponent({
       tissue_positions_counts_filename.value = '';
       metadata_confirmed_bool.value = false;
       original_barcode_filename.value = '';
-      latch_flag = false;
     }
 
     function imageClick(ev: any) {
