@@ -1198,9 +1198,11 @@ export default defineComponent({
       const barcode_path = root_barcode.value;
       const pl = { path: barcode_path, filter: ['.txt'], flag: false };
       const latch_pl = { path: barcode_path, filter: ['.txt'], flag: true };
-      const res = await client.value.getFileList(pl);
-      const latch_res = await client.value.getFileList(latch_pl);
-      const combine = res + latch_res;
+      let res = await client.value.getFileList(pl);
+      if (!res) res = [];
+      let latch_res = await client.value.getFileList(latch_pl);
+      if (!latch_res) latch_res = [];
+      const combine = res.concat(latch_res);
       barcode_filename_options.value = [...new Set(combine)];
     }
     function color_tixel_counts_percentile(data: any[], color_gradient: string[]) {
@@ -1758,9 +1760,6 @@ export default defineComponent({
         });
       }
       const sub_folders = sub_local_folders.concat(ldata_folders);
-      console.log(ldata_folders);
-      console.log(sub_local_folders);
-      console.log(duplicates);
       if (sub_folders) {
         const obj_data: any[] = [];
         const watcher: any[] = [];
