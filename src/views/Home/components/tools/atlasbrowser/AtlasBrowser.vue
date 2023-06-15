@@ -1250,7 +1250,6 @@ export default defineComponent({
         const boundaryRad = Math.atan(imgObj.width / imgObj.height);
         const rad = ((orientation.value.rotation % 360) * Math.PI) / 180;
         const { width, height } = calcProjectedRectSizeOfRotatedRect({ width: imgObj.width, height: imgObj.height }, rad);
-        console.log(width, height);
         canvas.width = width;
         canvas.height = height;
         const sin_Height = imgObj.height * Math.abs(Math.sin(rad));
