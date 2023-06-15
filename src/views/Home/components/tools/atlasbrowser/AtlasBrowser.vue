@@ -117,7 +117,7 @@
                   color="primary"
                   dense
                   x-small
-                  @click="isCropMode=true"
+                  @click="activateCrop"
                   :disabled="!current_image || isCropMode || grid || updating_existing || loading">
                   Activate
                 </v-btn>
@@ -129,7 +129,7 @@
                   dense
                   class="mt-0 pt-0"
                   color="primary"
-                  @click="onCropButton()">
+                  @click="onCropButton">
                   Confirm
                 </v-btn>
               </v-list>
@@ -730,6 +730,7 @@ export default defineComponent({
     const barcode_mapping = computed(() => config.atlasxbrowser.barcode_mapping);
     const original_barcode_filename = ref<string|null>('');
     const metadata_confirmed_bool = ref<boolean>(false);
+    let last_rotate_blob: any;
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -1262,6 +1263,7 @@ export default defineComponent({
         ctxe!.drawImage(imgObj, 0, 0);
         canvas.toBlob((blob: any) => {
           const img_obj = set_current_image(blob);
+          last_rotate_blob = blob;
         });
       };
       loading.value = false;
@@ -1582,7 +1584,11 @@ export default defineComponent({
       }
       current_image.value.image.src = new_img;
     }
-    function onCropButton(ev: any) {
+    function activateCrop() {
+      isCropMode.value = true;
+      bsa_blob.value = last_rotate_blob;
+    }
+    function onCropButton() {
       /**
        * Method to handle the crop button being clicked.
        * Based on the locations of corners of the crop box, the image is cropped on the canvas and the new image is set to current_image.
@@ -2121,6 +2127,7 @@ export default defineComponent({
       metadata_confirmed_bool,
       original_barcode_filename,
       pageRefresh,
+      activateCrop,
     };
   },
 });
