@@ -1191,6 +1191,42 @@ export default defineComponent({
         roi.value.remove_color_counts();
       }
     }
+    function calcProjectedRectSizeOfRotatedRect(size: any, rad: any) {
+      const { width, height } = size;
+      const rectProjectedWidth = Math.abs(width * Math.cos(rad)) + Math.abs(height * Math.sin(rad));
+      const rectProjectedHeight = Math.abs(width * Math.sin(rad)) + Math.abs(height * Math.cos(rad));
+      return { width: rectProjectedWidth, height: rectProjectedHeight };
+    }
+    function whichCaseRotation(width: any, height: any, rad: any, boundRad: any, sin_Height: any, sin_Width: any, cos_Height: any, cos_Width: any) {
+      let xOrigin;
+      let yOrigin;
+      if (rad < boundRad) {
+        xOrigin = Math.min(sin_Height, cos_Width);
+        yOrigin = 0;
+      } else if (rad < Math.PI / 2) {
+        xOrigin = Math.max(sin_Height, cos_Width);
+        yOrigin = 0;
+      } else if (rad < Math.PI / 2 + boundRad) {
+        xOrigin = width;
+        yOrigin = Math.min(cos_Height, sin_Width);
+      } else if (rad < Math.PI) {
+        xOrigin = width;
+        yOrigin = Math.max(cos_Height, sin_Width);
+      } else if (rad < Math.PI + boundRad) {
+        xOrigin = Math.max(sin_Height, cos_Width);
+        yOrigin = height;
+      } else if (rad < (Math.PI / 2) * 3) {
+        xOrigin = Math.min(sin_Height, cos_Width);
+        yOrigin = height;
+      } else if (rad < ((Math.PI / 2) * 3) + boundRad) {
+        xOrigin = 0;
+        yOrigin = Math.max(cos_Height, sin_Width);
+      } else if (rad < Math.PI * 2) {
+        xOrigin = 0;
+        yOrigin = Math.min(cos_Height, sin_Width);
+      }
+      return [xOrigin, yOrigin];
+    }
     async function rotate_bsa_image(choice: number) {
       /**
        * Method to rotate BSA image. Image rotation processing done on backend.
@@ -1198,16 +1234,37 @@ export default defineComponent({
        * Args: choice number: Indication of how manyu
        */
       loading.value = true;
-      if (choice === 0) {
+      if (choice === 1) {
         const rotationAmount = parseInt(degreeRotation.value, 10);
         orientation.value.rotation += rotationAmount;
       } else {
-        orientation.value.rotation += 270;
+        const rotationAmount = (degreeRotation.value === '90') ? parseInt(degreeRotation.value, 10) * 3 : 315;
+        orientation.value.rotation += rotationAmount;
       }
-      const pl = { params: { filename: full_bsa_filename.value, bucket_name: bucket_name.value, use_cache: 'true', rotation: orientation.value.rotation } };
-      const img = await client.value?.getImageAsJPG(pl);
-      bsa_blob.value = img;
-      set_current_image(img);
+      const imgObj = new window.Image();
+      imgObj.src = URL.createObjectURL(bsa_blob.value);
+      const canvas = document.createElement('canvas');
+      const ctxe = canvas.getContext('2d');
+      imgObj.onload = (v: any) => {
+        URL.revokeObjectURL(imgObj.src);
+        const boundaryRad = Math.atan(imgObj.width / imgObj.height);
+        const rad = ((orientation.value.rotation % 360) * Math.PI) / 180;
+        const { width, height } = calcProjectedRectSizeOfRotatedRect({ width: imgObj.width, height: imgObj.height }, rad);
+        console.log(width, height);
+        canvas.width = width;
+        canvas.height = height;
+        const sin_Height = imgObj.height * Math.abs(Math.sin(rad));
+        const cos_Height = imgObj.height * Math.abs(Math.cos(rad));
+        const cos_Width = imgObj.width * Math.abs(Math.cos(rad));
+        const sin_Width = imgObj.width * Math.abs(Math.sin(rad));
+        const final_values = whichCaseRotation(width, height, rad, boundaryRad, sin_Height, sin_Width, cos_Height, cos_Width);
+        ctxe!.translate(final_values[0], final_values[1]);
+        ctxe!.rotate(rad);
+        ctxe!.drawImage(imgObj, 0, 0);
+        canvas.toBlob((blob: any) => {
+          const img_obj = set_current_image(blob);
+        });
+      };
       loading.value = false;
     }
     function searchRuns(ev: any) {
