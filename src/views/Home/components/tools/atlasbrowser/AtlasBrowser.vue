@@ -111,7 +111,7 @@
                   color="primary"
                   dense
                   x-small
-                  @click="isCropMode=true"
+                  @click="activateCrop"
                   :disabled="!current_image || isCropMode || grid || updating_existing || loading">
                   Activate
                 </v-btn>
@@ -123,7 +123,7 @@
                   dense
                   class="mt-0 pt-0"
                   color="primary"
-                  @click="onCropButton()">
+                  @click="onCropButton">
                   Confirm
                 </v-btn>
               </v-list>
@@ -704,6 +704,7 @@ export default defineComponent({
     const original_barcode_filename = ref<string|null>('');
     const metadata_confirmed_bool = ref<boolean>(false);
     const postB_flag = ref<boolean>(false);
+    let last_rotate_blob: any;
     let latch_flag = false;
     // Metadata
     const metadata = ref<Metadata>({
@@ -1226,6 +1227,7 @@ export default defineComponent({
         ctxe!.drawImage(imgObj, 0, 0);
         canvas.toBlob((blob: any) => {
           const img_obj = set_current_image(blob);
+          last_rotate_blob = blob;
         });
       };
       loading.value = false;
@@ -1545,7 +1547,11 @@ export default defineComponent({
       }
       current_image.value.image.src = new_img;
     }
-    function onCropButton(ev: any) {
+    function activateCrop() {
+      isCropMode.value = true;
+      bsa_blob.value = last_rotate_blob;
+    }
+    function onCropButton() {
       /**
        * Method to handle the crop button being clicked.
        * Based on the locations of corners of the crop box, the image is cropped on the canvas and the new image is set to current_image.
@@ -2081,6 +2087,7 @@ export default defineComponent({
       original_barcode_filename,
       submenu,
       pageRefresh,
+      last_rotate_blob,
     };
   },
 });
