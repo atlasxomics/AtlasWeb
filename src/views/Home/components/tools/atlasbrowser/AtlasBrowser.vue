@@ -2088,6 +2088,7 @@ export default defineComponent({
       submenu,
       pageRefresh,
       last_rotate_blob,
+      activateCrop,
     };
   },
 });
