@@ -731,6 +731,7 @@ export default defineComponent({
     const original_barcode_filename = ref<string|null>('');
     const metadata_confirmed_bool = ref<boolean>(false);
     let last_rotate_blob: any;
+    let new_rotate = 0;
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -828,6 +829,7 @@ export default defineComponent({
       tissue_positions_counts_filename.value = '';
       metadata_confirmed_bool.value = false;
       original_barcode_filename.value = '';
+      new_rotate = 0;
     }
     function pageRefresh() {
       window.location.reload();
@@ -1236,11 +1238,13 @@ export default defineComponent({
        */
       loading.value = true;
       if (choice === 1) {
-        const rotationAmount = parseInt(degreeRotation.value, 10);
-        orientation.value.rotation += rotationAmount;
+        const rotationAmount = 90;
+        orientation.value.rotation += 270;
+        new_rotate += rotationAmount;
       } else {
         const rotationAmount = (degreeRotation.value === '90') ? parseInt(degreeRotation.value, 10) * 3 : 315;
-        orientation.value.rotation += rotationAmount;
+        new_rotate += rotationAmount;
+        orientation.value.rotation += (degreeRotation.value === '90') ? parseInt(degreeRotation.value, 10) : 45;
       }
       const imgObj = new window.Image();
       imgObj.src = URL.createObjectURL(bsa_blob.value);
@@ -1249,7 +1253,7 @@ export default defineComponent({
       imgObj.onload = (v: any) => {
         URL.revokeObjectURL(imgObj.src);
         const boundaryRad = Math.atan(imgObj.width / imgObj.height);
-        const rad = ((orientation.value.rotation % 360) * Math.PI) / 180;
+        const rad = ((new_rotate % 360) * Math.PI) / 180;
         const { width, height } = calcProjectedRectSizeOfRotatedRect({ width: imgObj.width, height: imgObj.height }, rad);
         canvas.width = width;
         canvas.height = height;
