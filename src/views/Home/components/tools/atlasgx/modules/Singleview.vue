@@ -14,7 +14,6 @@ import Konva from 'konva';
 import lodash from 'lodash';
 import colormap from 'colormap';
 import store from '@/store';
-import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
 /* eslint-disable no-unused-expressions */
 /* eslint-disable no-await-in-loop */
@@ -107,7 +106,7 @@ export default defineComponent({
     }
     function makearray(stopValue: number, startValue: number): any[] {
       if (highestCount.value === 0) return [];
-      const arr = [];
+      const arr: any [] = [];
       const steps = 5;
       const step = (stopValue - startValue) / (steps - 1);
       for (let i = 0; i < steps; i += 1) {
@@ -267,17 +266,6 @@ export default defineComponent({
         });
       });
     }
-    // Drawing Region
-    function reScale(scalar: string) {
-      let scaled: any = [];
-      if (scalar === 'plus') scaled = [viewBoxSpatial.value[0] - 20, viewBoxSpatial.value[1] - 20];
-      else scaled = [viewBoxSpatial.value[0] + 20, viewBoxSpatial.value[0] + 20];
-      viewBoxSpatial.value = scaled;
-    }
-    function resetScaleAndPos(ev: any) {
-      const reset = [konvaConfigLeft.value.width, konvaConfigLeft.value.height];
-      viewBoxSpatial.value = reset;
-    }
     async function onResize() {
       await fitStageToParent();
       resizeCircles();
@@ -328,8 +316,6 @@ export default defineComponent({
       colorBarmap,
       highestCount,
       lowestCount,
-      reScale,
-      resetScaleAndPos,
       colorbarText,
       spatialData,
       selectedGenesFromParent,

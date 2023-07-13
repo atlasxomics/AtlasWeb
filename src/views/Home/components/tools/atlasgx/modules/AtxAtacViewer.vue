@@ -1,5 +1,5 @@
 <template>
-  <v-row no-gutters>
+  <v-row no-gutters v-resize="onResize">
     <v-col cols="12" sm="1" class="shrinkCol">
       <v-card
       class="rounded-0"
@@ -41,11 +41,10 @@
         </v-card-text>
       </v-card>
     </v-col>
-    <v-col cols="12" sm="5">
-      <v-card id="stageParentDualAtac"
+    <v-col cols="12" sm="5" id="stageParentDualAtac">
+      <v-card
         :loading="loading"
         class="rounded-0"
-        v-resize="onResize"
         flat
         :style="{ 'background-color': 'transparent', 'overflow-x': 'None'}"
         height="50vh"
@@ -56,7 +55,7 @@
         @mouseleave="hideToolTipS">
         <div id="toolTipSpatial" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibility, 'top': TTposition[1], 'left': TTposition[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}"></div>
         <svg id="svgSpatial" style="" :width="konvaConfigLeft.width" :height="konvaConfigLeft.height" :viewBox="`0 0 ${svg_spatial_wh[0]} ${svg_spatial_wh[1]}`">
-          <svg id="spatialGroup" :width="spatial_wh[0]" :height="spatial_wh[1]" x="30" y="30" style="pointer-events:bounding-box"></svg>
+          <svg id="spatialGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -117,7 +116,6 @@
         :loading="loading"
         class="rounded-0"
         flat
-        v-resize="onResize"
         :style="{ 'background-color': 'transparent', 'overflow-x': 'None' }"
         height="50vh"
         @mousedown="mouseDownOnStageRight"
@@ -126,7 +124,7 @@
         @mouseleave="hideToolTipU">
         <div id="toolTipUmap" :style="{'width':'max-content','position': 'absolute','z-index': '999','background-color': 'white', 'opacity': '0.7','visibility': visibilityUmap, 'top': TTpositionUmap[1], 'left': TTpositionUmap[0], 'border-radius': '3px', 'font-size': '12px', 'text-align': 'left'}">{{toolTipTextUmap}}</div>
         <svg id="svgUmap" style="" :width="konvaConfigRight.width" :height="konvaConfigRight.height" :viewBox="`0 0 ${svg_umap_wh[0]} ${svg_umap_wh[1]}`">
-          <svg id="umapGroup" :width="umap_wh[0]" :height="umap_wh[1]" x="30" y="30" style="pointer-events:bounding-box"></svg>
+          <svg id="umapGroup" x="30" y="30" style="pointer-events:bounding-box"></svg>
         </svg>
       </v-card>
       <v-row>
@@ -491,7 +489,7 @@ export default defineComponent({
       isHighlighted.value = true;
     }
     function makearray(stopValue: number, startValue: number): any[] {
-      const arr = [];
+      const arr: any [] = [];
       const steps = 5;
       const step = (stopValue - startValue) / (steps - 1);
       for (let i = 0; i < steps; i += 1) {
