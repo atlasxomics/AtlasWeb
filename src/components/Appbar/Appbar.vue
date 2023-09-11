@@ -3,10 +3,6 @@
     app
     dense
   >
-      <div style="cursor: pointer;">
-      <v-img @click="redirectToVisual" width="40px" src="favicon-nobg.png"></v-img>
-      </div>
-      <v-app-bar-nav-icon v-if="resolveAuthGroup(['admin', 'user'])" @click="$emit('openDrawer')"></v-app-bar-nav-icon>
       <v-tooltip
         v-for="menu in subMenu"
         v-bind:key="menu.text"
@@ -46,54 +42,6 @@
           v-model="userMenu"
           offset-y
         >
-          <template v-slot:activator="{ on }">
-            <v-btn
-              text
-              v-on="on"
-            >
-              {{ user }}  <span v-if="urlPostfix !== 'production'">({{ urlPostfix }})</span>
-            </v-btn>
-          </template>
-          <v-list>
-            <v-list-item
-              v-if="resolveAuthGroup(['admin'])"
-              >
-              <v-btn
-              text
-              block
-              @click="redirectToRunAdding"
-              >
-                Add a Run
-              </v-btn>
-            </v-list-item>
-            <v-list-item>
-              <v-dialog
-                v-model="changePasswordMenu"
-                width="40vw"
-              >
-                <template v-slot:activator="{ on }">
-                  <v-btn
-                    text
-                    block
-                    v-on="on"
-                  >
-                    Change Password
-                  </v-btn>
-                </template>
-                <change-password-menu @close="changePasswordMenu = false; userMenu = false;" />
-              </v-dialog>
-            </v-list-item>
-            <v-list-item>
-              <v-btn
-                text
-                block
-                color="error"
-                @click="logout"
-              >
-                Logout
-              </v-btn>
-            </v-list-item>
-          </v-list>
         </v-menu>
       </template>
   </v-app-bar>

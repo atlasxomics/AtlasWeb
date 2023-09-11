@@ -1,59 +1,7 @@
 <template>
-  <v-app>
+  <v-main>
+    <appbar :submenu="submenu" class="appbar"/>
     <v-container v-if="atlasXplore_displayed" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
-      <template v-if="query.public">
-        <v-app-bar  style="margin-top:-7px">
-          <div style="cursor: pointer;">
-          <v-img @click="redirectToVisual" width="40px" src="favicon-nobg.png"></v-img>
-          </div>
-          <v-tooltip bottom :disabled="metaFlag">
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                v-bind="attrs"
-                v-on="on"
-                color="black"
-                icon
-                class="ml-1"
-                medium
-                :disabled="!spatialData"
-                @click="metaFlag = !metaFlag">
-                <v-icon>mdi-filter-variant</v-icon>
-              </v-btn>
-            </template>
-            <span>Metadata</span>
-          </v-tooltip>
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                v-bind="attrs"
-                v-on="on"
-                class="ml-1"
-                medium
-                text
-                :disabled="!spatialData || assayFlag"
-                @click="clusters_ann_flag = !clusters_ann_flag">{{geneMotif}}
-              </v-btn>
-            </template>
-            <span>Cluster&lt;-&gt;Annotations</span>
-          </v-tooltip>
-          <v-tooltip :disabled="backgroundFlag" bottom>
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn
-                  :disabled="!spatialData"
-                  v-bind="attrs"
-                  v-on="on"
-                  class="ml-3"
-                  small
-                  @click="backgroundFlag = !backgroundFlag">
-                <v-icon>mdi-palette</v-icon>
-                </v-btn>
-              </template>
-              <span>Background/Heatmap</span>
-          </v-tooltip>
-          <div id="geneac">
-          </div>
-          </v-app-bar>
-      </template>
       <v-row>
         <v-dialog
           :value="backgroundFlag"
@@ -84,6 +32,34 @@
                 </template>
               </template>
             </v-data-table>
+          </v-card>
+        </v-dialog>
+        <v-dialog
+          v-if="runIdFlag"
+          :value="runIdFlag"
+          @click:outside="runIdFlag = !runIdFlag"
+          hide-overlay>
+          <v-card style="width:220px;position: absolute;z-index: 999;top:40px;left:85px;"
+            :disabled="loading">
+            <v-text-field
+              v-model="search"
+              :loading="loading"
+              style="width: 190px;"
+              prepend-icon="mdi-magnify"/>
+            <v-data-table
+            class="thickBorder"
+            v-model="selected"
+            height="20vh"
+            width="20%"
+            dense
+            single-select
+            :search="search"
+            :loading="loading"
+            :items="items"
+            :headers="headers"
+            sort-by="id"
+            @click:row="selectAction"
+            />
           </v-card>
         </v-dialog>
         <v-dialog
@@ -504,22 +480,6 @@
             </template>
             <span>Save Display</span>
             </v-tooltip>
-            <v-tooltip right>
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                v-bind="attrs"
-                v-on="on"
-                icon
-                color="black"
-                class="ml-4 mt-5"
-                small
-                @click="linkAlert"
-                v-clipboard:copy="publicLink">
-                <v-icon>mdi-content-copy</v-icon>
-              </v-btn>
-            </template>
-            <span>Copy Public Link</span>
-            </v-tooltip>
           </v-card>
           <v-card :style="{ 'position': 'sticky', 'margin-left': '5px', 'width': '65px', 'min-width': '65px', 'height':'149px', 'padding-top': '15px', 'background-color': 'silver', 'top': '62vh' }" flat>
             <v-tooltip top>
@@ -585,7 +545,6 @@
                 @sendColorBar="colorBarToSingle"
                 @totalGM="loadExpressions"
                 @maxMinCount="updateMaxMin"
-                :query="{ public: query.public}"
                 :filename="filename"
                 :standalone="false"
                 :selected_tixels="topSelected"
@@ -639,7 +598,7 @@
                   <v-card-title>{{(trackBrowserGenes[0] ? trackBrowserGenes[0] : 'Please enter motif in search bar to see seqlogo')}}</v-card-title>
                   <bar-chart ref="chart" :seqlogo="seqLogoData" :width="widthFromCard" :motif="trackBrowserGenes[0]"/>
                 </template>
-                <network-graph v-show="geneMotif == 'eRegulon'" :selected_regulons="childGenes" :run_id="runId" :flag="regulons_flag"></network-graph>
+                <!-- <network-graph v-show="geneMotif == 'eRegulon'" :selected_regulons="childGenes" :run_id="runId" :flag="regulons_flag"></network-graph> -->
                 <track-browser v-show="geneMotif == 'gene'" ref="trackbrowser" :run_id="runId" :metadata="metadata.species" :search_key="trackBrowserGenes[0]" @loading_value="updateLoading"/>
               </v-card>
             </div>
@@ -647,7 +606,7 @@
         </v-col>
       </v-row>
     </v-container>
-  </v-app>
+  </v-main>
 </template>
 
 <script lang='ts'>
@@ -657,11 +616,14 @@ import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmoun
 import lodash, { lte } from 'lodash';
 import colormap from 'colormap';
 import store from '@/store';
+import { login, isClient, Client } from '@/api';
 import { snackbar } from '@/components/GlobalSnackbar';
+import { PROD_SERVER_URL } from '@/environment';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
-import { readCookie, resolveAuthGroup, logout } from '@/utils/auth';
+import { saveCookie, readCookie, resolveAuthGroup, logout } from '@/utils/auth';
 import { Console, table } from 'console';
 import html2canvas from 'html2canvas';
+import Appbar from '@/components/Appbar/Appbar.vue';
 import GeneAutoComplete from './modules/GeneAutoComplete.vue';
 import GeneDataTable from './modules/GeneDataTable.vue';
 import TrackBrowser from './modules/TrackBrowser.vue';
@@ -671,6 +633,7 @@ import LoadingPage from './modules/LoadingPage.vue';
 import HistogramGraph from './modules/HistogramGraph.vue';
 import Singleview from './modules/Singleview.vue';
 import NetworkGraph from './modules/NetworkGraph.vue';
+
 /* eslint-disable no-unused-expressions */
 
 const clientReady = new Promise((resolve) => {
@@ -715,11 +678,11 @@ interface Metadata {
 
 export default defineComponent({
   name: 'AtlasXplore',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph, Singleview, NetworkGraph },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph, Singleview, NetworkGraph, Appbar },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
-    const client = computed(() => store.state.client);
+    let client = ref<any>();
     const currentRoute = computed(() => ctx.root.$route);
     const workers = computed(() => store.state.client?.workers);
     const globalXploreData = computed(() => store.state.xploreData);
@@ -750,6 +713,7 @@ export default defineComponent({
     const lowestCount = ref<number>(10000);
     const colorBarmap = ref<string>('');
     const metaFlag = ref<boolean>(false);
+    const runIdFlag = ref<boolean>(false);
     // Metadata
     const metadata = ref<Metadata>({
       type: '',
@@ -831,6 +795,8 @@ export default defineComponent({
     const oneTime = ref<boolean>(true);
     const clusters_ann_flag = ref<boolean>(false);
     const clusters_ann_list = ref<string[]>([]);
+    const search = ref<string>();
+
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -876,9 +842,6 @@ export default defineComponent({
     }
     function colorBarToSingle(ev: any) {
       colorBarFromSibling.value = ev;
-    }
-    function linkAlert() {
-      snackbar.dispatch({ text: 'Public link copied to clipboard', options: { left: true, color: 'success' } });
     }
     function copyToClip(ev: any) {
       navigator.clipboard.writeText(ev);
@@ -1263,41 +1226,18 @@ export default defineComponent({
       if (!spatialData.value) return;
       /* eslint-disable no-lonely-if */
       try {
-        if (!props.query.public) {
-          if (geneMotif.value === 'motif') {
-            const hold = filename.value;
-            filename.value = hold!.replace(/eRegulons|genes/i, 'motifs');
-          } else if (geneMotif.value === 'gene') {
-            const hold = filename.value;
-            filename.value = hold!.replace(/eRegulons|motifs/i, 'genes');
-          } else if (geneMotif.value === 'eRegulon') {
-            const hold = filename.value;
-            filename.value = hold!.replace(/motifs|genes/i, 'eRegulons');
-          }
+        if (geneMotif.value === 'motif') {
+          const hold = filename.value;
+          filename.value = hold!.replace(/eRegulons|genes/i, 'motifs');
+        } else if (geneMotif.value === 'gene') {
+          const hold = filename.value;
+          filename.value = hold!.replace(/eRegulons|motifs/i, 'genes');
+        } else if (geneMotif.value === 'eRegulon') {
+          const hold = filename.value;
+          filename.value = hold!.replace(/motifs|genes/i, 'eRegulons');
         }
       } catch (error) {
         console.log(error);
-      }
-    }
-    async function generatePublicLink(rid = runId.value) {
-      if (!client.value) return;
-      if (!filename.value) return;
-      try {
-        if (!props.query.public) {
-          const existingCookie = readCookie();
-          const split = existingCookie?.token.split('JWT ')[1];
-          const geneFileName = `data/${rid}/h5/geneNames.txt.gz`;
-          const motifFileName = `data/${rid}/h5/motifNames.txt.gz`;
-          const tixelFileName = `data/${rid}/h5/data.csv.gz`;
-          const motifHold = filename.value;
-          const { encoded: filenameToken } = await client.value.encodeLink({ args: [tixelFileName, geneFileName, motifFileName, motifHold!.replace(/motifs/i, 'genes'), motifHold!.replace(/genes/i, 'motifs'), `data/${runId.value}/h5/obj/motifs.csv`], meta: { run_id: rid, species: metadata.value.species, tissue: metadata.value.organ, assay: metadata.value.assay } });
-          const { host } = window.location;
-          publicLink.value = `https://${host}/public?component=PublicGeneViewer&run_id=${filenameToken}&public=true&token=JWT%20${split}`;
-        }
-      } catch (error) {
-        console.log(error);
-        loading.value = false;
-        snackbar.dispatch({ text: `${error}`, options: { right: true, color: 'error' } });
       }
     }
     async function seqlogo() {
@@ -1305,9 +1245,9 @@ export default defineComponent({
         const root = 'data';
         const task = 'gene.seq_logo';
         const queue = 'atxcloud_gene';
-        const args = [props.query.public ? filename.value : `${root}/${runId.value}/h5/obj/motifs.csv`, trackBrowserGenes.value[0]];
+        const args = [`${root}/${runId.value}/h5/obj/motifs.csv`, trackBrowserGenes.value[0]];
         const kwargs: any = {};
-        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue, 7) : await client.value!.postTask(task, args, kwargs, queue);
+        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
 
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
@@ -1341,7 +1281,7 @@ export default defineComponent({
         const queue = 'atxcloud_gene';
         const args = [filename.value, marker];
         const kwargs = {};
-        const taskObject = props.query.public ? await client.value!.postPublicTask(task, args, kwargs, queue, (geneMotif.value === 'gene') ? 3 : 4) : await client.value!.postTask(task, args, kwargs, queue);
+        const taskObject = await client.value!.postTask(task, args, kwargs, queue);
         await checkTaskStatus(taskObject._id);
         /* eslint-disable no-await-in-loop */
         while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -1391,57 +1331,51 @@ export default defineComponent({
       element.value = '';
     }
     async function getMeta(rid = runId.value) {
-      if (!globalXploreData.value) return;
-      metadata.value.organ = globalXploreData.value.organ;
-      metadata.value.species = globalXploreData.value.species;
-      metadata.value.type = globalXploreData.value.assay;
-      metadata.value.runid = globalXploreData.value.run_id;
-      // metadata.value.ngsid = rid;
-      // collabName.value = (Object.keys(data).includes('tissue_source')) ? data.tissue_source : data.group_name;
+      const meta_filename = `data/${rid}/metadata.json`;
+      const payload = { params: { filename: meta_filename } };
+      const resp = await client.value.getJsonFile(payload);
+      console.log(resp);
+      metadata.value.organ = resp.organ;
+      metadata.value.species = resp.species;
+      metadata.value.type = resp.assay;
+      metadata.value.runid = resp.run_id;
       const addCellType = ['gene'];
-      if (globalXploreData.value.assay === 'Transcriptome') assayFlag.value = true;
+      if (resp.assay === 'Transcriptome') assayFlag.value = true;
       else addCellType.push('motif');
-      if (globalXploreData.value.regulons_flag) {
+      if (resp.regulons_flag) {
         regulons_flag.value = true;
         addCellType.push('eRegulon');
       }
       clusters_ann_list.value = addCellType;
+    }
+    async function fetchFileList() {
+      if (!client.value) {
+        return;
+      }
+      items.value = [];
+      search.value = '';
+      loading.value = true;
+      const fl_payload = { path: 'data', filter: 'h5/obj/genes.h5ad', only_files: true };
+      const filelist = await client.value.getFileList(fl_payload);
+      const qc_data = filelist.map((v: string) => `${v.split('/')[1]}`);
+      const pre_id = qc_data.filter((item: any, index: number) => qc_data.indexOf(item) === index);
+      items.value = pre_id.map((v: string) => ({ id: v }));
+      loading.value = false;
     }
     async function selectAction(ev: any) {
+      runIdFlag.value = false;
       const root = 'data';
-      if (!props.query.public) {
-        let fn = '';
-        if (geneMotif.value === 'gene') fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
-        if (geneMotif.value === 'motif') fn = `${root}/${ev.id}/h5/obj/motifs.h5ad`;
-        if (geneMotif.value === 'eRegulon') fn = `${root}/${ev.id}/h5/obj/eRegulons.h5ad`;
-        filename.value = fn;
-        holdMotif.value = '';
-        runId.value = ev.id;
-        metadata.value.species = '';
-      }
-      generatePublicLink(runId.value);
+      let fn = '';
+      if (geneMotif.value === 'gene') fn = `${root}/${ev.id}/h5/obj/genes.h5ad`;
+      if (geneMotif.value === 'motif') fn = `${root}/${ev.id}/h5/obj/motifs.h5ad`;
+      if (geneMotif.value === 'eRegulon') fn = `${root}/${ev.id}/h5/obj/eRegulons.h5ad`;
+      filename.value = fn;
+      holdMotif.value = '';
+      runId.value = ev.id;
+      metadata.value.species = '';
+      // pushByQuery({ component: 'AtlasXplore', run_id: ev.id });
       getMeta(runId.value);
       updateTen();
-    }
-    async function getPublicId(ev: any) {
-      runId.value = ev.run_id;
-      metadata.value.organ = ev.tissue;
-      const addCellType = ['gene'];
-      if (ev.assay === 'Transcriptome') assayFlag.value = true;
-      else addCellType.push('motif');
-      if (ev.regulons_flag) {
-        regulons_flag.value = true;
-        addCellType.push('eRegulon');
-      }
-      clusters_ann_list.value = addCellType;
-      metadata.value.species = ev.species;
-      metadata.value.type = ev.assay;
-      updateTen();
-      if (props.query && runId.value === null) {
-        if (props.query.run_id) {
-          await selectAction({ id: props.query.run_id });
-        }
-      }
     }
     const GeneAutoCompleteClass = Vue.extend(GeneAutoComplete);
     const acInstance = ref<any>(new GeneAutoCompleteClass({
@@ -1482,13 +1416,11 @@ export default defineComponent({
     watch(geneMotif, (v: any) => {
       geneMotifLoad.value = true;
       if (!assayFlag.value) {
-        if (!props.query.public) {
-          const btn = document.getElementById('geneMotifButton')!;
-          const span = btn.childNodes[0] as HTMLElement;
-          if (v === 'gene') span.innerText = 'GENE';
-          else if (v === 'motif') span.innerText = 'MOTIF';
-          else if (v === 'eRegulon') span.innerText = 'EREGULON';
-        }
+        const btn = document.getElementById('geneMotifButton')!;
+        const span = btn.childNodes[0] as HTMLElement;
+        if (v === 'gene') span.innerText = 'GENE';
+        else if (v === 'motif') span.innerText = 'MOTIF';
+        else if (v === 'eRegulon') span.innerText = 'EREGULON';
         userMaxValue.value = '';
         userMinValue.value = '';
         userMaxMinValue.value = [userMaxValue.value, userMinValue.value];
@@ -1590,6 +1522,15 @@ export default defineComponent({
       runCellType(cleanedArray);
     });
     const submenu = ref<any[]>([]);
+    const run_selector = {
+      text: 'Run ID\'s',
+      icon: 'mdi-magnify',
+      tooltip: 'Run ID\'s',
+      enabled: true,
+      click: () => {
+        runIdFlag.value = !runIdFlag.value;
+      },
+    };
     const metadata_button = {
       text: 'Metadata',
       icon: 'mdi-filter-variant',
@@ -1629,34 +1570,35 @@ export default defineComponent({
       component: acInstance,
     };
     function prep_sub_menu() {
-      submenu.value.push(metadata_button, gene_motif_button, bg_color_button, gene_ac_bar);
+      submenu.value.push(run_selector, metadata_button, gene_motif_button, bg_color_button, gene_ac_bar);
+      store.commit.setSubmenu(submenu.value);
     }
     async function prep_atlasxplore(run_id: string) {
-      if (submenu.value.length < 1) {
-        prep_sub_menu();
-      }
-      store.commit.setSubmenu(submenu.value);
-      if (!props.query.public) {
-        await new Promise((f: any) => setTimeout(f, 1000));
-        await selectAction({ id: run_id });
-        currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
-      }
-      if (props.query && props.query.run_id && props.query.public) {
-        const value = await client.value?.decodeMetadata(props.query.run_id);
-        getPublicId(value);
-        const fn = props.query.run_id;
-        filename.value = fn;
-      }
-      acInstance.value.$mount('#geneac');
+      await new Promise((f: any) => setTimeout(f, 1000));
+      await selectAction({ id: run_id });
+      currentTask.value = { task: 'gene.compute_qc', queues: ['atxcloud_gene'] };
     }
 
     onMounted(async () => {
+      // pushByQuery('AtlasXplore');
+      prep_sub_menu();
+      const serverUrl = PROD_SERVER_URL;
+      const resp = await login(serverUrl, 'admin', 'Hello123!');
+      if (isClient(resp)) {
+        const existingCookie = readCookie();
+        if (existingCookie) {
+          logout();
+        }
+        saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
+        store.commit.setClient(resp);
+      }
+      client = computed(() => store.state.client);
+      store.commit.setComponent({ component: 'AtlasXplore' });
       await clientReady;
-      if (globalXploreData.value !== null || props.query.public) {
-        runId.value = null;
-        atlasXplore_displayed.value = true;
-        prep_atlasxplore(props.query.run_id);
-      } else redirectToVisual();
+      runId.value = null;
+      atlasXplore_displayed.value = true;
+      await fetchFileList();
+      acInstance.value.$mount('#geneac');
     });
     onUnmounted(() => {
       if (acInstance.value.$el) {
@@ -1680,7 +1622,6 @@ export default defineComponent({
       backgroundHeader,
       genes,
       selectedGenes,
-      generatePublicLink,
       spatialData,
       isHighlighted,
       onResize,
@@ -1732,6 +1673,7 @@ export default defineComponent({
       trackBrowserGenes,
       metadata,
       metaFlag,
+      runIdFlag,
       displayFlag,
       clusterColorFlag,
       cellTypeFlag,
@@ -1742,13 +1684,11 @@ export default defineComponent({
       updateSpatial,
       updateFilename,
       updateSelectors,
-      getPublicId,
       resolveAuthGroup,
       seqlogo,
       publicSeqlogo,
       seqLogoData,
       widthFromCard,
-      linkAlert,
       holdGene,
       holdMotif,
       copyToClip,
@@ -1820,6 +1760,7 @@ export default defineComponent({
       clusters_ann_flag,
       clusters_ann_list,
       changeClustersAnn,
+      search,
     };
   },
 });

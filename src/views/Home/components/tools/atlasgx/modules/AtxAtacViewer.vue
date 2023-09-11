@@ -184,7 +184,7 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['query', 'filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary', 'assay_flag', 'regulonsFlag'],
+  props: ['filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary', 'assay_flag', 'regulonsFlag'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
@@ -733,24 +733,9 @@ export default defineComponent({
       /* eslint-disable no-lonely-if */
       if (spatialData.value === null) {
         spatialData.value = {};
-        if (!props.query.public) {
-          const tixelFileName = `data/${runId.value}/h5/data.csv.gz`;
-          const spatial = await client.value!.getSpatialData(tixelFileName);
-          spatialData.value.spatial = spatial;
-        } else {
-          const spatial = await client.value!.getSpatialDataByToken(filenameGene.value, 0);
-          spatialData.value.spatial = spatial;
-          const gene = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 1);
-          spatialData.value.gene = gene;
-          if (!assayFlag.value) {
-            const motif = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 2);
-            spatialData.value.motif = motif;
-          }
-          if (regulons_flag.value) {
-            const regulon = await client.value!.getGeneMotifNamesByToken(filenameGene.value, 3);
-            spatialData.value.eRegulon = regulon;
-          }
-        }
+        const tixelFileName = `data/${runId.value}/h5/data.csv.gz`;
+        const spatial = await client.value!.getSpatialData(tixelFileName);
+        spatialData.value.spatial = spatial;
         const spatialX: number[] = [];
         const spatialY: number[] = [];
         const umapX: number[] = [];
@@ -806,7 +791,7 @@ export default defineComponent({
         maxY_UMAP.value = Math.max(...umapY);
         initializePlots();
       }
-      if (!props.query.public && (spatialData.value.gene === null || spatialData.value.gene === undefined)) {
+      if ((spatialData.value.gene === null || spatialData.value.gene === undefined)) {
         const geneFileName = `data/${runId.value}/h5/geneNames.txt.gz`;
         const gene = await client.value!.getGeneMotifNames(geneFileName);
         spatialData.value.gene = gene;
@@ -852,13 +837,7 @@ export default defineComponent({
           const queue = currentQueue.value;
           const args = [filenameGene.value, highlightIds.value, tableKeyFromParent.value];
           const kwargs = {};
-          let which_h5ad = 0;
-          if (props.query.public) {
-            if (geneMotif.value === 'gene') which_h5ad = 4;
-            if (geneMotif.value === 'motif') which_h5ad = 5;
-            if (geneMotif.value === 'eRegulon') which_h5ad = 6;
-          }
-          const taskObject = props.query.public ? await client.value.postPublicTask(task, args, kwargs, queue, which_h5ad) : await client.value.postTask(task, args, kwargs, queue);
+          const taskObject = await client.value.postTask(task, args, kwargs, queue);
           await checkTaskStatus(taskObject._id);
           /* eslint-disable no-await-in-loop */
           while (taskStatus.value.status !== 'SUCCESS' && taskStatus.value.status !== 'FAILURE') {
@@ -1264,14 +1243,9 @@ export default defineComponent({
     });
     watch(filenameFromParent, async (v: string) => {
       filenameGene.value = v;
-      if (props.query.public) {
-        spatialData.value = null;
-        loading.value = true;
-        retrieveData();
-      }
     });
     watch(runId, async (v: any) => {
-      if (v !== null && !props.query.public) {
+      if (v !== null) {
         spatialData.value = null;
         loading.value = true;
         retrieveData();
