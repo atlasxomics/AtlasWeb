@@ -42,11 +42,12 @@ function colormapBounded(cmap: string[], values: any, amount: number) {
 
 export default defineComponent({
   name: 'Singleview',
-  props: ['query', 'gene', 'heatmap', 'background', 'circleData', 'colorBar', 'loadingProp', 'userBoundary'],
+  props: ['query', 'gene', 'heatmap', 'background', 'circleData', 'colorBar', 'loadingProp', 'userBoundary', 'channel'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const loading = computed(() => props.loadingProp);
     const selectedGenesFromParent = computed(() => props.gene);
+    const num_channel = computed(() => (props.channel));
     const spatialData = ref<any | null>(null);
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -136,7 +137,7 @@ export default defineComponent({
       const maxY = maxMin.value[3];
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
-      const radiusSize = (coordinates.value.length < 4000) ? 22 : 44;
+      const radiusSize = (num_channel.value <= 50) ? 22 : 44;
       const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
       const inV = scale.value * viewScale * minX - radius;
       const inH = scale.value * viewScale * minY - radius;
@@ -162,7 +163,7 @@ export default defineComponent({
       const maxY = maxMin.value[3];
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const viewScale = Math.min(stageWidth / (maxX - minX), stageHeight / (maxY - minY));
-      const radiusSize = (coordinates.value.length < 4000) ? 22 : 44;
+      const radiusSize = (num_channel.value <= 50) ? 22 : 44;
       const radius = (Math.min(stageWidth, stageHeight) / (radiusSize * 5)) * scale.value;
       const inV = scale.value * viewScale * minX - radius;
       const inH = scale.value * viewScale * minY - radius;
@@ -335,6 +336,7 @@ export default defineComponent({
       initialized,
       initializePlots,
       removeOld,
+      num_channel,
     };
   },
 });

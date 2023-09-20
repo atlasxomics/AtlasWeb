@@ -1,5 +1,5 @@
 <template>
-  <v-row no-gutters v-resize="onResize">
+  <v-row no-gutters v-resize="onResize" v-if="runId!=null">
     <v-col cols="12" sm="1" class="shrinkCol">
       <v-card
       class="rounded-0"
@@ -184,11 +184,12 @@ function colormapBounded(cmap: string[], values: number[], amount: number) {
 
 export default defineComponent({
   name: 'AtxAtacViewer',
-  props: ['filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary', 'assay_flag', 'regulonsFlag'],
+  props: ['filename', 'selected_genes', 'heatmap', 'background', 'task', 'queue', 'standalone', 'lasso', 'rect', 'manualColor', 'clickedCluster', 'checkBoxCluster', 'indFlag', 'geneOmotif', 'idOfRun', 'antiKey', 'userBoundary', 'assay_flag', 'regulonsFlag', 'channel'],
   setup(props, ctx) {
     const client = computed(() => store.state.client);
     const selectedFiles = ref<string>();
     const runId = computed(() => (props.idOfRun));
+    const num_channel = computed(() => (props.channel));
     const filenameGene = ref<string>('');
     const filenameFromParent = computed(() => props.filename);
     const colorFromParent = computed(() => props.manualColor);
@@ -513,8 +514,8 @@ export default defineComponent({
     }
     async function resizeCircles() {
       if (!initialized.value) return;
-      const radiusSize = (spatialData.value.spatial.length < 4000) ? 22 : 44;
-      const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 30 : 58;
+      const radiusSize = (num_channel.value <= 50) ? 22 : 44;
+      const radiusSizeUmap = (num_channel.value <= 50) ? 30 : 58;
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;
       const viewScale = Math.min(stageWidth / (maxX.value - minX.value), stageHeight / (maxY.value - minY.value));
@@ -545,8 +546,8 @@ export default defineComponent({
       lodash.each(heatMap.value, (value: any, key: any) => {
         colors.push(value);
       });
-      const radiusSize = (spatialData.value.spatial.length < 4000) ? 22 : 44;
-      const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 30 : 58;
+      const radiusSize = (num_channel.value <= 50) ? 22 : 44;
+      const radiusSizeUmap = (num_channel.value <= 50) ? 30 : 58;
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;
       const viewScale = Math.min(stageWidth / (maxX.value - minX.value), stageHeight / (maxY.value - minY.value));
@@ -1403,6 +1404,7 @@ export default defineComponent({
       clusters_ann_flag,
       spatial_wh,
       umap_wh,
+      num_channel,
     };
   },
 });

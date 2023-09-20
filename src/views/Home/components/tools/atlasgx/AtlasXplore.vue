@@ -565,6 +565,7 @@
                 :userBoundary="userMaxMinValue"
                 :assay_flag="assayFlag"
                 :regulonsFlag="regulons_flag"
+                :channel="metadata.channel"
                 ref="mainAtxViewer"/>
             </v-col>
             <v-col cols="12" sm="2">
@@ -581,7 +582,7 @@
             </v-col>
           </v-row>
           <v-col cols="12" sm="11">
-            <singleview v-if="averageInd && childGenes.length > 0" :gene="childGenes" :circleData="singleData" :userBoundary="userMaxMinValue" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor"/>
+            <singleview v-if="averageInd && childGenes.length > 0" :gene="childGenes" :circleData="singleData" :userBoundary="userMaxMinValue" :heatmap="heatMap" :loadingProp="loading" :colorBar="colorBarFromSibling" :background="backgroundColor" :channel="metadata.channel"/>
           </v-col>
           <v-col cols="12" sm="11">
             <v-card class="mt-3" v-show="featureTableFlag" flat>
@@ -674,6 +675,7 @@ interface Metadata {
   date: string | null;
   runid: string | null;
   ngsid: string | null;
+  channel: number | null;
 }
 
 export default defineComponent({
@@ -724,6 +726,7 @@ export default defineComponent({
       date: '',
       runid: '',
       ngsid: '',
+      channel: 50,
     });
     const backgroundColor = ref<string>('black');
     const taskStatus = ref<any>();
@@ -1339,6 +1342,7 @@ export default defineComponent({
       metadata.value.species = resp.species;
       metadata.value.type = resp.assay;
       metadata.value.runid = resp.run_id;
+      metadata.value.channel = resp.channel;
       const addCellType = ['gene'];
       if (resp.assay === 'Transcriptome') assayFlag.value = true;
       else addCellType.push('motif');
