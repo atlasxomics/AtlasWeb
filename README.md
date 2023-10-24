@@ -1,8 +1,8 @@
-# Atlas Cloud
+# AtlasXBrowser and AtlasXplore standalone
 
 ## Project setup
 ```
-yarn install
+[Go to ](https://github.com/atlasxomics/AtlasWorkers/tree/AmgenSoftware)
 ```
 
 ### Compiles and hot-reloads for development
@@ -27,4 +27,4 @@ yarn lint
 
 ### Customize configuration
 
-See [Configuration Reference](https://cli.vuejs.org/config/).
+
