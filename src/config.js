@@ -16,6 +16,7 @@ const config = {
       '2 (reverseB)': 'bc50v2-24.txt',
       '3 (reverseA)': 'bc50v3-24.txt',
       '4 (reverseAB)': 'bc50v4-24.txt',
+      '5 (96)': 'bc96v2-24.txt',
     },
   },
 };

@@ -896,7 +896,7 @@ export default defineComponent({
         metadata.value.blocks_flowA = slimsData.blocks_flowA;
         metadata.value.leak_flowA = slimsData.leak_flowA;
         metadata.value.tissue_type = slimsData.cntn_cf_fk_tissueType;
-        map_barcode_filename_config(slimsData.cntn_cf_fk_barcodeOrientation);
+        map_barcode_filename_config('5 (96)');
       } catch (error) {
         console.log(error);
       }
