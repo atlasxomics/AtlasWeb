@@ -1,0 +1,112 @@
+<template>
+    <v-card
+    >
+    <v-system-bar class="pt-4" color="white">
+      <v-spacer></v-spacer>
+      <v-btn @click="pageRefresh()" icon><v-icon color="primary">mdi-close</v-icon></v-btn>
+    </v-system-bar>
+    <v-card-title
+    class="justify-center">
+        Run ID: {{run_id}}
+    </v-card-title>
+    <v-card-text>
+        <v-select
+        v-model="metadata.barcode_filename"
+        outlined
+        dense
+        label="Barcode File"
+        :items="barcode_filename_list"
+        :disabled="metadata_confirmed_bool"
+        >
+        </v-select>
+        <selector
+        v-model="metadata.species"
+        display_label="Species"
+        :display_options="drop_down_manager.species_list"
+        @option-added="updateList('species_list', $event)"
+        >
+        </selector>
+        <selector
+        v-model="metadata.organ"
+        display_label="Organ"
+        :display_options="drop_down_manager.organ_list"
+        @option-added="updateList('organ_list', $event)"
+        >
+        </selector>
+        <selector
+        v-model="metadata.tissue_type"
+        display_label="Tissue Type"
+        :display_options="drop_down_manager.tissue_type_list"
+        @option-added="updateList('tissue_type_list', $event)">
+        </selector>
+        <v-select
+        :items="drop_down_manager.assay_list"
+        v-model="metadata.assay"
+        label="Assay"
+        >
+        </v-select>
+        <selector
+        v-show="metadata.assay === 'CUT&Tag'"
+        v-model="metadata.antibody"
+        display_label="Epitope Name"
+        :display_options="drop_down_manager.epitope_list"
+        @option-added="updateList('epitope_list', $event)"
+        >
+        </selector>
+        <selector
+        v-model="metadata.chip_resolution"
+        display_label="Chip Resolution"
+        :display_options="drop_down_manager.chip_resolution_list"
+        @option-added="updateList('chip_resolution_list', $event)">
+        </selector>
+    </v-card-text>
+    <v-card-actions
+    class="justify-center"
+    >
+    <v-btn
+    :disabled="!metadata.barcode_filename"
+    @click="metadata_confirmed"
+    outlined
+    >
+      Confirm
+    </v-btn>
+    </v-card-actions>
+    </v-card>
+</template>
+
+<script lang="ts">
+
+import { defineComponent, ref, computed } from '@vue/composition-api';
+import Selector from '@/views/Home/components/settings/admin/modules/submodules/Selector.vue';
+
+export default defineComponent({
+  name: 'MetadataDropdown',
+  components: { Selector },
+  props: {
+    metadata: { type: Object, required: true },
+    run_id: { type: String, required: true },
+    drop_down_manager: { type: Object, required: true },
+    updating_existing: { type: Boolean, required: true },
+    barcode_filename_list: { type: Array, required: true },
+    metadata_confirmed_bool: { type: Boolean, required: true },
+  },
+  setup(props, ctx) {
+    const drop = computed(() => props.drop_down_manager);
+    function metadata_confirmed() {
+      ctx.emit('confirmed');
+    }
+    // function barcode_file_selected() {
+    //   ctx.emit('barcode-file-selected');
+    // }
+    function pageRefresh() {
+      ctx.emit('refresh');
+    }
+    function updateList(list: any, value: any) {
+      const holder = drop.value[list].map((v: any) => v);
+      holder.push(value);
+      drop.value[list] = holder;
+    }
+    return { metadata_confirmed, pageRefresh, updateList };
+  },
+});
+</script>

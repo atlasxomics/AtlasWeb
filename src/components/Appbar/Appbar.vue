@@ -3,6 +3,7 @@
     app
     dense
   >
+      <v-app-bar-nav-icon @click="$emit('openDrawer')"></v-app-bar-nav-icon>
       <v-tooltip
         v-for="menu in subMenu"
         v-bind:key="menu.text"

@@ -1,6 +1,7 @@
 <template>
   <v-main>
-    <appbar :submenu="submenu" class="appbar"/>
+    <appbar :submenu="submenu" class="appbar" v-on:openDrawer="openDrawer"/>
+    <main-menu ref="mainmenu"  v-on:menuClicked="menuClicked" style="z-index: 99999;"/>
     <v-container v-if="atlasXplore_displayed" fluid id="container" :style="{ 'background-color': backgroundColor, 'height': '100%', 'margin': '0', 'width': '100%', 'padding': '0' }">
       <v-row>
         <v-dialog
@@ -617,13 +618,14 @@ import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmoun
 import lodash, { lte } from 'lodash';
 import colormap from 'colormap';
 import store from '@/store';
-import { login, isClient, Client } from '@/api';
+import { isClient, Client } from '@/api';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { PROD_SERVER_URL } from '@/environment';
 import { get_uuid, generateRouteByQuery, splitarray, deepCopy } from '@/utils';
-import { saveCookie, readCookie, resolveAuthGroup, logout } from '@/utils/auth';
+import { loginExisting, loggedIn, saveCookie, readCookie, resolveAuthGroup, logout } from '@/utils/auth';
 import { Console, table } from 'console';
 import html2canvas from 'html2canvas';
+import MainMenu from '@/views/Home/components/menu/MainMenu.vue';
 import Appbar from '@/components/Appbar/Appbar.vue';
 import GeneAutoComplete from './modules/GeneAutoComplete.vue';
 import GeneDataTable from './modules/GeneDataTable.vue';
@@ -680,11 +682,11 @@ interface Metadata {
 
 export default defineComponent({
   name: 'AtlasXplore',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph, Singleview, NetworkGraph, Appbar },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph, Singleview, NetworkGraph, Appbar, MainMenu },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
-    let client = ref<any>();
+    const client = computed(() => store.state.client);
     const currentRoute = computed(() => ctx.root.$route);
     const workers = computed(() => store.state.client?.workers);
     const globalXploreData = computed(() => store.state.xploreData);
@@ -804,6 +806,20 @@ export default defineComponent({
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
       if (shouldPush) router.push(newRoute);
+    }
+    function openDrawer() {
+      (ctx as any).refs.mainmenu.openDrawer();
+    }
+    function menuClicked(ev: any) {
+      if (!ev) {
+        if (currentRoute.value.query.component) {
+          const new_route = `/${ev.component}`;
+          router.push(new_route);
+        }
+      } else if (ev.component !== currentRoute.value.query.component) {
+        const new_route = `/${ev.component}`;
+        router.push(new_route);
+      }
     }
     function onResize() {
       const parent = (ctx as any).refs.peakContainer;
@@ -1336,7 +1352,7 @@ export default defineComponent({
     async function getMeta(rid = runId.value) {
       const meta_filename = `data/${rid}/metadata.json`;
       const payload = { params: { filename: meta_filename } };
-      const resp = await client.value.getJsonFile(payload);
+      const resp = await client.value!.getJsonFile(payload);
       console.log(resp);
       metadata.value.organ = resp.organ;
       metadata.value.species = resp.species;
@@ -1525,6 +1541,11 @@ export default defineComponent({
       });
       runCellType(cleanedArray);
     });
+    watch(currentRoute, (route) => {
+      console.log(route);
+      if (route.query.component) store.commit.setComponent(route.query);
+      else store.commit.setComponent({ component: null });
+    });
     const submenu = ref<any[]>([]);
     const run_selector = {
       text: 'Run ID\'s',
@@ -1586,17 +1607,11 @@ export default defineComponent({
     onMounted(async () => {
       // pushByQuery('AtlasXplore');
       prep_sub_menu();
-      const serverUrl = PROD_SERVER_URL;
-      const resp = await login(serverUrl, 'admin', 'Hello123!');
-      if (isClient(resp)) {
-        const existingCookie = readCookie();
-        if (existingCookie) {
-          logout();
-        }
-        saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
-        store.commit.setClient(resp);
+      await loginExisting();
+      if (!loggedIn.value) {
+        const serverUrl = PROD_SERVER_URL;
+        store.commit.setClient(await Client.Create(serverUrl));
       }
-      client = computed(() => store.state.client);
       store.commit.setComponent({ component: 'AtlasXplore' });
       await clientReady;
       runId.value = null;
@@ -1765,6 +1780,8 @@ export default defineComponent({
       clusters_ann_list,
       changeClustersAnn,
       search,
+      openDrawer,
+      menuClicked,
     };
   },
 });

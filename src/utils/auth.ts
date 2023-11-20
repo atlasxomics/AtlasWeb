@@ -38,7 +38,7 @@ export function logout() {
 }
 
 export async function loginAnonymous(url: string) {
-  store.commit.setClient(await Client.Create(url, ''));
+  store.commit.setClient(await Client.Create(url));
 }
 
 export function resolveAuthGroup(access_list: string[]) {
@@ -63,7 +63,7 @@ export async function loginExisting() {
   try {
     // Try to create client with stored token
     // store.commit.setClient(new Client(url, token));
-    store.commit.setClient(await Client.Create(url, token));
+    store.commit.setClient(await Client.Create(url));
   } catch (e) {
     // Client creation failed, logout
     logout();

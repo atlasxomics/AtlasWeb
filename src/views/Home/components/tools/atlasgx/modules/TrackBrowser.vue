@@ -154,7 +154,7 @@ export default defineComponent({
           console.log('Rendered');
         },
       };
-      const ref_bucket = 'atx-track-host';
+      const ref_bucket = 'amgen-atx-cloud-dev';
       const fl_payload = { path: 'data', filter: [`${rid}/tracks`] };
       const fl_payload_ref = { bucket: ref_bucket, path: 'ref', filter: [`${speciesMap[selectedSpecies.value]}`] };
       const resp = await client.value.getFileList(fl_payload);

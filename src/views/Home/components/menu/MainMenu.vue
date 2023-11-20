@@ -15,7 +15,7 @@
         <template v-for="group in menu" >
           <v-subheader v-bind:key="group.groupname">{{ group.groupname }}</v-subheader>
           <template v-for="v in group.items">
-            <v-list-item v-bind:key="v.component" v-if="resolveAuthGroup(v.access_control)" @click="$emit('menuClicked',v.query)">
+            <v-list-item v-bind:key="v.component" @click="$emit('menuClicked',v.query)">
               <v-list-item-icon><v-icon :color="v.color">{{ v.icon }}</v-icon></v-list-item-icon>
               <v-list-item-title>{{ v.name }}</v-list-item-title>
             </v-list-item>
@@ -40,38 +40,10 @@ const menu = [
   //   // ],
   // },
   {
-    groupname: 'Analysis',
-    items: [
-      { name: 'Wafer Tree', icon: 'mdi-chart-pie', color: 'warning', access_control: ['admin'], query: { component: 'WaferTrace' } },
-      { name: 'Image Viewer from Wafer', icon: 'mdi-image-filter', access_control: ['admin'], color: 'warning', query: { component: 'ImageViewer' } },
-    ],
-  },
-  {
     groupname: 'Tools',
     items: [
-      { name: 'AtlasXbrowser', icon: 'mdi-grid', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasBrowser' } },
-      { name: 'Atlas Viewer', icon: 'mdi-checkbox-multiple-marked', access_control: ['admin'], color: 'cyan', query: { component: 'AtlasViewer' } },
-      { name: 'AtlasXplore', icon: 'mdi-magnify', access_control: ['any'], color: 'cyan', query: { component: 'AtlasXplore' } },
-      { name: 'Atlas Compare', icon: 'mdi-compare', access_control: ['admin'], color: 'red', query: { component: 'AtlasCompare' } },
-      // { name: 'Atlas Test', icon: 'mdi-test-tube', access_control: ['admin'], color: 'red', query: { component: 'AtlasTest' } },
-      { name: 'Atlas Analytics', icon: 'mdi-sigma', access_control: ['admin'], color: 'cyan', query: { component: 'AtlasAnalytics' } },
-      { name: 'Atlas Uploader', icon: 'mdi-cloud-upload', access_control: ['admin'], color: 'cyan', query: { component: 'AtlasUploader' } },
-      { name: 'Atlas Run Viewer', icon: 'mdi-file-cloud', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasRunViewer' } },
-    ],
-  },
-  {
-    groupname: 'Metadata',
-    items: [
-      { name: 'Wafer Information', icon: 'mdi-texture', access_control: ['admin'], color: 'secondary', query: { component: 'WaferInformationViewer' } },
-      { name: 'Chip Information', icon: 'mdi-checkbox-multiple-blank', access_control: ['admin'], color: 'secondary', query: { component: 'ChipInformationViewer' } },
-      { name: 'DBiT Information', icon: 'mdi-grid', access_control: ['admin'], color: 'secondary', query: { component: 'DbitInformationViewer' } },
-    ],
-  },
-  {
-    groupname: 'Settings',
-    items: [
-      { name: 'User settings', icon: 'mdi-settings', access_control: ['admin'], color: 'green', query: { component: 'UserSettings' } },
-      { name: 'Admin Panel', icon: 'mdi-checkbox-multiple-blank', access_control: ['admin'], color: 'green', query: { component: 'AdminPanel' } },
+      { name: 'AtlasXBrowser', icon: 'mdi-grid', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasXBrowser' } },
+      { name: 'AtlasXplore', icon: 'mdi-magnify', access_control: ['admin', 'user'], color: 'cyan', query: { component: 'AtlasXplore' } },
     ],
   },
 ];

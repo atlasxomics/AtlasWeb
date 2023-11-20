@@ -24,6 +24,7 @@ import { generateRouteByQuery } from '@/utils';
 import Appbar from '@/components/Appbar/Appbar.vue';
 import MainMenu from './components/menu/MainMenu.vue';
 import AtlasXplore from './components/tools/atlasgx/AtlasXplore.vue';
+import AtlasBrowser from './components/tools/atlasgx/AtlasBrowser.vue';
 
 const appReadyForClient = new Promise((resolve) => {
   const ready = computed(() => (
@@ -41,6 +42,7 @@ export default defineComponent({
     Appbar,
     MainMenu,
     AtlasXplore,
+    AtlasBrowser
   },
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -90,15 +92,8 @@ export default defineComponent({
       else store.commit.setComponent({ component: null });
     });
     onMounted(async () => {
-      await loginExisting();
-      const route = currentRoute.value;
-      if (currentRoute.value.fullPath !== '/' && loggedIn.value) {
-        store.commit.setComponent(route.query);
-      } else {
-        if ((user.value === null || user.value === undefined) && !loggedIn.value) redirectToVisual();
-        else if ((user.value !== null && user.value !== undefined) && !loggedIn.value) redirectToLogin();
-        store.commit.setComponent({ component: null });
-      }
+      store.commit.setComponent({ component: null });
+      router.push('/')
     });
     return {
       component,
