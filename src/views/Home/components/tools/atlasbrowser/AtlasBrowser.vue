@@ -1590,7 +1590,7 @@ export default defineComponent({
     }
     function activateCrop() {
       isCropMode.value = true;
-      bsa_blob.value = last_rotate_blob;
+      if (last_rotate_blob) bsa_blob.value = last_rotate_blob;
     }
     function onCropButton() {
       /**
