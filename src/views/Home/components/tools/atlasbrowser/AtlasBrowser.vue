@@ -569,6 +569,7 @@
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import lodash, { pad, toInteger, trim } from 'lodash';
+import { isClient, Client } from '@/api';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
@@ -1985,6 +1986,17 @@ export default defineComponent({
       },
     ];
     onMounted(async () => {
+      const resp = await login(serverUrl, 'admin', 'Hello123!');
+      if (isClient(resp)) {
+        const existingCookie = readCookie();
+        if (existingCookie) {
+          logout();
+        }
+        saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
+      
+      }
+      store.commit.setComponent({ component: 'AtlasXBrowser' });
+      await clientReady;
       await clientReady;
       store.commit.setSubmenu(submenu);
       window.addEventListener('resize', handleResize);
