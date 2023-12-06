@@ -1866,16 +1866,8 @@ export default defineComponent({
       file_options.value = await client.value?.getFileList(pl);
       if (file_options.value.length === 1) {
         [full_bsa_filename.value] = file_options.value;
-        load_and_begin_image_processing();
-      } else if (file_options.value.length > 1) {
-        file_options.value.forEach((name: any) => {
-          if (name.toLowerCase().includes('bsa')) full_bsa_filename.value = name;
-          if (name.toLowerCase().includes('postb')) {
-            postB_flag.value = true;
-            full_postb_filename.value = name;
-          }
-        });
         show_metadata.value = true;
+        load_and_begin_image_processing();
       } else if (file_options.value.length === 0) {
         snackbar.dispatch({ text: 'No images found in folder', options: { right: true, color: 'error' } });
         loading.value = false;
