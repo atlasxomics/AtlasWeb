@@ -1958,15 +1958,8 @@ export default defineComponent({
     });
     onMounted(async () => {
       const serverUrl = PROD_SERVER_URL;
-      const resp = await login(serverUrl, 'admin', 'Hello123!');
-      if (isClient(resp)) {
-        const existingCookie = readCookie();
-        if (existingCookie) {
-          logout();
-        }
-        saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
-        store.commit.setClient(await Client.Create(serverUrl, resp.authorizationToken));
-      }
+      const resp = await login(serverUrl, 'public', 'Latch456!');
+      store.commit.setClient(await Client.Create(serverUrl, ''));
       store.commit.setComponent({ component: 'AtlasXBrowser' });
       await clientReady;
       console.log(client);
