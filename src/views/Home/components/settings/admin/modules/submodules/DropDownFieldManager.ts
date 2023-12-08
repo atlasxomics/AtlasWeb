@@ -20,28 +20,17 @@ export class DropDownFieldManager {
 
   tissue_type_list: string[];
 
+  chip_resolution_list: string[];
+
   constructor() {
-    this.client = store.state.client;
-    this.species_list = [];
-    this.organ_list = [];
-    this.epitope_list = [];
+    this.species_list = ['mus_musculus', 'homo_sapiens', 'rattus_norvegicus', 'danio_rerio_(zebrafish)', 'gallus_domesticus_(chicken)', 'pdx', 'Mouse'];
+    this.organ_list = ['embryo', 'brain', 'kidney', 'polyp', 'liver', 'ovary', 'fallopian_tube_epithelium', 'cerebellum', 'retina', 'breast', 'bone_marrow', 'tonsil', 'scalp', 'pancreas', 'skin', 'tumor_allograft', 'melanoma_tumor', 'brain_tumor', 'colon_tumor', 'matched_liver_metastasis', 'tibialis_anterior_muscle_', 'hippocampus', 'lung', 'heart', 'embryonic_heart', 'spleen', 'colon', 'skull', 'thigh_skin', 'forearm_skin', 'shoulder_skin'];
+    this.epitope_list = ['H3K27me3', 'H3K27ac', 'H3K4me3'];
     this.group_list = [];
     this.tissue_source_list = [];
     this.pmid_list = [];
-    this.tissue_type_list = [];
-    this.assay_list = [];
-    this.assign_field_options();
-  }
-
-  async assign_field_options() {
-    const field_options = await this.client.get_available_fields();
-    this.assay_list = field_options.assay_list;
-    this.species_list = field_options.species_list;
-    this.organ_list = field_options.organ_list;
-    this.epitope_list = field_options.antibody_list;
-    this.group_list = field_options.group_list;
-    this.tissue_source_list = field_options.tissue_source_list;
-    this.pmid_list = field_options.publication_list;
-    this.tissue_type_list = field_options.tissue_type_list;
+    this.tissue_type_list = ['fresh_frozen', 'ffpe'];
+    this.assay_list = ['ATAC-seq', 'Transcriptome', 'CUT&Tag'];
+    this.chip_resolution_list = ['25um'];
   }
 }

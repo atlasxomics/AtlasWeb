@@ -1,7 +1,7 @@
 <template>
-<!--     <v-card ref="mainCard"> -->
-  <v-app class="main">
-    <v-container v-if="resolveAuthGroup(['admin','user'])" fluid>
+    <v-main>
+    <appbar :submenu="submenu" class="appbar"/>
+    <v-container fluid>
       <v-row>
         <!-- search funtionality on press of magnifying glass -->
         <v-dialog
@@ -49,12 +49,10 @@
           :metadata ="metadata"
           :drop_down_manager="drop_down_manager"
           :run_id="run_id"
-          :lims_available="lims_available"
           :updating_existing="updating_existing"
           :barcode_filename_list="barcode_filename_options"
           :metadata_confirmed_bool="metadata_confirmed_bool"
           @confirmed="metadata_confirmed"
-          @barcode-file-selected="retrieve_barcode_file"
           @refresh="pageRefresh"
           > </metadata-dropdown>
         </v-dialog>
@@ -80,12 +78,11 @@
                 <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Rotation</v-subheader>
                 <v-btn
                 color="blue"
-                class="leftRotate"
                 :disabled="!current_image || isCropMode || grid || updating_existing || loading"
                 @click="rotate_bsa_image(0)"
                 small
                 >
-                <img src="@/assets/images/rotate_left.png"
+                <img src="/static/img/rotate_left.png"
                 width="24"
                 height="24"/>
                 </v-btn>
@@ -96,18 +93,14 @@
                 @click="rotate_bsa_image(1)"
                 small
                 >
-                <img src="@/assets/images/rotate_right.png"
+                <img src="/static/img/rotate_right.png"
                 width="24"
                 height="24"/>
                 </v-btn>
-                <!-- <v-switch class="toggle_switch"
-                label="45°"
-                v-model = "degreeBoolean45"
-                :disabled="!current_image || isCropMode || grid"
-                >
-                </v-switch> -->
-                <label class="radio1"><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || updating_existing || loading">90</label>
-                <label class="radio2"><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || updating_existing || loading">45</label>
+                <div style="display:grid;margin-top: 10px;">
+                    <label><input type="radio" v-model="degreeRotation" value='90' :disabled="!current_image || isCropMode || grid || updating_existing || loading">90</label>
+                    <label><input type="radio" v-model="degreeRotation" value='45' :disabled="!current_image || isCropMode || grid || updating_existing || loading">45</label>
+                </div>
               </v-list>
               <!-- cropping start and stop -->
               <v-list dense class="mt-n4 pt-0 pl-2">
@@ -331,7 +324,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="update_run_function "
+                @click="update_run_function"
                 medium>
                 Update
               </v-btn>
@@ -361,6 +354,7 @@
           persistent
           :value="!image_processing_begun && file_options.length > 1 && !prompt_to_use_existing_spatial"
           max-width="800px"
+          max-height="400px"
           >
           <v-card>
             <v-system-bar class="pt-4" color="white">
@@ -372,20 +366,35 @@
             > Multiple Images Found.  </v-card-title>
             <v-card-title
             class="justify-center"
-            > Please select the BSA image to be used for processing. </v-card-title>
-            <v-card-actions
-            class="justify-center"
-            >
-            <v-col>
-              <v-select
-                v-model="full_bsa_filename"
-                :items="file_options"
-                label="Select Image"
-                outlined
-                dense
-                color="primary"
-                small>
-              </v-select>
+            > Please select the BSA <span style="color:red">_AND OR_</span>postB image to be used for processing. </v-card-title>
+            <v-spacer></v-spacer>
+            <v-row align="center" justify="center">
+              <v-col cols="12" sm="8">
+                <v-select
+                  v-model="full_bsa_filename"
+                  :items="file_options"
+                  label="Select BSA Image"
+                  outlined
+                  dense
+                  color="primary"
+                  small>
+                </v-select>
+              </v-col>
+            </v-row>
+            <v-row align="center" justify="center">
+              <v-col cols="12" sm="8">
+                <v-select
+                  v-model="full_postb_filename"
+                  :disabled="full_bsa_filename === ''"
+                  :items="file_options"
+                  label="Select postB Image"
+                  outlined
+                  dense
+                  color="primary"
+                  small>
+                </v-select>
+              </v-col>
+            </v-row>
               <v-btn
               :disabled="full_bsa_filename === ''"
               style="position: relative; left: 50%; transform: translateX(-50%);"
@@ -394,8 +403,6 @@
               >
               Submit
               </v-btn>
-            </v-col>
-            </v-card-actions>
           </v-card>
           </v-dialog>
         </v-col>
@@ -553,7 +560,7 @@
         >
         <v-img
         class="center"
-        src="@/assets/images/atlasbg.png"
+        src="/static/img/atlasbg.png"
         width="width"
         height="height"
         >
@@ -561,7 +568,7 @@
         </v-col>
       </v-row>
     </v-container>
-  </v-app>
+  </v-main>
 <!--     </v-card> -->
 </template>
 
@@ -569,7 +576,8 @@
 
 import { ref, watch, defineComponent, computed, onMounted, watchEffect, onUnmounted } from '@vue/composition-api';
 import lodash, { pad, toInteger, trim } from 'lodash';
-import { isClient, Client } from '@/api';
+import { PROD_SERVER_URL } from '@/environment';
+import { isClient, Client, login } from '@/api';
 import Konva from 'konva';
 import getPixels from 'get-pixels';
 import savePixels from 'save-pixels';
@@ -580,7 +588,8 @@ import config from '@/config';
 import colormap from 'colormap';
 import { snackbar } from '@/components/GlobalSnackbar';
 import { get_uuid, generateRouteByQuery, objectToArray, splitarray } from '@/utils';
-import { resolveAuthGroup } from '@/utils/auth';
+import { resolveAuthGroup, logout, readCookie, saveCookie } from '@/utils/auth';
+import Appbar from '@/components/Appbar/Appbar.vue';
 import Selector from '@/views/Home/components/settings/admin/modules/submodules/Selector.vue';
 import { DropDownFieldManager } from '@/views/Home/components/settings/admin/modules/submodules/DropDownFieldManager';
 import { FileRequest } from '@/types';
@@ -619,7 +628,7 @@ const assay_dict: Record<string, any> = {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  components: { SpatialFolderViewer, Selector, MetadataDropdown },
+  components: { SpatialFolderViewer, Selector, MetadataDropdown, Appbar },
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
@@ -641,6 +650,7 @@ export default defineComponent({
     const search = ref<string | null>();
     const run_id = ref<string>('');
     const full_bsa_filename = ref<string>('');
+    const full_postb_filename = ref<string>('');
     const file_options = ref<any[]>([]);
     const konvaConfig = ref<any>({ width_window: window.innerWidth, height_window: window.innerHeight });
     const brushConfig = ref<any>({ x: null, y: null, radius: 20, fill: null, stroke: 'red' });
@@ -731,6 +741,7 @@ export default defineComponent({
     const barcode_mapping = computed(() => config.atlasxbrowser.barcode_mapping);
     const original_barcode_filename = ref<string|null>('');
     const metadata_confirmed_bool = ref<boolean>(false);
+    const postB_flag = ref<boolean>(false);
     let last_rotate_blob: any;
     let new_rotate = 0;
     // Metadata
@@ -763,6 +774,43 @@ export default defineComponent({
       onTissueTixels: null,
       antibody: '',
     });
+    function pageRefresh() {
+      window.location.reload();
+    }
+    const submenu = ref<any[]>([
+      {
+        text: 'Run ID\'s',
+        icon: 'mdi-magnify',
+        tooltip: 'Run ID\'s',
+        enabled: true,
+        disabled: loading.value,
+        click: () => {
+          run_id_search_active.value = !run_id_search_active.value;
+        },
+      },
+      {
+        text: 'Metadata',
+        icon: 'mdi-filter-variant',
+        tooltip: 'Metadata',
+        enabled: true,
+        disabled: loading.value,
+        click: () => {
+          show_metadata.value = !show_metadata.value;
+          if (!run_id.value) {
+            console.log('error message');
+            snackbar.dispatch({ text: 'Must select a Run ID', options: { right: true, color: 'error' } });
+          }
+        },
+      },
+      {
+        text: 'Restart',
+        icon: false,
+        tooltip: 'Restart Whole Process',
+        enabled: true,
+        disabled: loading.value || welcome_screen.value,
+        click: () => { pageRefresh(); },
+      },
+    ]);
     function reset_metadata() {
       /**
        * Method used to reset metadata when run is switched.
@@ -780,7 +828,7 @@ export default defineComponent({
         organ: null,
         orientation: null,
         crop_area: null,
-        barcode_filename: null,
+        barcode_filename: 'bc96v2-24.txt',
         chip_resolution: null,
         tissueBlockExperiment: '',
         tissue_source: '',
@@ -823,6 +871,7 @@ export default defineComponent({
       updating_existing.value = false;
       orientation.value = { horizontal_flip: false, vertical_flip: false, rotation: 0 };
       full_bsa_filename.value = '';
+      full_postb_filename.value = '';
       image_processing_begun.value = false;
       position_counts_present.value = false;
       show_counts_tixels.value = false;
@@ -832,9 +881,7 @@ export default defineComponent({
       original_barcode_filename.value = '';
       new_rotate = 0;
     }
-    function pageRefresh() {
-      window.location.reload();
-    }
+
     function imageClick(ev: any) {
       // console.log(scaleFactor.value);
       // console.log('y: '.concat((ev.evt.layerY / scaleFactor.value).toString()));
@@ -872,36 +919,6 @@ export default defineComponent({
         metadata.value.barcode_filename = barcode_filename;
       }
     }
-    function assignMetadata(slimsData: any) {
-      /**
-       * Method used to assign slims api response to local metadata variable.
-       * Args: slimsData: Return object from request to load run_id from slims.
-       */
-      try {
-        metadata.value.organ = slimsData.cntn_cf_fk_organ;
-        metadata.value.species = slimsData.cntn_cf_fk_species;
-        metadata.value.chip_resolution = slimsData.Resolution;
-        metadata.value.tissue_source = slimsData.cntn_cf_source;
-        metadata.value.tissueBlockExperiment = slimsData.cntn_cf_experimentalCondition;
-        metadata.value.sampleID = slimsData.cntn_cf_sampleId;
-        metadata.value.antibody = slimsData.cntn_cf_fk_epitope;
-        if (slimsData.cntn_cf_fk_workflow) {
-          metadata.value.assay = assay_dict[String(slimsData.cntn_cf_fk_workflow)];
-        }
-        metadata.value.comments_flowB = slimsData.comments_flowB;
-        metadata.value.crosses_flowB = slimsData.crosses_flowB;
-        metadata.value.blocks_flowB = slimsData.blocks_flowB;
-        metadata.value.leak_flowB = slimsData.leak_flowB;
-        metadata.value.comments_flowA = slimsData.comments_flowA;
-        metadata.value.crosses_flowA = slimsData.crosses_flowA;
-        metadata.value.blocks_flowA = slimsData.blocks_flowA;
-        metadata.value.leak_flowA = slimsData.leak_flowA;
-        metadata.value.tissue_type = slimsData.cntn_cf_fk_tissueType;
-        map_barcode_filename_config('5 (96)');
-      } catch (error) {
-        console.log(error);
-      }
-    }
     async function getMeta() {
       /**
        * Method in which the client method `getMetadataFromRunId` is called.
@@ -909,17 +926,6 @@ export default defineComponent({
        * On Success, this response is assigned to local metadata variable.
        * On Failure, the user is notified of a failure to populate metadata.
        */
-      if (!lims_available.value) return;
-      try {
-        loading.value = true;
-        const slimsData = await client.value!.getMetadataFromRunId(`${run_id.value}`);
-        // function to assign the local metadata values to the slimsData object fields
-        loading.value = false;
-        assignMetadata(slimsData);
-      } catch (error) {
-        loading.value = false;
-        snackbar.dispatch({ text: 'Failed to pull metadata from SLIMS.', options: { color: 'error', right: true } });
-      }
     }
     // io
     async function loadMetadata(): Promise<boolean> {
@@ -958,12 +964,6 @@ export default defineComponent({
         // Converting old format of {1,2,3,4} to new format of using barcode filename
         snackbar.dispatch({ text: 'Metadata loaded from existing spatial directory', options: { color: 'success', right: true } });
         return true;
-      }
-      // otherwise call getMeta to query the API
-      if (lims_available.value) {
-        await getMeta();
-        loading.value = false;
-        snackbar.dispatch({ text: 'Metadata not found locally. Pulling from Slims.', options: { color: 'blue', right: true } });
       }
       return false;
     }
@@ -1148,8 +1148,10 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       let filename: any;
+      let postB_figure_filename: any;
       let use_cache = false;
       let local_bucket_name = bucket_name.value;
+      if (full_postb_filename.value.length > 0) postB_flag.value = true;
       // path to images
       if (updating_existing.value) {
         filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
@@ -1158,6 +1160,10 @@ export default defineComponent({
         bw_image_displayed.value = false;
         use_cache = true;
         local_bucket_name = bucket_name_spatial.value;
+        postB_figure_filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB.tif`;
+        const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: true, bucket_name: bucket_name_spatial.value } };
+        const pro = load_image_promise_jpg(pl_postB);
+        if (pro) postB_image_promise.value = pro;
       } else {
         filename = full_bsa_filename.value;
       }
@@ -1169,9 +1175,8 @@ export default defineComponent({
         const img_obj = set_current_image(img);
         allFiles.value = await client.value.getFileList(filenameList_pl);
         bsa_image.value = img_obj.src;
-        if (updating_existing.value) {
-          const postB_figure_filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB.tif`;
-          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: true, bucket_name: bucket_name_spatial.value } };
+        if (postB_flag.value) {
+          const pl_postB = { params: { rotation: 0, filename: full_postb_filename.value, use_cache: true, bucket_name: bucket_name_spatial.value } };
           const pro = load_image_promise_jpg(pl_postB);
           if (pro) postB_image_promise.value = pro;
         }
@@ -1951,41 +1956,8 @@ export default defineComponent({
         thresh_same.value = false;
       }
     });
-    const submenu = [
-      {
-        text: 'Run ID\'s',
-        icon: 'mdi-magnify',
-        tooltip: 'Run ID\'s',
-        enabled: true,
-        disabled: loading.value,
-        click: () => {
-          run_id_search_active.value = !run_id_search_active.value;
-        },
-      },
-      {
-        text: 'Metadata',
-        icon: 'mdi-filter-variant',
-        tooltip: 'Metadata',
-        enabled: true,
-        disabled: loading.value,
-        click: () => {
-          show_metadata.value = !show_metadata.value;
-          if (!run_id.value) {
-            console.log('error message');
-            snackbar.dispatch({ text: 'Must select a Run ID', options: { right: true, color: 'error' } });
-          }
-        },
-      },
-      {
-        text: 'Restart',
-        icon: false,
-        tooltip: 'Restart Whole Process',
-        enabled: true,
-        disabled: loading.value || welcome_screen.value,
-        click: () => { pageRefresh(); },
-      },
-    ];
     onMounted(async () => {
+      const serverUrl = PROD_SERVER_URL;
       const resp = await login(serverUrl, 'admin', 'Hello123!');
       if (isClient(resp)) {
         const existingCookie = readCookie();
@@ -1993,12 +1965,11 @@ export default defineComponent({
           logout();
         }
         saveCookie({ token: resp.authorizationToken, url: resp.serverURL });
-      
+        store.commit.setClient(await Client.Create(serverUrl, resp.authorizationToken));
       }
       store.commit.setComponent({ component: 'AtlasXBrowser' });
       await clientReady;
-      await clientReady;
-      store.commit.setSubmenu(submenu);
+      console.log(client);
       window.addEventListener('resize', handleResize);
       await fetchFileList();
       load_barcode_file_options();
@@ -2012,6 +1983,7 @@ export default defineComponent({
       allFiles,
       run_id,
       full_bsa_filename,
+      full_postb_filename,
       metadata,
       run_id_folder_names,
       run_id_folder_namesHolder,
@@ -2100,7 +2072,6 @@ export default defineComponent({
       saved_grid_state,
       hide_grid,
       degreeRotation,
-      assignMetadata,
       checkSpatial,
       showSpatialFolder,
       availableFiles,
@@ -2144,6 +2115,7 @@ export default defineComponent({
       original_barcode_filename,
       pageRefresh,
       activateCrop,
+      submenu,
     };
   },
 });
