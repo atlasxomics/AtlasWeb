@@ -2120,7 +2120,6 @@ export default defineComponent({
 }
 .spaced_btn {
   margin-left: 10px;
-  margin-bottom: 50px;
 }
 .radio1 {
   position: relative;
