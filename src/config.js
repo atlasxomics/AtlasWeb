@@ -1,6 +1,6 @@
 const config = {
   atlasxbrowser: {
-    root_dir: 'Images',
+    root_dir: 'spatials',
     barcode_files_path: 'BarcodeFiles',
     lims_available: true,
     barcode_mapping: {

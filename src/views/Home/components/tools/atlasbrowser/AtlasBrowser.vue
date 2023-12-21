@@ -705,7 +705,6 @@ export default defineComponent({
     const metadata_confirmed_bool = ref<boolean>(false);
     const postB_flag = ref<boolean>(false);
     let last_rotate_blob: any;
-    let latch_flag = false;
     let new_rotate = 0;
     // Metadata
     const metadata = ref<Metadata>({
@@ -904,14 +903,14 @@ export default defineComponent({
       loading.value = true;
       loadingMessage.value = false;
       // specify path to images within s3
-      const filename = (latch_flag) ? `${run_id.value}/spatial/metadata.json` : `${root.value}/${run_id.value}/spatial/metadata.json`;
-      const scale_filename = (latch_flag) ? `${run_id.value}/spatial/metadata.json` : `${root.value}/${run_id.value}/spatial/scalefactors_json.json`;
-      const pos_filename = (latch_flag) ? `${run_id.value}/spatial/metadata.json` : `${root.value}/${run_id.value}/spatial/tissue_positions_list.csv`;
-      const payload = { params: { filename, flag: latch_flag } };
+      const filename = `${run_id.value}/spatial/metadata.json`;
+      const scale_filename = `${run_id.value}/spatial/metadata.json`;
+      const pos_filename = `${run_id.value}/spatial/metadata.json`;
+      const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
-      const pos_payload = { params: { filename: pos_filename, flag: latch_flag } };
+      const pos_payload = { params: { filename: pos_filename } };
       const resp_pos = await client.value.getCsvFile(pos_payload);
-      const scale_payload = { params: { filename: scale_filename, flag: latch_flag } };
+      const scale_payload = { params: { filename: scale_filename } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
@@ -935,7 +934,7 @@ export default defineComponent({
        * Return: string[]: list of barcodes in the barcode file.
        */
       const path = root_barcode.value.concat('/'.concat(short_filename));
-      const pl = { params: { filename: path, flag: latch_flag } };
+      const pl = { params: { filename: path } };
       const bc_file = await client.value?.getCsvFile(pl);
       const barcode_list: string[] = [];
       bc_file.forEach((row: string[]) => {
@@ -1064,7 +1063,7 @@ export default defineComponent({
         const y1 = c[1];
         const x2 = c[2];
         const y2 = c[3];
-        const pl = { params: { filename, rotation: orientation.value.rotation, x1, x2, y1, y2, flag: latch_flag } };
+        const pl = { params: { filename, rotation: orientation.value.rotation, x1, x2, y1, y2 } };
         const promise = client.value.getGrayImageAsCroppedJPG(pl);
         return promise;
       } catch (error) {
@@ -1112,29 +1111,29 @@ export default defineComponent({
       let filename: any;
       // path to images
       if (updating_existing.value) {
-        filename = (latch_flag) ? `${run_id.value}/spatial/figure/postB_BSA.tif` : `${root.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
+        filename = `${run_id.value}/spatial/figure/postB_BSA.tif`;
         bsa_image_displayed.value = true;
         postB_image_displayed.value = false;
         bw_image_displayed.value = false;
       } else {
-        filename = (latch_flag) ? `${run_id.value}/${full_bsa_filename.value}` : `${root.value}/${run_id.value}/${full_bsa_filename.value}`;
+        filename = `${run_id.value}/${full_bsa_filename.value}`;
       }
-      const filenameList_pl = { path: (latch_flag) ? `${run_id.value}/` : `${root.value}/${run_id.value}/`, filter: [''], only_files: true, flag: latch_flag };
+      const filenameList_pl = { path: `${run_id.value}/`, filter: [''], only_files: true };
       try {
-        const pl = { params: { filename, rotation: orientation.value.rotation, flag: latch_flag } };
+        const pl = { params: { filename, rotation: orientation.value.rotation } };
         const img = await client.value.getImageAsJPG(pl);
         bsa_blob.value = img;
         const img_obj = set_current_image(img);
         allFiles.value = await client.value.getFileList(filenameList_pl);
         bsa_image.value = img_obj.src;
         if (updating_existing.value) {
-          const postB_figure_filename = (latch_flag) ? `${run_id.value}/spatial/figure/postB.tif` : `${root.value}/${run_id.value}/spatial/figure/postB.tif`;
-          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, flag: latch_flag } };
+          const postB_figure_filename = `${run_id.value}/spatial/figure/postB.tif`;
+          const pl_postB = { params: { rotation: 0, filename: postB_figure_filename } };
           const pro = load_image_promise_jpg(pl_postB);
           if (pro) postB_image_promise.value = pro;
         }
         if (postB_flag.value) {
-          const pl_postB = { params: { rotation: 0, filename: (latch_flag) ? `${run_id.value}/${full_postb_filename.value}` : `${root.value}/${run_id.value}/${full_postb_filename.value}`, flag: latch_flag } };
+          const pl_postB = { params: { rotation: 0, filename: `${run_id.value}/${full_postb_filename.value}` } };
           const pro = load_image_promise_jpg(pl_postB);
           if (pro) postB_image_promise.value = pro;
         }
@@ -1259,13 +1258,15 @@ export default defineComponent({
       if (!client.value) return;
       const barcode_path = root_barcode.value;
       const pl = { path: barcode_path, filter: ['.txt'], flag: false };
-      const latch_pl = { path: barcode_path, filter: ['.txt'], flag: true };
       let res = await client.value.getFileList(pl);
       if (!res) res = [];
-      let latch_res = await client.value.getFileList(latch_pl);
-      if (!latch_res) latch_res = [];
-      const combine = res.concat(latch_res);
-      barcode_filename_options.value = [...new Set(combine)];
+      res.forEach((filename: string) => {
+        const inx = filename.lastIndexOf('/');
+        if (inx < filename.length - 1) {
+          const short_filename = filename.substring(inx + 1, filename.length);
+          barcode_filename_options.value.push(short_filename);
+        }
+      });
     }
     function color_tixel_counts_percentile(data: any[], color_gradient: string[]) {
       /**
@@ -1553,7 +1554,7 @@ export default defineComponent({
     }
     function activateCrop() {
       isCropMode.value = true;
-      bsa_blob.value = last_rotate_blob;
+      if (last_rotate_blob) bsa_blob.value = last_rotate_blob;
     }
     function onCropButton() {
       /**
@@ -1566,7 +1567,7 @@ export default defineComponent({
       if (x1 < 0 || y1 < 0 || x2 > width || y2 > height) {
         snackbar.dispatch({ text: 'Keeping Cropping on Image', options: { color: 'warning', right: true } });
       } else {
-        const promise = loadGrayCropped((latch_flag) ? `${run_id.value}/${full_bsa_filename.value}` : `${root.value}/${run_id.value}/${full_bsa_filename.value}`);
+        const promise = loadGrayCropped(`${run_id.value}/${full_bsa_filename.value}`);
         if (promise) postB_image_promise.value = promise;
         cropLoading.value = true;
         cropFlag.value = true;
@@ -1712,10 +1713,9 @@ export default defineComponent({
           barcode_path: `${root_barcode.value}/${metadata.value.barcode_filename}`,
           root_dir: root.value,
           barcode_dir: root_barcode,
-          bsa_path: (latch_flag) ? `/ldata/${run_id.value}/${full_bsa_filename.value}` : `${root.value}/${run_id.value}/${full_bsa_filename.value}`,
+          bsa_path: `/ldata/${run_id.value}/${full_bsa_filename.value}`,
           updating_existing: updating_existing.value,
           postB_flag,
-          latch_flag,
         };
         const args: any[] = [params];
         const kwargs: any = {};
@@ -1810,7 +1810,7 @@ export default defineComponent({
       run_id_folder_namesHolder.value = [];
       search.value = '';
       loading.value = true;
-      const folder_pl = { prefix: `${root.value}/`, flag: latch_flag };
+      const folder_pl = { prefix: `${root.value}/` };
       const ldata_folder_pl = { prefix: '', flag: true };
       const sub_local_folders = await client.value.getSubFolders(folder_pl);
       const ldata_folders = await client.value.getSubFolders(ldata_folder_pl);
@@ -1838,7 +1838,6 @@ export default defineComponent({
         });
         run_id_folder_names.value = obj_data;
       }
-      console.log(run_id_folder_names.value);
       run_id_folder_namesHolder.value = run_id_folder_names.value;
       loading.value = false;
     }
@@ -1851,7 +1850,7 @@ export default defineComponent({
       /**
        * Method that gets all of the csv files in the root directory where the bsa files are stored.
        */
-      const pl = { path: (latch_flag) ? `${current_run_id}/` : `${root.value}/${current_run_id}/`, filter: ['.csv'], flag: latch_flag };
+      const pl = { path: `${current_run_id}/`, filter: ['.csv'] };
       const options = await client.value?.getFileList(pl);
       count_file_options.value = options;
     }
@@ -1862,7 +1861,7 @@ export default defineComponent({
        * If there are no images in the directory, an error message is displayed.
        * If there are multiple images in the directory, the user is prompted to select one.
        */
-      const pl = { path: (latch_flag) ? `${folder_name}/` : `${root.value}/${folder_name}/`, filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'], flag: latch_flag };
+      const pl = { path: `${folder_name}/`, filter: ['.tif', '.tiff', '.png', '.jpg', 'jpeg'] };
       file_options.value = await client.value?.getFileList(pl);
       if (file_options.value.length === 1) {
         [full_bsa_filename.value] = file_options.value;
@@ -1892,7 +1891,6 @@ export default defineComponent({
         return;
       }
       run_id.value = folder_name.id;
-      if (folder_name.from.length === 1 && folder_name.from[0] === 'l') latch_flag = true;
       initialize();
       prompt_to_use_existing_spatial.value = await loadMetadata();
       if (!prompt_to_use_existing_spatial.value) {
