@@ -905,7 +905,7 @@ export default defineComponent({
       // specify path to images within s3
       const filename = `${run_id.value}/spatial/metadata.json`;
       const scale_filename = `${run_id.value}/spatial/scalefactors_json.json`;
-      const pos_filename = `${run_id.value}/tissue_positions_list.csv`;
+      const pos_filename = `${run_id.value}/spatial/tissue_positions_list.csv`;
       const payload = { params: { filename } };
       const resp = await client.value.getJsonFile(payload);
       const pos_payload = { params: { filename: pos_filename } };
