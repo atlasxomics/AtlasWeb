@@ -297,9 +297,15 @@
               </v-list>
             </v-card>
           </template>
+          <DapiProcessingMenu
+              v-if="dapi_selected"
+              @changed-scale="onChangeScale"
+              @count-nuclei="countNuclei"
+              >
+          </DapiProcessingMenu>
           <v-dialog
           persistent
-          :value="prompt_to_use_existing_spatial"
+          :value="prompt_to_use_existing_spatial && !dapi_selected"
           max-width="800px"
           >
           <v-card>
@@ -334,6 +340,16 @@
                 @click="update_run_function "
                 medium>
                 Update
+              </v-btn>
+              <v-btn
+                v-if="dapi_available"
+                outlined
+                dense
+                color="primary"
+                x-small
+                @click="optionUpdate=true;dapi_selected=true; loadImage(); uploadingTixels(fill=false)"
+                >
+                Dapi
               </v-btn>
             </v-card-actions>
           </v-card>
@@ -588,6 +604,8 @@ import { Crop } from './AtlasBrowserComponents/crop';
 import { Circle, Point, Metadata, tissue_position_list_ele_counts } from './types';
 import SpatialFolderViewer from './AtlasBrowserComponents/SpatialFolderViewer.vue';
 import MetadataDropdown from './AtlasBrowserComponents/MetadataDropdown.vue';
+import DapiProcessingMenu from './DapiProcessingMenu.vue';
+import ViewingTixel from './ViewingTixel.vue';
 // import { resolve } from 'dns';
 
 const clientReady = new Promise((resolve) => {
@@ -618,7 +636,7 @@ const assay_dict: Record<string, any> = {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  components: { SpatialFolderViewer, Selector, MetadataDropdown },
+  components: { SpatialFolderViewer, Selector, MetadataDropdown, DapiProcessingMenu, ViewingTixel },
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
@@ -647,6 +665,7 @@ export default defineComponent({
     const isBrushMode = ref(false);
     const isCropMode = ref(false);
     const isEraseMode = ref(false);
+    const dapi_available = ref<boolean>(false);
     const brushSize = ref(20);
     const brushDown = ref(false);
     const crop = ref<Crop>(new Crop([0, 0], 0.15));
@@ -691,6 +710,7 @@ export default defineComponent({
     const tissue_positions_counts_filename = ref<string>('');
     const count_file_options = ref<string[]>([]);
     const tixel_color_mapping = ref<Record<number, string>>({});
+    const dapi_selected = ref<boolean>(false);
     const prompt_to_use_existing_spatial = ref<boolean>(false);
     const prompt_to_select_counts_positions = ref<boolean>(false);
     const selecting_counts_pos_file = ref<boolean>(false);
@@ -944,6 +964,16 @@ export default defineComponent({
       const resp_pos = await client.value.getCsvFile(pos_payload);
       const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
+      const dapi_resp = client.value.checkExistence('atx-illumina', `${root}/${run_id.value}/dapi10x.tif`);
+          dapi_resp.then((val: any) => {
+            if (val.code === true) {
+              dapi_available.value = true;
+              console.log('true');
+            } else {
+              dapi_available.value = false;
+              console.log('false');
+            }
+          });
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         scaleFactor_json.value = scale_pos;
@@ -1150,7 +1180,20 @@ export default defineComponent({
       let use_cache = false;
       let local_bucket_name = bucket_name.value;
       // path to images
-      if (updating_existing.value) {
+      if () {
+        const res = client.value.checkExistence('atx-illumina', `${root}/${run_id.value}/spatial/figure/dapi10x.tif`);
+        console.log(res);
+        await res.then((value) => {
+          if (value.code === true) {
+            console.log(value.code);
+            filename = `${root}/${run_id.value}/spatial/figure/dapi10x.tif`;
+          } else {
+          // must create the figure folder dapi image
+          console.log('create dapi in figure folder');
+          filename = `${root}/${run_id.value}/spatial/figure/dapi10x.tif`;
+          }
+        });
+      } else if (updating_existing.value) {
         filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB_BSA.tif`;
         bsa_image_displayed.value = true;
         postB_image_displayed.value = false;
@@ -1843,6 +1886,15 @@ export default defineComponent({
       roi.value.autoMask(atpixels.value, threshold.value);
       tixels_filled.value = true;
     }
+    async function countNuclei(ev: any, thresh_cutoff: any) {
+          console.log(thresh_cutoff.value);
+          const queue = 'jonah_browser';
+          const task = 'atlasbrowser.count_nuclei';
+          const params = { threshold: thresh_cutoff.value };
+          const args: any[] = [params];
+          const kwargs: any = {};
+          const taskObject = await client.value?.postTask(task, args, kwargs, queue);
+    }
     async function fetchFileList() {
       /**
        * Method that gets all of the files in the specific directory where the BSA files are stored.
@@ -2097,6 +2149,9 @@ export default defineComponent({
       bucket_name,
       bsa_image,
       black_white,
+      dapi_available,
+      dapi_selected,
+      countNuclei,
       loadGrayCropped,
       postB_image_promise,
       postB_image,
