@@ -154,9 +154,9 @@ export default defineComponent({
           console.log('Rendered');
         },
       };
-      const ref_bucket = 'amgen-atx-cloud-dev';
+      const ref_bucket = 'atx-cloud-dev';
       const fl_payload = { path: 'data', filter: [`${rid}/tracks`] };
-      const fl_payload_ref = { bucket: ref_bucket, path: 'ref', filter: [`${speciesMap[selectedSpecies.value]}`] };
+      const fl_payload_ref = { bucket: 'atx-track-host', path: 'ref', filter: [`${speciesMap[selectedSpecies.value]}`] };
       const resp = await client.value.getFileList(fl_payload);
       resp.sort((a: any, b: any) => {
         if (a.match(/C\d+/) === null || b.match(/C\d+/) === null) return 0;
