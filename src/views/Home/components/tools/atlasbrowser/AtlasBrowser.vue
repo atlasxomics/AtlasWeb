@@ -297,12 +297,12 @@
               </v-list>
             </v-card>
           </template>
-          <DapiProcessingMenu
+          <!-- <DapiProcessingMenu
               v-if="dapi_selected"
               @changed-scale="onChangeScale"
               @count-nuclei="countNuclei"
               >
-          </DapiProcessingMenu>
+          </DapiProcessingMenu> -->
           <v-dialog
           persistent
           :value="prompt_to_use_existing_spatial && !dapi_selected"
@@ -604,8 +604,7 @@ import { Crop } from './AtlasBrowserComponents/crop';
 import { Circle, Point, Metadata, tissue_position_list_ele_counts } from './types';
 import SpatialFolderViewer from './AtlasBrowserComponents/SpatialFolderViewer.vue';
 import MetadataDropdown from './AtlasBrowserComponents/MetadataDropdown.vue';
-import DapiProcessingMenu from './DapiProcessingMenu.vue';
-import ViewingTixel from './ViewingTixel.vue';
+// import DapiProcessingMenu from './AtlasBrowserComponents/DapiProcessingMenu.vue';
 // import { resolve } from 'dns';
 
 const clientReady = new Promise((resolve) => {
@@ -636,7 +635,7 @@ const assay_dict: Record<string, any> = {
 export default defineComponent({
   name: 'AtlasBrowser',
   props: ['query'],
-  components: { SpatialFolderViewer, Selector, MetadataDropdown, DapiProcessingMenu, ViewingTixel },
+  components: { SpatialFolderViewer, Selector, MetadataDropdown },
   setup(props, ctx) {
     // Parameters for changing which bucket images are being pulled to and written to
     // s3 bucket to connect to
@@ -965,15 +964,15 @@ export default defineComponent({
       const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
       const dapi_resp = client.value.checkExistence('atx-illumina', `${root}/${run_id.value}/dapi10x.tif`);
-          dapi_resp.then((val: any) => {
-            if (val.code === true) {
-              dapi_available.value = true;
-              console.log('true');
-            } else {
-              dapi_available.value = false;
-              console.log('false');
-            }
-          });
+      dapi_resp.then((val: any) => {
+        if (val.code === true) {
+          dapi_available.value = true;
+          console.log('true');
+        } else {
+          dapi_available.value = false;
+          console.log('false');
+        }
+      });
       // if the json file is retrieved from server use that as metadata
       if (resp && resp_pos && scale_pos) {
         scaleFactor_json.value = scale_pos;
@@ -1180,7 +1179,7 @@ export default defineComponent({
       let use_cache = false;
       let local_bucket_name = bucket_name.value;
       // path to images
-      if () {
+      if (dapi_selected.value) {
         const res = client.value.checkExistence('atx-illumina', `${root}/${run_id.value}/spatial/figure/dapi10x.tif`);
         console.log(res);
         await res.then((value) => {
@@ -1188,9 +1187,9 @@ export default defineComponent({
             console.log(value.code);
             filename = `${root}/${run_id.value}/spatial/figure/dapi10x.tif`;
           } else {
-          // must create the figure folder dapi image
-          console.log('create dapi in figure folder');
-          filename = `${root}/${run_id.value}/spatial/figure/dapi10x.tif`;
+            // must create the figure folder dapi image
+            console.log('create dapi in figure folder');
+            filename = `${root}/${run_id.value}/spatial/figure/dapi10x.tif`;
           }
         });
       } else if (updating_existing.value) {
@@ -1887,13 +1886,13 @@ export default defineComponent({
       tixels_filled.value = true;
     }
     async function countNuclei(ev: any, thresh_cutoff: any) {
-          console.log(thresh_cutoff.value);
-          const queue = 'jonah_browser';
-          const task = 'atlasbrowser.count_nuclei';
-          const params = { threshold: thresh_cutoff.value };
-          const args: any[] = [params];
-          const kwargs: any = {};
-          const taskObject = await client.value?.postTask(task, args, kwargs, queue);
+      console.log(thresh_cutoff.value);
+      const queue = 'jonah_browser';
+      const task = 'atlasbrowser.count_nuclei';
+      const params = { threshold: thresh_cutoff.value };
+      const args: any[] = [params];
+      const kwargs: any = {};
+      const taskObject = await client.value?.postTask(task, args, kwargs, queue);
     }
     async function fetchFileList() {
       /**
