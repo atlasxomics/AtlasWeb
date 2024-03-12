@@ -7,6 +7,15 @@ module.exports = {
     '@vue/typescript/recommended',
     // 'plugin:@typescript-eslint/recommended',
   ],
+  settings: {
+    'import/resolver': {
+      alias: {
+        map: [
+          ['@', './src'],
+        ],
+      },
+    },
+  },
   parserOptions: { ecmaVersion: 2020 },
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
