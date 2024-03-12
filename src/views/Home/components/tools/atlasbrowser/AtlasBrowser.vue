@@ -82,7 +82,7 @@
                 color="blue"
                 class="leftRotate"
                 :disabled="!current_image || isCropMode || grid || updating_existing || loading"
-                @click="rotate_bsa_image(0)"
+                @click="check_image_size(0)"
                 small
                 >
                 <img src="@/assets/images/rotate_left.png"
@@ -93,7 +93,7 @@
                 color="blue"
                 class="spaced_btn"
                 :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || updating_existing || loading"
-                @click="rotate_bsa_image(1)"
+                @click="check_image_size(1)"
                 small
                 >
                 <img src="@/assets/images/rotate_right.png"
@@ -730,6 +730,7 @@ export default defineComponent({
     const barcode_mapping = computed(() => config.atlasxbrowser.barcode_mapping);
     const original_barcode_filename = ref<string|null>('');
     const metadata_confirmed_bool = ref<boolean>(false);
+    let rotate_fail_flag = false;
     let last_rotate_blob: any;
     let new_rotate = 0;
     // Metadata
@@ -1115,24 +1116,28 @@ export default defineComponent({
        * Args: blob type: Blob. The image to be set, in blob form.
        * Returns type: Image. An Image object with the arg set as its source.
        */
-      const imgObj = new window.Image();
-      imgObj.src = URL.createObjectURL(blob);
-      const scalefactor = 0.1;
-      if (imgObj) {
-        imgObj.onload = (ev: any) => {
-          current_image.value = {
-            x: 0,
-            y: 0,
-            draggable: false,
-            scale: { x: scalefactor, y: scalefactor },
-            image: imgObj,
-            src: null,
-            original_src: null,
+      try {
+        const imgObj = new window.Image();
+        imgObj.src = URL.createObjectURL(blob);
+        const scalefactor = 0.1;
+        if (imgObj) {
+          imgObj.onload = (ev: any) => {
+            current_image.value = {
+              x: 0,
+              y: 0,
+              draggable: false,
+              scale: { x: scalefactor, y: scalefactor },
+              image: imgObj,
+              src: null,
+              original_src: null,
+            };
+            onChangeScale('');
           };
-          onChangeScale('');
-        };
+        }
+        return imgObj;
+      } catch (error) {
+        return null;
       }
-      return imgObj;
     }
     async function load_and_begin_image_processing() {
       /**
@@ -1167,7 +1172,7 @@ export default defineComponent({
         bsa_blob.value = img;
         const img_obj = set_current_image(img);
         allFiles.value = await client.value.getFileList(filenameList_pl);
-        bsa_image.value = img_obj.src;
+        bsa_image.value = img_obj!.src;
         if (updating_existing.value) {
           const postB_figure_filename = `${root_spatial.value}/${run_id.value}/spatial/figure/postB.tif`;
           const pl_postB = { params: { rotation: 0, filename: postB_figure_filename, use_cache: true, bucket_name: bucket_name_spatial.value } };
@@ -1230,6 +1235,21 @@ export default defineComponent({
       }
       return [xOrigin, yOrigin];
     }
+    async function rotate_bsa_image_api(choice: number) {
+      loading.value = true;
+      if (choice === 0) {
+        const rotationAmount = parseInt(degreeRotation.value, 10);
+        orientation.value.rotation += rotationAmount;
+      } else {
+        orientation.value.rotation += 270;
+      }
+      const pl = { params: { filename: full_bsa_filename.value, bucket_name: bucket_name.value, use_cache: 'true', rotation: orientation.value.rotation } };
+      const img = await client.value?.getImageAsJPG(pl);
+      bsa_blob.value = img;
+      set_current_image(img);
+      last_rotate_blob = img;
+      loading.value = false;
+    }
     async function rotate_bsa_image(choice: number) {
       /**
        * Method to rotate BSA image. Image rotation processing done on backend.
@@ -1267,10 +1287,27 @@ export default defineComponent({
         ctxe!.drawImage(imgObj, 0, 0);
         canvas.toBlob((blob: any) => {
           const img_obj = set_current_image(blob);
-          last_rotate_blob = blob;
+          if (img_obj) last_rotate_blob = blob;
+          else {
+            console.error('error');
+            rotate_fail_flag = true;
+            if (choice === 1) {
+              orientation.value.rotation -= 270;
+            } else {
+              orientation.value.rotation -= (degreeRotation.value === '90') ? parseInt(degreeRotation.value, 10) : 45;
+            }
+            rotate_bsa_image_api(choice);
+          }
         });
       };
       loading.value = false;
+    }
+    function check_image_size(choice: number) {
+      if (!rotate_fail_flag) {
+        rotate_bsa_image(choice);
+      } else {
+        rotate_bsa_image_api(choice);
+      }
     }
     function searchRuns(ev: any) {
       /**
@@ -1621,7 +1658,7 @@ export default defineComponent({
           ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
           canvas.toBlob((blob: any) => {
             const img_obj = set_current_image(blob);
-            bsa_image.value = img_obj.src;
+            bsa_image.value = img_obj!.src;
             cropLoading.value = false;
           });
         };
@@ -2132,6 +2169,7 @@ export default defineComponent({
       original_barcode_filename,
       pageRefresh,
       activateCrop,
+      check_image_size,
     };
   },
 });
