@@ -1179,7 +1179,7 @@ export default defineComponent({
         bsa_blob.value = img;
         const img_obj = set_current_image(img);
         allFiles.value = await client.value.getFileList(filenameList_pl);
-        bsa_image.value = img_obj.src;
+        bsa_image.value = img_obj!.src;
         if (postB_flag.value) {
           const pl_postB = { params: { rotation: 0, filename: full_postb_filename.value, use_cache: true, bucket_name: bucket_name_spatial.value } };
           const pro = load_image_promise_jpg(pl_postB);
