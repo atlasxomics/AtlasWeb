@@ -305,7 +305,7 @@
           </DapiProcessingMenu> -->
           <v-dialog
           persistent
-          :value="prompt_to_use_existing_spatial && !dapi_selected"
+          :value="prompt_to_use_existing_spatial"
           max-width="800px"
           >
           <v-card>
@@ -337,7 +337,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="update_run_function "
+                @click="update_run_function"
                 medium>
                 Update
               </v-btn>
@@ -346,7 +346,7 @@
                 outlined
                 dense
                 color="primary"
-                x-small
+                medium
                 @click="optionUpdate=true;dapi_selected=true; loadImage(); uploadingTixels(fill=false)"
                 >
                 Dapi
@@ -963,7 +963,7 @@ export default defineComponent({
       const resp_pos = await client.value.getCsvFile(pos_payload);
       const scale_payload = { params: { filename: scale_filename, bucket_name: bucket_name_spatial.value, no_aws_yes_server: false } };
       const scale_pos = await client.value.getJsonFile(scale_payload);
-      const dapi_resp = client.value.checkExistence('atx-illumina', `${root}/${run_id.value}/dapi10x.tif`);
+      const dapi_resp = client.value.checkExistence('atx-illumina', `${root_spatial.value}/${run_id.value}/spatial/figure/dapi10x.tif`);
       dapi_resp.then((val: any) => {
         if (val.code === true) {
           dapi_available.value = true;
@@ -1180,16 +1180,16 @@ export default defineComponent({
       let local_bucket_name = bucket_name.value;
       // path to images
       if (dapi_selected.value) {
-        const res = client.value.checkExistence('atx-illumina', `${root}/${run_id.value}/spatial/figure/dapi10x.tif`);
+        const res = client.value.checkExistence('atx-illumina', `${root_spatial.value}/${run_id.value}/spatial/figure/dapi10x.tif`);
         console.log(res);
         await res.then((value) => {
           if (value.code === true) {
             console.log(value.code);
-            filename = `${root}/${run_id.value}/spatial/figure/dapi10x.tif`;
+            filename = `${root_spatial.value}/${run_id.value}/spatial/figure/dapi10x.tif`;
           } else {
             // must create the figure folder dapi image
             console.log('create dapi in figure folder');
-            filename = `${root}/${run_id.value}/spatial/figure/dapi10x.tif`;
+            filename = `${root_spatial.value}/${run_id.value}/spatial/figure/dapi10x.tif`;
           }
         });
       } else if (updating_existing.value) {
