@@ -1078,24 +1078,28 @@ export default defineComponent({
        * Args: blob type: Blob. The image to be set, in blob form.
        * Returns type: Image. An Image object with the arg set as its source.
        */
-      const imgObj = new window.Image();
-      imgObj.src = URL.createObjectURL(blob);
-      const scalefactor = 0.1;
-      if (imgObj) {
-        imgObj.onload = (ev: any) => {
-          current_image.value = {
-            x: 0,
-            y: 0,
-            draggable: false,
-            scale: { x: scalefactor, y: scalefactor },
-            image: imgObj,
-            src: null,
-            original_src: null,
+      try {
+        const imgObj = new window.Image();
+        imgObj.src = URL.createObjectURL(blob);
+        const scalefactor = 0.1;
+        if (imgObj) {
+          imgObj.onload = (ev: any) => {
+            current_image.value = {
+              x: 0,
+              y: 0,
+              draggable: false,
+              scale: { x: scalefactor, y: scalefactor },
+              image: imgObj,
+              src: null,
+              original_src: null,
+            };
+            onChangeScale('');
           };
-          onChangeScale('');
-        };
+        }
+        return imgObj;
+      } catch (error) {
+        return null;
       }
-      return imgObj;
     }
     async function load_and_begin_image_processing() {
       /**
@@ -1126,7 +1130,7 @@ export default defineComponent({
         bsa_blob.value = img;
         const img_obj = set_current_image(img);
         allFiles.value = await client.value.getFileList(filenameList_pl);
-        bsa_image.value = img_obj.src;
+        bsa_image.value = img_obj!.src;
         if (updating_existing.value) {
           const postB_figure_filename = `${run_id.value}/spatial/figure/postB.tif`;
           const pl_postB = { params: { rotation: 0, filename: postB_figure_filename } };
@@ -1618,7 +1622,7 @@ export default defineComponent({
           ctxe!.drawImage(imgObj, coords[0], coords[1], coords[2] - coords[0], coords[3] - coords[1], 0, 0, coords[2] - coords[0], coords[3] - coords[1]);
           canvas.toBlob((blob: any) => {
             const img_obj = set_current_image(blob);
-            bsa_image.value = img_obj.src;
+            bsa_image.value = img_obj!.src;
             cropLoading.value = false;
           });
         };
