@@ -80,7 +80,7 @@
                 <v-btn
                 color="blue"
                 :disabled="!current_image || isCropMode || grid || updating_existing || loading"
-                @click="rotate_bsa_image(0)"
+                @click="check_image_size(0)"
                 small
                 >
                 <img src="/static/img/rotate_left.png"
@@ -91,7 +91,7 @@
                 color="blue"
                 class="spaced_btn"
                 :disabled="!current_image || isCropMode || grid || degreeRotation == '45' || updating_existing || loading"
-                @click="rotate_bsa_image(1)"
+                @click="check_image_size(1)"
                 small
                 >
                 <img src="/static/img/rotate_right.png"
@@ -706,6 +706,7 @@ export default defineComponent({
     const postB_flag = ref<boolean>(false);
     let last_rotate_blob: any;
     let new_rotate = 0;
+    let rotate_fail_flag = false;
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -1193,6 +1194,21 @@ export default defineComponent({
       }
       return [xOrigin, yOrigin];
     }
+    async function rotate_bsa_image_api(choice: number) {
+      loading.value = true;
+      if (choice === 0) {
+        const rotationAmount = parseInt(degreeRotation.value, 10);
+        orientation.value.rotation += rotationAmount;
+      } else {
+        orientation.value.rotation += 270;
+      }
+      const pl = { params: { filename: `/ldata/spatials/${run_id.value}/${full_bsa_filename.value}`, rotation: orientation.value.rotation } };
+      const img = await client.value?.getImageAsJPG(pl);
+      bsa_blob.value = img;
+      set_current_image(img);
+      last_rotate_blob = img;
+      loading.value = false;
+    }
     async function rotate_bsa_image(choice: number) {
       /**
        * Method to rotate BSA image. Image rotation processing done on backend.
@@ -1234,6 +1250,13 @@ export default defineComponent({
         });
       };
       loading.value = false;
+    }
+    function check_image_size(choice: number) {
+      if (!rotate_fail_flag) {
+        rotate_bsa_image(choice);
+      } else {
+        rotate_bsa_image_api(choice);
+      }
     }
     function searchRuns(ev: any) {
       /**
@@ -1713,7 +1736,7 @@ export default defineComponent({
           barcode_path: `${root_barcode.value}/${metadata.value.barcode_filename}`,
           root_dir: root.value,
           barcode_dir: root_barcode,
-          bsa_path: `/ldata/${run_id.value}/${full_bsa_filename.value}`,
+          bsa_path: `/ldata/spatials/${run_id.value}/${full_bsa_filename.value}`,
           updating_existing: updating_existing.value,
           postB_flag,
         };
@@ -1750,6 +1773,7 @@ export default defineComponent({
         two.value = 0;
         three.value = 0;
         spatial.value = true;
+        rotate_fail_flag = false
       } catch (error) {
         console.log(error);
         loading.value = false;
@@ -2083,6 +2107,7 @@ export default defineComponent({
       pageRefresh,
       last_rotate_blob,
       activateCrop,
+      check_image_size,
     };
   },
 });
