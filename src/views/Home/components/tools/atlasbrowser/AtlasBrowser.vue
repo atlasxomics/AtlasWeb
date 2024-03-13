@@ -1832,6 +1832,7 @@ export default defineComponent({
         two.value = 0;
         three.value = 0;
         spatial.value = true;
+        rotate_fail_flag = false;
       } catch (error) {
         console.log(error);
         loading.value = false;
