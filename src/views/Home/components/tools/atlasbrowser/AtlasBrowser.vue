@@ -1246,7 +1246,17 @@ export default defineComponent({
         ctxe!.drawImage(imgObj, 0, 0);
         canvas.toBlob((blob: any) => {
           const img_obj = set_current_image(blob);
-          last_rotate_blob = blob;
+          if (img_obj) last_rotate_blob = blob;
+          else {
+            console.error('error');
+            rotate_fail_flag = true;
+            if (choice === 1) {
+              orientation.value.rotation -= 270;
+            } else {
+              orientation.value.rotation -= (degreeRotation.value === '90') ? parseInt(degreeRotation.value, 10) : 45;
+            }
+            rotate_bsa_image_api(choice);
+          }
         });
       };
       loading.value = false;
