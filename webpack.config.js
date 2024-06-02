@@ -4,7 +4,8 @@ module.exports = {
     symlinks: false,
     alias: {
       'vue$': path.resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm.js'),
-      '^vuetify': path.resolve(__dirname, 'node_modules/vuetify')
+      '^vuetify': path.resolve(__dirname, 'node_modules/vuetify'),
+      '@components': path.resolve(__dirname, 'src/components/')
     }
   }
 }

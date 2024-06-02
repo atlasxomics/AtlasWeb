@@ -11,12 +11,15 @@ export class ROI {
 
   channels: number | any;
 
+  radius: number;
+
   constructor(coord: number[], scale: number, num_channels: number|null) {
     this.scalefactor = scale;
     this.coordinates = {}; // LeftTop, LeftBottom, RightTop, RightBottom
     this.initializeROI(coord[0], coord[1]);
     this.channels = num_channels;
     this.polygons = [];
+    this.radius = 0;
   }
 
   static center(tL: number[], tR: number[], bR: number[], bL: number[]): number[] {
@@ -124,10 +127,15 @@ export class ROI {
 
   getMask(length: any[]): any[] {
     return this.polygons.map((v: any) => {
-      const position = v.posit;
-      const y = v.centery / this.scalefactor;
-      const x = v.centerx / this.scalefactor;
-      const value = v.on_tissue;
+      const position = v[9];
+      const poly = document.getElementById(`${v[4]}_tixel`);
+      const points = poly!.getAttribute('points');
+      const tixel_value = poly!.getAttribute('fill');
+      const split_points = points!.split(',');
+      const center = ROI.center([Number(split_points[0]), Number(split_points[1])], [Number(split_points[2]), Number(split_points[3])], [Number(split_points[4]), Number(split_points[5])], [Number(split_points[6]), Number(split_points[7])]);
+      const x = center[0] / this.scalefactor;
+      const y = center[1] / this.scalefactor;
+      const value = tixel_value === 'red' ? 1 : 0;
       return { position, value, coordinates: { y, x } };
     });
   }
@@ -144,14 +152,10 @@ export class ROI {
 
   autoMask(pixels: any, threshold: number): any[] {
     const [height, width] = pixels.shape;
-    let count = 0;
     lodash.each(this.polygons, (v, i) => {
-      if (count === 0) {
-        count += 1;
-      }
-      const y = Math.round(v.centery / this.scalefactor);
-      const x = Math.round(v.centerx / this.scalefactor);
-      const r = Math.round(v.radius / this.scalefactor);
+      const r = Math.round(this.radius / this.scalefactor);
+      const x = Math.round(v[6] / this.scalefactor);
+      const y = Math.round(v[7] / this.scalefactor);
       let pixval = 0.0;
       for (let row = x - r; row < x + r; row += 1) {
         for (let col = y - r; col < y + r; col += 1) {
@@ -160,8 +164,8 @@ export class ROI {
       }
       pixval /= (2 * r) ** 2;
       const on_tissue_local = pixval < threshold;
-      this.polygons[i].fill = on_tissue_local ? 'red' : null;
-      this.polygons[i].on_tissue = on_tissue_local;
+      const poly = document.getElementById(`${v[4]}_tixel`);
+      poly!.setAttribute('fill', on_tissue_local ? 'red' : 'none');
     });
     return this.polygons;
   }
@@ -177,20 +181,19 @@ export class ROI {
     return lineConfig;
   }
 
-  setPolygonsInCircle(x: number, y: number, radius: number, key_value_mapping: Record<string, any>) {
-    // const rand = Math.floor(Math.random() * 2500);
-    // this.setPolygonState(rand, key_value_mapping);
+  setPolygonsInCircle(x: number, y: number, radius: number, brush_on: boolean) {
     lodash.each(this.polygons, (v: any, i: number) => {
-      const tf = ((v.centerx - x)) ** 2 + ((v.centery - y) ** 2) < (radius ** 2);
+      const poly = document.getElementById(`${v[4]}_tixel`);
+      const points = poly!.getAttribute('points');
+      const split_points = points!.split(',');
+      const center = ROI.center([Number(split_points[0]), Number(split_points[1])], [Number(split_points[2]), Number(split_points[3])], [Number(split_points[4]), Number(split_points[5])], [Number(split_points[6]), Number(split_points[7])]);
+      const centerx = center[0];
+      const centery = center[1];
+      const tf = ((centerx - x)) ** 2 + ((centery - y) ** 2) < (radius ** 2);
       if (tf) {
-        this.setPolygonState(i, key_value_mapping);
+        this.polygons[i][8] = brush_on;
+        poly!.setAttribute('fill', brush_on ? 'red' : 'none');
       }
-    });
-  }
-
-  setPolygonState(tixel_inx: number, key_value_mapping: Record<string, any>) {
-    Object.keys(key_value_mapping).forEach((key: string) => {
-      this.polygons[tixel_inx][key] = key_value_mapping[key];
     });
   }
 
@@ -233,25 +236,12 @@ export class ROI {
     }
   }
 
-  show_tixels() {
-    /**
-     * General method for displaying tixels.
-     * Will generate the grid from scratch if
-     * polygons are not available or otherwise will
-     * just toggle the visibility of polygons.
-     */
-    if (this.polygons.length === 0) {
-      this.loadTixels();
-    } else {
-      this.toggle_tixel_visibility();
-    }
-  }
-
   setScaleFactor(scale: number) {
     const prevScalefactor = this.scalefactor;
     this.scalefactor = scale;
     // adjust positions
     const ratio = this.scalefactor / prevScalefactor;
+    this.radius *= ratio;
     const newCoords: any = {};
     lodash.forIn(this.coordinates, (v: Point, k: string) => {
       newCoords[k] = { x: v.x * ratio, y: v.y * ratio };
@@ -260,16 +250,11 @@ export class ROI {
     const newPolygons: any[] = [];
     lodash.each(this.polygons, (v: any, idx) => {
       const elm = v;
-      elm.scaleX = v.scaleX * ratio;
-      elm.scaleY = v.scaleY * ratio;
-      elm.radius = v.radius * ratio;
-      elm.centerx = v.centerx * ratio;
-      elm.centery = v.centery * ratio;
-      elm.strokeWidth = Math.max(1 - this.scalefactor, 0.1) * 0.8;
-      // elm.strokeWidth = this.scalefactor < 0.11 ? 0 : Math.min(ratio, 1.0);
+      elm[5] = v[5] * ratio;
+      const poly = document.getElementById(`${elm[4]}_tixel`);
+      poly!.setAttribute('points', `${elm[0][0] * elm[5]},${elm[0][1] * elm[5]},${elm[1][0] * elm[5]},${elm[1][1] * elm[5]},${elm[2][0] * elm[5]},${elm[2][1] * elm[5]},${elm[3][0] * elm[5]},${elm[3][1] * elm[5]}`);
       newPolygons.push(elm);
     });
-    // this.generatePolygons();
     this.polygons = newPolygons;
   }
 
@@ -308,11 +293,13 @@ export class ROI {
   }
 
   loadTixels(tixel_array: any[] = []) {
+    /* eslint-disable prefer-destructuring */
     const [p1, p2, p3, p4] = this.getCoordinates();
     const ratioNum = (this.channels * 2) - 1;
     const leftS = ROI.ratio50l(p1.x, p1.y, p4.x, p4.y, ratioNum);
     const topS = ROI.ratio50l(p1.x, p1.y, p2.x, p2.y, ratioNum);
     const slope = [(leftS[1] - p1.y), (leftS[0] - p1.x)];
+    if (this.radius === 0) this.radius = slope[0];
     const slopeT = [(topS[1] - p1.y), (topS[0] - p1.x)];
     const slopeO = [slope[0] * 2, slope[1] * 2];
     const slopeTO = [slopeT[0] * 2, slopeT[1] * 2];
@@ -356,52 +343,18 @@ export class ROI {
         const botRC = [bR[0], bR[1]];
         const ID = (i * this.channels) + j;
         let current_fill = '0';
-        // dummy variables so current_fill can be reassigned if we are including filled tixels
         const value = tixel_array[(i * this.channels) + j];
         if (value) {
           const { 1: fill } = value;
           current_fill = fill;
         }
-        const polyConfig: Polygon = {
-          sceneFunc: (context: any, shape: any) => {
-            context.beginPath();
-            context.moveTo(topLC[0], topLC[1]);
-            context.lineTo(topRC[0], topRC[1]);
-            context.lineTo(botRC[0], botRC[1]);
-            context.lineTo(botLC[0], botLC[1]);
-            context.closePath();
-
-            // special Konva.js method
-            context.fillStrokeShape(shape);
-          },
-          id: ID.toString(),
-          fill: (current_fill === '1') ? 'red' : null,
-          on_tissue: (current_fill === '1'),
-          visible: true,
-          centerx: center[0],
-          centery: center[1],
-          radius: slope[0],
-          opacity: 1,
-          stroke: 'black',
-          strokeWidth: 0.5,
-          listening: true,
-          posit: [j, i],
-          scaleX: 1.0,
-          scaleY: 1.0,
-          raw_fragments: null,
-          log_fragments: null,
-        };
-        this.polygons.push(polyConfig);
+        // points, scalefactor, center, on_off
+        this.polygons.push([topLC, topRC, botRC, botLC, ID, 1, center[0], center[1], (current_fill === '1') ? 'red' : 'none', [j, i]]);
         top[0] += slopeO[1];
         top[1] += slopeO[0];
       }
       prev[0] += slopeTO[1];
       prev[1] += slopeTO[0];
     }
-  }
-
-  generatePolygons() {
-    this.loadTixels();
-    return this.polygons;
   }
 }
