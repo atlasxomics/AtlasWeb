@@ -1025,10 +1025,7 @@ export default defineComponent({
         roi.value.loadTixels();
       }
       if (check) {
-        roi.value.polygons.forEach((array: any) => {
-          const poly = document.getElementById(`${array[4]}_tixel`);
-          poly!.setAttribute('points', `${array[0][0]},${array[0][1]},${array[1][0]},${array[1][1]},${array[2][0]},${array[2][1]},${array[3][0]},${array[3][1]}`);
-        });
+        roi.value.setScaleFactor(scaleFactor.value);
       } else {
         const svg = document.getElementById('grid');
         const svgNS = 'http://www.w3.org/2000/svg';
