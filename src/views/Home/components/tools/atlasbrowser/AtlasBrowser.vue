@@ -153,7 +153,7 @@
                 color = "primary"
                 x-small
                 @click="show_grid"
-                :disabled="grid_visible || !grid">
+                :disabled="!roi_active || !drag_roi">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -162,7 +162,7 @@
                 color = "primary"
                 x-small
                 @click="hide_grid()"
-                :disabled="!grid_visible">
+                :disabled="!roi_active || drag_roi">
                   Hide Grid
                 </v-btn>
               </v-list>
@@ -331,7 +331,7 @@
                 outlined
                 dense
                 color="primary"
-                @click="update_run_function "
+                @click="update_run_function"
                 medium>
                 Update
               </v-btn>
@@ -443,8 +443,13 @@
                   </v-progress-circular>
                 </div>
                 </template>
+                <svg v-show="who_shows == 'svg' || updating_existing" :width="konvaConfig.width" :height="konvaConfig.height" @mousemove="handleMouseMoveStage" @mousedown="handleMouseDownBrush" @mouseup="handleMouseUpBrush">
+                    <image v-if="current_image" :href="current_image.image.src" :width="konvaConfig.width" :height="konvaConfig.height"/>
+                    <svg id="grid"></svg>
+                    <circle v-if="isBrushMode || isEraseMode" :r="brushConfig.radius" :cx="brushConfig.x" :cy="brushConfig.y" stroke-width="1" stroke="red" fill="none"/>
+                </svg>
                 <v-stage
-                  v-if="!checkSpatial && !welcome_screen"
+                  v-show="!checkSpatial && !welcome_screen && who_shows == 'stage'"
                   ref="konvaStage"
                   class="mainStage"
                   :config="konvaConfig"
@@ -453,16 +458,15 @@
                     v-if="current_image"
                     ref="imageLayer"
                     id="imageLayer"
-                    @click="imageClick"
                     >
                     <v-image
                       ref="image"
                       :config="current_image"
                     />
-                  </v-layer>
+                </v-layer>
                   <!-- ROI red box layer -->
-                  <v-layer
-                    v-if="grid"
+                    <v-layer
+                    v-if="drag_roi && !tixels_filled"
                     ref="roiLayer"
                     id="roiLayer"
                     @mouseup="handleMouseUp">
@@ -486,53 +490,33 @@
                           @dragmove="handleDragCenterMove"
                           :config="roi.getCenterAnchor()"/>
                     </template>
-                  </v-layer>
-                  <v-layer>
-                  <v-group v-for="index in 100" :key="index">
-                    <v-shape v-for="p in roi.get_polygon_subset(index - 1, 100)"
-                    :config="p"
-                    v-bind:key="p.id"
-                    @transformend="roi.setScaleFactor()"
-                    @mousedown="handleMouseDown"
-                    >
-                    </v-shape>
-                  </v-group>
-                  </v-layer>
+                </v-layer>
                   <v-layer
-                    >
-                      <v-circle
-                        v-if="isBrushMode || isEraseMode"
-                        :config="brushConfig"
-                        @mousedown="handleMouseDownBrush"
-                        @mouseup="handleMouseUpBrush"
-                      />
-                    </v-layer>
-                    <v-layer
-                      v-if="isCropMode && !grid && !cropFlag"
-                      ref="cropLayer"
-                      id="cropLayer"
-                      @mouseup="handleMouseUp">
-                      <template v-if="current_image && !loading">
-                        <!-- config of the rectangle, being the cropping square -->
-                        <v-rect
-                          :config="crop.generateRect()"/>
-                        <template v-if="!isBrushMode">
-                          <v-circle
-                            v-for="c in crop.getAnchors()"
-                            v-bind:key="c.id"
-                            @dragstart="handleDragStart_Crop"
-                            @dragend="handleDragEnd_Crop"
-                            @dragmove="handleDragMove_Crop"
-                            :config="c"/>
-                        </template>
-                        <v-circle v-if="!isBrushMode"
-                            v-bind:key="crop.getCenterAnchor().id"
-                            @dragmove="handleDragCenterMove_Crop"
-                            :config="crop.getCenterAnchor()"/>
+                    v-if="isCropMode && !grid && !cropFlag"
+                    ref="cropLayer"
+                    id="cropLayer"
+                    @mouseup="handleMouseUp">
+                    <template v-if="current_image && !loading">
+                      <!-- config of the rectangle, being the cropping square -->
+                      <v-rect
+                        :config="crop.generateRect()"/>
+                      <template v-if="!isBrushMode">
+                        <v-circle
+                          v-for="c in crop.getAnchors()"
+                          v-bind:key="c.id"
+                          @dragstart="handleDragStart_Crop"
+                          @dragend="handleDragEnd_Crop"
+                          @dragmove="handleDragMove_Crop"
+                          :config="c"/>
                       </template>
-                    </v-layer>
-
+                      <v-circle v-if="!isBrushMode"
+                          v-bind:key="crop.getCenterAnchor().id"
+                          @dragmove="handleDragCenterMove_Crop"
+                          :config="crop.getCenterAnchor()"/>
+                    </template>
+                  </v-layer>
                 </v-stage>
+
               </v-card>
             </v-row>
           </v-container>
@@ -653,7 +637,7 @@ export default defineComponent({
     const roi = ref<ROI>(new ROI([0, 0], 0.15, null));
     const grid_visible = computed(() => {
       if (roi.value.polygons.length === 0) return false;
-      return roi.value.polygons[0].visible;
+      return true;
     });
     const roi_active = ref<boolean>(false);
     const active_roi_available = ref<boolean>(false);
@@ -733,6 +717,10 @@ export default defineComponent({
     let rotate_fail_flag = false;
     let last_rotate_blob: any;
     let new_rotate = 0;
+    const drag_roi = ref<boolean>(false);
+    const svg_spatial_wh = ref<number[]>([0, 0]);
+    const who_shows = ref<string>('stage');
+    const previous_scale = ref(0);
     // Metadata
     const metadata = ref<Metadata>({
       points: [],
@@ -835,12 +823,6 @@ export default defineComponent({
     function pageRefresh() {
       window.location.reload();
     }
-    function imageClick(ev: any) {
-      // console.log(scaleFactor.value);
-      // console.log('y: '.concat((ev.evt.layerY / scaleFactor.value).toString()));
-      // console.log(ev.evt.layerX / scaleFactor.value);
-      // console.log(ev);
-    }
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -850,18 +832,33 @@ export default defineComponent({
       if (!client.value) return;
       taskStatus.value = await client.value.getTaskStatus(task_id);
     };
+    async function fitStageToParent() {
+      const parent = document.querySelector('#stageParentDualAtac');
+      if (!parent) return;
+      const parentWidth = (parent as any).offsetWidth;
+      const parentHeight = (parent as any).offsetHeight;
+      konvaConfig.value.width = parentWidth;
+      konvaConfig.value.height = parentHeight;
+    }
+    async function onResize() {
+      await fitStageToParent();
+    }
+    function previousScale(ev: any) {
+      previous_scale.value = ev;
+    }
     function onChangeScale(ev: any) {
       /**
        * Method used to update scale factor when slider is changed.
        */
       const v = scaleFactor.value;
       current_image.value.scale = { x: v, y: v };
-      konvaConfig.value.width = v * current_image.value.image.width;
-      konvaConfig.value.height = v * current_image.value.image.height;
+      const new_w = v * current_image.value.image.width;
+      const new_h = v * current_image.value.image.height;
+      konvaConfig.value = { width: new_w, height: new_h };
       stageWidth.value = konvaConfig.value.width;
       stageHeight.value = konvaConfig.value.height;
       roi.value.setScaleFactor(v);
-      crop.value.setScaleFactor(v);
+      if (roi.value.polygons.length === 0) crop.value.setScaleFactor(v);
     }
     function map_barcode_filename_config(from_variable: string) {
       /**
@@ -1015,6 +1012,35 @@ export default defineComponent({
       barcodes_in_list.value = bc_file;
       return true;
     }
+    function show_grid() {
+      /**
+       * Method to show the grid.
+       */
+      grid.value = true;
+      drag_roi.value = false;
+      who_shows.value = 'svg';
+      const check = document.getElementById('1_tixel');
+      if (tixels_filled.value) return;
+      if (roi.value.polygons.length === 0) {
+        roi.value.loadTixels();
+      }
+      if (check) {
+        roi.value.setScaleFactor(scaleFactor.value);
+      } else {
+        const svg = document.getElementById('grid');
+        const svgNS = 'http://www.w3.org/2000/svg';
+        roi.value.polygons.forEach((array: any) => {
+          const poly = document.createElementNS(svgNS, 'polygon');
+          poly.setAttribute('points', `${array[0][0]},${array[0][1]},${array[1][0]},${array[1][1]},${array[2][0]},${array[2][1]},${array[3][0]},${array[3][1]}`);
+          poly.setAttribute('fill', `${array[8]}`);
+          poly.setAttribute('stroke', 'black');
+          poly.setAttribute('stroke-width', '0.5');
+          poly.setAttribute('id', `${array[4]}_tixel`);
+          poly.setAttribute('scale', `${array[5]}`);
+          svg!.appendChild(poly);
+        });
+      }
+    }
     function uploadingTixels(use_existing_pos_file = true) {
       /**
        * Method for converting data in metadata.json into tixel grid of the app.
@@ -1029,13 +1055,7 @@ export default defineComponent({
       if (use_existing_pos_file) {
         roi.value.loadTixels(tissue_position_list_obj.value);
       }
-    }
-    function show_grid() {
-      /**
-       * Method to show the grid.
-       */
-      grid.value = true;
-      roi.value.show_tixels();
+      show_grid();
     }
     async function metadata_confirmed() {
       /**
@@ -1525,14 +1545,9 @@ export default defineComponent({
        * If erasing the value of on_tissue will be set to false and if the count colors are displayed the strokeWidth will be set to 1
        * Otherwise if the brush is not erasing, the attribute on_tissue will be set to true and if count colors are displayed the stroke width will be set to 1.
        */
-      const attributes: Record<string, any> = {};
-      if (show_counts_tixels.value) {
-        attributes.opacity = isEraseMode.value ? 0.5 : 1;
-      } else {
-        attributes.fill = isEraseMode.value ? null : 'red';
-      }
-      attributes.on_tissue = !isEraseMode.value;
-      roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, attributes);
+      let flag = true;
+      if (isEraseMode.value) flag = false;
+      roi.value.setPolygonsInCircle(brushConfig.value.x, brushConfig.value.y, brushConfig.value.radius, flag);
     }
     function handleMouseDown(ev: any) {
       /**
@@ -1543,27 +1558,9 @@ export default defineComponent({
       if (isBrushMode.value) {
         isMouseDown.value = true;
         brush_on_points();
-        return;
       }
-      const { id } = ev.target.attrs;
-      const idx = lodash.findIndex(roi.value.polygons, { id });
-      const kv_map: Record<string, any> = {};
-      const current_on_tissue = roi.value.polygons[idx].on_tissue;
-      kv_map.on_tissue = !current_on_tissue;
-      if (show_counts_tixels.value) {
-        if (current_on_tissue) {
-          kv_map.opacity = 0.5;
-        } else {
-          kv_map.opacity = 1;
-        }
-      } else if (current_on_tissue) {
-        kv_map.fill = null;
-      } else {
-        kv_map.fill = 'red';
-      }
-      roi.value.setPolygonState(idx, kv_map);
-      isMouseDown.value = true;
     }
+
     function handleMouseUp(ev: any) {
       isMouseDown.value = false;
     }
@@ -1574,10 +1571,7 @@ export default defineComponent({
        * If the brush is being used and mouse is being held down the brush_on_points method is called.
        */
       if (isBrushMode.value || isEraseMode.value) {
-        const pos = (ctx as any).refs.konvaStage.getNode().getPointerPosition();
-        const { x, y } = pos;
-        brushConfig.value.x = x;
-        brushConfig.value.y = y;
+        brushConfig.value = { x: ev.offsetX, y: ev.offsetY, radius: brushConfig.value.radius };
         if (brushDown.value) {
           brush_on_points();
         }
@@ -1594,8 +1588,9 @@ export default defineComponent({
       isBrushMode.value = tf;
     }
     function hide_grid() {
-      roi.value.toggle_tixel_visibility();
       // grid.value = false;
+      drag_roi.value = true;
+      who_shows.value = 'stage';
     }
     async function change_image(img: string) {
       /**
@@ -1672,6 +1667,7 @@ export default defineComponent({
       grid.value = true;
       active_roi_available.value = false;
       roi_active.value = true;
+      drag_roi.value = true;
     }
 
     function threshold_image(img_src: any) {
@@ -1866,6 +1862,7 @@ export default defineComponent({
       prompt_to_use_existing_spatial.value = false;
       updating_existing.value = true;
       await load_and_begin_image_processing();
+      who_shows.value = 'svg';
     }
     function autoFill(ev: any) {
       /**
@@ -1874,10 +1871,7 @@ export default defineComponent({
        * The `autoMask` method is called to fill the tixels.
        * This method then sets the `tixels_filled` boolean to true, which is used to determine if the image processing is complete.
        */
-      grid.value = true;
-      if (roi.value.polygons.length === 0) {
-        roi.value.generatePolygons();
-      }
+      who_shows.value = 'svg';
       roi.value.autoMask(atpixels.value, threshold.value);
       tixels_filled.value = true;
     }
@@ -1960,7 +1954,7 @@ export default defineComponent({
       }
     }
     watch(brushSize, (v) => {
-      brushConfig.value.radius = v;
+      brushConfig.value = { x: brushConfig.value.x, y: brushConfig.value.y, radius: v };
     });
     watch(isEraseMode, (v) => {
       if (v) {
@@ -2130,7 +2124,6 @@ export default defineComponent({
       checkSpatial,
       showSpatialFolder,
       availableFiles,
-      imageClick,
       root,
       bucket_name,
       bsa_image,
@@ -2171,6 +2164,12 @@ export default defineComponent({
       pageRefresh,
       activateCrop,
       check_image_size,
+      svg_spatial_wh,
+      drag_roi,
+      who_shows,
+      previousScale,
+      previous_scale,
+      onResize,
     };
   },
 });
