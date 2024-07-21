@@ -152,10 +152,14 @@ export class ROI {
 
   autoMask(pixels: any, threshold: number): any[] {
     const [height, width] = pixels.shape;
+    const r = Math.round(this.radius / this.scalefactor);
     lodash.each(this.polygons, (v, i) => {
-      const r = Math.round(this.radius / this.scalefactor);
-      const x = Math.round(v[6] / this.scalefactor);
-      const y = Math.round(v[7] / this.scalefactor);
+      const poly = document.getElementById(`${v[4]}_tixel`);
+      const points = poly!.getAttribute('points');
+      const split_points = points!.split(',');
+      const center = ROI.center([Number(split_points[0]), Number(split_points[1])], [Number(split_points[2]), Number(split_points[3])], [Number(split_points[4]), Number(split_points[5])], [Number(split_points[6]), Number(split_points[7])]);
+      const x = Math.round(center[0] / this.scalefactor);
+      const y = Math.round(center[1] / this.scalefactor);
       let pixval = 0.0;
       for (let row = x - r; row < x + r; row += 1) {
         for (let col = y - r; col < y + r; col += 1) {
@@ -164,7 +168,6 @@ export class ROI {
       }
       pixval /= (2 * r) ** 2;
       const on_tissue_local = pixval < threshold;
-      const poly = document.getElementById(`${v[4]}_tixel`);
       poly!.setAttribute('fill', on_tissue_local ? 'red' : 'none');
     });
     return this.polygons;
