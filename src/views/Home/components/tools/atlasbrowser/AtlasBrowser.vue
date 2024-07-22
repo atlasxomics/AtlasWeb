@@ -497,46 +497,6 @@
                           @dragmove="handleDragCenterMove"
                           :config="roi.getCenterAnchor()"/>
                     </template>
-                  </v-layer>
-                  <v-layer>
-                  <v-group v-for="index in 100" :key="index">
-                    <v-shape v-for="p in roi.get_polygon_subset(index - 1, 100)"
-                    :config="p"
-                    v-bind:key="p.id"
-                    @transformend="roi.setScaleFactor()"
-                    @mousedown="handleMouseDown"
-                    >
-                    </v-shape>
-                  </v-group>
-                  </v-layer>
-                  <v-layer
-                    >
-                      <v-circle
-                        v-if="isBrushMode || isEraseMode"
-                        :config="brushConfig"
-                        @mousedown="handleMouseDownBrush"
-                        @mouseup="handleMouseUpBrush"
-                      />
-                  </v-layer>
-                  <v-layer>
-                  <v-group v-for="index in 100" :key="index">
-                    <v-shape v-for="p in roi.get_polygon_subset(index - 1, 100)"
-                    :config="p"
-                    v-bind:key="p.id"
-                    @transformend="roi.setScaleFactor()"
-                    @mousedown="handleMouseDown"
-                    >
-                    </v-shape>
-                  </v-group>
-                  </v-layer>
-                  <v-layer
-                    >
-                      <v-circle
-                        v-if="isBrushMode || isEraseMode"
-                        :config="brushConfig"
-                        @mousedown="handleMouseDownBrush"
-                        @mouseup="handleMouseUpBrush"
-                      />
                     </v-layer>
                   <v-layer
                     v-if="isCropMode && !grid && !cropFlag"
