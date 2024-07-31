@@ -1,6 +1,6 @@
 <template>
-    <v-simple-table>
-      <caption>Important Markers</caption>
+    <v-simple-table :loading="loading">
+      <caption>Select Cell Marker {{ cap_markers }}s</caption>
       <template v-for="(list, index) in formArr">
         <tr :key="index">
           <td v-for="value in list" :key="value"><v-btn text medium dense @click="sendGene(value)">{{value}}</v-btn></td>
@@ -28,11 +28,13 @@ const clientReady = new Promise((resolve) => {
 
 export default defineComponent({
   name: 'ListGenes',
-  props: ['gene', 'loading'],
+  props: ['gene', 'loading', 'markers'],
   setup(props, ctx) {
     const gene = computed(() => props.gene);
     const loading = computed(() => props.loading);
+    const markers = computed(() => props.markers);
     const formArr = ref<any>();
+    const cap_markers = ref<string>('Gene');
 
     async function sendGene(ev: any) {
       ctx.emit('sentGene', ev.trim());
@@ -55,11 +57,15 @@ export default defineComponent({
     watch(gene, (v: any) => {
       format();
     });
+    watch(markers, (v: any) => {
+      cap_markers.value = v[0].toUpperCase() + v.slice(1);
+      console.log(cap_markers.value);
+    });
     onMounted(async () => {
       await clientReady;
       format();
     });
-    return { formArr, sendGene };
+    return { cap_markers, formArr, sendGene };
   },
 });
 

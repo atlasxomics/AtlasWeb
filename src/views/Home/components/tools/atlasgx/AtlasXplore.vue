@@ -630,7 +630,7 @@
                 <table-component :loading="geneMotifLoad" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
               </template>
               <template v-else>
-                <list-genes :loading="geneMotifLoad" :gene="list_update" @sentGene="sendGene"/>
+                <list-genes :loading="geneMotifLoad" :gene="list_update" @sentGene="sendGene" :markers="geneMotif"/>
               </template>
             </v-card>
             <div id="captureHisto">
