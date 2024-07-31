@@ -254,14 +254,14 @@ export default defineComponent({
     watch(de_select, (v: any) => {
       if (v) {
         selectedGenes.value.forEach((q: string, i: number) => {
-          if (!autoGenes.value.includes(q)) {
+          if (!autoGenes.value.includes(q) && autoGenes.value.length > 0) {
             (ctx as any).refs[q].toggle();
             autoGenes.value.push(q);
           }
         });
       } else {
         selectedGenes.value.forEach((q: string, i: number) => {
-          if (autoGenes.value.includes(q)) {
+          if (autoGenes.value.includes(q) && autoGenes.value.length > 0) {
             (ctx as any).refs[q].toggle();
           }
         });

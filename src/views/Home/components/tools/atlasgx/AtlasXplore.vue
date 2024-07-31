@@ -626,7 +626,12 @@
           </v-col>
           <v-col cols="12" sm="11">
             <v-card class="mt-3" v-show="featureTableFlag" flat>
-              <table-component :loading="geneMotifLoad" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
+              <template v-if="!listFlag">
+                <table-component :loading="geneMotifLoad" :lengthClust="lengthClust" :gene="geneNames" :clusters="topHeaders" :colormap="colorMap" @sentGene="sendGene" @sentCluster="sendCluster"/>
+              </template>
+              <template v-else>
+                <list-genes :loading="geneMotifLoad" :gene="list_update" @sentGene="sendGene"/>
+              </template>
             </v-card>
             <div id="captureHisto">
               <v-card class="mt-3" v-show="spatialCircleData.length > 0 && histoFlag" flat>
@@ -671,6 +676,7 @@ import LoadingPage from './modules/LoadingPage.vue';
 import HistogramGraph from './modules/HistogramGraph.vue';
 import Singleview from './modules/Singleview.vue';
 import NetworkGraph from './modules/NetworkGraph.vue';
+import ListGenes from './modules/ListGenes.vue';
 /* eslint-disable no-unused-expressions */
 
 const clientReady = new Promise((resolve) => {
@@ -715,7 +721,7 @@ interface Metadata {
 
 export default defineComponent({
   name: 'AtlasXplore',
-  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph, Singleview, NetworkGraph },
+  components: { 'table-component': GeneDataTable, 'search-component': GeneAutoComplete, TrackBrowser, AtxAtacViewer, BarChart, LoadingPage, HistogramGraph, Singleview, NetworkGraph, ListGenes },
   props: ['query'],
   setup(props, ctx) {
     const router = ctx.root.$router;
@@ -745,6 +751,7 @@ export default defineComponent({
     const scaleUMAP = ref<number>(0.75);
     const isClusterView = ref(true);
     const isSummation = ref(true);
+    const listFlag = ref(false);
     const isHighlighted = ref(false);
     const highestCount = ref<number>(0);
     const lowestCount = ref<number>(10000);
@@ -831,6 +838,8 @@ export default defineComponent({
     const oneTime = ref<boolean>(true);
     const clusters_ann_flag = ref<boolean>(false);
     const clusters_ann_list = ref<string[]>([]);
+    const importantMarkers = ref<any>({ gene: [], motif: [] });
+    const list_update = ref<string[]>([]);
     function pushByQuery(query: any) {
       const newRoute = generateRouteByQuery(currentRoute, query);
       const shouldPush: boolean = router.resolve(newRoute).href !== currentRoute.value.fullPath;
@@ -1218,7 +1227,6 @@ export default defineComponent({
         geneRank.push(tenGenes);
       });
       geneNames.value = geneRank;
-      lengthClust.value = clusterItems.value.length;
     }
     async function updateSpatial() {
       loading.value = true;
@@ -1231,12 +1239,28 @@ export default defineComponent({
     function updateClustTotal(ev: any) {
       totalInClust.value = ev;
       selectedClusters.value = Object.keys(totalInClust.value).map((v: any) => v);
+      lengthClust.value = Object.keys(totalInClust.value).length;
       if (geneMotif.value === 'eRegulon') totalInCellType.value = ev;
       if (Object.keys(topTenIds.value).length > 0) {
         updateSpatial();
       }
     }
     async function updateTen() {
+      const fileList = { params: { filename: `data/${runId.value}/h5/listGenes.csv` } };
+      const listGenes = await client.value?.getCsvFile(fileList);
+      const fileListM = { params: { filename: `data/${runId.value}/h5/listMotifs.csv` } };
+      const listMotif = await client.value?.getCsvFile(fileListM);
+      if (listGenes.length > 0) {
+        listFlag.value = true;
+        importantMarkers.value.gene = listGenes;
+      }
+      if (listMotif.length > 0) {
+        listFlag.value = true;
+        importantMarkers.value.motif = listMotif;
+      }
+      list_update.value = [];
+      list_update.value = importantMarkers.value.gene;
+      console.log(list_update.value);
       const fileName = { params: { filename: `data/${runId.value}/h5/topTen_genes.json` } };
       const topTen_gene_json = await client.value?.getJsonFile(fileName);
       topTenIds.value.gene = topTen_gene_json;
@@ -1501,6 +1525,9 @@ export default defineComponent({
         showFlag.value = [false];
         geneButton.value = [];
         trackBrowserGenes.value = [];
+        list_update.value = [];
+        list_update.value = importantMarkers.value[`${v}`];
+        console.log(list_update.value);
         updateFilename();
         // updateTable();
       }
@@ -1820,6 +1847,9 @@ export default defineComponent({
       clusters_ann_flag,
       clusters_ann_list,
       changeClustersAnn,
+      listFlag,
+      importantMarkers,
+      list_update,
     };
   },
 });

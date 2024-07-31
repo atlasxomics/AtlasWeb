@@ -180,7 +180,7 @@
                 v-model="web_obj_path"
                 label="Path"
                 :loading="loading"
-                readonly
+                hint="s3://atx-cloud-dev/data/<run_id>/"
                 >
                 </v-text-field>
                 <v-card
@@ -440,6 +440,10 @@ export default defineComponent({
       assign_fields(data);
     }
     async function upload_data() {
+      if (web_obj_path.value[web_obj_path.value.length - 1] !== '/') {
+        snackbar.dispatch({ text: 'Web Object Path is not correct, follow the hint below.', options: { color: 'red' } });
+        return;
+      }
       loading.value = true;
       try {
         const data_obj = {

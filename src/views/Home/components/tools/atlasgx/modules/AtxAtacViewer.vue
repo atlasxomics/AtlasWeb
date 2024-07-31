@@ -545,8 +545,20 @@ export default defineComponent({
       lodash.each(heatMap.value, (value: any, key: any) => {
         colors.push(value);
       });
-      const radiusSize = (spatialData.value.spatial.length < 4000) ? 22 : 44;
-      const radiusSizeUmap = (spatialData.value.spatial.length < 4000) ? 30 : 58;
+      let radiusSize = 0;
+      let radiusSizeUmap = 0;
+      if (spatialData.value.spatial.length < 4000) {
+        radiusSize = 22;
+        radiusSizeUmap = 30;
+      }
+      if (spatialData.value.spatial.length > 4000 && spatialData.value.spatial.length < 15000) {
+        radiusSize = 44;
+        radiusSizeUmap = 58;
+      }
+      if (spatialData.value.spatial.length > 15000) {
+        radiusSize = 74;
+        radiusSizeUmap = 90;
+      }
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;
       const viewScale = Math.min(stageWidth / (maxX.value - minX.value), stageHeight / (maxY.value - minY.value));
