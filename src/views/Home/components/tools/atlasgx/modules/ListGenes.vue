@@ -1,6 +1,6 @@
 <template>
-    <v-simple-table :loading="loading">
-      <caption>Select Cell Marker {{ cap_markers }}s</caption>
+    <v-simple-table :loading="loading" class="simpleTable">
+      <tr><th :colspan="5">Select Cell Marker {{ cap_markers }}s</th></tr>
       <template v-for="(list, index) in formArr">
         <tr :key="index">
           <td v-for="value in list" :key="value"><v-btn text medium dense @click="sendGene(value)">{{value}}</v-btn></td>
@@ -72,17 +72,20 @@ export default defineComponent({
 </script>
 
 <style scoped>
-  .dataTable {
+  .simpleTable {
     background-color: #EAEAEA !important;
+    text-align: center;
   }
-  .dataTable >>> th {
+  .simpleTable td{
+    border-bottom: thin solid rgba(0, 0, 0, .12);
+  }
+  .simpleTable >>> th {
     padding: 4px !important;
     border-bottom: 1px solid black;
-    text-align: left !important;
     font-weight: bolder !important;
   }
 
-  .dataTable >>> tr:hover {
+  .simpleTable >>> tr:hover {
     background-color: transparent !important;
   }
 </style>
