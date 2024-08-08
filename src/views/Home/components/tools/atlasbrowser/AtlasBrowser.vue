@@ -146,7 +146,7 @@
                 color = "primary"
                 x-small
                 @click="show_grid"
-                :disabled="grid_visible || !grid">
+                :disabled="!roi_active || !drag_roi">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -155,14 +155,14 @@
                 color = "primary"
                 x-small
                 @click="hide_grid()"
-                :disabled="!grid_visible">
+                :disabled="!roi_active || drag_roi">
                   Hide Grid
                 </v-btn>
               </v-list>
               <v-list dense>
                   <v-subheader style="font-size:14px;font-weight:bold;text-decoration:underline;">Thresholding</v-subheader>
                   C value: {{ c_val }}
-                   <v-slider
+                  <v-slider
                   v-model="c_val"
                   class="slider"
                   step="1"
@@ -171,7 +171,7 @@
                   :disabled="!current_image || (!roi_active && !updating_existing) || spatial"
                   >
                   </v-slider>
-                   Neighborhood: {{ neighbor_size }}
+                    Neighborhood: {{ neighbor_size }}
                   <v-slider
                   :disabled="!current_image || (!roi_active && !updating_existing) || spatial"
                   v-model="neighbor_size"
@@ -438,7 +438,7 @@
               </div>
             </template>
             <v-row>
-              <v-card>
+              <v-card style="overflow-y:auto">
                 <!-- loading circle displayed on screen -->
                 <template v-if="loading && !loadingMessage">
                 <div :style="{ 'position': 'absolute', 'z-index': 999, 'top': '43%', 'left': '47%'}">
@@ -817,7 +817,7 @@ export default defineComponent({
         organ: null,
         orientation: null,
         crop_area: null,
-        barcode_filename: 'bc96v2-24.txt',
+        barcode_filename: null,
         chip_resolution: null,
         tissueBlockExperiment: '',
         tissue_source: '',
