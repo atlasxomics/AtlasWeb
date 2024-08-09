@@ -147,7 +147,7 @@
                 color = "primary"
                 x-small
                 @click="show_grid"
-                :disabled="grid_visible || !grid">
+                :disabled="!roi_active || !drag_roi">
                   Display Grid
                 </v-btn>
                 <v-btn
@@ -156,7 +156,7 @@
                 color = "primary"
                 x-small
                 @click="hide_grid()"
-                :disabled="!grid_visible">
+                :disabled="!roi_active || drag_roi">
                   Hide Grid
                 </v-btn>
               </v-list>
@@ -417,7 +417,7 @@
               </div>
             </template>
             <v-row>
-              <v-card>
+              <v-card style="overflow-y:auto">
                 <!-- loading circle displayed on screen -->
                 <template v-if="loading && !loadingMessage">
                 <div :style="{ 'position': 'absolute', 'z-index': 999, 'top': '43%', 'left': '47%'}">
