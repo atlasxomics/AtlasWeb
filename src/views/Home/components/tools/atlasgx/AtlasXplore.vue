@@ -1148,12 +1148,6 @@ export default defineComponent({
       image.src = `data:image/svg+xml; charset=utf8,${encodeURIComponent(svgURL)}`;
     }
     // Data being passed from TopTen Table to main component
-    function sendGene(ev: any) {
-      if (!selectedGenes.value.includes(ev) && genes.value.length > 0) {
-        geneButton.value = [ev];
-        isClusterView.value = false;
-      }
-    }
     function sendCluster(ev: any) {
       if (ev !== 'Anti') clickedClusterFromChild.value = [ev];
       else tableKey.value *= -1;
@@ -1358,6 +1352,28 @@ export default defineComponent({
         console.log(error);
       }
     }
+    function sendGene(ev: any) {
+      if (genes.value.length > 0) {
+        isClusterView.value = false;
+        childGenes.value = [];
+        trackBrowserGenes.value = [];
+        const def = [];
+        if (!selectedGenes.value.includes(ev)) childGenes.value.push(ev);
+        else return;
+        if (geneMotif.value !== 'eRegulon') {
+          if (!selectedGenes.value.includes(ev)) trackBrowserGenes.value.push(ev);
+          if (geneMotif.value === 'motif') {
+            seqlogo();
+          }
+        }
+        selectedGenes.value.forEach((v: any) => {
+          def.push(v);
+        });
+        def.push(ev);
+        childGenes.value = def;
+        geneButton.value = [ev];
+      }
+    }
     async function runCellType(marker: any) {
       if (marker) {
         loading.value = true;
@@ -1474,11 +1490,6 @@ export default defineComponent({
       created() {
         this.$on('changed', (ev: any[]) => {
           selectedGenes.value = ev;
-        });
-        this.$on('avgind', (ev: any) => {
-          averageInd.value = ev;
-        });
-        this.$on('sentgenes', (ev: any) => {
           isClusterView.value = false;
           childGenes.value = [];
           trackBrowserGenes.value = [];
@@ -1493,6 +1504,9 @@ export default defineComponent({
               seqlogo();
             }
           }
+        });
+        this.$on('avgind', (ev: any) => {
+          averageInd.value = ev;
         });
       },
     }));

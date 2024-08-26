@@ -35,7 +35,7 @@
           :id="data.item.name"
           close
           small
-          :color="autoGenes.includes(data.item.name) ? 'warning' : 'rgb(0, 0, 0, .05)'"
+          color="warning"
           @click.stop="updateTrack(data.item.name)"
           @click:close="remove(data.item)"
         >{{ data.item.name }}
@@ -75,36 +75,20 @@
         </template>
         <span>Open/Collapse</span>
         </v-tooltip>
-        <v-btn
-          id="no-background-hover"
-          color="primary"
-          class="mt-n1"
-          medium
-          text
-          @click="showGene"
-          >Show</v-btn>
-        <div class="customCheck">
-          <v-tooltip bottom>
-          <template v-slot:activator="{ on, attrs }">
-            <v-simple-checkbox v-bind="attrs" v-on="on" v-model="de_select" label="" color="secondary" hide-details dense />
-          </template>
-          <span>(De)Select All</span>
-          </v-tooltip>
-        </div>
-          <v-tooltip bottom>
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                v-bind="attrs"
-                v-on="on"
-                class="mt-n1"
-                medium
-                text
-                id='averageIndButton'
-                @click="avgInd = !avgInd">{{(avgInd) ? 'Ind':'Avg'}}
-              </v-btn>
-            </template>
-            <span>Average&lt;-&gt;Individual</span>
-          </v-tooltip>
+        <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+            <v-btn
+            v-bind="attrs"
+            v-on="on"
+            class="mt-n1"
+            medium
+            text
+            id='averageIndButton'
+            @click="avgInd = !avgInd">{{(avgInd) ? 'Ind':'Avg'}}
+            </v-btn>
+        </template>
+        <span>Average&lt;-&gt;Individual</span>
+        </v-tooltip>
       </template>
     </v-autocomplete>
 </template>
@@ -141,7 +125,6 @@ export default defineComponent({
     const showFlag = ref<boolean>(false);
     const autocompleteLoading = ref(false);
     const labelValue = ref<string>('Enter ID');
-    const de_select = ref<boolean>(false);
     const avgInd = ref<boolean>(false);
     const clicked = ref<boolean>(false);
     const paddingValue = ref<number>(32);
@@ -195,10 +178,6 @@ export default defineComponent({
       onGenelistChanged(selectedGenes.value);
       searchInput.value = null;
     }
-    async function showGene(ev: any) {
-      showFlag.value = true;
-      ctx.emit('sentgenes', autoGenes.value);
-    }
     async function updateTrack(ev: any) {
       if (!autoGenes.value.includes(ev)) {
         autoGenes.value.push(ev);
@@ -251,23 +230,6 @@ export default defineComponent({
         querySelections(v);
       }
     });
-    watch(de_select, (v: any) => {
-      if (v) {
-        selectedGenes.value.forEach((q: string, i: number) => {
-          if (!autoGenes.value.includes(q)) {
-            (ctx as any).refs[q].toggle();
-            autoGenes.value.push(q);
-          }
-        });
-      } else {
-        selectedGenes.value.forEach((q: string, i: number) => {
-          if (autoGenes.value.includes(q)) {
-            (ctx as any).refs[q].toggle();
-          }
-        });
-        autoGenes.value = [];
-      }
-    });
     watch(avgInd, (v: any) => {
       ctx.emit('avgind', avgInd.value);
     });
@@ -279,18 +241,6 @@ export default defineComponent({
       if (!selectedGenes.value.includes(gene) && (typeof gene === 'string')) {
         searchInput.value = gene;
         selectedGenes.value.push(gene);
-        onGenelistChanged(selectedGenes.value);
-        const observer = new MutationObserver((mutations: any) => {
-          if (document.getElementById(`${gene}`)) {
-            (ctx as any).refs[gene].toggle();
-            observer.disconnect();
-          }
-        });
-        observer.observe(document.body, {
-          childList: true, // observe direct children
-          subtree: true, // lower descendants too
-          characterDataOldValue: true, // pass old data to callback
-        });
       }
       if (v.length === 0) {
         searchInput.value = '';
@@ -301,7 +251,6 @@ export default defineComponent({
       if (selectedGenes.value.length === 0) {
         filteredGenes.value = genes.value;
         autoGenes.value = [];
-        showFlag.value = false;
         labelValue.value = 'Enter ID';
       } else labelValue.value = '';
     });
@@ -335,7 +284,6 @@ export default defineComponent({
       autocompleteLoading,
       showFlag,
       labelValue,
-      de_select,
       clicked,
       paddingValue,
       newRowCounter,
@@ -347,7 +295,6 @@ export default defineComponent({
       querySelections,
       onGenelistChanged,
       remove,
-      showGene,
       updateTrack,
       collapseGene,
       readFile,
