@@ -552,7 +552,7 @@ export default defineComponent({
         radiusSizeUmap = 30;
       }
       if (spatialData.value.spatial.length > 4000 && spatialData.value.spatial.length < 15000) {
-        radiusSize = 44;
+        radiusSize = 60;
         radiusSizeUmap = 58;
       }
       if (spatialData.value.spatial.length > 15000) {

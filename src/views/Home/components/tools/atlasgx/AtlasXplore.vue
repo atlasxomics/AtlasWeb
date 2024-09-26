@@ -1125,8 +1125,9 @@ export default defineComponent({
     async function generateFrontPage() {
       displayFlag.value = false;
       const el = document.getElementById('spatialGroup')!;
-      const widthS = parseFloat(el.getAttribute('width')!);
-      const heightS = parseFloat(el.getAttribute('height')!);
+      const rect = el.getBoundingClientRect();
+      const widthS = Number(rect.width!);
+      const heightS = Number(rect.height!);
       el.cloneNode(true);
       const svgURL = new XMLSerializer().serializeToString(el);
       const image = new window.Image();

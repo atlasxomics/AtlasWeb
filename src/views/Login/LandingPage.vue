@@ -301,20 +301,25 @@ export default defineComponent({
         labs.forEach((value: any, index: any) => {
           const bool: boolean[] = [];
           checkBoxArr.value.forEach((elements: any) => {
+            if (value.group === null)
             if (elements.title === 'Groups') {
-              if (elements.key.trim() === value.group.trim()) bool.push(true);
+              if (value.group === null) bool.push(false);
+              else if (elements.key.trim() === value.group.trim()) bool.push(true);
               else bool.push(false);
             }
             if (elements.title === 'Data Type') {
-              if (elements.key.trim() === value.assay.trim()) bool.push(true);
+              if (value.group === null) bool.push(false);
+              else if (elements.key.trim() === value.assay.trim()) bool.push(true);
               else bool.push(false);
             }
             if (elements.title === 'Organ') {
-              if (elements.key.trim() === value.organ.trim()) bool.push(true);
+              if (value.group === null) bool.push(false);
+              else if (elements.key.trim() === value.organ.trim()) bool.push(true);
               else bool.push(false);
             }
             if (elements.title === 'Species') {
-              if (elements.key.trim() === value.species.trim()) bool.push(true);
+              if (value.group === null) bool.push(false);
+              else if (elements.key.trim() === value.species.trim()) bool.push(true);
               else bool.push(false);
             }
           });
