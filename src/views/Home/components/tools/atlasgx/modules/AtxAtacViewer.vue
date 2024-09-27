@@ -551,13 +551,21 @@ export default defineComponent({
         radiusSize = 22;
         radiusSizeUmap = 30;
       }
-      if (spatialData.value.spatial.length > 4000 && spatialData.value.spatial.length < 15000) {
+      if (spatialData.value.spatial.length > 4000 && spatialData.value.spatial.length < 16000) {
         radiusSize = 60;
         radiusSizeUmap = 58;
       }
-      if (spatialData.value.spatial.length > 15000) {
+      if (spatialData.value.spatial.length > 16000 && spatialData.value.spatial.length < 32000) {
         radiusSize = 74;
         radiusSizeUmap = 90;
+      }
+      if (spatialData.value.spatial.length > 32000 && spatialData.value.spatial.length < 64000) {
+        radiusSize = 150;
+        radiusSizeUmap = 190;
+      }
+      if (spatialData.value.spatial.length > 64000) {
+        radiusSize = 200;
+        radiusSizeUmap = 240;
       }
       const { width: stageWidth, height: stageHeight } = konvaConfigLeft.value;
       const { width: stageWidthR, height: stageHeightR } = konvaConfigRight.value;

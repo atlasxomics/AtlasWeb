@@ -301,7 +301,6 @@ export default defineComponent({
         labs.forEach((value: any, index: any) => {
           const bool: boolean[] = [];
           checkBoxArr.value.forEach((elements: any) => {
-            if (value.group === null)
             if (elements.title === 'Groups') {
               if (value.group === null) bool.push(false);
               else if (elements.key.trim() === value.group.trim()) bool.push(true);
