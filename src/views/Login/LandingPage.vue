@@ -460,7 +460,7 @@ export default defineComponent({
       const xploreId = matchPath[2];
       const payload = { path: `data/${xploreId}/h5/obj`, bucket: '', filter: ['h5ad'] };
       const important_objects = await client.value?.getFileList(payload);
-      const regulons_flag = (important_objects.join().includes('eRegulons')) ? true : false;
+      const regulons_flag = false;
       runObject.regulons_flag = regulons_flag;
       if (client.value!.user === null) {
         const geneFileName = `data/${xploreId}/h5/geneNames.txt.gz`;
